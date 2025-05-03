@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
+import { format } from "date-fns";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
   DialogTitle,
+  DialogFooter 
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -20,39 +20,27 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Trash2 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Batch, batchStatusEnum } from "@shared/schema";
 
-// Form schema for batch creation/editing
+// Create a schema for batch form
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  date: z.date({
-    required_error: "Date is required",
-  }),
-  status: z.string({
-    required_error: "Status is required",
-  }),
-  notes: z.string().nullable().optional(),
+  name: z.string().min(1, "Batch name is required"),
+  date: z.string().min(1, "Date is required"),
+  status: z.enum(["OPEN", "CLOSED", "FINALIZED"]),
+  notes: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -67,293 +55,220 @@ interface BatchModalProps {
 const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isPending, setIsPending] = useState(false);
-
-  // Fetch batch data if editing
-  const { data: batchData, isLoading: isLoadingBatch } = useQuery({
-    queryKey: ["/api/batches", batchId],
-    queryFn: async () => {
-      if (!batchId) return null;
-      const response = await apiRequest("GET", `/api/batches/${batchId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch batch");
-      }
-      return response.json();
-    },
-    enabled: isEdit && !!batchId,
+  
+  // Load batch data if editing
+  const { data: batchData, isLoading: isLoadingBatch } = useQuery<Batch>({
+    queryKey: batchId ? [`/api/batches/${batchId}`] : ['/api/batches'],
+    enabled: !!batchId && isEdit,
   });
 
-  // Generate default name based on current date
-  const generateDefaultName = () => {
-    const today = new Date();
-    return format(today, "MMMM d, yyyy");
-  };
-
-  // Form setup
+  // React Hook Form setup
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: generateDefaultName(),
-      date: new Date(),
+      name: format(new Date(), 'MMMM d, yyyy'), // Default to today's date as name
+      date: new Date().toISOString().split('T')[0],
       status: "OPEN",
       notes: "",
     },
   });
-
+  
   // Update form values when editing an existing batch
   useEffect(() => {
-    if (isEdit && batchData) {
+    if (batchData && isEdit) {
+      const formattedDate = new Date(batchData.date).toISOString().split('T')[0];
+      
       form.reset({
         name: batchData.name,
-        date: new Date(batchData.date),
-        status: batchData.status,
-        notes: batchData.notes,
+        date: formattedDate,
+        status: batchData.status as "OPEN" | "CLOSED" | "FINALIZED",
+        notes: batchData.notes || "",
       });
     }
-  }, [isEdit, batchData, form]);
-
-  // Create batch mutation
+  }, [batchData, form, isEdit]);
+  
+  // Create/update batch mutation
   const createBatchMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const response = await apiRequest("POST", "/api/batches", values);
-      
-      if (!response.ok) {
-        throw new Error("Failed to create batch");
+      if (isEdit && batchId) {
+        // Update existing batch
+        const response = await apiRequest("PATCH", `/api/batches/${batchId}`, {
+          name: values.name,
+          date: values.date,
+          status: values.status,
+          notes: values.notes,
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to update batch");
+        }
+        
+        return response.json();
+      } else {
+        // Create new batch
+        const response = await apiRequest("POST", "/api/batches", {
+          name: values.name,
+          date: values.date,
+          status: values.status,
+          notes: values.notes,
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to create batch");
+        }
+        
+        return response.json();
       }
-      
-      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      
       toast({
-        title: "Batch created",
-        description: "New donation batch has been created successfully.",
+        title: "Success",
+        description: isEdit 
+          ? "Batch updated successfully." 
+          : "Batch created successfully.",
         className: "bg-[#48BB78] text-white",
       });
+      
       onClose();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to create batch: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to ${isEdit ? 'update' : 'create'} batch: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      setIsPending(false);
-    },
   });
-
-  // Update batch mutation
-  const updateBatchMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      if (!batchId) throw new Error("Batch ID is required");
-      
-      const response = await apiRequest("PATCH", `/api/batches/${batchId}`, values);
-      
-      if (!response.ok) {
-        throw new Error("Failed to update batch");
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
-      toast({
-        title: "Batch updated",
-        description: "Donation batch has been updated successfully.",
-        className: "bg-[#48BB78] text-white",
-      });
-      onClose();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update batch: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsPending(false);
-    },
-  });
-
+  
   // Form submission handler
   const onSubmit = (values: FormValues) => {
-    setIsPending(true);
-    if (isEdit && batchId) {
-      updateBatchMutation.mutate(values);
-    } else {
-      createBatchMutation.mutate(values);
-    }
+    createBatchMutation.mutate(values);
   };
-
-  // Loading state
-  if (isEdit && isLoadingBatch) {
-    return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-[425px]">
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-[#4299E1]" />
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Batch" : "Create New Batch"}</DialogTitle>
-          <DialogDescription>
-            {isEdit 
-              ? "Update the details of this donation batch" 
-              : "Create a new batch to organize your donations"}
-          </DialogDescription>
+          <DialogTitle className="text-xl font-bold text-[#2D3748]">
+            {isEdit ? "Edit Batch" : "Create New Batch"}
+          </DialogTitle>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Batch Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Sunday Service May 3, 2025" />
-                  </FormControl>
-                  <FormDescription>
-                    A descriptive name for this collection of donations
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Batch Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormDescription>
-                    The date when this batch of donations was collected
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
+        {isLoadingBatch ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Batch Name</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select batch status" />
-                      </SelectTrigger>
+                      <Input {...field} placeholder="Sunday Service, May 3, 2025" />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="OPEN">Open</SelectItem>
-                      <SelectItem value="CLOSED">Closed</SelectItem>
-                      <SelectItem value="FINALIZED">Finalized</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Open: Still collecting donations. Closed: Done collecting but not reconciled. Finalized: Reconciled and locked.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Add any additional information about this batch"
-                      className="h-24 resize-none"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              
-              <Button 
-                type="submit" 
-                className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white"
-                disabled={isPending}
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isEdit ? "Updating..." : "Creating..."}
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isEdit ? "Update Batch" : "Create Batch"}
-                  </>
+                    <FormDescription>
+                      Give this batch a descriptive name, such as a service date.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              />
+              
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormDescription>
+                      The date when this batch of donations was collected.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="OPEN">Open</SelectItem>
+                        <SelectItem value="CLOSED">Closed</SelectItem>
+                        <SelectItem value="FINALIZED">Finalized</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Open: Still collecting donations<br />
+                      Closed: No more donations accepted<br />
+                      Finalized: Batch verified and ready for accounting
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={3} />
+                    </FormControl>
+                    <FormDescription>
+                      Any additional information about this batch.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white"
+                  disabled={createBatchMutation.isPending}
+                >
+                  {createBatchMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isEdit ? "Update Batch" : "Create Batch"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );

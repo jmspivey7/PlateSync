@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import StatCard from "@/components/dashboard/StatCard";
 import QuickActions from "@/components/dashboard/QuickActions";
 import RecentDonations from "@/components/dashboard/RecentDonations";
+import { CurrentBatch } from "@/components/dashboard/CurrentBatch";
 
 const Dashboard = () => {
   const { user } = useAuth();

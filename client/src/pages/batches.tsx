@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Batch, BatchWithDonations } from "../../../shared/schema";
-import BatchModal from "@/components/batches/BatchModal";
+import BatchModal from "../components/batches/BatchModal";
 import { apiRequest } from "@/lib/queryClient";
 
 const statusColors = {
@@ -238,8 +238,8 @@ const BatchesPage = () => {
                         <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
                           <div>
                             <div className="font-medium">
-                              {donation.member ? 
-                                `${donation.member.firstName} ${donation.member.lastName}` : 
+                              {donation.memberId ? 
+                                "Member Donation" : 
                                 "Anonymous Donation"}
                             </div>
                             <div className="text-sm text-gray-500">
