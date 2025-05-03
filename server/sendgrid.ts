@@ -26,16 +26,40 @@ export async function sendEmail(
   }
   
   try {
+    // For a development environment, log the email instead of sending it
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📧 Would send email in production:');
+      console.log('To:', params.to);
+      console.log('From:', params.from);
+      console.log('Subject:', params.subject);
+      console.log('Text:', params.text?.substring(0, 100) + '...');
+      
+      // In development, consider the email as "sent" successfully
+      return true;
+    }
+    
+    // In production, actually send the email
     await mailService.send({
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
+      text: params.text || '',
+      html: params.html || '',
     });
+    
+    console.log(`Email sent successfully to ${params.to}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
+    // Log detailed error information
     console.error('SendGrid email error:', error);
+    
+    // Provide more specific error logging based on common SendGrid errors
+    if (error.response && error.response.body && error.response.body.errors) {
+      error.response.body.errors.forEach((err: any) => {
+        console.error('SendGrid error details:', err);
+      });
+    }
+    
     return false;
   }
 }
@@ -49,7 +73,9 @@ interface DonationNotificationParams {
 }
 
 export async function sendDonationNotification(params: DonationNotificationParams): Promise<boolean> {
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
+  // Use a verified sender email from environment variables or fall back to a placeholder
+  // Note: In production, you MUST set SENDGRID_FROM_EMAIL to a verified sender
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'donations@example.com';
   
   const subject = `${params.churchName} - Your Donation Receipt`;
   
