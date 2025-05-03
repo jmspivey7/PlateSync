@@ -57,7 +57,7 @@ const Dashboard = () => {
         {/* Circular Start New Count Button */}
         <div className="md:w-1/3 flex justify-center">
           <Button 
-            className="w-64 h-64 rounded-full bg-black hover:bg-black/90 text-white flex flex-col items-center justify-center text-2xl font-bold p-0"
+            className="w-48 h-48 rounded-full bg-black hover:bg-black/90 text-white flex flex-col items-center justify-center text-xl font-bold p-0"
             onClick={handleNewCount}
           >
             <span>START</span>
@@ -73,15 +73,15 @@ const Dashboard = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : lastBatch ? (
-            <Card className="border rounded-xl shadow-sm h-full">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-center mb-1">
-                  <h2 className="text-xl text-muted-foreground font-medium">Last Count Submitted</h2>
+            <Card className="border rounded-xl shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg text-muted-foreground font-medium">Last Count Submitted</h2>
                   <div className="bg-background border rounded-full px-3 py-1 flex items-center text-sm font-medium">
                     <TrendingUp className="h-4 w-4 mr-1" /> +0.0%
                   </div>
                 </div>
-                <div className="text-4xl font-bold mb-3">
+                <div className="text-3xl font-bold my-2">
                   {formatCurrency(lastBatch.totalAmount || 0)}
                 </div>
                 <div className="flex justify-between items-center">
@@ -95,9 +95,9 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-muted h-full">
-              <CardContent className="p-6 text-center">
-                <h2 className="text-xl font-medium mb-1">No Counts Yet</h2>
+            <Card className="bg-muted">
+              <CardContent className="p-4 text-center">
+                <h2 className="text-lg font-medium mb-1">No Counts Yet</h2>
                 <p className="text-muted-foreground">Create your first count to get started</p>
               </CardContent>
             </Card>
