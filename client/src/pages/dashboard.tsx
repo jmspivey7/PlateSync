@@ -27,15 +27,6 @@ const Dashboard = () => {
     enabled: isAuthenticated,
   });
   
-  // Format currency
-  const formatCurrency = (amount: string | number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
-  };
-  
   // Handle new count action
   const handleNewCount = () => {
     setIsCountModalOpen(true);
@@ -45,8 +36,6 @@ const Dashboard = () => {
   const handleCloseModal = () => {
     setIsCountModalOpen(false);
   };
-  
-
   
   if (authLoading) {
     return (
