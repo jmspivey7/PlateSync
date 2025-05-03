@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Combobox } from "../../components/ui/combobox";
 import { 
   Card, 
   CardContent, 
@@ -447,7 +448,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   )}
                 />
                 
-                {/* Existing Member Selector with Search and Select */}
+                {/* Existing Member Selector with Typeahead */}
                 {donorType === "existing" && (
                   <FormField
                     control={form.control}
@@ -455,58 +456,27 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Select Member</FormLabel>
-                        <div className="space-y-2">
-                          <FormControl>
-                            <Select
+                        <FormControl>
+                          {members && (
+                            <Combobox
+                              options={members.map(member => ({
+                                value: member.id.toString(),
+                                label: `${member.firstName} ${member.lastName}`
+                              }))}
                               value={field.value}
-                              onValueChange={(value) => {
+                              onValueChange={(value: string) => {
                                 console.log("Selected member ID:", value);
                                 field.onChange(value);
                               }}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a member" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {members?.map((member) => (
-                                  <SelectItem 
-                                    key={member.id} 
-                                    value={member.id.toString()}
-                                    className="cursor-pointer"
-                                  >
-                                    {member.firstName} {member.lastName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          
-                          {/* Search box to filter by name */}
-                          <div className="mt-2">
-                            <FormLabel className="text-sm text-gray-500">Search Filter</FormLabel>
-                            <Input
-                              type="text"
-                              placeholder="Type to filter members..."
-                              className="mt-1"
-                              onChange={(e) => {
-                                const searchTerm = e.target.value.toLowerCase();
-                                if (searchTerm && members) {
-                                  // Find first matching member
-                                  const foundMember = members.find(member => 
-                                    `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm)
-                                  );
-                                  if (foundMember) {
-                                    // Auto-select the first match
-                                    console.log("Auto-selecting member:", foundMember.id.toString());
-                                    field.onChange(foundMember.id.toString());
-                                  }
-                                }
-                              }}
+                              placeholder="Select a member..."
+                              emptyMessage="No members found."
+                              searchPlaceholder="Type to search for members..."
+                              className="w-full"
                             />
-                          </div>
-                        </div>
+                          )}
+                        </FormControl>
                         <FormDescription>
-                          Select from dropdown or type to search
+                          Type to search for members by name
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
