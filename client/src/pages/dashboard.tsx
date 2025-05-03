@@ -1,87 +1,178 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, BarChart2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import StatCard from "@/components/dashboard/StatCard";
-import QuickActions from "@/components/dashboard/QuickActions";
-import RecentDonations from "@/components/dashboard/RecentDonations";
-import { CurrentCount } from "@/components/dashboard/CurrentCount";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Batch } from "@shared/schema";
+import CountModal from "@/components/counts/CountModal";
+import { useState } from "react";
+
+// We'll use simplified text-based headers instead of images for compatibility
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [_, setLocation] = useLocation();
+  const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   
-  // Fetch dashboard statistics
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['/api/dashboard/stats'],
+  // Fetch the current/last batch for display
+  const { data: lastBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
+    queryKey: ['/api/batches/current'],
   });
   
+  // Fetch all batches for the chart
+  const { data: allBatches, isLoading: isLoadingAllBatches } = useQuery<Batch[]>({
+    queryKey: ['/api/batches'],
+  });
+  
+  // Format currency
+  const formatCurrency = (amount: string | number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
+  };
+  
+  // Handle new count action
+  const handleNewCount = () => {
+    setIsCountModalOpen(true);
+  };
+  
+  // Handle modal close
+  const handleCloseModal = () => {
+    setIsCountModalOpen(false);
+  };
+  
+  // Get last 5 batches for chart
+  const getRecentBatches = () => {
+    if (!allBatches) return [];
+    
+    return [...allBatches]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5)
+      .reverse();
+  };
+  
+  const recentBatches = getRecentBatches();
+  
+  // Find the highest amount for scaling
+  const maxAmount = recentBatches.length > 0 
+    ? Math.max(...recentBatches.map(b => parseFloat(b.totalAmount?.toString() || "0")))
+    : 5000;
+  
+  // Chart height calculation
+  const getBarHeight = (amount: string | number | null | undefined) => {
+    if (!amount) return 0;
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return (numAmount / maxAmount) * 200; // Max height of 200px
+  };
+  
   return (
-    <div className="mb-8">
+    <div className="mb-8 max-w-4xl mx-auto">
+      {/* Header with Church Name */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Dashboard</h2>
-        <div className="flex space-x-2">
-          <span className="text-sm text-gray-500">{format(new Date(), 'MMMM d, yyyy')}</span>
-          <span className="text-sm text-gray-500">|</span>
-          <span className="text-sm text-gray-500">{user?.churchName || "Your Church"}</span>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold text-[#1A202C]">REDEEMER NOLA</h1>
+          <span className="text-sm text-gray-500">Presbyterian Church</span>
+        </div>
+        <div className="flex space-x-3">
+          <Button variant="ghost" onClick={() => setLocation("/dashboard")}>Dashboard</Button>
+          <Button variant="ghost" onClick={() => setLocation("/counts")}>Counts</Button>
+          <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
+          <Button variant="ghost" onClick={() => setLocation("/settings")}>Settings</Button>
         </div>
       </div>
       
-      {/* Dashboard Stats Cards */}
-      {isLoading ? (
-        <div className="flex justify-center items-center py-10">
+      {/* Primary Action Button */}
+      <Button 
+        className="w-full py-6 mb-6 bg-[#4299E1] hover:bg-[#4299E1]/90 text-white text-lg"
+        onClick={handleNewCount}
+      >
+        <Plus className="mr-2 h-5 w-5" />
+        Start New Count
+      </Button>
+      
+      {/* Last Count Submitted */}
+      {isLoadingBatch ? (
+        <div className="flex justify-center items-center py-8 mb-6">
           <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
         </div>
+      ) : lastBatch ? (
+        <Card className="mb-6 bg-[#48BB78] text-white">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-medium mb-2">Last Count Submitted</h2>
+            <div className="text-3xl font-bold mb-1">
+              {formatCurrency(lastBatch.totalAmount || 0)}
+            </div>
+            <div className="text-lg">
+              {format(new Date(lastBatch.date), 'EEEE, MMMM d, yyyy')}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard
-            title="Today's Donations"
-            value={stats?.todaysDonations?.total || "0.00"}
-            changeText="from last Sunday"
-            changeValue={stats?.todaysDonations?.percentChange || 0}
-            borderColor="border-[#4299E1]"
-          />
-          
-          <StatCard
-            title="Weekly Total"
-            value={stats?.weeklyDonations?.total || "0.00"}
-            changeText="from last week"
-            changeValue={stats?.weeklyDonations?.percentChange || 0}
-            borderColor="border-[#48BB78]"
-          />
-          
-          <StatCard
-            title="Monthly Total"
-            value={stats?.monthlyDonations?.total || "0.00"}
-            changeText="from last month"
-            changeValue={stats?.monthlyDonations?.percentChange || 0}
-            borderColor="border-yellow-500"
-          />
-          
-          <StatCard
-            title="Active Donors"
-            value={stats?.activeDonors?.count?.toString() || "0"}
-            changeText="this month"
-            changeValue={stats?.activeDonors?.newCount || 0}
-            borderColor="border-purple-500"
-          />
-        </div>
+        <Card className="mb-6 bg-gray-100">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-medium mb-1">No Counts Yet</h2>
+            <p className="text-gray-600">Create your first count to get started</p>
+          </CardContent>
+        </Card>
       )}
       
-      {/* Dashboard Secondary Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Left Column - Quick Actions */}
-        <div className="lg:col-span-2">
-          <QuickActions />
-        </div>
-        
-        {/* Right Column - Current Count */}
-        <div>
-          <CurrentCount />
-        </div>
+      {/* Prior Counts Chart */}
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <h2 className="text-lg font-medium mb-4 text-center">Prior Counts</h2>
+          
+          {isLoadingAllBatches ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+            </div>
+          ) : recentBatches.length > 0 ? (
+            <div className="relative h-[250px]">
+              <div className="absolute bottom-0 w-full flex items-end justify-around">
+                {recentBatches.map((batch, index) => (
+                  <div key={index} className="flex flex-col items-center w-1/5">
+                    <div 
+                      className="bg-[#4299E1] rounded-t w-16" 
+                      style={{ height: `${getBarHeight(batch.totalAmount)}px` }}
+                    >
+                      <div className="text-white text-center text-xs font-medium mt-1">
+                        {formatCurrency(batch.totalAmount || 0)}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      {format(new Date(batch.date), 'd-MMM-yy')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8">
+              <BarChart2 className="h-10 w-10 text-gray-300 mb-2" />
+              <p className="text-gray-500">No counts available to display</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Footer with PlateSync Name */}
+      <div className="flex flex-col items-center mt-8 mb-4">
+        <div className="font-bold text-lg text-[#1A202C]">PlateSync</div>
+        <div className="text-xs text-gray-500">CHURCH COLLECTION MANAGEMENT</div>
       </div>
       
-      {/* Recent Donations */}
-      <RecentDonations />
+      {/* Count Modal */}
+      {isCountModalOpen && (
+        <CountModal
+          isOpen={isCountModalOpen}
+          onClose={handleCloseModal}
+          batchId={null}
+          isEdit={false}
+        />
+      )}
     </div>
   );
 };
