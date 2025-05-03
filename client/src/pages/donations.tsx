@@ -49,7 +49,7 @@ const Donations = () => {
   
   // Fetch donation details if viewing a specific donation
   const { data: donation, isLoading: isLoadingDonation } = useQuery<DonationWithMember>({
-    queryKey: ['/api/donations', donationId],
+    queryKey: donationId ? [`/api/donations/${donationId}`] : ['/api/donations'],
     enabled: !!donationId,
   });
   
