@@ -1,8 +1,10 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendDonationNotification } from "./sendgrid";
+import multer from "multer";
+import { parse } from "csv-parse/sync";
 import { z } from "zod";
 import { 
   insertMemberSchema, 
@@ -15,6 +17,14 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up multer for file uploads
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+  });
+  
   // Auth middleware
   await setupAuth(app);
 
@@ -122,6 +132,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update member" });
+    }
+  });
+
+  // CSV Import endpoint
+  app.post('/api/members/import', isAuthenticated, upload.single('csvFile'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Get file buffer
+      const fileBuffer = req.file.buffer;
+      const fileContent = fileBuffer.toString('utf-8');
+      
+      // Parse CSV
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+      
+      if (!records || records.length === 0) {
+        return res.status(400).json({ message: "CSV file is empty or invalid" });
+      }
+      
+      // Check for required columns
+      const requiredColumns = ['First Name', 'Last Name'];
+      const headers = Object.keys(records[0]);
+      
+      const missingColumns = requiredColumns.filter(col => 
+        !headers.some(header => header.toLowerCase() === col.toLowerCase())
+      );
+      
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ 
+          message: `CSV file is missing required columns: ${missingColumns.join(', ')}` 
+        });
+      }
+      
+      // Import members
+      const importedMembers = [];
+      const errors = [];
+      
+      for (const [index, record] of records.entries()) {
+        try {
+          // Map CSV columns to our data model
+          const memberData = {
+            firstName: record['First Name'],
+            lastName: record['Last Name'],
+            email: record['Email'] || null,
+            phone: record['Mobile Phone Number'] || null,
+            notes: '',
+            churchId: userId
+          };
+          
+          // Validate data
+          const validatedData = insertMemberSchema.parse(memberData);
+          
+          // Create member
+          const member = await storage.createMember(validatedData);
+          importedMembers.push(member);
+        } catch (error) {
+          console.error(`Error importing row ${index + 1}:`, error);
+          errors.push({
+            row: index + 1,
+            message: error instanceof z.ZodError 
+              ? error.errors.map(e => e.message).join(', ')
+              : 'Failed to import member'
+          });
+        }
+      }
+      
+      res.status(200).json({
+        message: 'CSV import completed',
+        importedCount: importedMembers.length,
+        totalRows: records.length,
+        errorCount: errors.length,
+        errors: errors.length > 0 ? errors : null
+      });
+      
+    } catch (error) {
+      console.error("Error importing CSV:", error);
+      res.status(500).json({ message: "Failed to import members" });
     }
   });
 
