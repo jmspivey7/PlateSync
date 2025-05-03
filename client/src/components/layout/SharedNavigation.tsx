@@ -30,7 +30,7 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
           src={redeemerLogo} 
           alt="Redeemer NOLA Presbyterian Church" 
           className="h-16 sm:h-24 object-contain cursor-pointer"
-          onClick={() => setLocation("/")}
+          onClick={() => setLocation("/dashboard")}
         />
         
         {isMobile ? (
@@ -43,7 +43,6 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
           </Button>
         ) : (
           <div className="flex space-x-2">
-            <Button variant="ghost" onClick={() => setLocation("/dashboard")}>Dashboard</Button>
             <Button variant="ghost" onClick={() => setLocation("/counts")}>Counts</Button>
             <Button variant="ghost" onClick={() => setLocation("/donations")}>Donations</Button>
             <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
@@ -57,7 +56,7 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
       {isMobile && mobileMenuOpen && (
         <div className="bg-white rounded-md shadow-lg p-4 mb-6">
           <div className="flex flex-col space-y-2">
-            <Button variant="ghost" onClick={() => {
+            <Button variant="link" className="text-gray-500" onClick={() => {
               setLocation("/dashboard");
               setMobileMenuOpen(false);
             }}>Dashboard</Button>
