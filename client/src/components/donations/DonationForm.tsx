@@ -483,9 +483,18 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                                     key={member.id}
                                     value={`${member.firstName} ${member.lastName}`}
                                     onSelect={() => {
-                                      field.onChange(member.id.toString());
+                                      form.setValue("memberId", member.id.toString());
                                       console.log("Member selected:", member.id.toString());
+                                      
+                                      // Force close the popover by simulating a click outside
+                                      const event = new MouseEvent('mousedown', {
+                                        bubbles: true,
+                                        cancelable: true,
+                                        view: window
+                                      });
+                                      document.dispatchEvent(event);
                                     }}
+                                    className="cursor-pointer hover:bg-blue-50"
                                   >
                                     <User className="mr-2 h-4 w-4" />
                                     <span>{member.firstName} {member.lastName}</span>
