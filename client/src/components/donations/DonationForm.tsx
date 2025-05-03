@@ -448,67 +448,90 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   )}
                 />
                 
-                {/* Existing Member Selector with Typeahead */}
+                {/* Existing Member Selector - Simple functional approach */}
                 {donorType === "existing" && (
                   <FormField
                     control={form.control}
                     name="memberId"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel>Select Member</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                role="combobox"
-                                className="w-full justify-between"
-                              >
-                                {field.value && members
-                                  ? members.find(member => member.id.toString() === field.value)
-                                    ? `${members.find(member => member.id.toString() === field.value)?.firstName} ${members.find(member => member.id.toString() === field.value)?.lastName}`
-                                    : "Select a member..."
-                                  : "Select a member..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0">
-                            <Command>
-                              <CommandInput placeholder="Search members..." />
-                              <CommandEmpty>No member found.</CommandEmpty>
-                              <CommandGroup className="max-h-60 overflow-y-auto">
+                        <FormControl>
+                          <div className="space-y-2">
+                            <Input 
+                              type="text"
+                              id="memberSearch"
+                              placeholder="Type to search for members..."
+                              className="w-full"
+                              onChange={(e) => {
+                                const searchTerm = e.target.value.toLowerCase();
+                                const searchResultContainer = document.getElementById('searchResults');
+                                if (searchResultContainer) {
+                                  searchResultContainer.style.display = searchTerm ? 'block' : 'none';
+                                }
+                              }}
+                            />
+                            
+                            <div 
+                              id="searchResults"
+                              className="border rounded-md mt-1 max-h-60 overflow-y-auto bg-white shadow-sm hidden"
+                            >
+                              <ul className="py-1">
                                 {members?.map((member) => (
-                                  <CommandItem
+                                  <li 
                                     key={member.id}
-                                    value={`${member.firstName} ${member.lastName}`}
-                                    onSelect={() => {
-                                      form.setValue("memberId", member.id.toString());
-                                      console.log("Member selected:", member.id.toString());
-                                      
-                                      // Force close the popover by simulating a click outside
-                                      const event = new MouseEvent('mousedown', {
-                                        bubbles: true,
-                                        cancelable: true,
-                                        view: window
-                                      });
-                                      document.dispatchEvent(event);
+                                    data-search={`${member.firstName.toLowerCase()} ${member.lastName.toLowerCase()}`}
+                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center"
+                                    onClick={() => {
+                                      field.onChange(member.id.toString());
+                                      // Update the search input to show selection
+                                      const searchInput = document.getElementById('memberSearch') as HTMLInputElement;
+                                      if (searchInput) {
+                                        searchInput.value = `${member.firstName} ${member.lastName}`;
+                                      }
+                                      // Hide results after selection
+                                      const searchResultContainer = document.getElementById('searchResults');
+                                      if (searchResultContainer) {
+                                        searchResultContainer.style.display = 'none';
+                                      }
+                                      console.log("Selected member:", member.id.toString());
                                     }}
-                                    className="cursor-pointer hover:bg-blue-50"
                                   >
-                                    <User className="mr-2 h-4 w-4" />
+                                    <User className="mr-2 h-4 w-4 text-gray-500" />
                                     <span>{member.firstName} {member.lastName}</span>
                                     {member.id.toString() === field.value && (
-                                      <Check className="ml-auto h-4 w-4" />
+                                      <Check className="ml-auto h-4 w-4 text-green-500" />
                                     )}
-                                  </CommandItem>
+                                  </li>
                                 ))}
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                              </ul>
+                            </div>
+                            
+                            {/* Add filtering with JavaScript */}
+                            <script dangerouslySetInnerHTML={{
+                              __html: `
+                                document.getElementById('memberSearch').addEventListener('input', function(e) {
+                                  const searchTerm = e.target.value.toLowerCase();
+                                  const listItems = document.querySelectorAll('#searchResults li');
+                                  
+                                  listItems.forEach(item => {
+                                    const text = item.getAttribute('data-search');
+                                    if (text.includes(searchTerm)) {
+                                      item.style.display = 'flex';
+                                    } else {
+                                      item.style.display = 'none';
+                                    }
+                                  });
+                                });
+                              `
+                            }} />
+                          </div>
+                        </FormControl>
                         <FormDescription>
-                          Type to search for members by name
+                          {field.value && members ? 
+                            `Selected: ${members.find(m => m.id.toString() === field.value)?.firstName} ${members.find(m => m.id.toString() === field.value)?.lastName}` : 
+                            "Type to search and select a member"
+                          }
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
