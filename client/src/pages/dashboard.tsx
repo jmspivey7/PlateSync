@@ -8,6 +8,7 @@ import { Batch } from "@shared/schema";
 import CountModal from "@/components/counts/CountModal";
 import { useState } from "react";
 import PageLayout from "@/components/layout/PageLayout";
+import { DonationChart } from "@/components/dashboard/DonationChart";
 
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
