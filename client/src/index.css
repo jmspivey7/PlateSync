@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --primary: 221 47.4% 23.1%;  /* #2D3748 church navy */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 142 71% 45.1%;  /* #48BB78 success green */
+  --secondary-foreground: 355.7 100% 100%;
+  --accent: 210 100% 33.1%;  /* #4299E1 trust blue */
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --ring: 221 47.4% 23.1%;
+  --radius: 0.5rem;
+  --chart-1: 221 47.4% 23.1%;  /* church navy */
+  --chart-2: 142 71% 45.1%;  /* success green */
+  --chart-3: 210 100% 33.1%;  /* trust blue */
+  --chart-4: 0 0% 90%;
+  --chart-5: 0 0% 70%;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --primary: 221 47.4% 23.1%;  /* #2D3748 church navy */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 142 71% 45.1%;  /* #48BB78 success green */
+  --secondary-foreground: 210 40% 98%;
+  --accent: 210 100% 33.1%;  /* #4299E1 trust blue */
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 212.7 26.8% 83.9;
+  --chart-1: 221 47.4% 23.1%;  /* church navy */
+  --chart-2: 142 71% 45.1%;  /* success green */
+  --chart-3: 210 100% 33.1%;  /* trust blue */
+  --chart-4: 0 0% 40%;
+  --chart-5: 0 0% 70%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-sans bg-[#F7FAFC] text-[#1A202C];
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-inter font-medium;
+  }
+  p, span, div {
+    @apply font-lato;
+  }
+}
+
+@layer utilities {
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  .font-lato {
+    font-family: 'Lato', sans-serif;
+  }
+}
