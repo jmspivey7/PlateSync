@@ -150,15 +150,23 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
   
   // Set form default batch value when current batch is loaded
   useEffect(() => {
-    if (currentBatch && !isEdit) {
-      // Only set if not already set or if set to empty string
-      const currentBatchId = form.getValues("batchId");
-      if (!currentBatchId || currentBatchId === "") {
-        console.log("Setting default batch ID:", currentBatch.id.toString());
-        form.setValue("batchId", currentBatch.id.toString());
+    if (!isEdit) {
+      // If defaultBatchId is provided, use it
+      if (defaultBatchId) {
+        console.log("Using provided default batch ID:", defaultBatchId.toString());
+        form.setValue("batchId", defaultBatchId.toString());
+      }
+      // Otherwise, use current batch if available
+      else if (currentBatch) {
+        // Only set if not already set or if set to empty string
+        const currentBatchId = form.getValues("batchId");
+        if (!currentBatchId || currentBatchId === "") {
+          console.log("Setting default batch ID:", currentBatch.id.toString());
+          form.setValue("batchId", currentBatch.id.toString());
+        }
       }
     }
-  }, [currentBatch, form, isEdit]);
+  }, [currentBatch, form, isEdit, defaultBatchId]);
   
   // Update form values when editing an existing donation
   useEffect(() => {
@@ -337,20 +345,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
   });
   
   // Form submission handler
-  const onSubmit = (values: any) => {
-    console.log("Form submitted with values:", values);
-    
-    try {
-      // Execute the mutation
-      createDonationMutation.mutate(values as FormValues);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit the form. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const onSubmit = (values: FormValues) => {
+    console.log("Submit button clicked with values:", values);
+    createDonationMutation.mutate(values);
   };
   
   return (
@@ -377,11 +374,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
         {!(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch) && (
           <Form {...form}>
             <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                form.handleSubmit(onSubmit)(e);
-              }} 
-              className="space-y-6">
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-6"
+            >
               {/* Donor Selection */}
               <div className="space-y-4">
                 <FormField
@@ -443,36 +438,38 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   />
                 )}
                 
-                {/* New Member Fields */}
+                {/* New Member Form */}
                 {donorType === "new" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     
                     <FormField
                       control={form.control}
@@ -594,48 +591,53 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   />
                 </div>
                 
+                {/* Batch selection - hide when defaultBatchId is provided */}
+                {!defaultBatchId && (
+                  <div className="mt-4">
+                    <FormField
+                      control={form.control}
+                      name="batchId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Batch (Optional)</FormLabel>
+                          <Select
+                            value={field.value || "none"} 
+                            onValueChange={(val) => {
+                              console.log("Batch selection changed to:", val);
+                              field.onChange(val);
+                            }}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a batch..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">None (Add to batch later)</SelectItem>
+                              {batches && batches.length > 0 ? (
+                                batches.map((batch) => (
+                                  <SelectItem key={batch.id} value={batch.id.toString()}>
+                                    {batch.name} {batch.status !== "FINALIZED" ? `(${batch.status})` : ""}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="none" disabled>No batches available</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            {currentBatch ? 
+                              `Current open batch: ${currentBatch.name}` : 
+                              "No open batch available. You can create one in the Batches section."}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+                
                 <div className="mt-4">
-                  <FormField
-                    control={form.control}
-                    name="batchId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Batch (Optional)</FormLabel>
-                        <Select
-                          value={field.value || "none"} 
-                          onValueChange={(val) => {
-                            console.log("Batch selection changed to:", val);
-                            field.onChange(val);
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a batch..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None (Add to batch later)</SelectItem>
-                            {batches && batches.length > 0 ? (
-                              batches.map((batch) => (
-                                <SelectItem key={batch.id} value={batch.id.toString()}>
-                                  {batch.name} {batch.status !== "FINALIZED" ? `(${batch.status})` : ""}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <SelectItem value="none" disabled>No batches available</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          {currentBatch ? 
-                            `Current open batch: ${currentBatch.name}` : 
-                            "No open batch available. You can create one in the Batches section."}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   <FormField
                     control={form.control}
                     name="notes"
@@ -689,11 +691,6 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   type="submit" 
                   className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
                   disabled={createDonationMutation.isPending}
-                  onClick={() => {
-                    const formValues = form.getValues();
-                    console.log("Submit button clicked with values:", formValues);
-                    createDonationMutation.mutate(formValues as FormValues);
-                  }}
                 >
                   {createDonationMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

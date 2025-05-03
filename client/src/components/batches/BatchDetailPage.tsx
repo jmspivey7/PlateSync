@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import DonationForm from "../donations/DonationForm";
-import { Batch, BatchWithDonations, Donation, batchStatusEnum } from "@shared/schema";
+import { Batch, BatchWithDonations, Donation, DonationWithMember, batchStatusEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
@@ -176,8 +176,9 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
             {batch?.donations?.map((donation) => (
               <tr key={donation.id} className="border-b border-gray-200">
                 <td className="py-2">
-                  {donation.member ? 
-                    `${donation.member.firstName} ${donation.member.lastName}` : 
+                  {/* Access memberId instead of member property */}
+                  {donation.memberId ? 
+                    "Member Donation" : 
                     "Anonymous/Visitor"}
                 </td>
                 <td className="py-2">{format(new Date(donation.date), 'MMM d, yyyy')}</td>
@@ -296,9 +297,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
                   <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
                     <div>
                       <div className="font-medium">
-                        {donation.member ? 
-                          `${donation.member.firstName} ${donation.member.lastName}` : 
-                          "Anonymous/Visitor"}
+                        {donation.memberId ? "Member Donation" : "Anonymous/Visitor"}
                       </div>
                       <div className="text-sm text-gray-500">
                         {format(new Date(donation.date), 'MMM d, yyyy')} • 
@@ -390,9 +389,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
                 <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
                   <div>
                     <div className="font-medium">
-                      {donation.member ? 
-                        `${donation.member.firstName} ${donation.member.lastName}` : 
-                        "Anonymous/Visitor"}
+                      {donation.memberId ? "Member Donation" : "Anonymous/Visitor"}
                     </div>
                     <div className="text-sm text-gray-500">
                       {format(new Date(donation.date), 'MMM d, yyyy')} • 
