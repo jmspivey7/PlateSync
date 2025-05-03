@@ -10,6 +10,7 @@ import Donations from "@/pages/donations";
 import Members from "@/pages/members";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
+import Batches from "@/pages/batches";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/donations" component={Donations} />
       <Route path="/members" component={Members} />
+      <Route path="/batches" component={Batches} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

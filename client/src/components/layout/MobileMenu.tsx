@@ -56,6 +56,14 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               Members
             </a>
           </Link>
+          <Link href="/batches">
+            <a 
+              className={`font-inter font-medium text-white hover:text-[#48BB78] transition py-4 text-lg ${location === '/batches' ? 'text-[#48BB78]' : ''}`}
+              onClick={handleLinkClick}
+            >
+              Batches
+            </a>
+          </Link>
           <Link href="/settings">
             <a 
               className={`font-inter font-medium text-white hover:text-[#48BB78] transition py-4 text-lg ${location === '/settings' ? 'text-[#48BB78]' : ''}`}

@@ -54,6 +54,11 @@ const Header = () => {
                 Members
               </a>
             </Link>
+            <Link href="/batches">
+              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/batches' ? 'text-[#48BB78]' : ''}`}>
+                Batches
+              </a>
+            </Link>
             <Link href="/settings">
               <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/settings' ? 'text-[#48BB78]' : ''}`}>
                 Settings
