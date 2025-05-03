@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format, parseISO } from "date-fns";
 import { 
   Card, 
   CardContent, 
@@ -111,7 +112,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
   
   // Load donation data if editing
   const { data: donationData, isLoading: isLoadingDonation } = useQuery<Donation>({
-    queryKey: ['/api/donations', donationId],
+    queryKey: donationId ? [`/api/donations/${donationId}`] : ['/api/donations'],
     enabled: !!donationId,
   });
   
@@ -137,24 +138,67 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
   // Update form values when editing an existing donation
   useEffect(() => {
     if (donationData && members) {
+      // Add some debugging to see what we're getting
+      console.log("Donation data received:", donationData);
+      
+      // Handle case where API returns an array instead of a single donation
+      let singleDonation: Donation;
+      if (Array.isArray(donationData)) {
+        console.log("Donation data is an array, using first item");
+        if (donationData.length === 0) return;
+        singleDonation = donationData[0];
+      } else {
+        singleDonation = donationData;
+      }
+      
+      // Set donor type based on member existence
       let donorTypeValue: "existing" | "new" | "visitor" = "visitor";
-      if (donationData.memberId) {
-        const member = members.find(m => m.id === donationData.memberId);
+      if (singleDonation.memberId) {
+        const member = members.find(m => m.id === singleDonation.memberId);
         if (member) {
           donorTypeValue = "existing";
         }
       }
       
-      form.reset({
-        date: new Date(donationData.date).toISOString().split('T')[0],
-        amount: donationData.amount.toString(),
-        donationType: donationData.donationType,
-        checkNumber: donationData.checkNumber || "",
-        notes: donationData.notes || "",
+      // Safely format the date to YYYY-MM-DD format
+      let formattedDate = "";
+      try {
+        if (singleDonation.date) {
+          // First try to parse as ISO string
+          if (typeof singleDonation.date === 'string') {
+            formattedDate = format(parseISO(singleDonation.date), 'yyyy-MM-dd');
+          } else {
+            // If it's already a Date object
+            formattedDate = format(new Date(singleDonation.date), 'yyyy-MM-dd');
+          }
+        } else {
+          // If no date, use current date
+          formattedDate = format(new Date(), 'yyyy-MM-dd');
+        }
+      } catch (error) {
+        console.error("Error parsing date:", error);
+        // Fallback to current date if parsing fails
+        formattedDate = format(new Date(), 'yyyy-MM-dd');
+      }
+      
+      // Ensure all values are properly defined with fallbacks
+      const formValues = {
+        date: formattedDate,
+        amount: singleDonation.amount !== undefined ? singleDonation.amount.toString() : "",
+        donationType: singleDonation.donationType || "CASH",
+        checkNumber: singleDonation.checkNumber || "",
+        notes: singleDonation.notes || "",
         donorType: donorTypeValue,
-        memberId: donationData.memberId ? donationData.memberId.toString() : "",
-        sendNotification: donationData.notificationStatus === "SENT",
-      });
+        memberId: singleDonation.memberId ? singleDonation.memberId.toString() : "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        sendNotification: singleDonation.notificationStatus === "SENT",
+      };
+      
+      // Reset the form with the prepared values
+      form.reset(formValues);
     }
   }, [donationData, members, form]);
   
@@ -162,11 +206,30 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
   const donorType = form.watch("donorType");
   const donationType = form.watch("donationType");
   
-  // Create donation mutation
+  // Create/update donation mutation
   const createDonationMutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      // If we're in edit mode and have a donation ID
+      if (isEdit && donationId) {
+        // Update existing donation
+        const donationResponse = await apiRequest("PATCH", `/api/donations/${donationId}`, {
+          date: values.date,
+          amount: values.amount,
+          donationType: values.donationType,
+          checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
+          notes: values.notes,
+          memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
+          sendNotification: values.sendNotification && values.donorType === "existing",
+        });
+        
+        if (!donationResponse.ok) {
+          throw new Error("Failed to update donation");
+        }
+        
+        return donationResponse.json();
+      }
       // If donor type is new, create a member first
-      if (values.donorType === "new") {
+      else if (values.donorType === "new") {
         const memberResponse = await apiRequest("POST", "/api/members", {
           firstName: values.firstName,
           lastName: values.lastName,
@@ -222,7 +285,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
       
       toast({
         title: "Success",
-        description: "Donation recorded successfully.",
+        description: isEdit 
+          ? "Donation updated successfully." 
+          : "Donation recorded successfully.",
         className: "bg-[#48BB78] text-white",
       });
       
@@ -235,7 +300,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to record donation: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to ${isEdit ? 'update' : 'record'} donation: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     },
