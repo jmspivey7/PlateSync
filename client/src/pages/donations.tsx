@@ -138,22 +138,22 @@ const Donations = () => {
                   <div>
                     <h3 className="font-medium text-gray-500 mb-1">Amount</h3>
                     <p className="text-lg font-medium text-[#48BB78]">
-                      ${parseFloat(donation.amount.toString()).toFixed(2)}
+                      ${donation?.amount ? parseFloat(donation.amount.toString()).toFixed(2) : '0.00'}
                     </p>
                   </div>
                   
                   <div>
                     <h3 className="font-medium text-gray-500 mb-1">Date</h3>
                     <p className="text-lg">
-                      {format(new Date(donation.date), 'MMMM d, yyyy')}
+                      {donation?.date ? format(new Date(donation.date), 'MMMM d, yyyy') : '-'}
                     </p>
                   </div>
                   
                   <div>
                     <h3 className="font-medium text-gray-500 mb-1">Type</h3>
                     <p className="text-lg">
-                      {formatDonationType(donation.donationType)}
-                      {donation.donationType === "CHECK" && donation.checkNumber && (
+                      {donation?.donationType ? formatDonationType(donation.donationType) : '-'}
+                      {donation?.donationType === "CHECK" && donation?.checkNumber && (
                         <span className="ml-2 text-sm text-gray-600">
                           (Check #{donation.checkNumber})
                         </span>
@@ -164,19 +164,19 @@ const Donations = () => {
                   <div>
                     <h3 className="font-medium text-gray-500 mb-1">Notification Status</h3>
                     <div className="mt-1">
-                      {getNotificationBadge(donation.notificationStatus)}
+                      {donation?.notificationStatus ? getNotificationBadge(donation.notificationStatus) : '-'}
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="font-medium text-gray-500 mb-1">Recorded</h3>
                     <p className="text-sm text-gray-600">
-                      {format(new Date(donation.createdAt), 'MMMM d, yyyy h:mm a')}
+                      {donation?.createdAt ? format(new Date(donation.createdAt), 'MMMM d, yyyy h:mm a') : '-'}
                     </p>
                   </div>
                 </div>
                 
-                {donation.notes && (
+                {donation?.notes && (
                   <div>
                     <h3 className="font-medium text-gray-500 mb-1">Notes</h3>
                     <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded border border-gray-200">
