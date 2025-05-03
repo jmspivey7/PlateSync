@@ -67,8 +67,18 @@ const Dashboard = () => {
         </div>
       )}
       
-      {/* Quick Actions */}
-      <QuickActions />
+      {/* Dashboard Secondary Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Left Column - Quick Actions */}
+        <div className="lg:col-span-2">
+          <QuickActions />
+        </div>
+        
+        {/* Right Column - Current Batch */}
+        <div>
+          <CurrentBatch />
+        </div>
+      </div>
       
       {/* Recent Donations */}
       <RecentDonations />

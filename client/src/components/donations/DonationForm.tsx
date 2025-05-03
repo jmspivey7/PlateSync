@@ -149,8 +149,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
   
   // Set form default batch value when current batch is loaded
   useEffect(() => {
-    if (currentBatch && !isEdit && !form.getValues("batchId")) {
-      form.setValue("batchId", currentBatch.id.toString());
+    if (currentBatch && !isEdit) {
+      // Only set if not already set or if set to empty string
+      const currentBatchId = form.getValues("batchId");
+      if (!currentBatchId || currentBatchId === "") {
+        console.log("Setting default batch ID:", currentBatch.id.toString());
+        form.setValue("batchId", currentBatch.id.toString());
+      }
     }
   }, [currentBatch, form, isEdit]);
   
@@ -596,8 +601,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
                       <FormItem>
                         <FormLabel>Batch (Optional)</FormLabel>
                         <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
+                          value={field.value || "none"} 
+                          onValueChange={(val) => {
+                            console.log("Batch selection changed to:", val);
+                            field.onChange(val);
+                          }}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -606,11 +614,15 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="none">None (Add to batch later)</SelectItem>
-                            {batches?.map((batch) => (
-                              <SelectItem key={batch.id} value={batch.id.toString()}>
-                                {batch.name} {batch.status !== "FINALIZED" ? `(${batch.status})` : ""}
-                              </SelectItem>
-                            ))}
+                            {batches && batches.length > 0 ? (
+                              batches.map((batch) => (
+                                <SelectItem key={batch.id} value={batch.id.toString()}>
+                                  {batch.name} {batch.status !== "FINALIZED" ? `(${batch.status})` : ""}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="none" disabled>No batches available</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormDescription>
