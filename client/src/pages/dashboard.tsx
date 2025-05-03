@@ -95,12 +95,12 @@ const Dashboard = () => {
   
   return (
     <div className="mb-8 max-w-4xl mx-auto px-4">
-      {/* Header with Church Name */}
-      <div className="flex justify-between items-center mb-6">
+      {/* Header with Church Logo */}
+      <div className="flex justify-between items-center py-4 mb-6">
         <img 
           src={redeemerLogo} 
           alt="Redeemer NOLA Presbyterian Church" 
-          className="h-12 object-contain"
+          className="h-16 sm:h-24 object-contain"
         />
         
         {isMobile ? (
