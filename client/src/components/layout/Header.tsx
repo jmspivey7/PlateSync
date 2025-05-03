@@ -32,57 +32,53 @@ const Header = () => {
   
   return (
     <>
-      <header className="bg-card text-card-foreground shadow-md">
+      <header className="bg-black text-white shadow-md">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
             <Link href="/">
               <a className="flex items-center">
-                <img src={platesyncLogo} alt="PlateSync" className="h-10" />
+                <img src={redeemerLogo} alt="Redeemer Presbyterian Church" className="h-10" />
               </a>
             </Link>
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/">
-              <a className={`font-inter font-medium text-card-foreground hover:text-accent transition ${location === '/' ? 'text-accent' : ''}`}>
-                Dashboard
+            <Link href="/counts">
+              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/counts' ? 'text-accent' : ''}`}>
+                Counts
               </a>
             </Link>
             <Link href="/donations">
-              <a className={`font-inter font-medium text-card-foreground hover:text-accent transition ${location === '/donations' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/donations' ? 'text-accent' : ''}`}>
                 Donations
               </a>
             </Link>
             <Link href="/members">
-              <a className={`font-inter font-medium text-card-foreground hover:text-accent transition ${location === '/members' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/members' ? 'text-accent' : ''}`}>
                 Members
               </a>
             </Link>
-            <Link href="/counts">
-              <a className={`font-inter font-medium text-card-foreground hover:text-accent transition ${location === '/counts' ? 'text-accent' : ''}`}>
-                Counts
+            <Link href="/settings">
+              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/settings' ? 'text-accent' : ''}`}>
+                Settings
               </a>
             </Link>
-            <Link href="/settings">
-              <a className={`font-inter font-medium text-card-foreground hover:text-accent transition ${location === '/settings' ? 'text-accent' : ''}`}>
-                Settings
+            <Link href="/account">
+              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/account' ? 'text-accent' : ''}`}>
+                Account
               </a>
             </Link>
           </nav>
           
-          <div className="flex items-center space-x-3">
-            <div className="hidden md:flex items-center">
-              <img src={redeemerLogo} alt="Redeemer Presbyterian Church" className="h-8 mr-2" />
-            </div>
-            
-            <Avatar className="bg-secondary w-8 h-8">
+          <div className="flex items-center space-x-3">            
+            <Avatar className="bg-secondary w-8 h-8 hidden md:block">
               <AvatarFallback>{getInitials()}</AvatarFallback>
             </Avatar>
             
             <Button 
               variant="ghost" 
               size="icon" 
-              className="md:hidden text-card-foreground"
+              className="md:hidden text-white"
               onClick={toggleMobileMenu}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
