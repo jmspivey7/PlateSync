@@ -112,7 +112,7 @@ const BatchesPage = () => {
           className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          New Batch
+          New Count
         </Button>
       </div>
 
@@ -120,7 +120,7 @@ const BatchesPage = () => {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Batch List</CardTitle>
+              <CardTitle className="text-lg">Count List</CardTitle>
               <CardDescription>
                 Organize your donations by worship service or collection date
               </CardDescription>
@@ -163,12 +163,12 @@ const BatchesPage = () => {
                   {activeTab === "all" ? (
                     <div>
                       <Package className="mx-auto h-10 w-10 text-gray-400 mb-2" />
-                      <p>No batches created yet</p>
-                      <p className="text-sm mt-1">Create your first batch to get started</p>
+                      <p>No counts created yet</p>
+                      <p className="text-sm mt-1">Create your first count to get started</p>
                     </div>
                   ) : (
                     <div>
-                      <p>No {activeTab} batches found</p>
+                      <p>No {activeTab} counts found</p>
                     </div>
                   )}
                 </div>
@@ -193,7 +193,7 @@ const BatchesPage = () => {
                     className="text-[#2D3748]"
                     onClick={() => handleEditBatch(selectedBatchId)}
                   >
-                    Edit Batch
+                    Edit Count
                   </Button>
                 </div>
               </CardHeader>
@@ -231,7 +231,7 @@ const BatchesPage = () => {
                 )}
 
                 <div>
-                  <h3 className="font-medium mb-3">Donations in this Batch</h3>
+                  <h3 className="font-medium mb-3">Donations in this Count</h3>
                   {selectedBatch.donations && selectedBatch.donations.length > 0 ? (
                     <div className="border rounded-lg divide-y max-h-[350px] overflow-y-auto">
                       {selectedBatch.donations.map((donation) => (
@@ -255,7 +255,7 @@ const BatchesPage = () => {
                     </div>
                   ) : (
                     <div className="text-center py-6 border rounded-lg text-gray-500">
-                      <p>No donations in this batch yet</p>
+                      <p>No donations in this count yet</p>
                     </div>
                   )}
                 </div>
@@ -265,9 +265,9 @@ const BatchesPage = () => {
             <Card className="h-full flex items-center justify-center">
               <CardContent className="pt-10 text-center">
                 <Package className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium mb-2">Select a Batch</h3>
+                <h3 className="text-lg font-medium mb-2">Select a Count</h3>
                 <p className="text-gray-500 mb-6 max-w-md">
-                  Choose a batch from the list to view details or create a new one to organize your donations.
+                  Choose a count from the list to view details or create a new one to organize your donations.
                 </p>
                 <Button
                   onClick={handleCreateBatch}
