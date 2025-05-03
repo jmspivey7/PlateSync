@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendDonationNotification } from "./sendgrid";
+import { sendDonationNotification, testSendGridConfiguration } from "./sendgrid";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
@@ -54,6 +54,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+  
+  // SendGrid test endpoint
+  app.get('/api/test-sendgrid', isAuthenticated, async (_req, res) => {
+    try {
+      const testResult = await testSendGridConfiguration();
+      
+      if (testResult) {
+        res.json({ 
+          success: true, 
+          message: "SendGrid configuration is working correctly! Your account is ready to send donation notifications." 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "SendGrid configuration test failed. Please check your API key, sender email, and logging for details." 
+        });
+      }
+    } catch (error) {
+      console.error("Error testing SendGrid configuration:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error testing SendGrid: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
     }
   });
 

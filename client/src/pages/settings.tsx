@@ -29,6 +29,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ToastNotification from "@/components/ui/toast-notification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import PageLayout from "@/components/layout/PageLayout";
+import CsvImporter from "@/components/settings/CsvImporter";
 
 // Create a schema for settings form
 const formSchema = z.object({
@@ -226,6 +227,18 @@ const Settings = () => {
                 </>
               )}
             </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Import Members</CardTitle>
+            <CardDescription>
+              Import member data from CSV files
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CsvImporter />
           </CardContent>
         </Card>
         

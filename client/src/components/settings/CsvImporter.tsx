@@ -117,12 +117,13 @@ const CsvImporter = () => {
         const previewRows = [];
         for (let i = 1; i < Math.min(lines.length, 6); i++) {
           if (lines[i].trim()) {
-            const row = {};
+            const rowData: Record<string, string> = {};
             const values = lines[i].split(',');
             for (let j = 0; j < headers.length; j++) {
-              row[headers[j].trim()] = values[j]?.trim() || '';
+              const headerKey = headers[j].trim();
+              rowData[headerKey] = values[j]?.trim() || '';
             }
-            previewRows.push(row);
+            previewRows.push(rowData);
           }
         }
         setPreviewData(previewRows);
