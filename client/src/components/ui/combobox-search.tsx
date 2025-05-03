@@ -9,7 +9,7 @@ interface Option {
 
 interface ComboboxSearchProps {
   options: Option[];
-  value: string;
+  value: string | undefined;
   onValueChange: (value: string) => void;
   placeholder?: string;
   className?: string;
@@ -17,7 +17,7 @@ interface ComboboxSearchProps {
 
 export function ComboboxSearch({
   options,
-  value,
+  value = "",
   onValueChange,
   placeholder = "Search...",
   className = "",

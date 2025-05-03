@@ -54,7 +54,8 @@ const formSchema = z.object({
   memberId: z.string().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  email: z.string().email("Invalid email").optional(),
+  // Skip email validation completely since we handle it in the submission function
+  email: z.string().optional(),
   phone: z.string().optional(),
   sendNotification: z.boolean().default(true),
   batchId: z.string().optional(),
@@ -273,6 +274,15 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
   // Create/update donation mutation
   const createDonationMutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      console.log("Form submission attempt with values:", values);
+      
+      // Get any form errors before submitting
+      const formErrors = form.formState.errors;
+      if (Object.keys(formErrors).length > 0) {
+        console.error("Submit clicked but form has errors:", formErrors);
+        throw new Error("Form has validation errors");
+      }
+      
       // If we're in edit mode and have a donation ID
       if (isEdit && donationId) {
         // Update existing donation
@@ -295,11 +305,16 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
       }
       // If donor type is new, create a member first
       else if (values.donorType === "new") {
+        // For new members, we need to ensure email is valid
+        if (values.email && values.email.trim() !== "" && !values.email.includes("@")) {
+          throw new Error("Please provide a valid email address for new members");
+        }
+        
         const memberResponse = await apiRequest("POST", "/api/members", {
           firstName: values.firstName,
           lastName: values.lastName,
-          email: values.email,
-          phone: values.phone,
+          email: values.email || null, // Use null if email is empty
+          phone: values.phone || null, // Use null if phone is empty
           isVisitor: false,
         });
         
@@ -333,7 +348,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
           amount: values.amount,
           donationType: values.donationType,
           checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
-          notes: values.notes,
+          notes: values.notes || "", 
           memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
           batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
           sendNotification: values.sendNotification && values.donorType === "existing",
@@ -462,7 +477,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                                 value: member.id.toString(),
                                 label: `${member.firstName} ${member.lastName}`
                               }))}
-                              value={field.value}
+                              value={field.value || ""}
                               onValueChange={(value) => {
                                 field.onChange(value);
                                 console.log("Selected member ID:", value);
