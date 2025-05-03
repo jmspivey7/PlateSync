@@ -164,7 +164,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body, 
         churchId: userId, 
         // Ensure proper format for donation type
-        donationType: req.body.donationType?.toUpperCase()
+        donationType: req.body.donationType?.toUpperCase(),
+        // Convert string date to Date object
+        date: new Date(req.body.date)
       };
       
       const validatedData = insertDonationSchema.parse(donationData);
@@ -185,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const notificationSent = await sendDonationNotification({
               to: member.email,
               amount: validatedData.amount.toString(),
-              date: new Date(validatedData.date).toLocaleDateString(),
+              date: validatedData.date instanceof Date ? validatedData.date.toLocaleDateString() : new Date().toLocaleDateString(),
               donorName: `${member.firstName} ${member.lastName}`,
               churchName: churchName,
             });

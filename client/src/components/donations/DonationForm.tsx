@@ -39,7 +39,8 @@ import { Member, Donation } from "@shared/schema";
 
 // Create a schema that extends the donation schema with UI-specific fields
 const formSchema = z.object({
-  date: z.string().min(1, "Date is required"),
+  date: z.string().min(1, "Date is required")
+    .transform(val => new Date(val)), // Convert string to Date object
   amount: z.string().min(1, "Amount is required")
     .refine((val) => !isNaN(Number(val)), "Amount must be a number")
     .refine((val) => Number(val) > 0, "Amount must be greater than 0"),

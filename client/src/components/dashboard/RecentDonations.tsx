@@ -54,7 +54,12 @@ const RecentDonations = () => {
     return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
   };
   
-  const getNotificationBadge = (status: string) => {
+  const getNotificationBadge = (status: string | null) => {
+    // Handle null or undefined status values
+    if (!status) {
+      return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Unknown</Badge>;
+    }
+    
     switch (status) {
       case 'SENT':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Notified</Badge>;
