@@ -10,6 +10,10 @@ import CountModal from "@/components/counts/CountModal";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Import logos
+import redeemerLogo from "../assets/redeemer-logo.png";
+import plateSyncLogo from "../assets/platesync-logo.png";
+
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [_, setLocation] = useLocation();
@@ -93,10 +97,11 @@ const Dashboard = () => {
     <div className="mb-8 max-w-4xl mx-auto px-4">
       {/* Header with Church Name */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-[#1A202C]">REDEEMER NOLA</h1>
-          <span className="text-sm text-gray-500">Presbyterian Church</span>
-        </div>
+        <img 
+          src={redeemerLogo} 
+          alt="Redeemer NOLA Presbyterian Church" 
+          className="h-12 object-contain"
+        />
         
         {isMobile ? (
           <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
@@ -226,10 +231,13 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Footer with PlateSync Name */}
-      <div className="flex flex-col items-center mt-8 mb-4">
-        <div className="font-bold text-lg text-[#1A202C]">PlateSync</div>
-        <div className="text-xs text-gray-500">CHURCH COLLECTION MANAGEMENT</div>
+      {/* Footer with PlateSync Logo */}
+      <div className="flex justify-center mt-8 mb-4">
+        <img 
+          src={plateSyncLogo} 
+          alt="PlateSync - Church Collection Management" 
+          className="h-10 object-contain"
+        />
       </div>
       
       {/* Count Modal */}
