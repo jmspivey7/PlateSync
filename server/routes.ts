@@ -144,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid donation ID" });
       }
       
-      const donation = await storage.getDonation(donationId, userId);
+      const donation = await storage.getDonationWithMember(donationId, userId);
       
       if (!donation) {
         return res.status(404).json({ message: "Donation not found" });

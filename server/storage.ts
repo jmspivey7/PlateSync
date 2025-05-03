@@ -32,6 +32,7 @@ export interface IStorage {
   getDonations(churchId: string): Promise<Donation[]>;
   getDonationsWithMembers(churchId: string): Promise<DonationWithMember[]>;
   getDonation(id: number, churchId: string): Promise<Donation | undefined>;
+  getDonationWithMember(id: number, churchId: string): Promise<DonationWithMember | undefined>;
   createDonation(donation: InsertDonation): Promise<Donation>;
   updateDonationNotificationStatus(id: number, status: string): Promise<void>;
   
@@ -222,6 +223,34 @@ export class DatabaseStorage implements IStorage {
       ));
     
     return donation;
+  }
+  
+  async getDonationWithMember(id: number, churchId: string): Promise<DonationWithMember | undefined> {
+    const [donation] = await db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.id, id),
+        eq(donations.churchId, churchId)
+      ));
+    
+    if (!donation) return undefined;
+    
+    // If this is an anonymous donation (no memberId), return as is
+    if (!donation.memberId) {
+      return { ...donation, member: undefined };
+    }
+    
+    // Fetch the associated member
+    const [member] = await db
+      .select()
+      .from(members)
+      .where(eq(members.id, donation.memberId));
+    
+    return {
+      ...donation,
+      member
+    };
   }
 
   async createDonation(donationData: InsertDonation): Promise<Donation> {
