@@ -45,6 +45,7 @@ function Router() {
       <Route path="/donations" component={Donations} />
       <Route path="/members" component={Members} />
       <Route path="/counts" component={Counts} />
+      <Route path="/batch/:id" component={BatchDetail} />
       <Route path="/settings" component={Settings} />
       <Route path="/account" component={Settings} />
       <Route component={NotFound} />
