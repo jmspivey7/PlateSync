@@ -104,8 +104,8 @@ const BatchesPage = () => {
     <div className="mb-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Donation Batches</h2>
-          <p className="text-gray-500 mt-1">Manage and organize your donation batches</p>
+          <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Donation Counts</h2>
+          <p className="text-gray-500 mt-1">Manage and organize your donation counts</p>
         </div>
         <Button 
           onClick={handleCreateBatch}
