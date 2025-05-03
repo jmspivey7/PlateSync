@@ -447,77 +447,66 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   )}
                 />
                 
-                {/* Existing Member Selector with Typeahead */}
+                {/* Existing Member Selector with Search and Select */}
                 {donorType === "existing" && (
                   <FormField
                     control={form.control}
                     name="memberId"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel>Select Member</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                role="combobox"
-                                className={cn(
-                                  "w-full justify-between",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value && members
-                                  ? members.find(
-                                      (member) => member.id.toString() === field.value
-                                    )
-                                    ? `${
-                                        members.find(
-                                          (member) => member.id.toString() === field.value
-                                        )?.firstName
-                                      } ${
-                                        members.find(
-                                          (member) => member.id.toString() === field.value
-                                        )?.lastName
-                                      }`
-                                    : "Select member..."
-                                  : "Select member..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0">
-                            <Command>
-                              <CommandInput
-                                placeholder="Search member..."
-                                className="h-9"
-                              />
-                              <CommandEmpty>No member found.</CommandEmpty>
-                              <CommandGroup className="max-h-[200px] overflow-y-auto">
+                        <div className="space-y-2">
+                          <FormControl>
+                            <Select
+                              value={field.value}
+                              onValueChange={(value) => {
+                                console.log("Selected member ID:", value);
+                                field.onChange(value);
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select a member" />
+                              </SelectTrigger>
+                              <SelectContent>
                                 {members?.map((member) => (
-                                  <CommandItem
-                                    key={member.id}
-                                    value={`${member.firstName} ${member.lastName}`}
-                                    onSelect={() => {
-                                      console.log("Member selected:", member.id.toString());
-                                      form.setValue("memberId", member.id.toString());
-                                      // Force close the popover after selection
-                                      document.body.click(); // This will force close the popover
-                                    }}
-                                    className="cursor-pointer hover:bg-blue-50"
+                                  <SelectItem 
+                                    key={member.id} 
+                                    value={member.id.toString()}
+                                    className="cursor-pointer"
                                   >
-                                    <User className="mr-2 h-4 w-4" />
                                     {member.firstName} {member.lastName}
-                                    {member.id.toString() === field.value && (
-                                      <Check className="ml-auto h-4 w-4" />
-                                    )}
-                                  </CommandItem>
+                                  </SelectItem>
                                 ))}
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          
+                          {/* Search box to filter by name */}
+                          <div className="mt-2">
+                            <FormLabel className="text-sm text-gray-500">Search Filter</FormLabel>
+                            <Input
+                              type="text"
+                              placeholder="Type to filter members..."
+                              className="mt-1"
+                              onChange={(e) => {
+                                const searchTerm = e.target.value.toLowerCase();
+                                if (searchTerm && members) {
+                                  // Find first matching member
+                                  const foundMember = members.find(member => 
+                                    `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm)
+                                  );
+                                  if (foundMember) {
+                                    // Auto-select the first match
+                                    console.log("Auto-selecting member:", foundMember.id.toString());
+                                    field.onChange(foundMember.id.toString());
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
                         <FormDescription>
-                          Type to search for members by name
+                          Select from dropdown or type to search
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
