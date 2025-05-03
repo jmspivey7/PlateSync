@@ -376,8 +376,18 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
   
   // Form submission handler
   const onSubmit = (values: FormValues) => {
-    console.log("Submit button clicked with values:", values);
-    createDonationMutation.mutate(values);
+    console.log("Form validated and submitting with values:", values);
+    // Add additional logging to trace submission flow
+    try {
+      createDonationMutation.mutate(values);
+    } catch (error) {
+      console.error("Error during mutation submission:", error);
+      toast({
+        title: "Submission Error",
+        description: "There was a problem submitting the form. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -488,8 +498,12 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                                     key={member.id}
                                     value={`${member.firstName} ${member.lastName}`}
                                     onSelect={() => {
+                                      console.log("Member selected:", member.id.toString());
                                       form.setValue("memberId", member.id.toString());
+                                      // Force close the popover after selection
+                                      document.body.click(); // This will force close the popover
                                     }}
+                                    className="cursor-pointer hover:bg-blue-50"
                                   >
                                     <User className="mr-2 h-4 w-4" />
                                     {member.firstName} {member.lastName}
@@ -764,11 +778,24 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   type="submit" 
                   className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
                   disabled={createDonationMutation.isPending}
+                  onClick={(e) => {
+                    // Manual form validation check - if there are errors, log them
+                    if (Object.keys(form.formState.errors).length > 0) {
+                      console.error("Submit clicked but form has errors:", form.formState.errors);
+                    } else {
+                      console.log("Form submission attempt with values:", form.getValues());
+                    }
+                    // Don't use preventDefault() as we want the normal form submit to happen
+                  }}
                 >
-                  {createDonationMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {createDonationMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isEdit ? "Updating..." : "Recording..."}
+                    </>
+                  ) : (
+                    isEdit ? "Update Donation" : "Record Donation"
                   )}
-                  Record Donation
                 </Button>
               </div>
             </form>
