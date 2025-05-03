@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Form,
@@ -23,9 +24,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Save } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Mail, Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ToastNotification from "@/components/ui/toast-notification";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Create a schema for settings form
 const formSchema = z.object({
@@ -39,6 +41,8 @@ const Settings = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
   
   // React Hook Form setup
   const form = useForm<FormValues>({
@@ -82,6 +86,28 @@ const Settings = () => {
   // Form submission handler
   const onSubmit = (values: FormValues) => {
     updateSettingsMutation.mutate(values);
+  };
+  
+  // Test SendGrid configuration
+  const testSendGridConfiguration = async () => {
+    setSendgridTestStatus('loading');
+    setSendgridTestMessage(null);
+    
+    try {
+      const response = await apiRequest('GET', '/api/test-sendgrid');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSendgridTestStatus('success');
+        setSendgridTestMessage(data.message);
+      } else {
+        setSendgridTestStatus('error');
+        setSendgridTestMessage(data.message || 'Failed to test SendGrid configuration');
+      }
+    } catch (error) {
+      setSendgridTestStatus('error');
+      setSendgridTestMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
+    }
   };
   
   return (
@@ -157,13 +183,52 @@ const Settings = () => {
               </ul>
             </div>
             
-            <div className="bg-gray-50 p-4 rounded border border-gray-200 text-sm">
+            <div className="bg-gray-50 p-4 rounded border border-gray-200 text-sm mb-4">
               <p className="font-medium">Note about notifications</p>
               <p className="mt-1">
                 Make sure your SendGrid API key is properly configured in the environment 
                 variables for email notifications to work correctly.
               </p>
             </div>
+            
+            {sendgridTestStatus === 'success' && (
+              <Alert className="mb-4 bg-green-50 border-green-200">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-800">SendGrid is configured correctly</AlertTitle>
+                <AlertDescription className="text-green-700 text-sm">
+                  {sendgridTestMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {sendgridTestStatus === 'error' && (
+              <Alert className="mb-4 bg-red-50 border-red-200">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertTitle className="text-red-800">SendGrid configuration issue</AlertTitle>
+                <AlertDescription className="text-red-700 text-sm">
+                  {sendgridTestMessage || 'There was a problem testing your SendGrid configuration.'}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <Button
+              onClick={testSendGridConfiguration}
+              disabled={sendgridTestStatus === 'loading'}
+              variant="outline"
+              className="w-full"
+            >
+              {sendgridTestStatus === 'loading' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Testing SendGrid Configuration...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Test SendGrid Configuration
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
         
