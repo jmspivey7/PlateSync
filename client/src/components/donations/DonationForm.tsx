@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Combobox } from "../../components/ui/combobox";
+// Removing custom combobox in favor of direct Shadcn component usage
 import { 
   Card, 
   CardContent, 
@@ -454,27 +454,50 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                     control={form.control}
                     name="memberId"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Select Member</FormLabel>
-                        <FormControl>
-                          {members && (
-                            <Combobox
-                              options={members.map(member => ({
-                                value: member.id.toString(),
-                                label: `${member.firstName} ${member.lastName}`
-                              }))}
-                              value={field.value}
-                              onValueChange={(value: string) => {
-                                console.log("Selected member ID:", value);
-                                field.onChange(value);
-                              }}
-                              placeholder="Select a member..."
-                              emptyMessage="No members found."
-                              searchPlaceholder="Type to search for members..."
-                              className="w-full"
-                            />
-                          )}
-                        </FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className="w-full justify-between"
+                              >
+                                {field.value && members
+                                  ? members.find(member => member.id.toString() === field.value)
+                                    ? `${members.find(member => member.id.toString() === field.value)?.firstName} ${members.find(member => member.id.toString() === field.value)?.lastName}`
+                                    : "Select a member..."
+                                  : "Select a member..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0">
+                            <Command>
+                              <CommandInput placeholder="Search members..." />
+                              <CommandEmpty>No member found.</CommandEmpty>
+                              <CommandGroup className="max-h-60 overflow-y-auto">
+                                {members?.map((member) => (
+                                  <CommandItem
+                                    key={member.id}
+                                    value={`${member.firstName} ${member.lastName}`}
+                                    onSelect={() => {
+                                      field.onChange(member.id.toString());
+                                      console.log("Member selected:", member.id.toString());
+                                    }}
+                                  >
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>{member.firstName} {member.lastName}</span>
+                                    {member.id.toString() === field.value && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         <FormDescription>
                           Type to search for members by name
                         </FormDescription>
