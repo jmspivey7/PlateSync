@@ -147,6 +147,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
     },
   });
   
+  // Set form default batch value when current batch is loaded
+  useEffect(() => {
+    if (currentBatch && !isEdit && !form.getValues("batchId")) {
+      form.setValue("batchId", currentBatch.id.toString());
+    }
+  }, [currentBatch, form, isEdit]);
+  
   // Update form values when editing an existing donation
   useEffect(() => {
     if (donationData && members) {
@@ -298,6 +305,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/donations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       
       toast({
         title: "Success",
@@ -354,13 +362,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
       </CardHeader>
       
       <CardContent>
-        {(isLoadingMembers || isLoadingDonation) && (
+        {(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch) && (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
           </div>
         )}
         
-        {!(isLoadingMembers || isLoadingDonation) && (
+        {!(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch) && (
           <Form {...form}>
             <form 
               onSubmit={(e) => {
@@ -581,6 +589,40 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
                 </div>
                 
                 <div className="mt-4">
+                  <FormField
+                    control={form.control}
+                    name="batchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Batch (Optional)</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a batch..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None (Add to batch later)</SelectItem>
+                            {batches?.map((batch) => (
+                              <SelectItem key={batch.id} value={batch.id.toString()}>
+                                {batch.name} {batch.status !== "FINALIZED" ? `(${batch.status})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          {currentBatch ? 
+                            `Current open batch: ${currentBatch.name}` : 
+                            "No open batch available. You can create one in the Batches section."}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="notes"
