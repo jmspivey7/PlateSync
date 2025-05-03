@@ -1,25 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Plus, BarChart2, Menu, X } from "lucide-react";
+import { Loader2, Plus, BarChart2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Batch } from "@shared/schema";
 import CountModal from "@/components/counts/CountModal";
 import { useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
-
-// Import logos
-import redeemerLogo from "../assets/redeemer-logo.png";
-import plateSyncLogo from "../assets/platesync-logo.png";
+import PageLayout from "@/components/layout/PageLayout";
 
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [_, setLocation] = useLocation();
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isMobile = useIsMobile();
   
   // Fetch the current/last batch for display
   const { data: lastBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
@@ -50,11 +42,6 @@ const Dashboard = () => {
   // Handle modal close
   const handleCloseModal = () => {
     setIsCountModalOpen(false);
-  };
-  
-  // Toggle mobile menu
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
   };
   
   // Get last 5 batches for chart
@@ -94,70 +81,7 @@ const Dashboard = () => {
   }
   
   return (
-    <div className="mb-8 max-w-4xl mx-auto px-4">
-      {/* Header with Church Logo */}
-      <div className="flex justify-between items-center py-4 mb-6">
-        <img 
-          src={redeemerLogo} 
-          alt="Redeemer NOLA Presbyterian Church" 
-          className="h-16 sm:h-24 object-contain"
-        />
-        
-        {isMobile ? (
-          <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </Button>
-        ) : (
-          <div className="flex space-x-2">
-            <Button variant="ghost" onClick={() => setLocation("/dashboard")}>Dashboard</Button>
-            <Button variant="ghost" onClick={() => setLocation("/counts")}>Counts</Button>
-            <Button variant="ghost" onClick={() => setLocation("/donations")}>Donations</Button>
-            <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
-            <Button variant="ghost" onClick={() => setLocation("/settings")}>Settings</Button>
-            <Button variant="ghost" onClick={() => setLocation("/account")}>Account</Button>
-          </div>
-        )}
-      </div>
-      
-      {/* Mobile Menu */}
-      {isMobile && mobileMenuOpen && (
-        <div className="bg-white rounded-md shadow-lg p-4 mb-6">
-          <div className="flex flex-col space-y-2">
-            <Button variant="ghost" onClick={() => {
-              setLocation("/dashboard");
-              setMobileMenuOpen(false);
-            }}>Dashboard</Button>
-            <Button variant="ghost" onClick={() => {
-              setLocation("/counts");
-              setMobileMenuOpen(false);
-            }}>Counts</Button>
-            <Button variant="ghost" onClick={() => {
-              setLocation("/donations");
-              setMobileMenuOpen(false);
-            }}>Donations</Button>
-            <Button variant="ghost" onClick={() => {
-              setLocation("/members");
-              setMobileMenuOpen(false);
-            }}>Members</Button>
-            <Button variant="ghost" onClick={() => {
-              setLocation("/settings");
-              setMobileMenuOpen(false);
-            }}>Settings</Button>
-            <Button variant="ghost" onClick={() => {
-              setLocation("/account");
-              setMobileMenuOpen(false);
-            }}>Account</Button>
-            <Button variant="ghost" onClick={() => {
-              window.location.href = "/api/logout";
-            }}>Logout</Button>
-          </div>
-        </div>
-      )}
-      
+    <PageLayout>
       {/* Primary Action Button */}
       <Button 
         className="w-full py-6 mb-6 bg-[#4299E1] hover:bg-[#4299E1]/90 text-white text-lg"
@@ -231,21 +155,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Footer with PlateSync Logo and Copyright */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mt-8 mb-4 gap-4">
-        <div>
-          <img 
-            src={plateSyncLogo} 
-            alt="PlateSync - Church Collection Management" 
-            className="h-10 object-contain"
-          />
-        </div>
-        <div className="text-right text-gray-500 text-xs">
-          <p>© 2025 PlateSync. All rights reserved.</p>
-          <p>Built with care for churches everywhere.</p>
-        </div>
-      </div>
-      
       {/* Count Modal */}
       {isCountModalOpen && (
         <CountModal
@@ -255,7 +164,7 @@ const Dashboard = () => {
           isEdit={false}
         />
       )}
-    </div>
+    </PageLayout>
   );
 };
 

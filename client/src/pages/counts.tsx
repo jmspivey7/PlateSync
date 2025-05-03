@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Batch, BatchWithDonations } from "../../../shared/schema";
 import CountModal from "../components/counts/CountModal";
 import { apiRequest } from "@/lib/queryClient";
+import PageLayout from "@/components/layout/PageLayout";
 
 const statusColors = {
   OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
