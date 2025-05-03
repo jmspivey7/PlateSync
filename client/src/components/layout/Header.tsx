@@ -71,8 +71,8 @@ const Header = () => {
           </nav>
           
           <div className="flex items-center space-x-3">
-            <div className="hidden md:block">
-              <span className="text-sm text-muted-foreground">{user?.churchName || "Church Admin"}</span>
+            <div className="hidden md:flex items-center">
+              <img src={redeemerLogo} alt="Redeemer Presbyterian Church" className="h-8 mr-2" />
             </div>
             
             <Avatar className="bg-secondary w-8 h-8">
