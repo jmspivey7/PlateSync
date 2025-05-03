@@ -24,24 +24,25 @@ export function TotalRevenueCard({ batch }: TotalRevenueCardProps) {
     <Card className="mb-6 bg-card">
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-medium text-card-foreground/80">Total Revenue</h2>
+          <h2 className="text-xl font-medium text-card-foreground/80">Last Count</h2>
           <div className="bg-accent/10 text-accent px-2 py-1 rounded-full flex items-center text-sm">
             <TrendingUp className="h-3.5 w-3.5 mr-1" />
             <span>+12.5%</span>
           </div>
         </div>
         
-        <div className="text-4xl font-bold mb-6">
+        <div className="text-4xl font-bold mb-2">
           {formatCurrency(batch.totalAmount)}
+        </div>
+        
+        <div className="text-md mb-4">
+          {format(new Date(batch.date), 'EEEE, MMMM d, yyyy')}
         </div>
         
         <div className="text-sm text-card-foreground/70">
           <div className="flex items-center">
             <span>Trending up this month</span>
             <TrendingUp className="h-3.5 w-3.5 ml-1" />
-          </div>
-          <div>
-            {format(new Date(batch.date), 'EEEE, MMMM d, yyyy')}
           </div>
         </div>
       </CardContent>

@@ -70,10 +70,10 @@ const Dashboard = () => {
       ) : (
         <Card className="mb-6 bg-card">
           <CardContent className="p-6">
-            <h2 className="text-xl font-medium text-card-foreground/80 mb-4">Total Revenue</h2>
-            <div className="text-4xl font-bold mb-6">$0.00</div>
+            <h2 className="text-xl font-medium text-card-foreground/80 mb-4">Last Count</h2>
+            <div className="text-4xl font-bold mb-2">$0.00</div>
+            <div className="text-md mb-4">No counts recorded</div>
             <div className="text-sm text-card-foreground/70">
-              <div>No counts yet</div>
               <div>Create your first count to get started</div>
             </div>
           </CardContent>
