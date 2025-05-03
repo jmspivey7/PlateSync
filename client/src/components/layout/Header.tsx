@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import MobileMenu from "./MobileMenu";
-import platesyncLogo from "@/assets/platesync-logo.png";
-import redeemerLogo from "@/assets/redeemer-logo-white.png";
 
 const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -32,51 +31,47 @@ const Header = () => {
   
   return (
     <>
-      <header className="bg-black text-white shadow-md">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/">
-              <a className="flex items-center">
-                <img 
-                  src={redeemerLogo} 
-                  alt="Redeemer Presbyterian Church" 
-                  className="h-20" 
-                  style={{ width: 'auto', objectFit: 'contain' }}
-                />
-              </a>
-            </Link>
+      <header className="bg-[#2D3748] text-white shadow-md">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <DollarSign className="h-8 w-8 text-[#48BB78]" />
+            <h1 className="text-xl font-bold font-inter tracking-tight">PlateSync</h1>
           </div>
           
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/counts">
-              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/counts' ? 'text-accent' : ''}`}>
-                Counts
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link href="/">
+              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/' ? 'text-[#48BB78]' : ''}`}>
+                Dashboard
               </a>
             </Link>
             <Link href="/donations">
-              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/donations' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/donations' ? 'text-[#48BB78]' : ''}`}>
                 Donations
               </a>
             </Link>
             <Link href="/members">
-              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/members' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/members' ? 'text-[#48BB78]' : ''}`}>
                 Members
               </a>
             </Link>
-            <Link href="/settings">
-              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/settings' ? 'text-accent' : ''}`}>
-                Settings
+            <Link href="/counts">
+              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/counts' ? 'text-[#48BB78]' : ''}`}>
+                Counts
               </a>
             </Link>
-            <Link href="/account">
-              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/account' ? 'text-accent' : ''}`}>
-                Account
+            <Link href="/settings">
+              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/settings' ? 'text-[#48BB78]' : ''}`}>
+                Settings
               </a>
             </Link>
           </nav>
           
-          <div className="flex items-center space-x-3">            
-            <Avatar className="bg-secondary w-8 h-8 hidden md:block">
+          <div className="flex items-center space-x-3">
+            <div className="hidden md:block">
+              <span className="text-sm text-gray-300">{user?.churchName || "Church Admin"}</span>
+            </div>
+            
+            <Avatar className="bg-gray-700 w-8 h-8">
               <AvatarFallback>{getInitials()}</AvatarFallback>
             </Avatar>
             
