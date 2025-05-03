@@ -44,6 +44,7 @@ function Router() {
       <Route path="/members" component={Members} />
       <Route path="/counts" component={Counts} />
       <Route path="/settings" component={Settings} />
+      <Route path="/account" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );
