@@ -110,8 +110,9 @@ const Dashboard = () => {
           <div className="flex space-x-3">
             <Button variant="ghost" onClick={() => setLocation("/dashboard")}>Dashboard</Button>
             <Button variant="ghost" onClick={() => setLocation("/counts")}>Counts</Button>
+            <Button variant="ghost" onClick={() => setLocation("/donations")}>Donations</Button>
             <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
-            <Button variant="ghost" onClick={() => setLocation("/settings")}>Settings</Button>
+            <Button variant="ghost" onClick={() => setLocation("/settings")}>Account</Button>
           </div>
         )}
       </div>
@@ -129,13 +130,17 @@ const Dashboard = () => {
               setMobileMenuOpen(false);
             }}>Counts</Button>
             <Button variant="ghost" onClick={() => {
+              setLocation("/donations");
+              setMobileMenuOpen(false);
+            }}>Donations</Button>
+            <Button variant="ghost" onClick={() => {
               setLocation("/members");
               setMobileMenuOpen(false);
             }}>Members</Button>
             <Button variant="ghost" onClick={() => {
               setLocation("/settings");
               setMobileMenuOpen(false);
-            }}>Settings</Button>
+            }}>Account</Button>
             <Button variant="ghost" onClick={() => {
               window.location.href = "/api/logout";
             }}>Logout</Button>
