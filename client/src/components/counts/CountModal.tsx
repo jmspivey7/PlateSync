@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { insertBatchSchema, Batch } from "@shared/schema";
+import { useLocation } from "wouter";
 
 import {
   Dialog,
@@ -54,6 +55,7 @@ interface CountModalProps {
 const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [_, setLocation] = useLocation();
   
   // Initialize the form
   const form = useForm<FormValues>({
@@ -109,7 +111,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       queryClient.invalidateQueries({ queryKey: ['/api/batches/current'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
@@ -123,6 +125,14 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       });
       
       onClose();
+      
+      // For new count creation, redirect to the batch detail page
+      if (!isEdit && data && data.id) {
+        setLocation(`/batch/${data.id}`);
+      } else if (isEdit && batchId) {
+        // For edits, redirect to the batch detail page if we're not already there
+        setLocation(`/batch/${batchId}`);
+      }
     },
     onError: (error) => {
       toast({

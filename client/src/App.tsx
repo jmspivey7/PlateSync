@@ -11,6 +11,7 @@ import Members from "@/pages/members";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
 import Counts from "@/pages/counts";
+import BatchDetail from "@/pages/batch-detail";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/hooks/useAuth";
