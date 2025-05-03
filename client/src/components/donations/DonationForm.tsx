@@ -489,7 +489,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                         </FormControl>
                         <FormDescription>
                           {field.value && members ? (
-                            <span className="text-sm text-blue-700 font-medium">
+                            <span className="text-sm text-green-700 font-medium">
                               Selected: {members.find(m => m.id.toString() === field.value)?.firstName} {members.find(m => m.id.toString() === field.value)?.lastName}
                             </span>
                           ) : (

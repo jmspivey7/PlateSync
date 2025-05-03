@@ -105,8 +105,8 @@ export function ComboboxSearch({
             {filteredOptions.map((option) => (
               <div
                 key={option.value}
-                className={`cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center hover:bg-blue-50 ${
-                  option.value === value ? 'bg-blue-50' : ''
+                className={`cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center hover:bg-green-50 ${
+                  option.value === value ? 'bg-green-50' : ''
                 }`}
                 onClick={() => handleOptionClick(option)}
               >
@@ -116,7 +116,7 @@ export function ComboboxSearch({
                 </span>
                 {option.value === value && (
                   <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                    <Check className="h-5 w-5 text-blue-600" />
+                    <Check className="h-5 w-5 text-green-600" />
                   </span>
                 )}
               </div>
