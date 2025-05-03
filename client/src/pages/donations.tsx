@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DonationWithMember } from "@shared/schema";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import PageLayout from "@/components/layout/PageLayout";
 
 const Donations = () => {
   const [location, setLocation] = useLocation();
@@ -87,126 +88,135 @@ const Donations = () => {
     }
   };
   
-  return (
-    <div className="mb-8">
-      {showForm ? (
-        <DonationForm 
-          donationId={donationId || undefined} 
-          isEdit={isEdit} 
-          onClose={handleBack}
-        />
-      ) : showDonationDetails && donation ? (
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" onClick={handleBack}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <CardTitle className="text-xl font-bold text-[#2D3748]">
-                Donation Details
-              </CardTitle>
-            </div>
-            
-            <Button 
-              variant="outline" 
-              className="text-[#4299E1]"
-              onClick={handleEditDonation}
-            >
-              Edit Donation
+  let content;
+  if (showForm) {
+    content = (
+      <DonationForm 
+        donationId={donationId || undefined} 
+        isEdit={isEdit} 
+        onClose={handleBack}
+      />
+    );
+  } else if (showDonationDetails && donation) {
+    content = (
+      <Card className="mb-8">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" onClick={handleBack}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-          </CardHeader>
+            <CardTitle className="text-xl font-bold text-[#2D3748]">
+              Donation Details
+            </CardTitle>
+          </div>
           
-          <CardContent>
-            {isLoadingDonation ? (
-              <div className="flex justify-center items-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-medium text-gray-500 mb-1">Donor</h3>
-                    <p className="text-lg font-medium">
-                      {donation.member 
-                        ? `${donation.member.firstName} ${donation.member.lastName}` 
-                        : "Anonymous/Visitor"
-                      }
-                    </p>
-                    {donation.member?.email && (
-                      <p className="text-sm text-gray-600">{donation.member.email}</p>
+          <Button 
+            variant="outline" 
+            className="text-[#4299E1]"
+            onClick={handleEditDonation}
+          >
+            Edit Donation
+          </Button>
+        </CardHeader>
+        
+        <CardContent>
+          {isLoadingDonation ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-medium text-gray-500 mb-1">Donor</h3>
+                  <p className="text-lg font-medium">
+                    {donation.member 
+                      ? `${donation.member.firstName} ${donation.member.lastName}` 
+                      : "Anonymous/Visitor"
+                    }
+                  </p>
+                  {donation.member?.email && (
+                    <p className="text-sm text-gray-600">{donation.member.email}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-500 mb-1">Amount</h3>
+                  <p className="text-lg font-medium text-[#48BB78]">
+                    ${donation?.amount ? parseFloat(donation.amount.toString()).toFixed(2) : '0.00'}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-500 mb-1">Date</h3>
+                  <p className="text-lg">
+                    {donation?.date ? format(new Date(donation.date), 'MMMM d, yyyy') : '-'}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-500 mb-1">Type</h3>
+                  <p className="text-lg">
+                    {donation?.donationType ? formatDonationType(donation.donationType) : '-'}
+                    {donation?.donationType === "CHECK" && donation?.checkNumber && (
+                      <span className="ml-2 text-sm text-gray-600">
+                        (Check #{donation.checkNumber})
+                      </span>
                     )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-gray-500 mb-1">Amount</h3>
-                    <p className="text-lg font-medium text-[#48BB78]">
-                      ${donation?.amount ? parseFloat(donation.amount.toString()).toFixed(2) : '0.00'}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-gray-500 mb-1">Date</h3>
-                    <p className="text-lg">
-                      {donation?.date ? format(new Date(donation.date), 'MMMM d, yyyy') : '-'}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-gray-500 mb-1">Type</h3>
-                    <p className="text-lg">
-                      {donation?.donationType ? formatDonationType(donation.donationType) : '-'}
-                      {donation?.donationType === "CHECK" && donation?.checkNumber && (
-                        <span className="ml-2 text-sm text-gray-600">
-                          (Check #{donation.checkNumber})
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-gray-500 mb-1">Notification Status</h3>
-                    <div className="mt-1">
-                      {donation?.notificationStatus ? getNotificationBadge(donation.notificationStatus) : '-'}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-gray-500 mb-1">Recorded</h3>
-                    <p className="text-sm text-gray-600">
-                      {donation?.createdAt ? format(new Date(donation.createdAt), 'MMMM d, yyyy h:mm a') : '-'}
-                    </p>
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-500 mb-1">Notification Status</h3>
+                  <div className="mt-1">
+                    {donation?.notificationStatus ? getNotificationBadge(donation.notificationStatus) : '-'}
                   </div>
                 </div>
                 
-                {donation?.notes && (
-                  <div>
-                    <h3 className="font-medium text-gray-500 mb-1">Notes</h3>
-                    <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded border border-gray-200">
-                      {donation.notes}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <h3 className="font-medium text-gray-500 mb-1">Recorded</h3>
+                  <p className="text-sm text-gray-600">
+                    {donation?.createdAt ? format(new Date(donation.createdAt), 'MMMM d, yyyy h:mm a') : '-'}
+                  </p>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Donations</h2>
-            <Button 
-              className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white" 
-              onClick={handleNewDonation}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Record New Donation
-            </Button>
-          </div>
-          
-          <RecentDonations />
-        </>
-      )}
-    </div>
+              
+              {donation?.notes && (
+                <div>
+                  <h3 className="font-medium text-gray-500 mb-1">Notes</h3>
+                  <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded border border-gray-200">
+                    {donation.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  } else {
+    content = (
+      <>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Donations</h2>
+          <Button 
+            className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white" 
+            onClick={handleNewDonation}
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Record New Donation
+          </Button>
+        </div>
+        
+        <RecentDonations />
+      </>
+    );
+  }
+  
+  return (
+    <PageLayout title="Donations" subtitle="Record and manage all church donations">
+      {content}
+    </PageLayout>
   );
 };
 
