@@ -225,7 +225,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.date = new Date(updateData.date);
       }
       
-      const validatedData = insertBatchSchema.partial().parse(updateData);
+      // We use z.object to create a partial schema that allows null values where appropriate
+      const partialBatchSchema = z.object({
+        name: z.string().optional(),
+        date: z.date().optional(),
+        status: z.string().optional(),
+        notes: z.string().optional().nullable(),
+        totalAmount: z.string().optional(),
+        churchId: z.string().optional()
+      });
+      
+      const validatedData = partialBatchSchema.parse(updateData);
       const updatedBatch = await storage.updateBatch(batchId, validatedData, userId);
       
       if (!updatedBatch) {
@@ -267,7 +277,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.donationType = updateData.donationType.toUpperCase();
       }
       
-      const validatedData = insertDonationSchema.partial().parse(updateData);
+      // We use z.object to create a partial schema that allows null values where appropriate
+      const partialDonationSchema = z.object({
+        date: z.date().optional(),
+        amount: z.string().optional(),
+        donationType: z.string().optional(),
+        checkNumber: z.string().optional().nullable(),
+        notes: z.string().optional().nullable(),
+        memberId: z.number().optional().nullable(),
+        batchId: z.number().optional().nullable(),
+        churchId: z.string().optional()
+      });
+      
+      const validatedData = partialDonationSchema.parse(updateData);
       const updatedDonation = await storage.updateDonation(donationId, validatedData, userId);
       
       if (!updatedDonation) {
@@ -377,7 +399,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no batch is specified, get or create a current batch
       if (!donationData.batchId) {
         const currentBatch = await storage.getCurrentBatch(userId);
-        donationData.batchId = currentBatch.id;
+        if (currentBatch) {
+          donationData.batchId = currentBatch.id;
+        }
       }
       
       const validatedData = insertDonationSchema.parse(donationData);

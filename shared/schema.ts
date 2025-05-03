@@ -130,6 +130,7 @@ export const insertBatchSchema = createInsertSchema(batches).pick({
   date: true,
   notes: true,
   status: true,
+  totalAmount: true,
   churchId: true,
 });
 
