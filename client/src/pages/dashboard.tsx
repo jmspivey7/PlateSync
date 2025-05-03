@@ -231,20 +231,18 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Dark footer with PlateSync info */}
-      <div className="bg-[#242c3b] text-white mt-16 -mx-4 px-6 py-5">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center">
-            <div className="text-[#45d168] text-xl mr-2">$</div>
-            <div>
-              <div className="font-bold">PlateSync</div>
-              <div className="text-xs text-gray-300">Simplifying church donation management</div>
-            </div>
-          </div>
-          <div className="text-right text-xs text-gray-300">
-            <p>© 2025 PlateSync. All rights reserved.</p>
-            <p>Built with care for churches everywhere.</p>
-          </div>
+      {/* Footer with PlateSync Logo and Copyright */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-8 mb-4 gap-4">
+        <div>
+          <img 
+            src={plateSyncLogo} 
+            alt="PlateSync - Church Collection Management" 
+            className="h-10 object-contain"
+          />
+        </div>
+        <div className="text-right text-gray-500 text-xs">
+          <p>© 2025 PlateSync. All rights reserved.</p>
+          <p>Built with care for churches everywhere.</p>
         </div>
       </div>
       
