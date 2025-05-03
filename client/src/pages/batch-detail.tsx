@@ -408,16 +408,6 @@ const BatchDetailPage = () => {
               <PlusCircle className="mr-2 h-4 w-4" />
               Record New Donation
             </Button>
-            
-            {batch.donations && batch.donations.length > 0 && (
-              <Button 
-                onClick={handleShowSummary}
-                className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white ml-2"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Finalize Count
-              </Button>
-            )}
           </div>
 
           <div>
