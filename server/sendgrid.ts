@@ -9,6 +9,57 @@ if (process.env.SENDGRID_API_KEY) {
   mailService.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
+/**
+ * Tests the SendGrid configuration by sending a test email
+ * This function is useful for verifying that your SendGrid API key and configuration are working
+ */
+export async function testSendGridConfiguration(): Promise<boolean> {
+  console.log('\n📧 Testing SendGrid Configuration...');
+  
+  // Check API key
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('❌ SendGrid API Key is not set. Cannot proceed with testing.');
+    return false;
+  }
+  
+  // Log API key info (without revealing the full key)
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+  console.log(`📧 SendGrid API Key found: ${maskedKey}`);
+  
+  // Check for from email
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'donations@example.com';
+  if (!process.env.SENDGRID_FROM_EMAIL) {
+    console.log('⚠️ Warning: SENDGRID_FROM_EMAIL not set, using default value which may not work');
+  } else {
+    console.log(`📧 Using sender email: ${fromEmail}`);
+  }
+  
+  try {
+    console.log('📧 Attempting to send a test email...');
+    
+    // Create a simplified test message
+    const result = await sendEmail({
+      to: 'test@example.com', // This address won't receive anything, it's just for testing API connection
+      from: fromEmail,
+      subject: 'SendGrid API Test',
+      text: 'This is a test message to verify SendGrid API connectivity.',
+      html: '<p>This is a test message to verify SendGrid API connectivity.</p>'
+    });
+    
+    if (result) {
+      console.log('✅ SendGrid test successful! API connection is working.');
+    } else {
+      console.log('❌ SendGrid test failed. See error details above.');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Unexpected error during SendGrid test:', error);
+    return false;
+  }
+}
+
 interface EmailParams {
   to: string;
   from: string;
@@ -26,27 +77,23 @@ export async function sendEmail(
   }
   
   try {
-    // For a development environment, log the email instead of sending it
-    if (process.env.NODE_ENV === 'development') {
-      console.log('\n📧 ========== DONATION EMAIL PREVIEW ==========');
-      console.log('📧 To:      ', params.to);
-      console.log('📧 From:    ', params.from);
-      console.log('📧 Subject: ', params.subject);
-      
-      // Show shortened text version for development
-      if (params.text) {
-        console.log('\n📧 ----- TEXT VERSION PREVIEW -----');
-        // Show first 20 lines or so of text content
-        const textPreview = params.text.split('\n').slice(0, 15).join('\n');
-        console.log(textPreview + '\n...(text continues)');
-      }
-      
-      console.log('\n📧 HTML version would be displayed properly in email clients');
-      console.log('📧 ============ END EMAIL PREVIEW ============\n');
-      
-      // In development, consider the email as "sent" successfully
-      return true;
+    // We'll attempt to actually send the email in any environment (dev or prod)
+    // But first show a preview in the console
+    console.log('\n📧 ========== DONATION EMAIL PREVIEW ==========');
+    console.log('📧 To:      ', params.to);
+    console.log('📧 From:    ', params.from);
+    console.log('📧 Subject: ', params.subject);
+    
+    // Show shortened text version for preview
+    if (params.text) {
+      console.log('\n📧 ----- TEXT VERSION PREVIEW -----');
+      // Show first 20 lines or so of text content
+      const textPreview = params.text.split('\n').slice(0, 15).join('\n');
+      console.log(textPreview + '\n...(text continues)');
     }
+    
+    console.log('\n📧 HTML version would be displayed properly in email clients');
+    console.log('📧 ============ END EMAIL PREVIEW ============\n');
     
     // In production, actually send the email
     await mailService.send({
@@ -60,16 +107,45 @@ export async function sendEmail(
     console.log(`Email sent successfully to ${params.to}`);
     return true;
   } catch (error: any) {
-    // Log detailed error information
-    console.error('SendGrid email error:', error);
+    // Log all error details for debugging
+    console.error('\n⚠️ ========== SENDGRID ERROR ==========');
+    console.error('Error sending email to:', params.to);
+    console.error('Error summary:', error.message);
+    
+    // Log the full error object structure to inspect all available properties
+    console.error('Full error structure:');
+    try {
+      console.error(JSON.stringify(error, null, 2));
+    } catch (e) {
+      console.error('Error could not be stringified:', error);
+    }
     
     // Provide more specific error logging based on common SendGrid errors
     if (error.response && error.response.body && error.response.body.errors) {
+      console.error('\nSendGrid API error details:');
       error.response.body.errors.forEach((err: any) => {
-        console.error('SendGrid error details:', err);
+        console.error(`- Code: ${err.code}, Message: ${err.message}, Field: ${err.field || 'n/a'}`);
       });
     }
     
+    // Check for common SendGrid issues
+    if (error.code === 'ENOTFOUND') {
+      console.error('Network error: Could not connect to SendGrid API server. Check your internet connection.');
+    } else if (error.code === 'ETIMEDOUT') {
+      console.error('Network error: Connection to SendGrid API timed out. The API might be down or unreachable.');
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error('Network error: Connection to SendGrid API was refused. Check firewall settings or API status.');
+    }
+    
+    if (error.response && error.response.statusCode === 401) {
+      console.error('Authentication error: Invalid API key or not authorized to use SendGrid API.');
+    } else if (error.response && error.response.statusCode === 403) {
+      console.error('Permission error: Your account does not have permission to send emails using SendGrid.');
+    } else if (error.response && error.response.statusCode === 429) {
+      console.error('Rate limit error: Too many requests to SendGrid API. You may have exceeded your plan limits.');
+    }
+    
+    console.error('⚠️ ======= END SENDGRID ERROR =======\n');
     return false;
   }
 }
@@ -86,6 +162,16 @@ export async function sendDonationNotification(params: DonationNotificationParam
   // Use a verified sender email from environment variables or fall back to a placeholder
   // Note: In production, you MUST set SENDGRID_FROM_EMAIL to a verified sender
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'donations@example.com';
+  
+  // Log information about the sender email configuration
+  console.log('\n📧 Sender Email Configuration:');
+  if (process.env.SENDGRID_FROM_EMAIL) {
+    console.log(`📧 Using configured sender email: ${process.env.SENDGRID_FROM_EMAIL}`);
+  } else {
+    console.log('⚠️ Warning: SENDGRID_FROM_EMAIL environment variable is not set.');
+    console.log('⚠️ Using fallback address, which may cause delivery failures in production.');
+    console.log('⚠️ The sender email MUST be verified in your SendGrid account.');
+  }
   
   const subject = `Thank You for Your Donation to ${params.churchName}`;
   

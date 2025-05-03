@@ -258,6 +258,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch dashboard statistics" });
     }
   });
+  
+  // Test SendGrid configuration
+  app.get('/api/test-sendgrid', isAuthenticated, async (req: any, res) => {
+    try {
+      const { testSendGridConfiguration } = await import('./sendgrid');
+      const result = await testSendGridConfiguration();
+      
+      if (result) {
+        res.json({ 
+          success: true, 
+          message: 'SendGrid configuration test passed! Your API key is valid and working properly.' 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: 'SendGrid configuration test failed. Check the server logs for detailed error information.'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error testing SendGrid:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error testing SendGrid: ${error.message || 'Unknown error'}` 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
