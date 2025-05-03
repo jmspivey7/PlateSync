@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   --radius: 0.5rem;
   --background: oklch(1 0 0);
@@ -69,28 +65,4 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply font-sans bg-background text-foreground;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-inter font-medium;
-  }
-  p, span, div {
-    @apply font-lato;
-  }
-}
-
-@layer utilities {
-  .font-inter {
-    font-family: 'Inter', sans-serif;
-  }
-  .font-lato {
-    font-family: 'Lato', sans-serif;
-  }
 }

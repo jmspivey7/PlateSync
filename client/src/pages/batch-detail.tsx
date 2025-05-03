@@ -277,7 +277,7 @@ const BatchDetailPage = () => {
                   </Button>
                   <Button 
                     onClick={handleFinalizeBatch} 
-                    className="bg-[#48BB78] hover:bg-[#48BB78]/90"
+                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Finalize Count
@@ -381,7 +381,7 @@ const BatchDetailPage = () => {
             {batch.donations && batch.donations.length > 0 && (
               <Button 
                 onClick={handleShowSummary}
-                className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Finalize Count
@@ -393,19 +393,19 @@ const BatchDetailPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-sm text-gray-500">Total Amount</div>
-              <div className="text-xl font-bold text-[#48BB78]">
+              <div className="text-xl font-bold text-secondary-foreground">
                 {formatCurrency(batch.totalAmount || 0)}
               </div>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-sm text-gray-500">Cash Total</div>
-              <div className="text-xl font-bold text-[#48BB78]">
+              <div className="text-xl font-bold text-secondary-foreground">
                 {formatCurrency(cashTotal)}
               </div>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-sm text-gray-500">Check Total</div>
-              <div className="text-xl font-bold text-[#48BB78]">
+              <div className="text-xl font-bold text-secondary-foreground">
                 {formatCurrency(checkTotal)}
               </div>
             </div>
@@ -414,7 +414,7 @@ const BatchDetailPage = () => {
           <div className="mb-6">
             <Button 
               onClick={handleAddDonation}
-              className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white w-full md:w-auto"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground w-full md:w-auto"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               Record New Donation
@@ -438,7 +438,7 @@ const BatchDetailPage = () => {
                         {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                       </div>
                     </div>
-                    <div className="font-medium text-[#48BB78]">
+                    <div className="font-medium text-secondary-foreground">
                       {formatCurrency(donation.amount)}
                     </div>
                   </div>
