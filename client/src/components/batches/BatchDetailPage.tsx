@@ -242,7 +242,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
                 </Button>
                 <Button 
                   onClick={handleFinalizeBatch} 
-                  className="bg-[#48BB78] hover:bg-[#48BB78]/90"
+                  className="bg-amber-500 hover:bg-amber-600 text-white"
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Finalize Count
@@ -339,7 +339,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
           {batch.donations && batch.donations.length > 0 && (
             <Button 
               onClick={handleShowSummary}
-              className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+              className="bg-amber-500 hover:bg-amber-600 text-white"
             >
               <FileText className="mr-2 h-4 w-4" />
               Finalize Count
@@ -374,7 +374,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
         <div className="mb-6">
           <Button 
             onClick={handleAddDonation}
-            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full md:w-auto"
+            className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Record New Donation
