@@ -67,11 +67,13 @@ const Donations = () => {
     }
   };
   
-  const formatDonationType = (type: string) => {
+  const formatDonationType = (type: string | null | undefined) => {
+    if (!type) return '-';
     return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
   };
   
-  const getNotificationBadge = (status: string) => {
+  const getNotificationBadge = (status: string | null | undefined) => {
+    if (!status) return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>;
     switch (status) {
       case 'SENT':
         return <Badge className="bg-green-100 text-green-800">Notified</Badge>;
