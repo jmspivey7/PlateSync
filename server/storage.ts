@@ -2,17 +2,22 @@ import {
   users,
   members,
   donations,
+  batches,
   type User,
   type UpsertUser,
   type Member,
   type InsertMember,
+  type Batch,
+  type InsertBatch,
   type Donation,
   type InsertDonation,
   type MemberWithDonations,
-  type DonationWithMember
+  type DonationWithMember,
+  type BatchWithDonations
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, sum } from "drizzle-orm";
+import { eq, desc, and, gte, sql, sum, count } from "drizzle-orm";
+import { format } from "date-fns";
 
 // Interface for storage operations
 export interface IStorage {
@@ -28,12 +33,22 @@ export interface IStorage {
   createMember(member: InsertMember): Promise<Member>;
   updateMember(id: number, data: Partial<InsertMember>, churchId: string): Promise<Member | undefined>;
   
+  // Batch operations
+  getBatches(churchId: string): Promise<Batch[]>;
+  getBatch(id: number, churchId: string): Promise<Batch | undefined>;
+  getBatchWithDonations(id: number, churchId: string): Promise<BatchWithDonations | undefined>;
+  createBatch(batch: InsertBatch): Promise<Batch>;
+  updateBatch(id: number, data: Partial<InsertBatch>, churchId: string): Promise<Batch | undefined>;
+  getCurrentBatch(churchId: string): Promise<Batch | undefined>;
+  
   // Donation operations
   getDonations(churchId: string): Promise<Donation[]>;
   getDonationsWithMembers(churchId: string): Promise<DonationWithMember[]>;
+  getDonationsByBatch(batchId: number, churchId: string): Promise<DonationWithMember[]>;
   getDonation(id: number, churchId: string): Promise<Donation | undefined>;
   getDonationWithMember(id: number, churchId: string): Promise<DonationWithMember | undefined>;
   createDonation(donation: InsertDonation): Promise<Donation>;
+  updateDonation(id: number, data: Partial<InsertDonation>, churchId: string): Promise<Donation | undefined>;
   updateDonationNotificationStatus(id: number, status: string): Promise<void>;
   
   // Dashboard statistics
@@ -163,6 +178,140 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedMember;
+  }
+
+  // Batch operations
+  async getBatches(churchId: string): Promise<Batch[]> {
+    return db
+      .select()
+      .from(batches)
+      .where(eq(batches.churchId, churchId))
+      .orderBy(desc(batches.date));
+  }
+
+  async getBatch(id: number, churchId: string): Promise<Batch | undefined> {
+    const [batch] = await db
+      .select()
+      .from(batches)
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ));
+    
+    return batch;
+  }
+
+  async getBatchWithDonations(id: number, churchId: string): Promise<BatchWithDonations | undefined> {
+    const [batch] = await db
+      .select()
+      .from(batches)
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ));
+    
+    if (!batch) return undefined;
+    
+    const batchDonations = await db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.batchId, id),
+        eq(donations.churchId, churchId)
+      ))
+      .orderBy(desc(donations.date));
+    
+    // Get all unique member IDs
+    const memberIds = [...new Set(batchDonations
+      .filter(d => d.memberId !== null)
+      .map(d => d.memberId))];
+    
+    // Fetch all members in a single query if there are member IDs
+    let membersMap: Record<number, Member> = {};
+    if (memberIds.length > 0) {
+      const membersList = await db
+        .select()
+        .from(members)
+        .where(sql`${members.id} IN (${memberIds.join(',')})`);
+      
+      // Create a map for quick member lookup
+      membersMap = membersList.reduce((acc, member) => {
+        acc[member.id] = member;
+        return acc;
+      }, {} as Record<number, Member>);
+    }
+    
+    // Join donations with members
+    const donationsWithMembers = batchDonations.map(donation => ({
+      ...donation,
+      member: donation.memberId ? membersMap[donation.memberId] : undefined
+    }));
+    
+    return {
+      ...batch,
+      donations: donationsWithMembers,
+      donationCount: donationsWithMembers.length
+    };
+  }
+
+  async createBatch(batchData: InsertBatch): Promise<Batch> {
+    // Format the default name as "Month Day, Year" if not provided
+    if (!batchData.name) {
+      const date = batchData.date instanceof Date ? batchData.date : new Date();
+      batchData.name = format(date, 'MMMM d, yyyy');
+    }
+    
+    const [newBatch] = await db
+      .insert(batches)
+      .values(batchData)
+      .returning();
+    
+    return newBatch;
+  }
+
+  async updateBatch(id: number, data: Partial<InsertBatch>, churchId: string): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+
+  async getCurrentBatch(churchId: string): Promise<Batch | undefined> {
+    // Get the most recent OPEN batch
+    const [currentBatch] = await db
+      .select()
+      .from(batches)
+      .where(and(
+        eq(batches.churchId, churchId),
+        eq(batches.status, 'OPEN')
+      ))
+      .orderBy(desc(batches.date))
+      .limit(1);
+    
+    if (currentBatch) {
+      return currentBatch;
+    }
+    
+    // If no open batch exists, create a new one
+    const today = new Date();
+    const newBatch: InsertBatch = {
+      name: format(today, 'MMMM d, yyyy'),
+      date: today,
+      status: 'OPEN',
+      notes: 'Automatically created batch',
+      churchId
+    };
+    
+    return this.createBatch(newBatch);
   }
 
   // Donation operations
