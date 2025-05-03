@@ -139,7 +139,7 @@ const CsvImporter = () => {
     setProgress(10);
     
     const formData = new FormData();
-    formData.append('csvFile', file);
+    formData.append('csvFile', file, file.name);
     
     // Simulate progress updates (since we can't track actual backend progress)
     const progressInterval = setInterval(() => {
