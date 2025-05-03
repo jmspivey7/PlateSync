@@ -200,7 +200,7 @@ const Donations = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Donations</h2>
           <Button 
-            className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white" 
+            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white" 
             onClick={handleNewDonation}
           >
             <Plus className="h-5 w-5 mr-2" />

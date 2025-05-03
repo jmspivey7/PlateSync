@@ -109,7 +109,7 @@ const CountsPage = () => {
       <div className="mb-6 flex justify-end">
         <Button 
           onClick={handleCreateBatch}
-          className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white"
+          className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           New Count
