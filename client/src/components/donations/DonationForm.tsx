@@ -155,6 +155,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
       if (defaultBatchId) {
         console.log("Using provided default batch ID:", defaultBatchId.toString());
         form.setValue("batchId", defaultBatchId.toString());
+        
+        // Get batch info to set the date
+        const selectedBatch = batches?.find(batch => batch.id === defaultBatchId);
+        if (selectedBatch && selectedBatch.date) {
+          const batchDate = format(new Date(selectedBatch.date), 'yyyy-MM-dd');
+          form.setValue("date", batchDate);
+        }
       }
       // Otherwise, use current batch if available
       else if (currentBatch) {
@@ -163,10 +170,30 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
         if (!currentBatchId || currentBatchId === "") {
           console.log("Setting default batch ID:", currentBatch.id.toString());
           form.setValue("batchId", currentBatch.id.toString());
+          
+          // Set date to match batch date
+          if (currentBatch.date) {
+            const batchDate = format(new Date(currentBatch.date), 'yyyy-MM-dd');
+            form.setValue("date", batchDate);
+          }
         }
       }
     }
-  }, [currentBatch, form, isEdit, defaultBatchId]);
+  }, [currentBatch, batches, form, isEdit, defaultBatchId]);
+  
+  // When batch selection changes, update the date field
+  useEffect(() => {
+    if (!isEdit) {
+      const batchId = form.watch("batchId");
+      if (batchId && batchId !== "none") {
+        const selectedBatch = batches?.find(batch => batch.id === parseInt(batchId));
+        if (selectedBatch && selectedBatch.date) {
+          const batchDate = format(new Date(selectedBatch.date), 'yyyy-MM-dd');
+          form.setValue("date", batchDate);
+        }
+      }
+    }
+  }, [form.watch("batchId"), batches, form, isEdit]);
   
   // Update form values when editing an existing donation
   useEffect(() => {

@@ -95,9 +95,36 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
         date: format(new Date(batchData.date), 'yyyy-MM-dd'),
         status: batchData.status,
         notes: batchData.notes ?? "",
+        service: batchData.service ?? "",
       });
     }
   }, [batchData, form]);
+  
+  // Auto-generate name when date changes
+  useEffect(() => {
+    const date = form.watch('date');
+    const service = form.watch('service');
+    
+    if (date) {
+      let formattedDate = format(new Date(date), 'MMMM d, yyyy');
+      let nameValue = formattedDate;
+      
+      if (service) {
+        const serviceLabel = {
+          'morning': 'Morning',
+          'evening': 'Evening',
+          'midweek': 'Midweek',
+          'special': 'Special'
+        }[service];
+        
+        if (serviceLabel) {
+          nameValue = `${serviceLabel} Service, ${formattedDate}`;
+        }
+      }
+      
+      form.setValue('name', nameValue);
+    }
+  }, [form.watch('date'), form.watch('service'), form]);
   
   // Create/update batch mutation
   const createBatchMutation = useMutation({
@@ -169,23 +196,6 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
               <FormField
                 control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Count Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Sunday Service, May 3, 2025" />
-                    </FormControl>
-                    <FormDescription>
-                      Give this count a descriptive name, such as a service date.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
                 name="date"
                 render={({ field }) => (
                   <FormItem>
@@ -195,6 +205,36 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                     </FormControl>
                     <FormDescription>
                       The date when this count of donations was collected.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="service"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Service</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a service" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="morning">Morning Service</SelectItem>
+                        <SelectItem value="evening">Evening Service</SelectItem>
+                        <SelectItem value="midweek">Midweek Service</SelectItem>
+                        <SelectItem value="special">Special Event</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The type of service this count is for.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
