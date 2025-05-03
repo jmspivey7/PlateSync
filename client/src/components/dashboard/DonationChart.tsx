@@ -142,11 +142,9 @@ export function DonationChart() {
               />
               <ChartTooltip
                 content={
-                  <ChartTooltipContent 
-                    indicator="dot" 
-                    formatter={(value: any) => formatCurrency(value)}
-                  />
+                  <ChartTooltipContent indicator="dot" />
                 }
+                formatter={(value: any) => formatCurrency(value)}
               />
               <Area
                 type="monotone"
