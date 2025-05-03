@@ -329,14 +329,14 @@ const BatchDetailPage = () => {
               {batch.donations && batch.donations.length > 0 ? (
                 <div className="border rounded-lg divide-y max-h-[450px] overflow-y-auto">
                   {batch.donations.map((donation) => (
-                    <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
+                    <div key={donation.id} className="p-3 flex justify-between hover:bg-muted">
                       <div>
                         <div className="font-medium">
                           {donation.memberId && (donation as DonationWithMember).member ? 
                             `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
                             "Anonymous/Visitor"}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted-foreground">
                           {format(new Date(donation.date), 'MMM d, yyyy')} • 
                           {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                         </div>
@@ -348,7 +348,7 @@ const BatchDetailPage = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 border rounded-lg text-gray-500">
+                <div className="text-center py-6 border rounded-lg text-muted-foreground">
                   <p>No donations in this count yet</p>
                 </div>
               )}
@@ -391,20 +391,20 @@ const BatchDetailPage = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-500">Total Amount</div>
+            <div className="bg-muted p-4 rounded-lg">
+              <div className="text-sm text-muted-foreground">Total Amount</div>
               <div className="text-xl font-bold text-secondary-foreground">
                 {formatCurrency(batch.totalAmount || 0)}
               </div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-500">Cash Total</div>
+            <div className="bg-muted p-4 rounded-lg">
+              <div className="text-sm text-muted-foreground">Cash Total</div>
               <div className="text-xl font-bold text-secondary-foreground">
                 {formatCurrency(cashTotal)}
               </div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-500">Check Total</div>
+            <div className="bg-muted p-4 rounded-lg">
+              <div className="text-sm text-muted-foreground">Check Total</div>
               <div className="text-xl font-bold text-secondary-foreground">
                 {formatCurrency(checkTotal)}
               </div>
@@ -426,14 +426,14 @@ const BatchDetailPage = () => {
             {batch.donations && batch.donations.length > 0 ? (
               <div className="border rounded-lg divide-y max-h-[350px] overflow-y-auto">
                 {batch.donations.map((donation) => (
-                  <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
+                  <div key={donation.id} className="p-3 flex justify-between hover:bg-muted">
                     <div>
                       <div className="font-medium">
                         {donation.memberId && (donation as DonationWithMember).member ? 
                           `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
                           "Anonymous/Visitor"}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {format(new Date(donation.date), 'MMM d, yyyy')} • 
                         {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                       </div>
@@ -445,7 +445,7 @@ const BatchDetailPage = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 border rounded-lg text-gray-500">
+              <div className="text-center py-6 border rounded-lg text-muted-foreground">
                 <p>No donations in this count yet</p>
               </div>
             )}
