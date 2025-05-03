@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { 
   Card, 
   CardContent, 
@@ -34,9 +35,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Check, ChevronsUpDown, User } from "lucide-react";
 import { useLocation } from "wouter";
 import { Member, Donation, Batch } from "@shared/schema";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Create a schema that extends the donation schema with UI-specific fields
 const formSchema = z.object({
@@ -434,31 +437,74 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   )}
                 />
                 
-                {/* Existing Member Selector */}
+                {/* Existing Member Selector with Typeahead */}
                 {donorType === "existing" && (
                   <FormField
                     control={form.control}
                     name="memberId"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Select Member</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a member..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {members?.map((member) => (
-                              <SelectItem key={member.id} value={member.id.toString()}>
-                                {member.firstName} {member.lastName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "w-full justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value && members
+                                  ? members.find(
+                                      (member) => member.id.toString() === field.value
+                                    )
+                                    ? `${
+                                        members.find(
+                                          (member) => member.id.toString() === field.value
+                                        )?.firstName
+                                      } ${
+                                        members.find(
+                                          (member) => member.id.toString() === field.value
+                                        )?.lastName
+                                      }`
+                                    : "Select member..."
+                                  : "Select member..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0">
+                            <Command>
+                              <CommandInput
+                                placeholder="Search member..."
+                                className="h-9"
+                              />
+                              <CommandEmpty>No member found.</CommandEmpty>
+                              <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                {members?.map((member) => (
+                                  <CommandItem
+                                    key={member.id}
+                                    value={`${member.firstName} ${member.lastName}`}
+                                    onSelect={() => {
+                                      form.setValue("memberId", member.id.toString());
+                                    }}
+                                  >
+                                    <User className="mr-2 h-4 w-4" />
+                                    {member.firstName} {member.lastName}
+                                    {member.id.toString() === field.value && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormDescription>
+                          Type to search for members by name
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
