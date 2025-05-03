@@ -39,8 +39,7 @@ import { Member, Donation } from "@shared/schema";
 
 // Create a schema that extends the donation schema with UI-specific fields
 const formSchema = z.object({
-  date: z.string().min(1, "Date is required")
-    .transform(val => new Date(val)), // Convert string to Date object
+  date: z.string().min(1, "Date is required"),
   amount: z.string().min(1, "Amount is required")
     .refine((val) => !isNaN(Number(val)), "Amount must be a number")
     .refine((val) => Number(val) > 0, "Amount must be greater than 0"),
@@ -138,11 +137,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
   // Update form values when editing an existing donation
   useEffect(() => {
     if (donationData && members) {
-      let donorType = "visitor";
+      let donorTypeValue: "existing" | "new" | "visitor" = "visitor";
       if (donationData.memberId) {
         const member = members.find(m => m.id === donationData.memberId);
         if (member) {
-          donorType = "existing";
+          donorTypeValue = "existing";
         }
       }
       
@@ -152,7 +151,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
         donationType: donationData.donationType,
         checkNumber: donationData.checkNumber || "",
         notes: donationData.notes || "",
-        donorType,
+        donorType: donorTypeValue,
         memberId: donationData.memberId ? donationData.memberId.toString() : "",
         sendNotification: donationData.notificationStatus === "SENT",
       });
@@ -243,8 +242,20 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
   });
   
   // Form submission handler
-  const onSubmit = (values: FormValues) => {
-    createDonationMutation.mutate(values);
+  const onSubmit = (values: any) => {
+    console.log("Form submitted with values:", values);
+    
+    try {
+      // Execute the mutation
+      createDonationMutation.mutate(values as FormValues);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit the form. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
