@@ -180,7 +180,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#2D3748]">
             {isEdit ? "Edit Count" : "Create New Count"}
