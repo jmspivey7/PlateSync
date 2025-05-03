@@ -36,7 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { X, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { Member, Donation } from "@shared/schema";
+import { Member, Donation, Batch } from "@shared/schema";
 
 // Create a schema that extends the donation schema with UI-specific fields
 const formSchema = z.object({
@@ -54,6 +54,7 @@ const formSchema = z.object({
   email: z.string().email("Invalid email").optional(),
   phone: z.string().optional(),
   sendNotification: z.boolean().default(true),
+  batchId: z.string().optional(),
 })
 .refine(
   (data) => {
@@ -117,6 +118,16 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
   });
   
   // React Hook Form setup
+  // Load batches for dropdown
+  const { data: batches, isLoading: isLoadingBatches } = useQuery<Batch[]>({
+    queryKey: ['/api/batches'],
+  });
+
+  // Get current batch for default selection
+  const { data: currentBatch, isLoading: isLoadingCurrentBatch } = useQuery<Batch>({
+    queryKey: ['/api/batches/current'],
+  });
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -132,6 +143,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
       email: "",
       phone: "",
       sendNotification: true,
+      batchId: "",
     },
   });
   
@@ -195,6 +207,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
         email: "",
         phone: "",
         sendNotification: singleDonation.notificationStatus === "SENT",
+        batchId: singleDonation.batchId ? singleDonation.batchId.toString() : "",
       };
       
       // Reset the form with the prepared values
@@ -219,6 +232,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
           checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
           notes: values.notes,
           memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
+          batchId: values.batchId ? parseInt(values.batchId) : null,
           sendNotification: values.sendNotification && values.donorType === "existing",
         });
         
@@ -252,6 +266,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
           checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
           notes: values.notes,
           memberId: newMember.id,
+          batchId: values.batchId ? parseInt(values.batchId) : null,
           sendNotification: values.sendNotification,
         });
         
@@ -269,6 +284,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
           checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
           notes: values.notes,
           memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
+          batchId: values.batchId ? parseInt(values.batchId) : null,
           sendNotification: values.sendNotification && values.donorType === "existing",
         });
         
