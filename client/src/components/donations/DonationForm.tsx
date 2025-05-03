@@ -4,8 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-// Removing custom combobox in favor of direct Shadcn component usage
+import { ComboboxSearch } from "@/components/ui/combobox-search";
 import { 
   Card, 
   CardContent, 
@@ -448,7 +447,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   )}
                 />
                 
-                {/* Existing Member Selector with Command component */}
+                {/* Existing Member Selector with Custom Combobox */}
                 {donorType === "existing" && (
                   <FormField
                     control={form.control}
@@ -457,38 +456,29 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                       <FormItem>
                         <FormLabel>Select Member</FormLabel>
                         <FormControl>
-                          <Command className="rounded-lg border shadow-md w-full">
-                            <CommandInput placeholder="Type to search for members..." />
-                            <CommandList>
-                              <CommandEmpty>No members found.</CommandEmpty>
-                              <CommandGroup heading="Members">
-                                {members?.map((member) => (
-                                  <CommandItem
-                                    key={member.id}
-                                    value={`${member.firstName} ${member.lastName}`}
-                                    onSelect={() => {
-                                      field.onChange(member.id.toString());
-                                      console.log("Selected member:", member.id.toString());
-                                    }}
-                                  >
-                                    <User className="mr-2 h-4 w-4" />
-                                    <span>{member.firstName} {member.lastName}</span>
-                                    {member.id.toString() === field.value && (
-                                      <Check className="ml-auto h-4 w-4" />
-                                    )}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
+                          {members && (
+                            <ComboboxSearch
+                              options={members.map(member => ({
+                                value: member.id.toString(),
+                                label: `${member.firstName} ${member.lastName}`
+                              }))}
+                              value={field.value}
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                console.log("Selected member ID:", value);
+                              }}
+                              placeholder="Type to search for members..."
+                              className="w-full"
+                            />
+                          )}
                         </FormControl>
                         <FormDescription>
                           {field.value && members ? (
-                            <span className="font-medium text-blue-600">
+                            <span className="text-sm text-blue-700 font-medium">
                               Selected: {members.find(m => m.id.toString() === field.value)?.firstName} {members.find(m => m.id.toString() === field.value)?.lastName}
                             </span>
                           ) : (
-                            "Type to search for a member by name"
+                            "Start typing to search for members by name"
                           )}
                         </FormDescription>
                         <FormMessage />
