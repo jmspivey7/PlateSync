@@ -93,7 +93,7 @@ const BatchDetailPage = () => {
       toast({
         title: "Success",
         description: "Count has been finalized successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-primary text-primary-foreground",
       });
       
       setIsFinalized(true);
@@ -170,25 +170,25 @@ const BatchDetailPage = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="border p-4 rounded">
+          <div className="border border-border p-4 rounded-lg bg-muted/30">
             <h2 className="text-lg font-bold mb-2">Cash Total</h2>
-            <p className="text-xl">{formatCurrency(cashTotal)}</p>
+            <p className="text-xl text-secondary-foreground">{formatCurrency(cashTotal)}</p>
           </div>
-          <div className="border p-4 rounded">
+          <div className="border border-border p-4 rounded-lg bg-muted/30">
             <h2 className="text-lg font-bold mb-2">Check Total</h2>
-            <p className="text-xl">{formatCurrency(checkTotal)}</p>
+            <p className="text-xl text-secondary-foreground">{formatCurrency(checkTotal)}</p>
           </div>
         </div>
 
-        <div className="border p-4 rounded mb-6">
+        <div className="border border-border p-4 rounded-lg bg-muted/30 mb-6">
           <h2 className="text-lg font-bold mb-2">Total Donations</h2>
-          <p className="text-xl">{formatCurrency(parseFloat(batch?.totalAmount?.toString() || "0"))}</p>
+          <p className="text-xl text-secondary-foreground">{formatCurrency(parseFloat(batch?.totalAmount?.toString() || "0"))}</p>
         </div>
 
         <h2 className="text-xl font-bold mb-4">Donation Details</h2>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b-2 border-gray-300">
+            <tr className="border-b-2 border-border">
               <th className="text-left py-2">Donor</th>
               <th className="text-left py-2">Date</th>
               <th className="text-left py-2">Type</th>
@@ -198,7 +198,7 @@ const BatchDetailPage = () => {
           </thead>
           <tbody>
             {batch?.donations?.map((donation) => (
-              <tr key={donation.id} className="border-b border-gray-200">
+              <tr key={donation.id} className="border-b border-border/50">
                 <td className="py-2">
                   {donation.memberId && (donation as DonationWithMember).member ? 
                     `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
