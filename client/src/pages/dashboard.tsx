@@ -54,15 +54,14 @@ const Dashboard = () => {
   return (
     <PageLayout>
       <div className="flex flex-col md:flex-row gap-6 mb-6">
-        {/* Circular Start New Count Button */}
-        <div className="md:w-1/3 flex justify-center">
+        {/* Start New Count Card Button */}
+        <div className="md:w-1/3">
           <Button 
-            className="w-40 h-40 rounded-full bg-black hover:bg-black/90 text-white flex flex-col items-center justify-center text-lg font-bold p-0"
+            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex flex-col items-center justify-center text-3xl font-bold p-6"
             onClick={handleNewCount}
           >
-            <span>START</span>
-            <span>NEW</span>
-            <span>COUNT</span>
+            <span>Start</span>
+            <span>New Count</span>
           </Button>
         </div>
         
