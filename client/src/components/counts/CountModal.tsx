@@ -226,7 +226,15 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                   <FormItem>
                     <FormLabel>Notes (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={3} />
+                      <Textarea 
+                        rows={3} 
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={field.value || ""}
+                        disabled={field.disabled}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormDescription>
                       Any additional information about this count.

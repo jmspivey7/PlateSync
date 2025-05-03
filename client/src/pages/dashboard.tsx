@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Plus, BarChart2 } from "lucide-react";
+import { Loader2, Plus, BarChart2, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -8,22 +8,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Batch } from "@shared/schema";
 import CountModal from "@/components/counts/CountModal";
 import { useState } from "react";
-
-// We'll use simplified text-based headers instead of images for compatibility
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [_, setLocation] = useLocation();
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   // Fetch the current/last batch for display
   const { data: lastBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
     queryKey: ['/api/batches/current'],
+    enabled: isAuthenticated,
   });
   
   // Fetch all batches for the chart
   const { data: allBatches, isLoading: isLoadingAllBatches } = useQuery<Batch[]>({
     queryKey: ['/api/batches'],
+    enabled: isAuthenticated,
   });
   
   // Format currency
@@ -43,6 +46,11 @@ const Dashboard = () => {
   // Handle modal close
   const handleCloseModal = () => {
     setIsCountModalOpen(false);
+  };
+  
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
   
   // Get last 5 batches for chart
@@ -69,21 +77,71 @@ const Dashboard = () => {
     return (numAmount / maxAmount) * 200; // Max height of 200px
   };
   
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return null; // This will redirect to login page via App.tsx
+  }
+  
   return (
-    <div className="mb-8 max-w-4xl mx-auto">
+    <div className="mb-8 max-w-4xl mx-auto px-4">
       {/* Header with Church Name */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex flex-col">
           <h1 className="text-xl font-bold text-[#1A202C]">REDEEMER NOLA</h1>
           <span className="text-sm text-gray-500">Presbyterian Church</span>
         </div>
-        <div className="flex space-x-3">
-          <Button variant="ghost" onClick={() => setLocation("/dashboard")}>Dashboard</Button>
-          <Button variant="ghost" onClick={() => setLocation("/counts")}>Counts</Button>
-          <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
-          <Button variant="ghost" onClick={() => setLocation("/settings")}>Settings</Button>
-        </div>
+        
+        {isMobile ? (
+          <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </Button>
+        ) : (
+          <div className="flex space-x-3">
+            <Button variant="ghost" onClick={() => setLocation("/dashboard")}>Dashboard</Button>
+            <Button variant="ghost" onClick={() => setLocation("/counts")}>Counts</Button>
+            <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
+            <Button variant="ghost" onClick={() => setLocation("/settings")}>Settings</Button>
+          </div>
+        )}
       </div>
+      
+      {/* Mobile Menu */}
+      {isMobile && mobileMenuOpen && (
+        <div className="bg-white rounded-md shadow-lg p-4 mb-6">
+          <div className="flex flex-col space-y-2">
+            <Button variant="ghost" onClick={() => {
+              setLocation("/dashboard");
+              setMobileMenuOpen(false);
+            }}>Dashboard</Button>
+            <Button variant="ghost" onClick={() => {
+              setLocation("/counts");
+              setMobileMenuOpen(false);
+            }}>Counts</Button>
+            <Button variant="ghost" onClick={() => {
+              setLocation("/members");
+              setMobileMenuOpen(false);
+            }}>Members</Button>
+            <Button variant="ghost" onClick={() => {
+              setLocation("/settings");
+              setMobileMenuOpen(false);
+            }}>Settings</Button>
+            <Button variant="ghost" onClick={() => {
+              window.location.href = "/api/logout";
+            }}>Logout</Button>
+          </div>
+        </div>
+      )}
       
       {/* Primary Action Button */}
       <Button 
