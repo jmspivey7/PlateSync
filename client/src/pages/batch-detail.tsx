@@ -264,7 +264,7 @@ const BatchDetailPage = () => {
             </div>
             <div className="flex space-x-2">
               {isFinalized && (
-                <Button onClick={handlePrint} className="bg-[#4299E1] hover:bg-[#4299E1]/90">
+                <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   <Printer className="mr-2 h-4 w-4" />
                   Print
                 </Button>
@@ -294,31 +294,31 @@ const BatchDetailPage = () => {
           </CardHeader>
           <CardContent>
             {isFinalized && (
-              <Alert className="mb-6 bg-blue-50 border-blue-200">
-                <CheckCircle className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-800">Count Finalized</AlertTitle>
-                <AlertDescription className="text-blue-700">
+              <Alert className="mb-6 bg-muted">
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Count Finalized</AlertTitle>
+                <AlertDescription>
                   This count has been finalized and can no longer be edited. You can print a copy for your records.
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Cash Total</div>
-                <div className="text-xl font-bold text-[#48BB78]">
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="text-sm text-muted-foreground">Cash Total</div>
+                <div className="text-xl font-bold text-secondary-foreground">
                   {formatCurrency(cashTotal)}
                 </div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Check Total</div>
-                <div className="text-xl font-bold text-[#48BB78]">
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="text-sm text-muted-foreground">Check Total</div>
+                <div className="text-xl font-bold text-secondary-foreground">
                   {formatCurrency(checkTotal)}
                 </div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500">Total Amount</div>
-                <div className="text-xl font-bold text-[#48BB78]">
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="text-sm text-muted-foreground">Total Amount</div>
+                <div className="text-xl font-bold text-secondary-foreground">
                   {formatCurrency(batch.totalAmount || 0)}
                 </div>
               </div>
@@ -341,7 +341,7 @@ const BatchDetailPage = () => {
                           {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                         </div>
                       </div>
-                      <div className="font-medium text-[#48BB78]">
+                      <div className="font-medium text-secondary-foreground">
                         {formatCurrency(donation.amount)}
                       </div>
                     </div>
