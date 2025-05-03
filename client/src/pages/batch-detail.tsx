@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
 import { Batch, BatchWithDonations, Donation, DonationWithMember, batchStatusEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -50,7 +50,14 @@ const BatchDetailPage = () => {
       if (!response.ok) {
         throw new Error("Failed to fetch count details");
       }
-      return response.json();
+      const data = await response.json();
+      return {
+        ...data,
+        donations: data.donations.map((donation: any) => ({
+          ...donation,
+          member: donation.member || undefined
+        }))
+      } as BatchWithDonations;
     },
     refetchInterval: 5000, // Poll for updates every 5 seconds
   });
@@ -193,7 +200,9 @@ const BatchDetailPage = () => {
             {batch?.donations?.map((donation) => (
               <tr key={donation.id} className="border-b border-gray-200">
                 <td className="py-2">
-                  {donation.memberId ? "Member Donation" : "Anonymous/Visitor"}
+                  {donation.memberId && (donation as DonationWithMember).member ? 
+                    `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
+                    "Anonymous/Visitor"}
                 </td>
                 <td className="py-2">{format(new Date(donation.date), 'MMM d, yyyy')}</td>
                 <td className="py-2">{donation.donationType}</td>
@@ -446,6 +455,7 @@ const BatchDetailPage = () => {
         {/* Modal for adding a donation */}
         <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
           <DialogContent className="sm:max-w-[800px] p-0">
+            <DialogTitle className="sr-only">Add New Donation</DialogTitle>
             <DonationForm onClose={handleDonationAdded} defaultBatchId={batchId} />
           </DialogContent>
         </Dialog>
