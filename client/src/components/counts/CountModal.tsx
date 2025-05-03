@@ -89,7 +89,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
         name: batchData.name,
         date: format(new Date(batchData.date), 'yyyy-MM-dd'),
         status: batchData.status,
-        notes: batchData.notes || "",
+        notes: batchData.notes ?? "",
       });
     }
   }, [batchData, form]);

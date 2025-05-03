@@ -284,7 +284,7 @@ const CountsPage = () => {
       </div>
 
       {isModalOpen && (
-        <BatchModal
+        <CountModal
           isOpen={isModalOpen}
           onClose={handleModalClose}
           batchId={selectedBatchId}
