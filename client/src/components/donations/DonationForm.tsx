@@ -99,9 +99,10 @@ interface DonationFormProps {
   donationId?: string;
   isEdit?: boolean;
   onClose?: () => void;
+  defaultBatchId?: number;
 }
 
-const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps) => {
+const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: DonationFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
