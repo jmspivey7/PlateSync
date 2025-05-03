@@ -53,50 +53,57 @@ const Dashboard = () => {
   
   return (
     <PageLayout>
-      {/* Primary Action Button */}
-      <Button 
-        className="w-full py-6 mb-6 bg-primary hover:bg-primary/90 text-primary-foreground text-lg"
-        onClick={handleNewCount}
-      >
-        <Plus className="mr-2 h-5 w-5" />
-        Start New Count
-      </Button>
-      
-      {/* Last Count Submitted */}
-      {isLoadingBatch ? (
-        <div className="flex justify-center items-center py-8 mb-6">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col md:flex-row gap-6 mb-6">
+        {/* Circular Start New Count Button */}
+        <div className="md:w-1/3 flex justify-center">
+          <Button 
+            className="w-64 h-64 rounded-full bg-black hover:bg-black/90 text-white flex flex-col items-center justify-center text-2xl font-bold p-0"
+            onClick={handleNewCount}
+          >
+            <span>START</span>
+            <span>NEW</span>
+            <span>COUNT</span>
+          </Button>
         </div>
-      ) : lastBatch ? (
-        <Card className="mb-6 border rounded-xl shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl text-muted-foreground font-medium">Last Count Submitted</h2>
-              <div className="bg-background border rounded-full px-3 py-1 flex items-center text-sm font-medium">
-                <TrendingUp className="h-4 w-4 mr-1" /> +0.0%
-              </div>
+        
+        {/* Last Count Submitted */}
+        <div className="md:w-2/3">
+          {isLoadingBatch ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <div className="text-4xl font-bold mb-6">
-              {formatCurrency(lastBatch.totalAmount || 0)}
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="text-base font-medium flex items-center">
-                Trending up <TrendingUp className="h-4 w-4 ml-1" />
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {format(new Date(lastBatch.date), 'EEEE, MMMM d, yyyy')}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="mb-6 bg-muted">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-medium mb-1">No Counts Yet</h2>
-            <p className="text-muted-foreground">Create your first count to get started</p>
-          </CardContent>
-        </Card>
-      )}
+          ) : lastBatch ? (
+            <Card className="border rounded-xl shadow-sm h-full">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-1">
+                  <h2 className="text-xl text-muted-foreground font-medium">Last Count Submitted</h2>
+                  <div className="bg-background border rounded-full px-3 py-1 flex items-center text-sm font-medium">
+                    <TrendingUp className="h-4 w-4 mr-1" /> +0.0%
+                  </div>
+                </div>
+                <div className="text-4xl font-bold mb-3">
+                  {formatCurrency(lastBatch.totalAmount || 0)}
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-base font-medium flex items-center">
+                    Trending up <TrendingUp className="h-4 w-4 ml-1" />
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {format(new Date(lastBatch.date), 'EEEE, MMMM d, yyyy')}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-muted h-full">
+              <CardContent className="p-6 text-center">
+                <h2 className="text-xl font-medium mb-1">No Counts Yet</h2>
+                <p className="text-muted-foreground">Create your first count to get started</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
       
       {/* Donation Trend Chart */}
       <DonationChart />
