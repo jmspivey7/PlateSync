@@ -148,8 +148,8 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8">
-              <BarChart2 className="h-10 w-10 text-gray-300 mb-2" />
-              <p className="text-gray-500">No counts available to display</p>
+              <BarChart2 className="h-10 w-10 text-muted mb-2" />
+              <p className="text-muted-foreground">No counts available to display</p>
             </div>
           )}
         </CardContent>
