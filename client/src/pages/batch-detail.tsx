@@ -264,7 +264,7 @@ const BatchDetailPage = () => {
             </div>
             <div className="flex space-x-2">
               {isFinalized && (
-                <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white">
                   <Printer className="mr-2 h-4 w-4" />
                   Print
                 </Button>
@@ -277,7 +277,7 @@ const BatchDetailPage = () => {
                   </Button>
                   <Button 
                     onClick={handleFinalizeBatch} 
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                    className="bg-amber-500 hover:bg-amber-600 text-white"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Finalize Count
@@ -381,7 +381,7 @@ const BatchDetailPage = () => {
             {batch.donations && batch.donations.length > 0 && (
               <Button 
                 onClick={handleShowSummary}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                className="bg-amber-500 hover:bg-amber-600 text-white"
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Finalize Count
@@ -414,7 +414,7 @@ const BatchDetailPage = () => {
           <div className="mb-6">
             <Button 
               onClick={handleAddDonation}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground w-full md:w-auto"
+              className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               Record New Donation
