@@ -323,7 +323,9 @@ const BatchDetailPage = () => {
                     <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
                       <div>
                         <div className="font-medium">
-                          {donation.memberId ? "Member Donation" : "Anonymous/Visitor"}
+                          {donation.memberId && (donation as DonationWithMember).member ? 
+                            `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
+                            "Anonymous/Visitor"}
                         </div>
                         <div className="text-sm text-gray-500">
                           {format(new Date(donation.date), 'MMM d, yyyy')} • 
@@ -418,7 +420,9 @@ const BatchDetailPage = () => {
                   <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
                     <div>
                       <div className="font-medium">
-                        {donation.memberId ? "Member Donation" : "Anonymous/Visitor"}
+                        {donation.memberId && (donation as DonationWithMember).member ? 
+                          `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
+                          "Anonymous/Visitor"}
                       </div>
                       <div className="text-sm text-gray-500">
                         {format(new Date(donation.date), 'MMM d, yyyy')} • 
