@@ -71,7 +71,7 @@ const Dashboard = () => {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -84,7 +84,7 @@ const Dashboard = () => {
     <PageLayout>
       {/* Primary Action Button */}
       <Button 
-        className="w-full py-6 mb-6 bg-[#4299E1] hover:bg-[#4299E1]/90 text-white text-lg"
+        className="w-full py-6 mb-6 bg-primary hover:bg-primary/90 text-primary-foreground text-lg"
         onClick={handleNewCount}
       >
         <Plus className="mr-2 h-5 w-5" />
@@ -94,10 +94,10 @@ const Dashboard = () => {
       {/* Last Count Submitted */}
       {isLoadingBatch ? (
         <div className="flex justify-center items-center py-8 mb-6">
-          <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : lastBatch ? (
-        <Card className="mb-6 bg-[#48BB78] text-white">
+        <Card className="mb-6 bg-accent text-accent-foreground">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-medium mb-2">Last Count Submitted</h2>
             <div className="text-3xl font-bold mb-1">
@@ -109,10 +109,10 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="mb-6 bg-gray-100">
+        <Card className="mb-6 bg-muted">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-medium mb-1">No Counts Yet</h2>
-            <p className="text-gray-600">Create your first count to get started</p>
+            <p className="text-muted-foreground">Create your first count to get started</p>
           </CardContent>
         </Card>
       )}
@@ -124,7 +124,7 @@ const Dashboard = () => {
           
           {isLoadingAllBatches ? (
             <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : recentBatches.length > 0 ? (
             <div className="relative h-[250px]">
@@ -132,14 +132,14 @@ const Dashboard = () => {
                 {recentBatches.map((batch, index) => (
                   <div key={index} className="flex flex-col items-center w-1/5">
                     <div 
-                      className="bg-[#4299E1] rounded-t w-16" 
+                      className="bg-primary rounded-t w-16" 
                       style={{ height: `${getBarHeight(batch.totalAmount)}px` }}
                     >
-                      <div className="text-white text-center text-xs font-medium mt-1">
+                      <div className="text-primary-foreground text-center text-xs font-medium mt-1">
                         {formatCurrency(batch.totalAmount || 0)}
                       </div>
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">
+                    <div className="text-xs text-muted-foreground mt-1">
                       {format(new Date(batch.date), 'd-MMM-yy')}
                     </div>
                   </div>
