@@ -91,7 +91,7 @@ export function ComboboxSearch({
           value={search}
           onChange={handleInputChange}
           placeholder={placeholder}
-          className="w-full"
+          className="w-full bg-white"
           onFocus={() => search.trim() !== '' && setIsOpen(true)}
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
