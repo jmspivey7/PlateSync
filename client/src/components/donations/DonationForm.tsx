@@ -239,7 +239,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
           checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
           notes: values.notes,
           memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
-          batchId: values.batchId ? parseInt(values.batchId) : null,
+          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
           sendNotification: values.sendNotification && values.donorType === "existing",
         });
         
@@ -273,7 +273,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
           checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
           notes: values.notes,
           memberId: newMember.id,
-          batchId: values.batchId ? parseInt(values.batchId) : null,
+          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
           sendNotification: values.sendNotification,
         });
         
@@ -291,7 +291,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
           checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
           notes: values.notes,
           memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
-          batchId: values.batchId ? parseInt(values.batchId) : null,
+          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
           sendNotification: values.sendNotification && values.donorType === "existing",
         });
         
@@ -605,7 +605,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None (Add to batch later)</SelectItem>
+                            <SelectItem value="none">None (Add to batch later)</SelectItem>
                             {batches?.map((batch) => (
                               <SelectItem key={batch.id} value={batch.id.toString()}>
                                 {batch.name} {batch.status !== "FINALIZED" ? `(${batch.status})` : ""}
