@@ -57,7 +57,7 @@ const Dashboard = () => {
         {/* Circular Start New Count Button */}
         <div className="md:w-1/3 flex justify-center">
           <Button 
-            className="w-48 h-48 rounded-full bg-black hover:bg-black/90 text-white flex flex-col items-center justify-center text-xl font-bold p-0"
+            className="w-40 h-40 rounded-full bg-black hover:bg-black/90 text-white flex flex-col items-center justify-center text-lg font-bold p-0"
             onClick={handleNewCount}
           >
             <span>START</span>
