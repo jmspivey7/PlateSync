@@ -148,11 +148,11 @@ const BatchDetailPage = () => {
 
   const getBadgeClass = (status: string) => {
     const statusColors = {
-      OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
-      CLOSED: "bg-orange-100 text-orange-800 hover:bg-orange-100",
-      FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+      OPEN: "bg-primary/20 text-primary hover:bg-primary/30",
+      CLOSED: "bg-secondary/20 text-secondary hover:bg-secondary/30",
+      FINALIZED: "bg-accent/20 text-accent hover:bg-accent/30",
     };
-    return statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800";
+    return statusColors[status as keyof typeof statusColors] || "bg-muted text-muted-foreground";
   };
 
   const handleBackToCounts = () => {
@@ -165,8 +165,8 @@ const BatchDetailPage = () => {
       <div className="p-8 max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">{batch?.name} - Donation Summary</h1>
-          <p className="text-gray-500">{format(new Date(batch?.date || new Date()), 'MMMM d, yyyy')}</p>
-          <p className="text-gray-500">Status: {batch?.status}</p>
+          <p className="text-muted-foreground">{format(new Date(batch?.date || new Date()), 'MMMM d, yyyy')}</p>
+          <p className="text-muted-foreground">Status: {batch?.status}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -215,7 +215,7 @@ const BatchDetailPage = () => {
           </tbody>
         </table>
 
-        <div className="mt-10 text-center text-gray-500 text-sm">
+        <div className="mt-10 text-center text-muted-foreground text-sm">
           <p>Printed on {format(new Date(), 'MMMM d, yyyy h:mm a')}</p>
           <p>PlateSync - Church Donation Management</p>
         </div>
@@ -228,7 +228,7 @@ const BatchDetailPage = () => {
     return (
       <PageLayout title="Loading...">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4299E1]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       </PageLayout>
     );
@@ -238,9 +238,9 @@ const BatchDetailPage = () => {
     return (
       <PageLayout title="Count Not Found">
         <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Count Not Found</h2>
-          <p className="text-gray-600 mb-6">The requested count could not be found.</p>
+          <p className="text-muted-foreground mb-6">The requested count could not be found.</p>
           <Button onClick={handleBackToCounts}>Back to Counts</Button>
         </div>
       </PageLayout>
