@@ -70,6 +70,7 @@ export const batches = pgTable("batches", {
   name: varchar("name").notNull(),
   date: timestamp("date").defaultNow().notNull(),
   status: varchar("status", { length: 20 }).default("OPEN").notNull(),
+  service: varchar("service", { length: 100 }),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0").notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -130,6 +131,7 @@ export const insertBatchSchema = createInsertSchema(batches).pick({
   date: true,
   notes: true,
   status: true,
+  service: true,
   totalAmount: true,
   churchId: true,
 });

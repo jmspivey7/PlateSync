@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -40,6 +41,7 @@ import { Button } from "@/components/ui/button";
 // Form schema for validation
 const formSchema = insertBatchSchema.extend({
   date: z.string().min(1, "Date is required"),
+  service: z.string().optional(),
 });
 
 // Infer the type from the schema
@@ -61,10 +63,11 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
       date: format(new Date(), 'yyyy-MM-dd'),
+      name: format(new Date(), 'MMMM d, yyyy'), // Automatically generate name from date
       status: "OPEN",
       notes: "",
+      service: "",
     },
   });
   
