@@ -28,6 +28,7 @@ import { AlertCircle, CheckCircle2, Loader2, Mail, Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ToastNotification from "@/components/ui/toast-notification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import PageLayout from "@/components/layout/PageLayout";
 
 // Create a schema for settings form
 const formSchema = z.object({
@@ -111,11 +112,7 @@ const Settings = () => {
   };
   
   return (
-    <div className="mb-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Settings</h2>
-        <p className="text-gray-500 mt-1">Manage your church and notification settings</p>
-      </div>
+    <PageLayout title="Settings" subtitle="Manage your church and notification settings">
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
@@ -267,7 +264,7 @@ const Settings = () => {
           onClose={() => setShowSuccessToast(false)}
         />
       )}
-    </div>
+    </PageLayout>
   );
 };
 
