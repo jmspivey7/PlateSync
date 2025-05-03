@@ -102,12 +102,11 @@ const CountsPage = () => {
   }
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Donation Counts</h2>
-          <p className="text-gray-500 mt-1">Manage and organize your donation counts</p>
-        </div>
+    <PageLayout
+      title="Donation Counts"
+      subtitle="Manage and organize your donation counts"
+    >
+      <div className="mb-6 flex justify-end">
         <Button 
           onClick={handleCreateBatch}
           className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white"
@@ -292,7 +291,7 @@ const CountsPage = () => {
           isEdit={isEditMode}
         />
       )}
-    </div>
+    </PageLayout>
   );
 };
 
