@@ -275,7 +275,7 @@ const BatchesPage = () => {
                   className="mx-auto"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Create New Batch
+                  Create New Count
                 </Button>
               </CardContent>
             </Card>

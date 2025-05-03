@@ -128,8 +128,8 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
       toast({
         title: "Success",
         description: isEdit 
-          ? "Batch updated successfully." 
-          : "Batch created successfully.",
+          ? "Count updated successfully." 
+          : "Count created successfully.",
         className: "bg-[#48BB78] text-white",
       });
       
@@ -138,7 +138,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to ${isEdit ? 'update' : 'create'} batch: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to ${isEdit ? 'update' : 'create'} count: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     },
@@ -154,7 +154,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#2D3748]">
-            {isEdit ? "Edit Batch" : "Create New Batch"}
+            {isEdit ? "Edit Count" : "Create New Count"}
           </DialogTitle>
         </DialogHeader>
         
@@ -170,12 +170,12 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Batch Name</FormLabel>
+                    <FormLabel>Count Name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Sunday Service, May 3, 2025" />
                     </FormControl>
                     <FormDescription>
-                      Give this batch a descriptive name, such as a service date.
+                      Give this count a descriptive name, such as a service date.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -192,7 +192,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                       <Input {...field} type="date" />
                     </FormControl>
                     <FormDescription>
-                      The date when this batch of donations was collected.
+                      The date when this count of donations was collected.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -223,7 +223,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                     <FormDescription>
                       Open: Still collecting donations<br />
                       Closed: No more donations accepted<br />
-                      Finalized: Batch verified and ready for accounting
+                      Finalized: Count verified and ready for accounting
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -240,7 +240,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                       <Textarea {...field} rows={3} />
                     </FormControl>
                     <FormDescription>
-                      Any additional information about this batch.
+                      Any additional information about this count.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -263,7 +263,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                   {createBatchMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  {isEdit ? "Update Batch" : "Create Batch"}
+                  {isEdit ? "Update Count" : "Create Count"}
                 </Button>
               </DialogFooter>
             </form>
