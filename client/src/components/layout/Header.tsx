@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import MobileMenu from "./MobileMenu";
+import platesyncLogo from "@/assets/platesync-logo.png";
+import redeemerLogo from "@/assets/redeemer-logo-white.png";
 
 const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -34,8 +35,11 @@ const Header = () => {
       <header className="bg-card text-card-foreground shadow-md">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <DollarSign className="h-8 w-8 text-accent" />
-            <h1 className="text-xl font-bold font-inter tracking-tight">PlateSync</h1>
+            <Link href="/">
+              <a className="flex items-center">
+                <img src={platesyncLogo} alt="PlateSync" className="h-10" />
+              </a>
+            </Link>
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">
