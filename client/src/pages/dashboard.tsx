@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import StatCard from "@/components/dashboard/StatCard";
 import QuickActions from "@/components/dashboard/QuickActions";
 import RecentDonations from "@/components/dashboard/RecentDonations";
-import { CurrentBatch } from "@/components/dashboard/CurrentBatch";
+import { CurrentCount } from "@/components/dashboard/CurrentCount";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -74,9 +74,9 @@ const Dashboard = () => {
           <QuickActions />
         </div>
         
-        {/* Right Column - Current Batch */}
+        {/* Right Column - Current Count */}
         <div>
-          <CurrentBatch />
+          <CurrentCount />
         </div>
       </div>
       
