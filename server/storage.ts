@@ -222,10 +222,9 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(donations.date));
     
     // Get all unique member IDs
-    const memberIds = [...new Set(batchDonations
+    const memberIds = Array.from(new Set(batchDonations
       .filter(d => d.memberId !== null)
-      .map(d => d.memberId))];
-    
+      .map(d => d.memberId)));
     // Fetch all members in a single query if there are member IDs
     let membersMap: Record<number, Member> = {};
     if (memberIds.length > 0) {
@@ -334,9 +333,9 @@ export class DatabaseStorage implements IStorage {
     if (!donationsList.length) return [];
     
     // Get all unique member IDs
-    const memberIds = [...new Set(donationsList
+    const memberIds = Array.from(new Set(donationsList
       .filter(d => d.memberId !== null)
-      .map(d => d.memberId))];
+      .map(d => d.memberId)));
     
     // If there are no member IDs (all anonymous donations), return as is
     if (!memberIds.length) {
@@ -409,6 +408,64 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return newDonation;
+  }
+
+  async getDonationsByBatch(batchId: number, churchId: string): Promise<DonationWithMember[]> {
+    const donationsList = await db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.batchId, batchId),
+        eq(donations.churchId, churchId)
+      ))
+      .orderBy(desc(donations.date));
+    
+    // If there are no donations, return empty array
+    if (!donationsList.length) return [];
+    
+    // Get all unique member IDs
+    const memberIds = Array.from(new Set(donationsList
+      .filter(d => d.memberId !== null)
+      .map(d => d.memberId)));
+    
+    // If there are no member IDs (all anonymous donations), return as is
+    if (!memberIds.length) {
+      return donationsList.map(d => ({ ...d, member: undefined }));
+    }
+    
+    // Fetch all members in a single query
+    const membersList = await db
+      .select()
+      .from(members)
+      .where(sql`${members.id} IN (${memberIds.join(',')})`);
+    
+    // Create a map for quick member lookup
+    const membersMap = membersList.reduce((acc, member) => {
+      acc[member.id] = member;
+      return acc;
+    }, {} as Record<number, Member>);
+    
+    // Join donations with members
+    return donationsList.map(donation => ({
+      ...donation,
+      member: donation.memberId ? membersMap[donation.memberId] : undefined
+    }));
+  }
+
+  async updateDonation(id: number, data: Partial<InsertDonation>, churchId: string): Promise<Donation | undefined> {
+    const [updatedDonation] = await db
+      .update(donations)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(donations.id, id),
+        eq(donations.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedDonation;
   }
 
   async updateDonationNotificationStatus(id: number, status: string): Promise<void> {

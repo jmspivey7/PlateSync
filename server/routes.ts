@@ -7,8 +7,10 @@ import { z } from "zod";
 import { 
   insertMemberSchema, 
   insertDonationSchema,
+  insertBatchSchema,
   donationTypeEnum,
   notificationStatusEnum,
+  batchStatusEnum,
   updateUserSchema
 } from "@shared/schema";
 
@@ -123,6 +125,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch routes
+  app.get('/api/batches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batches = await storage.getBatches(userId);
+      res.json(batches);
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+      res.status(500).json({ message: "Failed to fetch batches" });
+    }
+  });
+
+  app.get('/api/batches/current', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const currentBatch = await storage.getCurrentBatch(userId);
+      res.json(currentBatch);
+    } catch (error) {
+      console.error("Error fetching current batch:", error);
+      res.status(500).json({ message: "Failed to fetch current batch" });
+    }
+  });
+
+  app.get('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      const batch = await storage.getBatchWithDonations(batchId, userId);
+      
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      res.json(batch);
+    } catch (error) {
+      console.error("Error fetching batch:", error);
+      res.status(500).json({ message: "Failed to fetch batch" });
+    }
+  });
+
+  app.get('/api/batches/:id/donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      const donations = await storage.getDonationsByBatch(batchId, userId);
+      res.json(donations);
+    } catch (error) {
+      console.error("Error fetching batch donations:", error);
+      res.status(500).json({ message: "Failed to fetch batch donations" });
+    }
+  });
+
+  app.post('/api/batches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchData = { 
+        ...req.body, 
+        churchId: userId,
+        // Convert string date to Date object if provided
+        date: req.body.date ? new Date(req.body.date) : new Date()
+      };
+      
+      const validatedData = insertBatchSchema.parse(batchData);
+      const newBatch = await storage.createBatch(validatedData);
+      
+      res.status(201).json(newBatch);
+    } catch (error) {
+      console.error("Error creating batch:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create batch" });
+    }
+  });
+
+  app.patch('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Handle date conversion if present
+      const updateData = { ...req.body };
+      if (updateData.date) {
+        updateData.date = new Date(updateData.date);
+      }
+      
+      const validatedData = insertBatchSchema.partial().parse(updateData);
+      const updatedBatch = await storage.updateBatch(batchId, validatedData, userId);
+      
+      if (!updatedBatch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error updating batch:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update batch" });
+    }
+  });
+  
+  // Add PATCH endpoint for updating donations
+  app.patch('/api/donations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const donationId = parseInt(req.params.id);
+      
+      if (isNaN(donationId)) {
+        return res.status(400).json({ message: "Invalid donation ID" });
+      }
+      
+      // Get the original donation to calculate batch total changes
+      const originalDonation = await storage.getDonation(donationId, userId);
+      if (!originalDonation) {
+        return res.status(404).json({ message: "Donation not found" });
+      }
+      
+      // Handle data conversions
+      const updateData = { ...req.body };
+      if (updateData.date) {
+        updateData.date = new Date(updateData.date);
+      }
+      if (updateData.donationType) {
+        updateData.donationType = updateData.donationType.toUpperCase();
+      }
+      
+      const validatedData = insertDonationSchema.partial().parse(updateData);
+      const updatedDonation = await storage.updateDonation(donationId, validatedData, userId);
+      
+      if (!updatedDonation) {
+        return res.status(404).json({ message: "Donation not found" });
+      }
+      
+      // Update batch totals if amount changed or batch changed
+      const originalAmount = parseFloat(originalDonation.amount.toString());
+      const newAmount = parseFloat(updatedDonation.amount.toString());
+      const originalBatchId = originalDonation.batchId;
+      const newBatchId = updatedDonation.batchId;
+      
+      // If amount changed but batch stayed the same
+      if (originalAmount !== newAmount && originalBatchId === newBatchId && newBatchId) {
+        const batch = await storage.getBatch(newBatchId, userId);
+        if (batch) {
+          const amountDifference = newAmount - originalAmount;
+          const newTotal = parseFloat(batch.totalAmount.toString()) + amountDifference;
+          await storage.updateBatch(batch.id, { totalAmount: newTotal.toString() }, userId);
+        }
+      }
+      // If batch changed
+      else if (originalBatchId !== newBatchId) {
+        // Subtract from original batch
+        if (originalBatchId) {
+          const originalBatch = await storage.getBatch(originalBatchId, userId);
+          if (originalBatch) {
+            const newOriginalTotal = parseFloat(originalBatch.totalAmount.toString()) - originalAmount;
+            await storage.updateBatch(
+              originalBatch.id, 
+              { totalAmount: Math.max(0, newOriginalTotal).toString() },
+              userId
+            );
+          }
+        }
+        
+        // Add to new batch
+        if (newBatchId) {
+          const newBatch = await storage.getBatch(newBatchId, userId);
+          if (newBatch) {
+            const newBatchTotal = parseFloat(newBatch.totalAmount.toString()) + newAmount;
+            await storage.updateBatch(
+              newBatch.id,
+              { totalAmount: newBatchTotal.toString() },
+              userId
+            );
+          }
+        }
+      }
+      
+      res.json(updatedDonation);
+    } catch (error) {
+      console.error("Error updating donation:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update donation" });
+    }
+  });
+
   // Donations routes
   app.get('/api/donations', isAuthenticated, async (req: any, res) => {
     try {
@@ -169,10 +374,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: new Date(req.body.date)
       };
       
+      // If no batch is specified, get or create a current batch
+      if (!donationData.batchId) {
+        const currentBatch = await storage.getCurrentBatch(userId);
+        donationData.batchId = currentBatch.id;
+      }
+      
       const validatedData = insertDonationSchema.parse(donationData);
       
       // Create the donation
       const newDonation = await storage.createDonation(validatedData);
+      
+      // Update the batch total amount
+      if (newDonation.batchId) {
+        const batch = await storage.getBatch(newDonation.batchId, userId);
+        if (batch) {
+          const newTotal = parseFloat(batch.totalAmount.toString()) + parseFloat(newDonation.amount.toString());
+          await storage.updateBatch(
+            batch.id,
+            { totalAmount: newTotal.toString() },
+            userId
+          );
+        }
+      }
       
       // Send notification if requested and if it's not an anonymous donation
       if (req.body.sendNotification && validatedData.memberId) {
