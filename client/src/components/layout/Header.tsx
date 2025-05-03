@@ -33,38 +33,43 @@ const Header = () => {
   return (
     <>
       <header className="bg-black text-white shadow-md">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/">
               <a className="flex items-center">
-                <img src={redeemerLogo} alt="Redeemer Presbyterian Church" className="h-10" />
+                <img 
+                  src={redeemerLogo} 
+                  alt="Redeemer Presbyterian Church" 
+                  className="h-20" 
+                  style={{ width: 'auto', objectFit: 'contain' }}
+                />
               </a>
             </Link>
           </div>
           
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-8">
             <Link href="/counts">
-              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/counts' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/counts' ? 'text-accent' : ''}`}>
                 Counts
               </a>
             </Link>
             <Link href="/donations">
-              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/donations' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/donations' ? 'text-accent' : ''}`}>
                 Donations
               </a>
             </Link>
             <Link href="/members">
-              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/members' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/members' ? 'text-accent' : ''}`}>
                 Members
               </a>
             </Link>
             <Link href="/settings">
-              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/settings' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/settings' ? 'text-accent' : ''}`}>
                 Settings
               </a>
             </Link>
             <Link href="/account">
-              <a className={`font-inter font-medium text-white hover:text-accent transition ${location === '/account' ? 'text-accent' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-accent transition text-lg ${location === '/account' ? 'text-accent' : ''}`}>
                 Account
               </a>
             </Link>
