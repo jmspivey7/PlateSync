@@ -253,7 +253,7 @@ const CsvImporter = () => {
           <Button
             onClick={handleImport}
             disabled={!file || importStatus === 'loading'}
-            className="bg-[#4299E1] hover:bg-[#4299E1]/90 text-white"
+            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
           >
             {importStatus === 'loading' ? (
               <>
