@@ -62,7 +62,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-grow">
         {children}
       </main>
-      <Footer />
     </div>
   );
 }
