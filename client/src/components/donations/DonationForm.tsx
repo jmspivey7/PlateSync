@@ -281,7 +281,12 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
         
         {!(isLoadingMembers || isLoadingDonation) && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                form.handleSubmit(onSubmit)(e);
+              }} 
+              className="space-y-6">
               {/* Donor Selection */}
               <div className="space-y-4">
                 <FormField
@@ -548,6 +553,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose }: DonationFormProps
                   type="submit" 
                   className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
                   disabled={createDonationMutation.isPending}
+                  onClick={() => {
+                    const formValues = form.getValues();
+                    console.log("Submit button clicked with values:", formValues);
+                    createDonationMutation.mutate(formValues as FormValues);
+                  }}
                 >
                   {createDonationMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
