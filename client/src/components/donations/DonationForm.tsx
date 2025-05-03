@@ -448,7 +448,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                   )}
                 />
                 
-                {/* Existing Member Selector - Simple functional approach */}
+                {/* Existing Member Selector with Command component */}
                 {donorType === "existing" && (
                   <FormField
                     control={form.control}
@@ -457,81 +457,39 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
                       <FormItem>
                         <FormLabel>Select Member</FormLabel>
                         <FormControl>
-                          <div className="space-y-2">
-                            <Input 
-                              type="text"
-                              id="memberSearch"
-                              placeholder="Type to search for members..."
-                              className="w-full"
-                              onChange={(e) => {
-                                const searchTerm = e.target.value.toLowerCase();
-                                const searchResultContainer = document.getElementById('searchResults');
-                                if (searchResultContainer) {
-                                  searchResultContainer.style.display = searchTerm ? 'block' : 'none';
-                                }
-                              }}
-                            />
-                            
-                            <div 
-                              id="searchResults"
-                              className="border rounded-md mt-1 max-h-60 overflow-y-auto bg-white shadow-sm hidden"
-                            >
-                              <ul className="py-1">
+                          <Command className="rounded-lg border shadow-md w-full">
+                            <CommandInput placeholder="Type to search for members..." />
+                            <CommandList>
+                              <CommandEmpty>No members found.</CommandEmpty>
+                              <CommandGroup heading="Members">
                                 {members?.map((member) => (
-                                  <li 
+                                  <CommandItem
                                     key={member.id}
-                                    data-search={`${member.firstName.toLowerCase()} ${member.lastName.toLowerCase()}`}
-                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center"
-                                    onClick={() => {
+                                    value={`${member.firstName} ${member.lastName}`}
+                                    onSelect={() => {
                                       field.onChange(member.id.toString());
-                                      // Update the search input to show selection
-                                      const searchInput = document.getElementById('memberSearch') as HTMLInputElement;
-                                      if (searchInput) {
-                                        searchInput.value = `${member.firstName} ${member.lastName}`;
-                                      }
-                                      // Hide results after selection
-                                      const searchResultContainer = document.getElementById('searchResults');
-                                      if (searchResultContainer) {
-                                        searchResultContainer.style.display = 'none';
-                                      }
                                       console.log("Selected member:", member.id.toString());
                                     }}
                                   >
-                                    <User className="mr-2 h-4 w-4 text-gray-500" />
+                                    <User className="mr-2 h-4 w-4" />
                                     <span>{member.firstName} {member.lastName}</span>
                                     {member.id.toString() === field.value && (
-                                      <Check className="ml-auto h-4 w-4 text-green-500" />
+                                      <Check className="ml-auto h-4 w-4" />
                                     )}
-                                  </li>
+                                  </CommandItem>
                                 ))}
-                              </ul>
-                            </div>
-                            
-                            {/* Add filtering with JavaScript */}
-                            <script dangerouslySetInnerHTML={{
-                              __html: `
-                                document.getElementById('memberSearch').addEventListener('input', function(e) {
-                                  const searchTerm = e.target.value.toLowerCase();
-                                  const listItems = document.querySelectorAll('#searchResults li');
-                                  
-                                  listItems.forEach(item => {
-                                    const text = item.getAttribute('data-search');
-                                    if (text.includes(searchTerm)) {
-                                      item.style.display = 'flex';
-                                    } else {
-                                      item.style.display = 'none';
-                                    }
-                                  });
-                                });
-                              `
-                            }} />
-                          </div>
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
                         </FormControl>
                         <FormDescription>
-                          {field.value && members ? 
-                            `Selected: ${members.find(m => m.id.toString() === field.value)?.firstName} ${members.find(m => m.id.toString() === field.value)?.lastName}` : 
-                            "Type to search and select a member"
-                          }
+                          {field.value && members ? (
+                            <span className="font-medium text-blue-600">
+                              Selected: {members.find(m => m.id.toString() === field.value)?.firstName} {members.find(m => m.id.toString() === field.value)?.lastName}
+                            </span>
+                          ) : (
+                            "Type to search for a member by name"
+                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
