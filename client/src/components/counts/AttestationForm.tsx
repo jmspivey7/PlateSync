@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Batch, Donation, Member } from "@shared/schema";
+import { Batch, Donation, Member, User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -18,6 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Define the types needed for batch with donations
 interface DonationWithMember extends Donation {
@@ -69,11 +76,23 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     refetchInterval: false,
   });
   
+  // Fetch users for dropdown
+  const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    queryFn: async () => {
+      const response = await fetch(`/api/users`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch users");
+      }
+      return response.json();
+    },
+  });
+  
   // Primary attestation form
   const primaryForm = useForm<{ name: string }>({
     resolver: zodResolver(primaryAttestationSchema),
     defaultValues: {
-      name: "",
+      name: user?.username || "",
     },
   });
   
@@ -238,14 +257,23 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               
               <Form {...primaryForm}>
                 <form onSubmit={primaryForm.handleSubmit(onPrimarySubmit)} className="space-y-4">
+                  {/* Use the current user for primary attestation */}
+                  <div className="p-3 bg-muted rounded-md mb-4">
+                    <p className="text-sm text-muted-foreground mb-1">Primary Attestor</p>
+                    <p className="font-medium">{user?.username || user?.email || "Unknown"}</p>
+                  </div>
+                
                   <FormField
                     control={primaryForm.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Your Name</FormLabel>
+                        <FormLabel>Your Name / Signature</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Type your full name" />
+                          <Input 
+                            {...field} 
+                            placeholder="Type your full name as signature" 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -300,10 +328,31 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="attestorId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Second Attestor ID</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter the attestor's ID" />
-                        </FormControl>
+                        <FormLabel>Second Attestor</FormLabel>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // When a user is selected, auto-populate the name field
+                            const selectedUser = users?.find((u: User) => u.id === value);
+                            if (selectedUser) {
+                              secondaryForm.setValue('name', selectedUser.username || '');
+                            }
+                          }} 
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select second attestor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {users && users.map((u: User) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.username || u.email || 'Unknown user'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -314,9 +363,9 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Second Attestor Name</FormLabel>
+                        <FormLabel>Your Name / Signature</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Type full name" />
+                          <Input {...field} placeholder="Type your full name as signature" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
