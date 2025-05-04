@@ -11,6 +11,8 @@ import Members from "@/pages/members";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
 import Verify from "@/pages/verify";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Counts from "@/pages/counts";
 import BatchDetail from "@/pages/batch-detail";
 import Profile from "@/pages/profile";
@@ -28,7 +30,7 @@ function Router() {
   
   // Use useEffect for redirect to avoid rendering issues
   useEffect(() => {
-    const publicPaths = ["/login", "/verify"];
+    const publicPaths = ["/login", "/verify", "/forgot-password", "/reset-password"];
     const isPublicPath = publicPaths.some(path => location.startsWith(path));
     
     if (!isLoading && !isAuthenticated && !isPublicPath) {
@@ -49,6 +51,8 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/verify" component={Verify} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/donations" component={Donations} />
@@ -73,8 +77,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
   
-  // Don't show header/footer on login or verify pages
-  const isPublicPath = ["/login", "/verify"].some(path => location.startsWith(path));
+  // Don't show header/footer on public pages
+  const isPublicPath = ["/login", "/verify", "/forgot-password", "/reset-password"].some(path => location.startsWith(path));
   
   if (!isAuthenticated || isPublicPath) {
     return <>{children}</>;
