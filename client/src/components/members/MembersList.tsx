@@ -32,15 +32,13 @@ import {
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, UserPlus, Mail, Phone, Edit, FileEdit, Eye, DollarSign } from "lucide-react";
+import { Loader2, Search, Mail, Phone, FileEdit, Eye, DollarSign } from "lucide-react";
 import { Member } from "@shared/schema";
 import { format } from "date-fns";
 
-interface MembersListProps {
-  onAddMember: () => void;
-}
+interface MembersListProps {}
 
-const MembersList = ({ onAddMember }: MembersListProps) => {
+const MembersList = ({}: MembersListProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("nameAsc");
@@ -119,16 +117,7 @@ const MembersList = ({ onAddMember }: MembersListProps) => {
         </CardContent>
       </Card>
       
-      {/* Add Member Button (Mobile) */}
-      <div className="md:hidden">
-        <Button 
-          className="w-full bg-[#4299E1] hover:bg-[#4299E1]/90"
-          onClick={onAddMember}
-        >
-          <UserPlus className="h-5 w-5 mr-2" />
-          Add Member
-        </Button>
-      </div>
+
       
       {/* Members List */}
       {isLoading ? (
@@ -138,13 +127,7 @@ const MembersList = ({ onAddMember }: MembersListProps) => {
       ) : sortedMembers.length === 0 ? (
         <Card className="p-10 text-center">
           <p className="text-gray-500 mb-4">No members found.</p>
-          <Button 
-            className="bg-[#69ad4c] hover:bg-[#5c9a42]"
-            onClick={onAddMember}
-          >
-            <UserPlus className="h-5 w-5 mr-2" />
-            Add Your First Member
-          </Button>
+          <p className="text-gray-400 text-sm">Members can only be added through CSV import in Settings.</p>
         </Card>
       ) : (
         <>
@@ -241,16 +224,7 @@ const MembersList = ({ onAddMember }: MembersListProps) => {
             </Table>
           </div>
           
-          {/* Add Member Button */}
-          <div className="mt-4 hidden md:block">
-            <Button 
-              className="bg-[#69ad4c] hover:bg-[#5c9a42]"
-              onClick={onAddMember}
-            >
-              <UserPlus className="h-5 w-5 mr-2" />
-              Add Member
-            </Button>
-          </div>
+
           
           {/* Pagination Controls */}
           <div className="mt-6">

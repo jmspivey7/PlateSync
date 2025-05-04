@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
-import { UserPlus, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import MemberForm from "@/components/members/MemberForm";
 import MembersList from "@/components/members/MembersList";
 import { useQuery } from "@tanstack/react-query";
@@ -61,10 +61,6 @@ const Members = () => {
     queryKey: memberId ? [`/api/members/${memberId}`] : ['/api/members'],
     enabled: !!memberId,
   });
-  
-  const handleNewMember = () => {
-    setLocation("/members?new=true");
-  };
   
   const handleBack = () => {
     setLocation("/members");
@@ -218,7 +214,7 @@ const Members = () => {
     );
   } else {
     content = (
-      <MembersList onAddMember={handleNewMember} />
+      <MembersList />
     );
   }
   
