@@ -3,7 +3,7 @@ import { isAuthenticated } from './replitAuth';
 import { storage } from './storage';
 import { testSendGridConfiguration, sendCountReport } from './sendgrid';
 import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import crypto from 'crypto';
 
@@ -38,16 +38,17 @@ export function setupTestEndpoints(app: Express) {
       const expires = new Date();
       expires.setHours(expires.getHours() + 24); // 24 hour expiration
       
-      // Update user with new token
-      const [updatedUser] = await db
-        .update(users)
-        .set({
-          passwordResetToken: token,
-          passwordResetExpires: expires,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, user.id))
-        .returning();
+      // Update user with new token using raw SQL to handle column name mismatch
+      const updatedUserResult = await db.execute(
+        sql`UPDATE users 
+            SET password_reset_token = ${token}, 
+                password_reset_expires = ${expires}, 
+                updated_at = ${new Date()} 
+            WHERE id = ${user.id} 
+            RETURNING *`
+      );
+      
+      const updatedUser = updatedUserResult.rows[0];
       
       // Get application URL from request for verification link
       const appUrl = `${req.protocol}://${req.get('host')}`;
@@ -82,11 +83,12 @@ export function setupTestEndpoints(app: Express) {
         });
       }
       
-      // Look up user with this token
-      const users_with_token = await db
-        .select()
-        .from(users)
-        .where(eq(users.passwordResetToken, token));
+      // Look up user with this token using raw SQL to handle column name mismatch
+      const users_with_token_result = await db.execute(
+        sql`SELECT * FROM users WHERE password_reset_token = ${token}`
+      );
+      
+      const users_with_token = users_with_token_result.rows;
       
       if (users_with_token.length === 0) {
         return res.json({
