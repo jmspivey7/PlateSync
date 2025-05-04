@@ -30,6 +30,8 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
   updateUserRole(id: string, role: string): Promise<User>;
+  createUser(userData: Partial<UpsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   
   // Member operations
   getMembers(churchId: string): Promise<Member[]>;
@@ -126,6 +128,37 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedUser;
+  }
+  
+  async createUser(userData: Partial<UpsertUser>): Promise<User> {
+    // Generate a unique ID for the user if not provided
+    const userId = userData.id || Math.floor(Math.random() * 1000000000).toString();
+    
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        username: userData.username || `user_${userId}`,
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        bio: userData.bio || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        role: userData.role || 'USHER',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        churchName: userData.churchName || null,
+        emailNotificationsEnabled: userData.emailNotificationsEnabled || false,
+      })
+      .returning();
+    
+    return newUser;
+  }
+  
+  async deleteUser(id: string): Promise<void> {
+    await db
+      .delete(users)
+      .where(eq(users.id, id));
   }
 
   // Member operations

@@ -18,6 +18,8 @@ import {
   batchStatusEnum,
   updateUserSchema,
   insertServiceOptionSchema,
+  createUserSchema,
+  userRoleEnum,
   userRoleEnum
 } from "@shared/schema";
 
@@ -219,6 +221,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating user role:", error);
       res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+  
+  // Create user (admin only)
+  app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      
+      // Validate user data
+      const userData = createUserSchema.parse(req.body);
+      
+      // Create the user
+      const newUser = await storage.createUser({
+        ...userData,
+        churchId: adminId // Users belong to the same church as the admin
+      });
+      
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid user data", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+  
+  // Delete user (admin only)
+  app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const userId = req.params.id;
+      
+      // Don't allow admins to delete themselves
+      if (adminId === userId) {
+        return res.status(400).json({ 
+          message: "You cannot delete your own account."
+        });
+      }
+      
+      await storage.deleteUser(userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
   

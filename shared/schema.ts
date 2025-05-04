@@ -182,6 +182,15 @@ export const updateUserSchema = createInsertSchema(users).pick({
   role: true,
 });
 
+// Schema for creating new users (admin only)
+export const createUserSchema = createInsertSchema(users).pick({
+  username: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+});
+
 // Schema for service options
 export const insertServiceOptionSchema = createInsertSchema(serviceOptions).pick({
   name: true,
