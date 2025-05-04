@@ -125,10 +125,25 @@ const CountsPage = () => {
             View past donation counts by worship service or collection date
           </CardDescription>
           <Tabs defaultValue="all" className="mt-3" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="open">Open</TabsTrigger>
-              <TabsTrigger value="closed">Closed</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 p-1 shadow-sm border-2 rounded-md">
+              <TabsTrigger 
+                value="all"
+                className="data-[state=active]:bg-[#69ad4c] data-[state=active]:text-white hover:bg-gray-100 transition-colors duration-200"
+              >
+                All
+              </TabsTrigger>
+              <TabsTrigger 
+                value="open"
+                className="data-[state=active]:bg-[#69ad4c] data-[state=active]:text-white hover:bg-gray-100 transition-colors duration-200"
+              >
+                Open
+              </TabsTrigger>
+              <TabsTrigger 
+                value="closed"
+                className="data-[state=active]:bg-[#69ad4c] data-[state=active]:text-white hover:bg-gray-100 transition-colors duration-200"
+              >
+                Closed
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
