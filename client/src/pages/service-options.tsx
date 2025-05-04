@@ -42,7 +42,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Loader2, Edit, Trash } from "lucide-react";
+import { PlusCircle, Loader2, Edit, Trash, ListChecks } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";

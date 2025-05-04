@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock } from "lucide-react";
+import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
@@ -205,7 +205,7 @@ const Profile = () => {
   // Show loading state if auth is still loading
   if (isAuthLoading) {
     return (
-      <PageLayout title="Profile" subtitle="Your account information">
+      <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-gray-700" />}>
         <div className="flex justify-center py-10">
           <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
         </div>
@@ -214,7 +214,7 @@ const Profile = () => {
   }
   
   return (
-    <PageLayout title="Profile" subtitle="Your account information">
+    <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-gray-700" />}>
       <div className="max-w-3xl mx-auto">
         <Card>
           <CardHeader>

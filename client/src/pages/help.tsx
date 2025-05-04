@@ -5,7 +5,11 @@ import PageLayout from "@/components/layout/PageLayout";
 
 const Help = () => {
   return (
-    <PageLayout title="Help Center" subtitle="Find answers to common questions about using the application">
+    <PageLayout 
+      title="Help Center" 
+      subtitle="Find answers to common questions about using the application"
+      icon={<HelpCircle className="h-6 w-6 text-gray-700" />}
+    >
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
