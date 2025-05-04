@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, UserPlus } from "lucide-react";
 import MemberForm from "@/components/members/MemberForm";
 import MembersList from "@/components/members/MembersList";
 import { useQuery } from "@tanstack/react-query";
@@ -229,6 +229,7 @@ const Members = () => {
     <PageLayout 
       title={`Members (${totalMembers})`} 
       subtitle="Manage your church members and their information"
+      icon={<UserPlus className="h-6 w-6 text-gray-700" />}
     >
       {content}
     </PageLayout>

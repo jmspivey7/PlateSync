@@ -105,6 +105,7 @@ const CountsPage = () => {
     <PageLayout
       title="Historical Counts"
       subtitle="View and manage past donation counts"
+      icon={<Calendar className="h-6 w-6 text-gray-700" />}
     >
       <div className="mb-6 flex justify-end">
         <Button 
