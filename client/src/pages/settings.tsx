@@ -33,7 +33,9 @@ import {
   Plus, 
   Save, 
   Settings as SettingsIcon,
-  Trash2
+  Trash2,
+  UserCog,
+  Users
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ToastNotification from "@/components/ui/toast-notification";
@@ -41,13 +43,41 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import PageLayout from "@/components/layout/PageLayout";
 import CsvImporter from "@/components/settings/CsvImporter";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
-// Define the service option type
+// Define types
 interface ServiceOption {
   id: number;
   name: string;
   isDefault: boolean;
   churchId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UserInfo {
+  id: string;
+  username: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  role: "ADMIN" | "USHER";
   createdAt: string;
   updatedAt: string;
 }
@@ -63,10 +93,16 @@ type FormValues = z.infer<typeof formSchema>;
 const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
+  
+  // Fetch users (admin only)
+  const { data: users = [] as UserInfo[], isLoading: isLoadingUsers } = useQuery<UserInfo[]>({
+    queryKey: ['/api/users'],
+    enabled: !!user && isAdmin,
+  });
   
   // Fetch service options
   const { data: serviceOptions = [] as ServiceOption[], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
@@ -278,6 +314,34 @@ const Settings = () => {
       toast({
         title: "Error",
         description: `Failed to initialize options: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update user role mutation (admin only)
+  const updateUserRoleMutation = useMutation({
+    mutationFn: async ({ id, role }: { id: string, role: string }) => {
+      const response = await apiRequest("PATCH", `/api/users/${id}/role`, { role });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update user role");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "User Role Updated",
+        description: "The user's role has been updated successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update user role: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }

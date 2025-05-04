@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendDonationNotification, testSendGridConfiguration } from "./sendgrid";
+import { isAdmin, hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
@@ -14,7 +15,8 @@ import {
   notificationStatusEnum,
   batchStatusEnum,
   updateUserSchema,
-  insertServiceOptionSchema
+  insertServiceOptionSchema,
+  userRoleEnum
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -57,6 +59,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+  
+  // User management routes - Admin only
+  app.get('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const churchId = userId; // For now, users can only see users in their own church
+      
+      const users = await storage.getUsers(churchId);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  app.patch('/api/users/:id/role', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const userId = req.params.id;
+      
+      // Don't allow admins to change their own role
+      if (adminId === userId) {
+        return res.status(400).json({ 
+          message: "You cannot change your own role. Another admin must make this change."
+        });
+      }
+      
+      const { role } = req.body;
+      
+      // Validate role
+      if (!userRoleEnum.safeParse(role).success) {
+        return res.status(400).json({ 
+          message: `Invalid role. Must be one of: ${userRoleEnum.options.join(', ')}`
+        });
+      }
+      
+      const updatedUser = await storage.updateUserRole(userId, role);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
     }
   });
   

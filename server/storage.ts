@@ -26,8 +26,10 @@ import { format } from "date-fns";
 export interface IStorage {
   // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUsers(churchId: string): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
+  updateUserRole(id: string, role: string): Promise<User>;
   
   // Member operations
   getMembers(churchId: string): Promise<Member[]>;
@@ -75,6 +77,15 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
+  
+  async getUsers(churchId: string): Promise<User[]> {
+    // Currently, we only need to get users from the same church
+    // In a multi-tenant environment, this would be filtered by a tenant or church ID
+    return db
+      .select()
+      .from(users)
+      .orderBy(desc(users.username));
+  }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
@@ -96,6 +107,19 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({
         ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    
+    return updatedUser;
+  }
+  
+  async updateUserRole(id: string, role: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        role,
         updatedAt: new Date(),
       })
       .where(eq(users.id, id))
