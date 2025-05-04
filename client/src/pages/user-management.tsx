@@ -313,7 +313,10 @@ const UserManagement = () => {
   // If not admin, redirect or show error
   if (!isAdmin) {
     return (
-      <PageLayout title="Access Denied" subtitle="You do not have permission to access this page">
+      <PageLayout 
+      title="Access Denied" 
+      subtitle="You do not have permission to access this page"
+    >
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-red-600 mb-4">You need administrator privileges to view this page.</p>
@@ -327,7 +330,11 @@ const UserManagement = () => {
   }
   
   return (
-    <PageLayout title="User Management" subtitle="Manage users and their roles in the system">
+    <PageLayout 
+      title="User Management" 
+      subtitle="Manage users and their roles in the system"
+      icon={<Users className="h-6 w-6 text-[#69ad4c]" />}
+    >
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
