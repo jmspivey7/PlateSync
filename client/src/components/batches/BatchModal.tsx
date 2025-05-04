@@ -110,34 +110,28 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
     mutationFn: async (values: FormValues) => {
       if (isEdit && batchId) {
         // Update existing batch
-        const response = await apiRequest("PATCH", `/api/batches/${batchId}`, {
-          name: values.name,
-          date: values.date,
-          status: values.status,
-          notes: values.notes,
-          service: values.service,
+        return await apiRequest(`/api/batches/${batchId}`, {
+          method: "PATCH",
+          body: {
+            name: values.name,
+            date: values.date,
+            status: values.status,
+            notes: values.notes,
+            service: values.service,
+          }
         });
-        
-        if (!response.ok) {
-          throw new Error("Failed to update batch");
-        }
-        
-        return response.json();
       } else {
         // Create new batch
-        const response = await apiRequest("POST", "/api/batches", {
-          name: values.name,
-          date: values.date,
-          status: values.status,
-          notes: values.notes,
-          service: values.service,
+        return await apiRequest("/api/batches", {
+          method: "POST",
+          body: {
+            name: values.name,
+            date: values.date,
+            status: values.status,
+            notes: values.notes,
+            service: values.service,
+          }
         });
-        
-        if (!response.ok) {
-          throw new Error("Failed to create batch");
-        }
-        
-        return response.json();
       }
     },
     onSuccess: () => {
@@ -169,11 +163,10 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
     mutationFn: async () => {
       if (!batchId) return;
       
-      const response = await apiRequest("DELETE", `/api/batches/${batchId}`);
-      
-      if (!response.ok) {
-        throw new Error("Failed to delete count");
-      }
+      await apiRequest(`/api/batches/${batchId}`, {
+        method: "DELETE",
+        returnRaw: true
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });

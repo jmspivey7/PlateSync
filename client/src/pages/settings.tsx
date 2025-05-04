@@ -143,13 +143,10 @@ const Settings = () => {
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const response = await apiRequest("PATCH", "/api/settings", values);
-      
-      if (!response.ok) {
-        throw new Error("Failed to update settings");
-      }
-      
-      return response.json();
+      return await apiRequest("/api/settings", {
+        method: "PATCH",
+        body: values
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
@@ -220,17 +217,14 @@ const Settings = () => {
       // Create a value based on the name (lowercase, replace spaces with hyphens)
       const value = name.toLowerCase().replace(/\s+/g, '-');
       
-      const response = await apiRequest("PATCH", `/api/service-options/${id}`, {
-        name,
-        value,
-        isDefault
+      return await apiRequest(`/api/service-options/${id}`, {
+        method: "PATCH",
+        body: {
+          name,
+          value,
+          isDefault
+        }
       });
-      
-      if (!response.ok) {
-        throw new Error("Failed to update service option");
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
@@ -254,12 +248,10 @@ const Settings = () => {
   // Delete service option
   const deleteServiceOptionMutation = useMutation<boolean, Error, number>({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/service-options/${id}`);
-      
-      if (!response.ok) {
-        throw new Error("Failed to delete service option");
-      }
-      
+      await apiRequest(`/api/service-options/${id}`, {
+        method: "DELETE",
+        returnRaw: true
+      });
       return true;
     },
     onSuccess: () => {
@@ -282,15 +274,12 @@ const Settings = () => {
   // Set service option as default
   const setAsDefaultMutation = useMutation<any, Error, number>({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("PATCH", `/api/service-options/${id}`, {
-        isDefault: true
+      return await apiRequest(`/api/service-options/${id}`, {
+        method: "PATCH",
+        body: {
+          isDefault: true
+        }
       });
-      
-      if (!response.ok) {
-        throw new Error("Failed to set service option as default");
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
@@ -312,13 +301,9 @@ const Settings = () => {
   // Initialize service options mutation
   const initializeServiceOptionsMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/service-options/initialize", {});
-      
-      if (!response.ok) {
-        throw new Error("Failed to initialize service options");
-      }
-      
-      return response.json();
+      return await apiRequest("/api/service-options/initialize", {
+        method: "POST"
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
