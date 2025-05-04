@@ -884,6 +884,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Primary attestation route
+  app.post('/api/batches/:id/attest-primary', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Validate attestor name
+      const { name } = req.body;
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ message: "Attestor name is required" });
+      }
+      
+      // Get batch to verify it exists and check status
+      const batch = await storage.getBatch(batchId, userId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Can only attest if the batch is CLOSED
+      if (batch.status !== 'CLOSED') {
+        return res.status(400).json({ 
+          message: "Batch must be closed before attestation can begin" 
+        });
+      }
+      
+      // Add primary attestation
+      const updatedBatch = await storage.addPrimaryAttestation(batchId, userId, name, userId);
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error adding primary attestation:", error);
+      res.status(500).json({ message: "Failed to add primary attestation" });
+    }
+  });
+  
+  // Secondary attestation route
+  app.post('/api/batches/:id/attest-secondary', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Validate attestor info
+      const { attestorId, name } = req.body;
+      
+      if (!attestorId) {
+        return res.status(400).json({ message: "Secondary attestor ID is required" });
+      }
+      
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ message: "Attestor name is required" });
+      }
+      
+      // Get batch to verify it exists and check status
+      const batch = await storage.getBatch(batchId, userId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Can only add secondary attestation if we have a primary attestation
+      if (!batch.primaryAttestorId) {
+        return res.status(400).json({ 
+          message: "Primary attestation must be completed first" 
+        });
+      }
+      
+      // Secondary attestor should not be the same as primary
+      if (attestorId === batch.primaryAttestorId) {
+        return res.status(400).json({ 
+          message: "Secondary attestor must be different from primary attestor" 
+        });
+      }
+      
+      // Add secondary attestation
+      const updatedBatch = await storage.addSecondaryAttestation(batchId, attestorId, name, userId);
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error adding secondary attestation:", error);
+      res.status(500).json({ message: "Failed to add secondary attestation" });
+    }
+  });
+  
+  // Finalize attestation and complete the batch
+  app.post('/api/batches/:id/confirm-attestation', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get batch to verify it exists and check status
+      const batch = await storage.getBatch(batchId, userId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Can only confirm if both attestations are complete
+      if (!batch.primaryAttestorId || !batch.secondaryAttestorId) {
+        return res.status(400).json({ 
+          message: "Both primary and secondary attestations must be completed before confirmation" 
+        });
+      }
+      
+      // Confirm attestation and finalize the batch
+      const updatedBatch = await storage.confirmAttestation(batchId, userId, userId);
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error confirming attestation:", error);
+      res.status(500).json({ message: "Failed to confirm attestation" });
+    }
+  });
+  
   // DELETE endpoint for deleting a batch
   app.delete('/api/batches/:id', isAuthenticated, async (req: any, res) => {
     try {
