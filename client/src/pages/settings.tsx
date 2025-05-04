@@ -402,12 +402,9 @@ const Settings = () => {
   // Delete report recipient
   const deleteReportRecipientMutation = useMutation<boolean, Error, number>({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/report-recipients/${id}`);
-      
-      if (!response.ok) {
-        throw new Error("Failed to delete recipient");
-      }
-      
+      await apiRequest(`/api/report-recipients/${id}`, {
+        method: "DELETE"
+      });
       return true;
     },
     onSuccess: () => {
@@ -486,16 +483,12 @@ const Settings = () => {
     setSendgridTestMessage(null);
     
     try {
-      const response = await apiRequest('GET', '/api/test-sendgrid');
-      const data = await response.json();
+      const data = await apiRequest('/api/test-sendgrid', {
+        method: 'GET'
+      });
       
-      if (response.ok) {
-        setSendgridTestStatus('success');
-        setSendgridTestMessage(data.message);
-      } else {
-        setSendgridTestStatus('error');
-        setSendgridTestMessage(data.message || 'Failed to test SendGrid configuration');
-      }
+      setSendgridTestStatus('success');
+      setSendgridTestMessage(data.message);
     } catch (error) {
       setSendgridTestStatus('error');
       setSendgridTestMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
