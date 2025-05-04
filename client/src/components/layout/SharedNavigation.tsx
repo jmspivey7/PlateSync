@@ -80,7 +80,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                   <Button variant="ghost" onClick={() => {
                     setLocation("/user-management");
                     setMobileMenuOpen(false);
-                  }}>User Management</Button>
+                  }}>Users</Button>
                   
                   <Button variant="ghost" onClick={() => {
                     setLocation("/reports");
