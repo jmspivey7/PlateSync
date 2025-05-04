@@ -29,20 +29,191 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Plus, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 import PageLayout from "@/components/layout/PageLayout";
 import { useAuth } from "@/hooks/useAuth";
 
+// Form schema for creating a new user
+const formSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  role: z.enum(["ADMIN", "USHER"]),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+// User create form component
+const CreateUserForm = ({ 
+  onSubmit, 
+  isSubmitting 
+}: { 
+  onSubmit: (values: FormValues) => void;
+  isSubmitting: boolean;
+}) => {
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      firstName: "",
+      lastName: "",
+      role: "USHER",
+    },
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username*</FormLabel>
+              <FormControl>
+                <Input placeholder="johndoe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email*</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="john@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name*</FormLabel>
+                <FormControl>
+                  <Input placeholder="John" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name*</FormLabel>
+                <FormControl>
+                  <Input placeholder="Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role*</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="ADMIN">Administrator</SelectItem>
+                  <SelectItem value="USHER">Usher</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Administrators can manage all aspects of the system. Ushers can only record donations.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <DialogFooter>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>Create User</>
+            )}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+};
+
 const UserManagement = () => {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   
   // Fetch all users
   const { data: users, isLoading } = useQuery<User[]>({
@@ -52,6 +223,69 @@ const UserManagement = () => {
     },
   });
   
+  // Create user mutation
+  const { mutate: createUser, isPending: isCreating } = useMutation({
+    mutationFn: async (userData: FormValues) => {
+      return await apiRequest<User>('/api/users', {
+        method: "POST",
+        body: userData,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "User created",
+        description: "New user has been created successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setCreateDialogOpen(false);
+    },
+    onError: (error) => {
+      console.error("Error creating user:", error);
+      toast({
+        title: "User creation failed",
+        description: "There was an error creating the user. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const { mutate: deleteUser, isPending: isDeleting } = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest<void>(`/api/users/${userId}`, {
+        method: "DELETE"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "User deleted",
+        description: "User has been deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setDeleteDialogOpen(false);
+      setSelectedUserId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Deletion failed",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle create user form submission
+  const handleCreateUser = (values: FormValues) => {
+    createUser(values);
+  };
+
+  // Handle delete user confirmation
+  const handleDeleteUser = () => {
+    if (selectedUserId) {
+      deleteUser(selectedUserId);
+    }
+  };
+
   // Update user role mutation
   const { mutate, isPending } = useMutation({
     mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
@@ -120,7 +354,7 @@ const UserManagement = () => {
               </CardDescription>
             </div>
             
-            <div className="w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
@@ -130,6 +364,29 @@ const UserManagement = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Create New User</DialogTitle>
+                    <DialogDescription>
+                      Add a new user to the system. They'll be able to log in using Replit authentication.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <CreateUserForm 
+                    onSubmit={handleCreateUser} 
+                    isSubmitting={isCreating} 
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardHeader>
@@ -197,19 +454,66 @@ const UserManagement = () => {
                       </TableCell>
                       
                       <TableCell className="text-right">
-                        <Select 
-                          defaultValue={user.role || "USHER"}
-                          onValueChange={(value) => handleRoleChange(user.id, value)}
-                          disabled={isPending}
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue placeholder="Role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
-                            <SelectItem value="USHER">Usher</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center justify-end gap-2">
+                          <Select 
+                            defaultValue={user.role || "USHER"}
+                            onValueChange={(value) => handleRoleChange(user.id, value)}
+                            disabled={isPending}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue placeholder="Role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ADMIN">Admin</SelectItem>
+                              <SelectItem value="USHER">Usher</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          
+                          {/* Don't allow deleting self */}
+                          {user.id !== useAuth().user?.id && (
+                          <AlertDialog open={deleteDialogOpen && selectedUserId === user.id} onOpenChange={(open) => {
+                            setDeleteDialogOpen(open);
+                            if (!open) setSelectedUserId(null);
+                          }}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => setSelectedUserId(user.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the user
+                                  account and all associated data.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleDeleteUser}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                  disabled={isDeleting}
+                                >
+                                  {isDeleting ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    "Delete User"
+                                  )}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
