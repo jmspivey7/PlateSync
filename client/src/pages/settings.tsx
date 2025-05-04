@@ -329,7 +329,7 @@ const Settings = () => {
       icon={<SettingsIcon className="h-6 w-6 text-[#69ad4c]" />}
     >
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Church Information</CardTitle>
