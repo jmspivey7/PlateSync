@@ -6,7 +6,7 @@ import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Batch } from "@shared/schema";
-import AttestationForm from "@/components/counts/AttestationForm";
+import AttestationForm from "@/components/counts/NewAttestationForm";
 import PageLayout from "@/components/layout/PageLayout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
