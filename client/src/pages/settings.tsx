@@ -334,7 +334,7 @@ const Settings = () => {
           <CardHeader>
             <CardTitle>Church Information</CardTitle>
             <CardDescription>
-              Update your church's information displayed throughout the system
+              Update your church's information and logo displayed throughout the system
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -358,7 +358,13 @@ const Settings = () => {
                 />
                 
                 <div className="space-y-4 mt-6">
-                  <FormLabel>Church Logo</FormLabel>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Church Logo</FormLabel>
+                    <span className="text-sm text-gray-500">Recommended size: 400x200px</span>
+                  </div>
+                  <FormDescription className="mt-0">
+                    Your logo will appear in the navigation header and on receipts
+                  </FormDescription>
                   
                   {/* Logo Display Section */}
                   <div className="border rounded-lg p-6 flex flex-col items-center">

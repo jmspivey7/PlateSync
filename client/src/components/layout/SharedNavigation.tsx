@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Church } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AccountDropdown from "@/components/layout/AccountDropdown";
 import { useAuth } from "@/hooks/useAuth";
 
-// Import logos
+// Import default logo
 import redeemerLogo from "../../assets/redeemer-logo.png";
 
 interface SharedNavigationProps {
@@ -20,7 +20,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
   const [_, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   
   // Toggle mobile menu
   const toggleMobileMenu = () => {
@@ -31,12 +31,38 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
     <>
       {/* Header with Church Logo */}
       <div className="flex justify-between items-center py-4 mb-6">
-        <img 
-          src={redeemerLogo} 
-          alt="Redeemer NOLA Presbyterian Church" 
-          className="h-[4.6rem] sm:h-[6.9rem] object-contain cursor-pointer" /* Increased by 15% from original h-16 (4rem) and sm:h-24 (6rem) */
-          onClick={() => setLocation("/dashboard")}
-        />
+        {user?.churchLogoUrl ? (
+          // Display custom church logo if available
+          <div 
+            className="cursor-pointer flex items-center"
+            onClick={() => setLocation("/dashboard")}
+          >
+            <img 
+              src={user.churchLogoUrl} 
+              alt={user.churchName || "Church Logo"} 
+              className="h-[4.6rem] sm:h-[6.9rem] object-contain" 
+            />
+          </div>
+        ) : user?.churchName ? (
+          // Show church name if no logo but name is available
+          <div 
+            className="cursor-pointer flex items-center"
+            onClick={() => setLocation("/dashboard")}
+          >
+            <div className="flex items-center">
+              <Church className="h-8 w-8 mr-2 text-[#69ad4c]" />
+              <span className="text-xl font-bold">{user.churchName}</span>
+            </div>
+          </div>
+        ) : (
+          // Fallback to default logo
+          <img 
+            src={redeemerLogo} 
+            alt="Redeemer NOLA Presbyterian Church" 
+            className="h-[4.6rem] sm:h-[6.9rem] object-contain cursor-pointer" /* Increased by 15% from original h-16 (4rem) and sm:h-24 (6rem) */
+            onClick={() => setLocation("/dashboard")}
+          />
+        )}
         
         {isMobile ? (
           <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
