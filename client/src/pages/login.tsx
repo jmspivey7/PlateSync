@@ -10,6 +10,7 @@ import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import plateSyncLogo from "../assets/platesync-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -58,14 +59,20 @@ export default function Login() {
       <div className="grid lg:grid-cols-2 gap-8 w-full max-w-6xl mx-auto">
         {/* Login Form */}
         <Card className="w-full shadow-lg">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Welcome to PlateSync</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+          <CardHeader className="space-y-3 text-center">
+            <div className="flex justify-center">
+              <img 
+                src={plateSyncLogo} 
+                alt="PlateSync Logo" 
+                className="h-20 object-contain mb-2" 
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold">Plate Counts Made Easy!</CardTitle>
           </CardHeader>
           
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid grid-cols-1 mb-2 px-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="login" className="text-xl font-bold">Login</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -80,7 +87,7 @@ export default function Login() {
                   
                   {/* Email input */}
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="text-lg font-medium">Email</Label>
                     <div className="relative">
                       <Input
                         id="email"
@@ -88,18 +95,18 @@ export default function Login() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Enter your email"
-                        className="pl-10"
+                        className="pl-10 text-lg py-6"
                         disabled={isLoading}
                         required
                       />
-                      <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     </div>
                   </div>
                   
                   {/* Password input */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password" className="text-lg font-medium">Password</Label>
                     </div>
                     <div className="relative">
                       <Input
@@ -108,11 +115,11 @@ export default function Login() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"
-                        className="pl-10 pr-10"
+                        className="pl-10 pr-10 text-lg py-6"
                         disabled={isLoading}
                         required
                       />
-                      <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       <button
                         type="button"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -120,29 +127,41 @@ export default function Login() {
                         tabIndex={-1}
                       >
                         {showPassword ? (
-                          <EyeOffIcon className="h-4 w-4" />
+                          <EyeOffIcon className="h-5 w-5" />
                         ) : (
-                          <EyeIcon className="h-4 w-4" />
+                          <EyeIcon className="h-5 w-5" />
                         )}
                       </button>
                     </div>
                   </div>
                 </CardContent>
                 
-                <CardFooter>
+                <CardFooter className="flex flex-col gap-4">
                   <Button 
                     type="submit" 
-                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
+                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white text-lg py-6"
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <div className="flex items-center space-x-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
                         <span>Signing in...</span>
                       </div>
                     ) : (
                       <span>Sign In</span>
                     )}
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    className="text-[#69ad4c] hover:text-[#5a9440]"
+                    onClick={() => toast({
+                      title: "Password Reset",
+                      description: "Please contact your administrator to reset your password.",
+                    })}
+                  >
+                    Forgot My Password
                   </Button>
                 </CardFooter>
               </form>
@@ -150,39 +169,8 @@ export default function Login() {
           </Tabs>
         </Card>
         
-        {/* Hero Section */}
-        <div className="hidden lg:flex flex-col justify-center">
-          <div className="space-y-4 text-center lg:text-left">
-            <h1 className="text-3xl font-bold tracking-tight">
-              Church Donation Management Made Simple
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              PlateSync helps your church track donations, manage members, and streamline your offering counts with powerful, intuitive tools.
-            </p>
-            <ul className="space-y-2 text-lg">
-              <li className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#69ad4c]"></div>
-                <span>Secure donation tracking</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#69ad4c]"></div>
-                <span>Automated donor receipts</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#69ad4c]"></div>
-                <span>Member management</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#69ad4c]"></div>
-                <span>Easy batch processing</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#69ad4c]"></div>
-                <span>Comprehensive dashboard and reports</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+        {/* Empty column on the right */}
+        <div className="hidden lg:block"></div>
       </div>
     </div>
   );
