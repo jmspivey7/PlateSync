@@ -357,7 +357,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           throw new Error("Failed to create donation");
         }
         
-        return donationResponse.json();
+        return { donation: await donationResponse.json(), newMember: true };
       } else {
         // Create donation with existing member or as visitor
         const donationResponse = await fetch("/api/donations", {
@@ -381,26 +381,79 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           throw new Error("Failed to create donation");
         }
         
-        return donationResponse.json();
+        return { donation: await donationResponse.json(), existingMember: values.donorType === "existing" };
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/donations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       
-      toast({
-        title: "Success",
-        description: isEdit 
-          ? "Donation updated successfully." 
-          : "Donation recorded successfully.",
-        className: "bg-[#48BB78] text-white",
-      });
+      // If we have a batch ID, invalidate that batch's data
+      const batchId = form.getValues("batchId");
+      if (batchId && batchId !== "none") {
+        queryClient.invalidateQueries({ queryKey: ['/api/batches', batchId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+      }
       
-      if (onClose) {
-        onClose();
-      } else {
-        setLocation("/donations");
+      // For normal editing operations (not in a batch entry flow)
+      if (isEdit || onClose) {
+        toast({
+          title: "Success",
+          description: isEdit 
+            ? "Donation updated successfully." 
+            : "Donation recorded successfully.",
+          className: "bg-[#48BB78] text-white",
+        });
+        
+        if (onClose) {
+          onClose();
+        } else if (isEdit) {
+          setLocation("/donations");
+        }
+      } 
+      // For "Record & Next" flow in a batch, show more targeted message and reset form
+      else {
+        // Get donor name for message if it's an existing member
+        let donorName = "";
+        const memberId = form.getValues("memberId");
+        if (memberId && members) {
+          const member = members.find(m => m.id.toString() === memberId);
+          if (member) {
+            donorName = `for ${member.firstName} ${member.lastName}`;
+          }
+        }
+        
+        // Show message with amount
+        const amount = form.getValues("amount");
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(Number(amount));
+        
+        toast({
+          title: "Donation Recorded",
+          description: `${formattedAmount} ${donorName} recorded. Ready for next donation.`,
+          className: "bg-[#48BB78] text-white",
+        });
+        
+        // Reset form for next entry but keep the batchId as it should stay the same for all entries
+        const currentBatchId = form.getValues("batchId");
+        const currentDate = form.getValues("date");
+        form.reset({
+          date: currentDate,
+          amount: "",
+          donationType: "CASH",
+          checkNumber: "",
+          notes: "",
+          donorType: "existing",
+          memberId: "",
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          sendNotification: true,
+          batchId: currentBatchId,
+        });
       }
     },
     onError: (error) => {
@@ -671,45 +724,16 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     />
                   )}
                   
-                  <div className="hidden">
-                    <FormField
-                      control={form.control}
-                      name="batchId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input type="hidden" {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
+                  {/* Hidden fields - don't use Input component with type="hidden" */}
+                  <input type="hidden" name="batchId" value={form.getValues("batchId")} />
+                  <input type="hidden" name="notes" value={form.getValues("notes") || ""} />
+                  {donorType === "existing" && (
+                    <input
+                      type="hidden"
+                      name="sendNotification"
+                      value={form.getValues("sendNotification") ? "true" : "false"}
                     />
-                    
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input type="hidden" {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {donorType === "existing" && (
-                      <FormField
-                        control={form.control}
-                        name="sendNotification"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input type="hidden" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
               
@@ -718,9 +742,16 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setLocation("/donations")}
+                    onClick={() => {
+                      // If donation is from a batch detail, go back to that batch
+                      if (defaultBatchId) {
+                        setLocation(`/batch/${defaultBatchId}`);
+                      } else {
+                        setLocation("/counts");
+                      }
+                    }}
                   >
-                    Cancel
+                    Back to Count Summary
                   </Button>
                 )}
                 <Button 
@@ -740,7 +771,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       {isEdit ? "Updating..." : "Recording..."}
                     </>
                   ) : (
-                    isEdit ? "Update Donation" : "Record Donation"
+                    isEdit ? "Update Donation" : "Record & Next"
                   )}
                 </Button>
               </div>
