@@ -104,7 +104,7 @@ const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isAdmin } = useAuth();
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  // Removed showSuccessToast state to eliminate duplicate notifications
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,8 +151,7 @@ const Settings = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       
-      setShowSuccessToast(true);
-      
+      // Removed duplicate toast notification
       toast({
         title: "Settings updated",
         description: "Your church settings have been saved successfully.",
