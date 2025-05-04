@@ -373,7 +373,7 @@ const Settings = () => {
     <PageLayout 
       title="Settings" 
       subtitle="Manage your church and notification settings"
-      icon={<SettingsIcon className="h-6 w-6 text-gray-700" />}
+      icon={<SettingsIcon className="h-6 w-6 text-[#69ad4c]" />}
     >
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

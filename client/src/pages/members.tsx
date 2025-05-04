@@ -229,7 +229,7 @@ const Members = () => {
     <PageLayout 
       title={`Members (${totalMembers})`} 
       subtitle="Manage your church members and their information"
-      icon={<UserPlus className="h-6 w-6 text-gray-700" />}
+      icon={<UserPlus className="h-6 w-6 text-[#69ad4c]" />}
     >
       {content}
     </PageLayout>
