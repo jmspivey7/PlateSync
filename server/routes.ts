@@ -179,13 +179,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // User management routes - Admin only
+
+  
+  // User management routes
   app.get('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const churchId = userId; // For now, users can only see users in their own church
-      
-      const users = await storage.getUsers(churchId);
+      const users = await storage.getUsers(userId);
       res.json(users);
     } catch (error) {
       console.error("Error fetching users:", error);

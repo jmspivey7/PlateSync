@@ -7,24 +7,39 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  method: string,
+export async function apiRequest<T = any>(
   url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const isFormData = data instanceof FormData;
+  options?: {
+    method?: string;
+    body?: any;
+    headers?: Record<string, string>;
+    returnRaw?: boolean;
+  }
+): Promise<T> {
+  const isFormData = options?.body instanceof FormData;
+  const method = options?.method || 'GET';
   
   const res = await fetch(url, {
     method,
     // Don't set Content-Type when using FormData - the browser will set it automatically with the correct boundary
-    headers: (data && !isFormData) ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(options?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
+      ...options?.headers,
+    },
     // Don't stringify FormData objects
-    body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
+    body: options?.body ? (isFormData ? options.body : JSON.stringify(options.body)) : undefined,
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  // Return raw response if requested
+  if (options?.returnRaw) {
+    return res as unknown as T;
+  }
+  
+  // Otherwise parse and return JSON
+  return await res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

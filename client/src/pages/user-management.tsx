@@ -48,18 +48,17 @@ const UserManagement = () => {
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
     queryFn: async () => {
-      const response = await apiRequest('/api/users');
-      return response as User[];
+      return await apiRequest<User[]>('/api/users');
     },
   });
   
   // Update user role mutation
   const { mutate, isPending } = useMutation({
     mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
-      return await apiRequest(`/api/users/${userId}/role`, {
+      return await apiRequest<User>(`/api/users/${userId}/role`, {
         method: "PATCH",
-        body: JSON.stringify({ role }),
-      }) as User;
+        body: { role },
+      });
     },
     onSuccess: () => {
       toast({
