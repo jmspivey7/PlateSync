@@ -30,7 +30,19 @@ const CountsPage = () => {
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
+  // Check if we have a filter in the URL query parameters
+  const searchParams = new URLSearchParams(window.location.search);
+  const filterParam = searchParams.get('filter');
+  const [activeTab, setActiveTab] = useState(filterParam || "open");
+  
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Update URL with the new filter
+    const url = new URL(window.location.href);
+    url.searchParams.set('filter', value);
+    window.history.pushState({}, '', url.toString());
+  };
 
   // Fetch all batches
   const { data: batches, isLoading: isLoadingBatches } = useQuery<Batch[]>({
@@ -126,7 +138,7 @@ const CountsPage = () => {
           <CardDescription>
             View past donation counts by worship service or collection date
           </CardDescription>
-          <Tabs defaultValue="open" className="mt-3" onValueChange={setActiveTab}>
+          <Tabs value={activeTab} defaultValue="open" className="mt-3" onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-3 p-1 shadow-sm border border-gray-200 rounded-md">
               <TabsTrigger 
                 value="open"
