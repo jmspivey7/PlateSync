@@ -434,6 +434,8 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         // Reset form for next entry but keep the batchId as it should stay the same for all entries
         const currentBatchId = form.getValues("batchId");
         const currentDate = form.getValues("date");
+        
+        // Reset form completely
         form.reset({
           date: currentDate,
           amount: "",
@@ -449,6 +451,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           sendNotification: true,
           batchId: currentBatchId,
         });
+        
+        // Clear any UI state related to selected member
+        setDonorType("existing"); // Reset the UI radio button
       }
     },
     onError: (error) => {
@@ -477,12 +482,14 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
   };
   
   return (
-    <Card className="mb-8">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-xl font-bold text-[#2D3748]">
-          {isEdit ? "Edit Donation" : "Record New Donation"}
-        </CardTitle>
-      </CardHeader>
+    <Card className={`${isInsideDialog ? 'mb-0' : 'mb-8'}`}>
+      {!isInsideDialog && (
+        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+          <CardTitle className="text-xl font-bold text-[#2D3748]">
+            {isEdit ? "Edit Donation" : "Record New Donation"}
+          </CardTitle>
+        </CardHeader>
+      )}
       
       <CardContent>
         {(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch) && (
@@ -733,22 +740,24 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
               </div>
               
               <div className="flex justify-end mt-6 space-x-2">
-                {!isInsideDialog && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => {
-                      // If donation is from a batch detail, go back to that batch
-                      if (defaultBatchId) {
-                        setLocation(`/batch/${defaultBatchId}`);
-                      } else {
-                        setLocation("/counts");
-                      }
-                    }}
-                  >
-                    Back to Count Summary
-                  </Button>
-                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    // If inside dialog, use onClose to close the dialog
+                    if (isInsideDialog && onClose) {
+                      onClose();
+                    } 
+                    // Otherwise navigate based on the batch ID
+                    else if (defaultBatchId) {
+                      setLocation(`/batch/${defaultBatchId}`);
+                    } else {
+                      setLocation("/counts");
+                    }
+                  }}
+                >
+                  Back to Count Summary
+                </Button>
                 <Button 
                   type="submit" 
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"

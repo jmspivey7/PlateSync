@@ -458,19 +458,14 @@ const BatchDetailPage = () => {
         {/* Modal for adding a donation */}
         <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
           <DialogContent className="sm:max-w-[800px] p-0">
-            <DialogHeader className="px-6 pt-6 pb-0 flex justify-between items-center">
+            <DialogHeader className="px-6 pt-6 pb-0">
               <DialogTitle className="text-xl font-bold">Record New Donation</DialogTitle>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsAddingDonation(false)}
-                className="rounded-full h-8 w-8"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Button>
             </DialogHeader>
-            <DonationForm defaultBatchId={batchId} isInsideDialog={true} />
+            <DonationForm 
+              defaultBatchId={batchId} 
+              isInsideDialog={true} 
+              onClose={() => setIsAddingDonation(false)} 
+            />
           </DialogContent>
         </Dialog>
       </Card>
