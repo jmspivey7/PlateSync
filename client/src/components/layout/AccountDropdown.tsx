@@ -25,9 +25,16 @@ const AccountDropdown = () => {
     return isAdmin ? "A" : "U";
   };
   
-  // Get username or email for display
+  // Get full name or fall back to username/email
   const getDisplayName = () => {
     if (!user) return "User";
+    
+    // Display First Name Last Name if available
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    
+    // Fall back to username or email if no name is available
     return user.username || user.email || "User";
   };
   

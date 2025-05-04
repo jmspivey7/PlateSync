@@ -113,9 +113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avatarUrl = `/avatars/${req.file.filename}`;
       
       // Update user profile with the new avatar URL
-      // We use profile_image_url (snake_case) since that's how it's defined in the schema
       const updatedUser = await storage.updateUserSettings(userId, {
-        profile_image_url: avatarUrl
+        profileImageUrl: avatarUrl
       });
       
       res.json({
