@@ -281,7 +281,13 @@ const BatchDetailPage = () => {
                     Edit Count
                   </Button>
                   <Button 
-                    onClick={() => setIsAttesting(true)} 
+                    onClick={() => {
+                      console.log("Attest & Finalize button clicked");
+                      console.log("Current batch status:", batch?.status);
+                      console.log("isAttesting state before:", isAttesting);
+                      setIsAttesting(true);
+                      console.log("isAttesting state after:", true);
+                    }} 
                     className="bg-amber-500 hover:bg-amber-600 text-black"
                   >
                     <UserCheck className="mr-2 h-4 w-4" />
@@ -472,14 +478,23 @@ const BatchDetailPage = () => {
         </Dialog>
         
         {/* Modal for attestation process */}
-        <Dialog open={isAttesting} onOpenChange={setIsAttesting}>
+        <Dialog 
+          open={isAttesting} 
+          onOpenChange={(open) => {
+            console.log("Dialog onOpenChange called with:", open);
+            setIsAttesting(open);
+          }}
+        >
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader className="pb-0">
               <DialogTitle className="text-xl font-bold">Count Attestation</DialogTitle>
             </DialogHeader>
+            {/* Log when the attestation form is rendered */}
+            {console.log("Rendering AttestationForm with batchId:", batchId)}
             <AttestationForm 
               batchId={batchId}
               onComplete={() => {
+                console.log("AttestationForm onComplete called");
                 setIsAttesting(false);
                 // After attestation is complete, trigger a batch refetch and mark as finalized
                 queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
