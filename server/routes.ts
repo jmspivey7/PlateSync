@@ -1,4 +1,4 @@
-import type { Express, Request } from "express";
+import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -22,6 +22,14 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Ensure avatars directory exists
+  const avatarsDir = path.join('public', 'avatars');
+  if (!fs.existsSync(avatarsDir)) {
+    fs.mkdirSync(avatarsDir, { recursive: true });
+  }
+
+  // Serve static avatar files
+  app.use('/avatars', express.static(path.join('public', 'avatars')));
   // Set up multer for file uploads
   const upload = multer({ 
     storage: multer.memoryStorage(),

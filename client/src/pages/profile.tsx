@@ -51,10 +51,7 @@ const Profile = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data: ProfileFormValues) => {
-      return apiRequest('/api/profile', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('/api/profile', 'POST', data);
     },
     onSuccess: () => {
       toast({

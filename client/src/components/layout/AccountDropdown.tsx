@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,11 @@ const AccountDropdown = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
           <Avatar className="h-8 w-8 bg-[#69ad4c]">
-            <AvatarFallback>{getInitials()}</AvatarFallback>
+            {user?.profileImageUrl ? (
+              <AvatarImage src={user.profileImageUrl} alt={getDisplayName()} />
+            ) : (
+              <AvatarFallback>{getInitials()}</AvatarFallback>
+            )}
           </Avatar>
           <span>{getDisplayName()}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
