@@ -15,7 +15,6 @@ import {
   HelpCircle, 
   Settings, 
   Users, 
-  UserPlus,
   LogOut,
   FileBarChart 
 } from "lucide-react";
@@ -92,11 +91,6 @@ const AccountDropdown = () => {
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/user-management")}>
                 <Users className="mr-2 h-4 w-4" />
                 <span>User Management</span>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/members")}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                <span>Members</span>
               </DropdownMenuItem>
               
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/reports")}>
