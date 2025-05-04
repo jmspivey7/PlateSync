@@ -577,25 +577,6 @@ const Settings = () => {
             
             <Separator className="my-6" />
             
-            <div className="text-sm text-gray-600 mb-4">
-              <p>Email notifications are sent via SendGrid when donations are recorded.</p>
-              <p className="mt-2">Notification emails include:</p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Donation amount</li>
-                <li>Donation date</li>
-                <li>Donor information</li>
-                <li>Your church name</li>
-              </ul>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded border border-gray-200 text-sm mb-4">
-              <p className="font-medium">Note about notifications</p>
-              <p className="mt-1">
-                Make sure your SendGrid API key is properly configured in the environment 
-                variables for email notifications to work correctly.
-              </p>
-            </div>
-            
             {sendgridTestStatus === 'success' && (
               <Alert className="mb-4 bg-green-50 border-green-200">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
