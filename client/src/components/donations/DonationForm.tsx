@@ -699,9 +699,6 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             <SelectItem value="none">No batch (individual donation)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>
-                          The batch or count this donation belongs to.
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -722,7 +719,6 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             disabled={field.disabled}
                             name={field.name}
                             ref={field.ref}
-                            placeholder="Add any additional notes here..."
                           />
                         </FormControl>
                         <FormMessage />
@@ -736,11 +732,8 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       name="sendNotification"
                       render={({ field }) => (
                         <FormItem className="col-span-1 md:col-span-2 flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
+                          <div>
                             <FormLabel className="text-base">Send Receipt Notification</FormLabel>
-                            <FormDescription>
-                              Send an email notification to the donor with donation receipt details.
-                            </FormDescription>
                           </div>
                           <FormControl>
                             <Switch
