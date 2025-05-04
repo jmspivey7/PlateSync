@@ -18,8 +18,7 @@ import Help from "@/pages/help";
 import UserManagement from "@/pages/user-management";
 import ServiceOptions from "@/pages/service-options";
 import EmailSettings from "@/pages/email-settings";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 
@@ -83,11 +82,9 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-grow">
         {children}
       </main>
-      <Footer />
     </div>
   );
 }
