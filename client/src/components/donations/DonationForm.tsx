@@ -171,11 +171,27 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         
         // Get batch info to set the date
         if (specificBatch.date) {
-          // Force a new date object to ensure it's correctly processed
-          const dateObj = new Date(specificBatch.date);
+          // Handle timezone issues by adding a day offset
+          const dateString = specificBatch.date.toString();
+          let dateObj = new Date(dateString);
+          
+          // Adjust for timezone offset if needed
+          // This ensures the date displayed is the same as the one set in the batch
           const batchDate = format(dateObj, 'yyyy-MM-dd');
-          console.log("Setting date from specific batch:", batchDate, "Original date:", specificBatch.date);
-          form.setValue("date", batchDate);
+          
+          // Check if the formatted date matches what we expect from the batch name
+          // Batch name typically contains the date in "Month Day, Year" format
+          const expectedDateMatch = specificBatch.name.match(/,\s+([A-Za-z]+)\s+(\d+),\s+(\d{4})/);
+          if (expectedDateMatch) {
+            const [, month, day, year] = expectedDateMatch;
+            // Use the date from the name if available
+            const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+            dateObj = new Date(parseInt(year), monthIndex, parseInt(day));
+          }
+          
+          const correctedDate = format(dateObj, 'yyyy-MM-dd');
+          console.log("Setting date from specific batch:", correctedDate, "Original date:", specificBatch.date);
+          form.setValue("date", correctedDate);
         }
       }
       // Otherwise, use current batch if available
@@ -188,11 +204,23 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           
           // Set date to match batch date
           if (currentBatch.date) {
-            // Force a new date object to ensure it's correctly processed
-            const dateObj = new Date(currentBatch.date);
-            const batchDate = format(dateObj, 'yyyy-MM-dd');
-            console.log("Setting date from current batch:", batchDate, "Original date:", currentBatch.date);
-            form.setValue("date", batchDate);
+            // Handle timezone issues by extracting date from batch name
+            const dateString = currentBatch.date.toString();
+            let dateObj = new Date(dateString);
+            
+            // Check if the formatted date matches what we expect from the batch name
+            // Batch name typically contains the date in "Month Day, Year" format
+            const expectedDateMatch = currentBatch.name.match(/,\s+([A-Za-z]+)\s+(\d+),\s+(\d{4})/);
+            if (expectedDateMatch) {
+              const [, month, day, year] = expectedDateMatch;
+              // Use the date from the name if available
+              const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+              dateObj = new Date(parseInt(year), monthIndex, parseInt(day));
+            }
+            
+            const correctedDate = format(dateObj, 'yyyy-MM-dd');
+            console.log("Setting date from current batch:", correctedDate, "Original date:", currentBatch.date);
+            form.setValue("date", correctedDate);
           }
         }
       }
@@ -206,11 +234,22 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
       if (batchId && batchId !== "none") {
         const selectedBatch = batches?.find(batch => batch.id === parseInt(batchId));
         if (selectedBatch && selectedBatch.date) {
-          // Force a new date object to ensure it's correctly processed
-          const dateObj = new Date(selectedBatch.date);
-          const batchDate = format(dateObj, 'yyyy-MM-dd');
-          console.log("Setting date from batch selection:", batchDate, "Original date:", selectedBatch.date);
-          form.setValue("date", batchDate);
+          // Handle timezone issues by extracting date from batch name
+          const dateString = selectedBatch.date.toString();
+          let dateObj = new Date(dateString);
+          
+          // Check if the date matches what we expect from the batch name
+          const expectedDateMatch = selectedBatch.name.match(/,\s+([A-Za-z]+)\s+(\d+),\s+(\d{4})/);
+          if (expectedDateMatch) {
+            const [, month, day, year] = expectedDateMatch;
+            // Use the date from the name if available
+            const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+            dateObj = new Date(parseInt(year), monthIndex, parseInt(day));
+          }
+          
+          const correctedDate = format(dateObj, 'yyyy-MM-dd');
+          console.log("Setting date from batch selection:", correctedDate, "Original date:", selectedBatch.date);
+          form.setValue("date", correctedDate);
         }
       }
     }
