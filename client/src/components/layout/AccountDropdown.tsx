@@ -63,8 +63,8 @@ const AccountDropdown = () => {
       </DropdownMenuTrigger>
       
       <DropdownMenuContent className="bg-white w-56" align="end">
-        <DropdownMenuLabel className="text-sm text-muted-foreground">
-          {user?.email || ""}
+        <DropdownMenuLabel className="text-[1.1rem] font-semibold">
+          {isAdmin ? "Administrator" : "Usher"}
         </DropdownMenuLabel>
         
         <DropdownMenuGroup>
