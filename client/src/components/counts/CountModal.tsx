@@ -171,13 +171,18 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       
       onClose();
       
-      // For new count creation, redirect to the batch detail page
-      if (!isEdit && data && data.id) {
-        setLocation(`/batch/${data.id}`);
-      } else if (isEdit && batchId) {
-        // For edits, redirect to the batch detail page if we're not already there
-        setLocation(`/batch/${batchId}`);
-      }
+      // Use setTimeout to ensure UI has time to update before navigation
+      setTimeout(() => {
+        // For new count creation, redirect to the batch detail page
+        if (!isEdit && data && data.id) {
+          console.log(`Navigating to batch/${data.id}`);
+          setLocation(`/batch/${data.id}`);
+        } else if (isEdit && batchId) {
+          // For edits, redirect to the batch detail page if we're not already there
+          console.log(`Navigating to batch/${batchId}`);
+          setLocation(`/batch/${batchId}`);
+        }
+      }, 300);
     },
     onError: (error) => {
       toast({

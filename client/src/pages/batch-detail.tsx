@@ -46,7 +46,7 @@ const BatchDetailPage = () => {
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
     queryKey: ["/api/batches", batchId, "details"],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/batches/${batchId}`);
+      const response = await fetch(`/api/batches/${batchId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch count details");
       }
@@ -79,11 +79,13 @@ const BatchDetailPage = () => {
   // Mutation to finalize batch
   const finalizeBatchMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest(
-        "PATCH", 
-        `/api/batches/${batchId}`, 
-        { status: "FINALIZED" }
-      );
+      const response = await fetch(`/api/batches/${batchId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: "FINALIZED" })
+      });
       return response.json();
     },
     onSuccess: () => {
