@@ -5,8 +5,71 @@ import { testSendGridConfiguration, sendCountReport } from './sendgrid';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { db } from './db';
+import crypto from 'crypto';
 
 export function setupTestEndpoints(app: Express) {
+  // Generate new verification token for an existing user
+  app.post('/api/regenerate-verification-token', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required"
+        });
+      }
+      
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found with this email"
+        });
+      }
+      
+      // Generate new token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date();
+      expires.setHours(expires.getHours() + 24); // 24 hour expiration
+      
+      // Update user with new token
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          passwordResetToken: token,
+          passwordResetExpires: expires,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+      
+      // Get application URL from request for verification link
+      const appUrl = `${req.protocol}://${req.get('host')}`;
+      const verificationUrl = `${appUrl}/verify?token=${token}`;
+      
+      return res.json({
+        success: true,
+        message: "New verification token generated",
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        verificationUrl
+      });
+      
+    } catch (error) {
+      console.error("Error regenerating verification token:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error regenerating token"
+      });
+    }
+  });
+
   // Check token endpoint for verification debugging
   app.get('/api/test-verification-token', async (req, res) => {
     try {

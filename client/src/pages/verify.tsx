@@ -28,12 +28,46 @@ export default function Verify() {
   const search = useSearch();
   const { toast } = useToast();
   
-  // Parse token from URL
+  // Parse token from URL and automatically test it
   useEffect(() => {
     const params = new URLSearchParams(search);
     const tokenFromUrl = params.get("token");
     if (tokenFromUrl) {
       setToken(tokenFromUrl);
+      
+      // Automatically check the token after a short delay
+      setTimeout(() => {
+        const verifyToken = async () => {
+          try {
+            const response = await fetch(`/api/test-verification-token?token=${encodeURIComponent(tokenFromUrl)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+              setTokenStatus({
+                valid: true,
+                message: `Token is valid for user: ${data.userEmail}`,
+                details: data
+              });
+              setError("");
+            } else {
+              setTokenStatus({
+                valid: false,
+                message: data.message,
+                details: data
+              });
+              setError("Invalid verification token. Please check your email for the correct link or contact support.");
+            }
+          } catch (err) {
+            console.error("Error verifying token:", err);
+            setTokenStatus({
+              valid: false,
+              message: "Error checking token"
+            });
+          }
+        };
+        
+        verifyToken();
+      }, 500);
     }
   }, [search]);
   
@@ -169,10 +203,10 @@ export default function Verify() {
               </div>
             )}
             
-            {/* Token input (hidden if already in URL) */}
-            {!token && (
-              <div className="space-y-2">
-                <Label htmlFor="token">Verification Token</Label>
+            {/* Token input and debug section */}
+            <div className="space-y-2">
+              <Label htmlFor="token">Verification Token</Label>
+              <div className="flex items-center space-x-2">
                 <Input
                   id="token"
                   type="text"
@@ -180,9 +214,84 @@ export default function Verify() {
                   onChange={(e) => setToken(e.target.value)}
                   placeholder="Enter your verification token"
                   required
+                  className="flex-1"
                 />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={checkToken}
+                >
+                  Test Token
+                </Button>
               </div>
-            )}
+              
+              {/* Token status */}
+              {tokenStatus && (
+                <div className={`p-3 rounded-md text-sm ${tokenStatus.valid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                  {tokenStatus.message}
+                  {tokenStatus.details && (
+                    <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-32">
+                      {JSON.stringify(tokenStatus.details, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              )}
+              
+              {/* Token regeneration */}
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      const email = prompt("Please enter your email to generate a new verification token:");
+                      if (!email) return;
+                      
+                      const response = await fetch('/api/regenerate-verification-token', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email })
+                      });
+                      
+                      const data = await response.json();
+                      
+                      if (data.success) {
+                        toast({
+                          title: "New token generated",
+                          description: `A new verification token has been generated for ${data.email}`,
+                        });
+                        
+                        // Update the token in the form
+                        setToken(data.verificationUrl.split("token=")[1]);
+                        
+                        // Auto-check the token
+                        setTimeout(() => checkToken(), 500);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: data.message,
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (err) {
+                      console.error("Error regenerating token:", err);
+                      toast({
+                        title: "Error",
+                        description: "Failed to generate a new token",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  Generate New Verification Token
+                </Button>
+              </div>
+            </div>
             
             {/* Password input */}
             <div className="space-y-2">
