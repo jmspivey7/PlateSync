@@ -83,7 +83,8 @@ const ServiceOptions = () => {
     if (option) {
       form.reset({
         name: option.name,
-        isDefault: option.isDefault,
+        // Convert null or undefined to false for isDefault
+        isDefault: option.isDefault === true,
       });
     } else {
       form.reset({
@@ -104,24 +105,27 @@ const ServiceOptions = () => {
   // Create service option mutation
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      return await apiRequest('/api/service-options', {
+      const response = await apiRequest('/api/service-options', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: data, // Pass object directly, apiRequest handles JSON.stringify internally
       });
+      return response;
     },
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Service option created successfully',
+        className: "bg-[#48BB78] text-white",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
       setIsCreateOpen(false);
       form.reset();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Service option creation error:", error);
       toast({
         title: 'Error',
-        description: 'Failed to create service option',
+        description: `Failed to create service option: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
     },
@@ -130,25 +134,28 @@ const ServiceOptions = () => {
   // Update service option mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number, data: FormValues }) => {
-      return await apiRequest(`/api/service-options/${id}`, {
+      const response = await apiRequest(`/api/service-options/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify(data),
+        body: data, // Pass object directly, apiRequest handles JSON.stringify internally
       });
+      return response;
     },
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Service option updated successfully',
+        className: "bg-[#48BB78] text-white",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
       setIsEditOpen(false);
       setCurrentOption(null);
       form.reset();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Service option update error:", error);
       toast({
         title: 'Error',
-        description: 'Failed to update service option',
+        description: `Failed to update service option: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
     },
@@ -157,22 +164,25 @@ const ServiceOptions = () => {
   // Delete service option mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/service-options/${id}`, {
+      const response = await apiRequest(`/api/service-options/${id}`, {
         method: 'DELETE',
       });
+      return response;
     },
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Service option deleted successfully',
+        className: "bg-[#48BB78] text-white",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
       setDeleteOption(null);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Service option deletion error:", error);
       toast({
         title: 'Error',
-        description: 'Failed to delete service option',
+        description: `Failed to delete service option: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
     },
