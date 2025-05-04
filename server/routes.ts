@@ -659,6 +659,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Initialize service options for current user
+  app.post('/api/service-options/initialize', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.createDefaultServiceOptions(userId);
+      const options = await storage.getServiceOptions(userId);
+      res.json(options);
+    } catch (error) {
+      console.error("Error initializing service options:", error);
+      res.status(500).json({ message: "Failed to initialize service options" });
+    }
+  });
+
   // Service Options routes
   app.get('/api/service-options', isAuthenticated, async (req: any, res) => {
     try {

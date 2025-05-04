@@ -127,8 +127,12 @@ const Settings = () => {
   // Create service option
   const createServiceOptionMutation = useMutation({
     mutationFn: async (name: string) => {
+      // Create a value based on the name (lowercase, replace spaces with hyphens)
+      const value = name.toLowerCase().replace(/\s+/g, '-');
+      
       const response = await apiRequest("POST", "/api/service-options", {
         name,
+        value,
         isDefault: (serviceOptions as ServiceOption[]).length === 0 // Make it default if it's the first one
       });
       
@@ -159,8 +163,12 @@ const Settings = () => {
   // Update service option
   const updateServiceOptionMutation = useMutation({
     mutationFn: async ({ id, name, isDefault }: { id: number, name: string, isDefault?: boolean }) => {
+      // Create a value based on the name (lowercase, replace spaces with hyphens)
+      const value = name.toLowerCase().replace(/\s+/g, '-');
+      
       const response = await apiRequest("PATCH", `/api/service-options/${id}`, {
         name,
+        value,
         isDefault
       });
       
@@ -486,6 +494,28 @@ const Settings = () => {
                     <p className="text-sm text-gray-400 mt-1">
                       Add your first service option using the field above
                     </p>
+                    <Button 
+                      onClick={() => {
+                        apiRequest("POST", "/api/service-options/initialize", {})
+                          .then(() => {
+                            queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
+                            toast({
+                              title: "Default service options created",
+                              description: "Default service options have been initialized",
+                            });
+                          })
+                          .catch((error) => {
+                            toast({
+                              title: "Error",
+                              description: "Failed to initialize default service options",
+                              variant: "destructive",
+                            });
+                          });
+                      }}
+                      className="mt-4 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                    >
+                      Initialize Default Options
+                    </Button>
                   </div>
                 ) : (
                   <div className="divide-y">
