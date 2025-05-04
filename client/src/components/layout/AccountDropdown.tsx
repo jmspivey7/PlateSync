@@ -9,7 +9,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { 
+  ChevronDown, 
+  User, 
+  HelpCircle, 
+  Settings, 
+  Users, 
+  UserPlus,
+  LogOut 
+} from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -55,53 +63,53 @@ const AccountDropdown = () => {
       </DropdownMenuTrigger>
       
       <DropdownMenuContent className="bg-white w-56" align="end">
-        <DropdownMenuLabel className="text-[1.1rem]">My Account</DropdownMenuLabel>
-        
-        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-sm text-muted-foreground">
+          {user?.email || ""}
+        </DropdownMenuLabel>
         
         <DropdownMenuGroup>
-          <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/profile")}>
-            Profile
+          <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/profile")}>
+            <User className="mr-2 h-4 w-4" />
+            <span>Profile</span>
           </DropdownMenuItem>
           
-          <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/help")}>
-            Help
+          <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/help")}>
+            <HelpCircle className="mr-2 h-4 w-4" />
+            <span>Help</span>
           </DropdownMenuItem>
           
           {isAdmin && (
             <>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="my-1" />
               
-              <DropdownMenuLabel className="text-[1.1rem]">Admin</DropdownMenuLabel>
-              
-              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/settings")}>
-                App Settings
+              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/settings")}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
               </DropdownMenuItem>
               
-              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/user-management")}>
-                User Management
+              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/user-management")}>
+                <Users className="mr-2 h-4 w-4" />
+                <span>User Management</span>
               </DropdownMenuItem>
               
-              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/members")}>
-                Members
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/service-options")}>
-                Service Options
+              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/members")}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                <span>Members</span>
               </DropdownMenuItem>
             </>
           )}
         </DropdownMenuGroup>
         
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-1" />
         
         <DropdownMenuItem 
-          className="text-red-600 text-[1.1rem]"
+          className="text-red-600 text-[1.1rem] py-2"
           onClick={() => {
             window.location.href = "/api/logout";
           }}
         >
-          Logout
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Logout</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
