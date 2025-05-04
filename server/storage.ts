@@ -50,6 +50,9 @@ export interface IStorage {
   getBatchWithDonations(id: number, churchId: string): Promise<BatchWithDonations | undefined>;
   createBatch(batch: InsertBatch): Promise<Batch>;
   updateBatch(id: number, data: Partial<InsertBatch>, churchId: string): Promise<Batch | undefined>;
+  addPrimaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined>;
+  addSecondaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined>;
+  confirmAttestation(id: number, confirmerId: string, churchId: string): Promise<Batch | undefined>;
   deleteBatch(id: number, churchId: string): Promise<void>;
   getCurrentBatch(churchId: string): Promise<Batch | undefined>;
   getLatestFinalizedBatch(churchId: string): Promise<Batch | undefined>;

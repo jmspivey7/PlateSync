@@ -19,10 +19,12 @@ import {
   Printer,
   Edit,
   AlertTriangle,
-  X
+  X,
+  UserCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
+import AttestationForm from "../components/counts/AttestationForm";
 import { Batch, BatchWithDonations, Donation, DonationWithMember, batchStatusEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
