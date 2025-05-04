@@ -28,6 +28,7 @@ import {
   insertDonationSchema,
   insertBatchSchema,
   donationTypeEnum,
+  insertReportRecipientSchema,
   notificationStatusEnum,
   batchStatusEnum,
   updateUserSchema,

@@ -5,6 +5,7 @@ import {
   donations,
   batches,
   serviceOptions,
+  reportRecipients,
   type User,
   type UpsertUser,
   type Member,
@@ -17,10 +18,12 @@ import {
   type DonationWithMember,
   type BatchWithDonations,
   type ServiceOption,
-  type InsertServiceOption
+  type InsertServiceOption,
+  type ReportRecipient,
+  type InsertReportRecipient
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, sum, count } from "drizzle-orm";
+import { eq, desc, and, gte, sql, sum, count, asc } from "drizzle-orm";
 import { format } from "date-fns";
 
 // Interface for storage operations
@@ -846,6 +849,61 @@ export class DatabaseStorage implements IStorage {
         await this.createServiceOption(option);
       }
     }
+  }
+  
+  // Report Recipients operations
+  async getReportRecipients(churchId: string): Promise<ReportRecipient[]> {
+    return db
+      .select()
+      .from(reportRecipients)
+      .where(eq(reportRecipients.churchId, churchId))
+      .orderBy(asc(reportRecipients.lastName), asc(reportRecipients.firstName));
+  }
+  
+  async getReportRecipient(id: number, churchId: string): Promise<ReportRecipient | undefined> {
+    const [recipient] = await db
+      .select()
+      .from(reportRecipients)
+      .where(and(
+        eq(reportRecipients.id, id),
+        eq(reportRecipients.churchId, churchId)
+      ));
+    
+    return recipient;
+  }
+  
+  async createReportRecipient(recipientData: InsertReportRecipient): Promise<ReportRecipient> {
+    const [newRecipient] = await db
+      .insert(reportRecipients)
+      .values(recipientData)
+      .returning();
+    
+    return newRecipient;
+  }
+  
+  async updateReportRecipient(id: number, data: Partial<InsertReportRecipient>, churchId: string): Promise<ReportRecipient | undefined> {
+    const [updatedRecipient] = await db
+      .update(reportRecipients)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(reportRecipients.id, id),
+        eq(reportRecipients.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedRecipient;
+  }
+  
+  async deleteReportRecipient(id: number, churchId: string): Promise<void> {
+    await db
+      .delete(reportRecipients)
+      .where(and(
+        eq(reportRecipients.id, id),
+        eq(reportRecipients.churchId, churchId)
+      ));
   }
 }
 
