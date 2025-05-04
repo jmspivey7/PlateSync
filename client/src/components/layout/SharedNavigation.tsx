@@ -46,9 +46,6 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
           </Button>
         ) : (
           <div className="flex items-center space-x-4">
-            <div className="flex space-x-2">
-              <Button variant="ghost" className="text-[1.1rem]" onClick={() => setLocation("/counts")}>Historical Counts</Button>
-            </div>
             <AccountDropdown />
           </div>
         )}
@@ -66,7 +63,7 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
             <Button variant="ghost" onClick={() => {
               setLocation("/counts");
               setMobileMenuOpen(false);
-            }}>Historical Counts</Button>
+            }}>Counts</Button>
             
             <div className="border-t border-gray-200 my-2 pt-2">
               <p className="text-sm text-gray-500 px-2 mb-2">Account</p>
