@@ -27,6 +27,10 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Define user roles enum
+export const userRoleEnum = z.enum(["ADMIN", "USHER"]);
+export type UserRole = z.infer<typeof userRoleEnum>;
+
 // User storage table for Replit Auth
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
@@ -36,6 +40,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   bio: text("bio"),
   profileImageUrl: varchar("profile_image_url"),
+  role: varchar("role").default("USHER").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   churchName: varchar("church_name"),
@@ -174,6 +179,7 @@ export const insertDonationSchema = createInsertSchema(donations)
 export const updateUserSchema = createInsertSchema(users).pick({
   churchName: true,
   emailNotificationsEnabled: true,
+  role: true,
 });
 
 // Schema for service options
