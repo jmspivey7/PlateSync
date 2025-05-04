@@ -187,17 +187,14 @@ const Settings = () => {
       // Create a value based on the name (lowercase, replace spaces with hyphens)
       const value = name.toLowerCase().replace(/\s+/g, '-');
       
-      const response = await apiRequest("POST", "/api/service-options", {
-        name,
-        value,
-        isDefault: (serviceOptions as ServiceOption[]).length === 0 // Make it default if it's the first one
+      return await apiRequest("/api/service-options", {
+        method: "POST",
+        body: {
+          name,
+          value,
+          isDefault: (serviceOptions as ServiceOption[]).length === 0 // Make it default if it's the first one
+        }
       });
-      
-      if (!response.ok) {
-        throw new Error("Failed to create service option");
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
