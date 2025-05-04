@@ -1017,7 +1017,7 @@ const Settings = () => {
                       type="button"
                       size="sm"
                       onClick={openAddRecipientDialog}
-                      className="bg-[#69ad4c] hover:bg-[#5c9b43]"
+                      className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
                     >
                       <UserPlus className="h-4 w-4 mr-2" />
                       Add Recipient
@@ -1132,7 +1132,7 @@ const Settings = () => {
             </Button>
             <Button 
               type="button" 
-              className="bg-[#69ad4c] hover:bg-[#5c9b43]"
+              className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
               onClick={handleAddRecipient}
               disabled={createReportRecipientMutation.isPending}
             >
@@ -1194,7 +1194,7 @@ const Settings = () => {
             </Button>
             <Button 
               type="button" 
-              className="bg-[#69ad4c] hover:bg-[#5c9b43]"
+              className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
               onClick={handleUpdateRecipient}
               disabled={updateReportRecipientMutation.isPending}
             >
