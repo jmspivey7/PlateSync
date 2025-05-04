@@ -253,7 +253,7 @@ const EmailSettings = () => {
                     />
                     <p className="text-xs text-gray-500">
                       You can use the following variables in your template: <br />
-                      <code>{{donorName}}</code>, <code>{{amount}}</code>, <code>{{date}}</code>, <code>{{churchName}}</code>
+                      <code>{"{{donorName}}"}</code>, <code>{"{{amount}}"}</code>, <code>{"{{date}}"}</code>, <code>{"{{churchName}}"}</code>
                     </p>
                   </div>
                 </div>

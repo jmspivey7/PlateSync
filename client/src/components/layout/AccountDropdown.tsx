@@ -53,15 +53,19 @@ const AccountDropdown = () => {
             Profile
           </DropdownMenuItem>
           
-          {isAdmin ? (
+          <DropdownMenuItem onClick={() => setLocation("/help")}>
+            Help
+          </DropdownMenuItem>
+          
+          {isAdmin && (
             <>
-              <DropdownMenuItem onClick={() => setLocation("/settings")}>
-                App Settings
-              </DropdownMenuItem>
-              
               <DropdownMenuSeparator />
               
               <DropdownMenuLabel>Admin</DropdownMenuLabel>
+              
+              <DropdownMenuItem onClick={() => setLocation("/settings")}>
+                App Settings
+              </DropdownMenuItem>
               
               <DropdownMenuItem onClick={() => setLocation("/user-management")}>
                 User Management
@@ -70,15 +74,7 @@ const AccountDropdown = () => {
               <DropdownMenuItem onClick={() => setLocation("/service-options")}>
                 Service Options
               </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => setLocation("/email-settings")}>
-                Email Settings
-              </DropdownMenuItem>
             </>
-          ) : (
-            <DropdownMenuItem onClick={() => setLocation("/help")}>
-              Help
-            </DropdownMenuItem>
           )}
         </DropdownMenuGroup>
         

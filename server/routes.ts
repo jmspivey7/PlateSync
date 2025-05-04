@@ -126,6 +126,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Email Settings routes
+  app.get('/api/email-settings', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Fetch the default settings from environment variables
+      const emailSettings = {
+        enabled: user.emailNotificationsEnabled || false,
+        fromEmail: process.env.SENDGRID_FROM_EMAIL || "",
+        fromName: user.churchName || "PlateSync",
+        templateSubject: "Thank you for your donation",
+        templateBody: "Dear {{donorName}},\n\nThank you for your donation of ${{amount}} on {{date}}.\n\nSincerely,\n{{churchName}}"
+      };
+      
+      res.json(emailSettings);
+    } catch (error) {
+      console.error("Error fetching email settings:", error);
+      res.status(500).json({ message: "Failed to fetch email settings" });
+    }
+  });
+  
+  app.post('/api/email-settings', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { enabled, fromEmail, fromName, templateSubject, templateBody } = req.body;
+      
+      // Update user settings
+      const updatedUser = await storage.updateUserSettings(userId, { 
+        emailNotificationsEnabled: enabled,
+        churchName: fromName 
+      });
+      
+      res.json({
+        enabled,
+        fromEmail,
+        fromName,
+        templateSubject,
+        templateBody
+      });
+    } catch (error) {
+      console.error("Error updating email settings:", error);
+      res.status(500).json({ message: "Failed to update email settings" });
+    }
+  });
+  
+  app.post('/api/email-settings/test', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { email, fromEmail, fromName, templateSubject, templateBody } = req.body;
+      
+      // Test the email by sending a sample donation notification
+      const testParams = {
+        to: email,
+        from: fromEmail,
+        subject: templateSubject.replace('{{donorName}}', 'Test User'),
+        text: templateBody
+          .replace('{{donorName}}', 'Test User')
+          .replace('{{amount}}', '100.00')
+          .replace('{{date}}', new Date().toLocaleDateString())
+          .replace('{{churchName}}', fromName)
+      };
+      
+      if (await sendDonationNotification({
+        to: email,
+        amount: "$100.00",
+        date: new Date().toLocaleDateString(),
+        donorName: "Test User",
+        churchName: fromName
+      })) {
+        res.json({ success: true, message: "Test email sent successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to send test email" });
+      }
+    } catch (error) {
+      console.error("Error sending test email:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error sending test email: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+    }
+  });
+  
   // SendGrid test endpoint
   app.get('/api/test-sendgrid', isAuthenticated, async (_req, res) => {
     try {
