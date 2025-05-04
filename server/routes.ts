@@ -1,8 +1,22 @@
 import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendDonationNotification, testSendGridConfiguration } from "./sendgrid";
+import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail } from "./sendgrid";
+import { eq } from "drizzle-orm";
+import * as crypto from "crypto";
+
+// Password hashing function using scrypt
+async function scryptHash(password: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) reject(err);
+      resolve(derivedKey.toString('hex') + ':' + salt);
+    });
+  });
+}
 import { isAdmin, hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
@@ -19,7 +33,8 @@ import {
   updateUserSchema,
   insertServiceOptionSchema,
   createUserSchema,
-  userRoleEnum
+  userRoleEnum,
+  users
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
