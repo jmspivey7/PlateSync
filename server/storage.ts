@@ -30,7 +30,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
   updateUserRole(id: string, role: string): Promise<User>;
-  createUser(userData: Partial<UpsertUser>): Promise<User>;
+  createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User>;
   deleteUser(id: string): Promise<void>;
   
   // Member operations
@@ -130,9 +130,12 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   
-  async createUser(userData: Partial<UpsertUser>): Promise<User> {
+  async createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User> {
     // Generate a unique ID for the user if not provided
     const userId = userData.id || Math.floor(Math.random() * 1000000000).toString();
+    
+    // Create data object without churchId
+    const { churchId, ...userDataToInsert } = userData;
     
     const [newUser] = await db
       .insert(users)
