@@ -79,6 +79,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Email verification and password setting
+  app.post('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      // Find user with matching token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.passwordResetToken, token));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Invalid or expired token" });
+      }
+      
+      // Check if token is expired
+      const now = new Date();
+      if (user.passwordResetExpires && now > user.passwordResetExpires) {
+        return res.status(401).json({ message: "Token has expired" });
+      }
+      
+      // Hash the password
+      const passwordHash = await scryptHash(password);
+      
+      // Update user with password and mark as verified
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          password: passwordHash,
+          isVerified: true,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+      
+      res.json({ 
+        message: "Email verified and password set successfully",
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          isVerified: updatedUser.isVerified
+        }
+      });
+    } catch (error) {
+      console.error("Error verifying email:", error);
+      res.status(500).json({ message: "Failed to verify email" });
+    }
+  });
+  
+  // Create a new user
+  app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { email, firstName, lastName, role, churchName } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Check if user already exists
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (existingUser.length > 0) {
+        return res.status(409).json({ message: "User with this email already exists" });
+      }
+      
+      // Create new user with verification token
+      const newUser = await storage.createUser({
+        email,
+        firstName,
+        lastName,
+        role,
+        churchName
+      });
+      
+      // Get application URL from request for verification link
+      const appUrl = `${req.protocol}://${req.get('host')}`;
+      const verificationUrl = `${appUrl}/verify`;
+      
+      // Send welcome email
+      await sendWelcomeEmail({
+        to: email,
+        firstName: firstName || '',
+        lastName: lastName || '',
+        churchName: churchName || 'PlateSync',
+        verificationToken: newUser.passwordResetToken || '',
+        verificationUrl
+      });
+      
+      res.status(201).json({
+        message: "User created successfully",
+        user: {
+          id: newUser.id,
+          email: newUser.email
+        }
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+  
 
   
   // Profile routes

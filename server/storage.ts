@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import {
   users,
   members,
@@ -134,15 +135,25 @@ export class DatabaseStorage implements IStorage {
     // Generate a unique ID for the user if not provided
     const userId = userData.id || Math.floor(Math.random() * 1000000000).toString();
     
+    // Generate a password reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
     // Create data object without churchId
     const { churchId, ...userDataToInsert } = userData;
+    
+    // Token will expire in 48 hours
+    const resetExpires = new Date();
+    resetExpires.setHours(resetExpires.getHours() + 48);
+    
+    // Generate a random username if not provided (this is for backward compatibility)
+    const username = userData.username || userData.email?.split('@')[0] || `user_${userId}`;
     
     const [newUser] = await db
       .insert(users)
       .values({
         id: userId,
-        username: userData.username || `user_${userId}`,
-        email: userData.email || null,
+        username,
+        email: userData.email!,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         bio: userData.bio || null,
@@ -151,7 +162,10 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date(),
         churchName: userData.churchName || null,
-        emailNotificationsEnabled: userData.emailNotificationsEnabled || false,
+        emailNotificationsEnabled: userData.emailNotificationsEnabled !== undefined ? userData.emailNotificationsEnabled : true,
+        passwordResetToken: resetToken,
+        passwordResetExpires: resetExpires,
+        isVerified: false,
       })
       .returning();
     
