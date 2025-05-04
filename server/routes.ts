@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail } from "./sendgrid";
+import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail } from "./sendgrid";
 import { eq } from "drizzle-orm";
 import * as crypto from "crypto";
 
