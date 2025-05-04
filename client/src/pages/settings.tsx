@@ -1107,7 +1107,7 @@ const Settings = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">First Name</FormLabel>
+              <div className="text-sm font-medium text-right">First Name</div>
               <Input
                 value={recipientFirstName}
                 onChange={(e) => setRecipientFirstName(e.target.value)}
@@ -1116,7 +1116,7 @@ const Settings = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">Last Name</FormLabel>
+              <div className="text-sm font-medium text-right">Last Name</div>
               <Input
                 value={recipientLastName}
                 onChange={(e) => setRecipientLastName(e.target.value)}
@@ -1125,7 +1125,7 @@ const Settings = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">Email</FormLabel>
+              <div className="text-sm font-medium text-right">Email</div>
               <Input
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
@@ -1169,7 +1169,7 @@ const Settings = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">First Name</FormLabel>
+              <div className="text-sm font-medium text-right">First Name</div>
               <Input
                 value={recipientFirstName}
                 onChange={(e) => setRecipientFirstName(e.target.value)}
@@ -1178,7 +1178,7 @@ const Settings = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">Last Name</FormLabel>
+              <div className="text-sm font-medium text-right">Last Name</div>
               <Input
                 value={recipientLastName}
                 onChange={(e) => setRecipientLastName(e.target.value)}
@@ -1187,7 +1187,7 @@ const Settings = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">Email</FormLabel>
+              <div className="text-sm font-medium text-right">Email</div>
               <Input
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
