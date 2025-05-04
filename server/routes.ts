@@ -40,11 +40,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
-
-  // Church settings routes
+  
+  // Settings routes
   app.patch('/api/settings', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      // Validate incoming data with zod schema
       const validatedData = updateUserSchema.parse(req.body);
       
       const updatedUser = await storage.updateUserSettings(userId, validatedData);
