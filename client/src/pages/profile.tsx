@@ -321,7 +321,7 @@ const Profile = () => {
               </TabsList>
               
               <TabsContent value="profile" className="space-y-6">
-                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
@@ -342,30 +342,12 @@ const Profile = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input 
-                        id="username" 
-                        value={user?.username || ""} 
-                        disabled
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
                       <Input 
                         id="email" 
                         type="email" 
                         value={user?.email || ""} 
                         disabled
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="church-name">Church Name</Label>
-                      <Input 
-                        id="church-name" 
-                        placeholder="Enter your church name" 
-                        {...profileForm.register("churchName")}
                       />
                     </div>
                     
@@ -379,26 +361,10 @@ const Profile = () => {
                     </div>
                   </div>
                   
-                  <div className="pt-4">
-                    <Button 
-                      type="submit" 
-                      className="bg-[#69ad4c] hover:bg-[#588f3f]"
-                      disabled={updateProfileMutation.isPending}
-                    >
-                      {updateProfileMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
+                  <div className="pt-2 text-sm text-muted-foreground">
+                    <p>This information is managed by your Replit account. To update these details, please edit your Replit profile.</p>
                   </div>
-                </form>
+                </div>
               </TabsContent>
               
               <TabsContent value="password" className="space-y-6">
