@@ -53,8 +53,10 @@ const CountsPage = () => {
 
   // Filter batches by status
   const filteredBatches = batches?.filter((batch) => {
-    if (activeTab === "all") return true;
-    return batch.status === activeTab.toUpperCase();
+    if (activeTab === "open") return batch.status === "OPEN";
+    if (activeTab === "closed") return batch.status === "CLOSED";
+    if (activeTab === "finalized") return batch.status === "FINALIZED";
+    return true;
   });
 
   const handleCreateBatch = () => {
@@ -124,14 +126,8 @@ const CountsPage = () => {
           <CardDescription>
             View past donation counts by worship service or collection date
           </CardDescription>
-          <Tabs defaultValue="all" className="mt-3" onValueChange={setActiveTab}>
+          <Tabs defaultValue="open" className="mt-3" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 p-1 shadow-sm border border-gray-200 rounded-md">
-              <TabsTrigger 
-                value="all"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
-              >
-                All
-              </TabsTrigger>
               <TabsTrigger 
                 value="open"
                 className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
@@ -143,6 +139,12 @@ const CountsPage = () => {
                 className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
               >
                 Closed
+              </TabsTrigger>
+              <TabsTrigger 
+                value="finalized"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
+              >
+                Finalized
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -207,17 +209,12 @@ const CountsPage = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              {activeTab === "all" ? (
-                <div>
-                  <Package className="mx-auto h-10 w-10 text-gray-400 mb-2" />
-                  <p>No counts created yet</p>
-                  <p className="text-sm mt-1">Create your first count to get started</p>
-                </div>
-              ) : (
-                <div>
-                  <p>No {activeTab} counts found</p>
-                </div>
-              )}
+              <div>
+                <p>No {activeTab} counts found</p>
+                {activeTab === "open" && (
+                  <p className="text-sm mt-1">Create a new count to get started</p>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
