@@ -26,13 +26,19 @@ import { Batch, Donation, BatchWithDonations } from "@shared/schema";
 const chartConfig = {
   cash: {
     label: "Cash",
-    color: "hsl(var(--accent))",
+    color: "#69ad4c", // Green for cash
   },
   check: {
     label: "Check",
-    color: "hsl(var(--primary))",
+    color: "#3b82f6", // Blue for check
   },
 } satisfies ChartConfig;
+
+// Add CSS variables for the chart colors
+if (typeof document !== 'undefined') {
+  document.documentElement.style.setProperty('--color-cash', '#69ad4c');
+  document.documentElement.style.setProperty('--color-check', '#3b82f6');
+}
 
 export function DonationChart() {
   // For navigation to counts page
@@ -40,7 +46,11 @@ export function DonationChart() {
   
   // Fetch batch data with their donations
   const { data: batches, isLoading } = useQuery<BatchWithDonations[]>({
-    queryKey: ['/api/batches'],
+    queryKey: ['/api/batches/with-donations'],
+    select: (data) => {
+      console.log("Chart received batch data with donations:", data);
+      return data;
+    }
   });
 
   if (isLoading || !batches) {
