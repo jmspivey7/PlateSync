@@ -94,6 +94,39 @@ const BatchDetailPage = () => {
   const checkTotal = batch?.donations?.filter(d => d.donationType === "CHECK")
     .reduce((sum, donation) => sum + parseFloat(donation.amount.toString()), 0) || 0;
 
+  // Mutation to close batch
+  const closeBatchMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/batches/${batchId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: "CLOSED" })
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+      
+      toast({
+        title: "Success",
+        description: "Count has been closed successfully. You can now proceed with attestation.",
+      });
+      
+      // Navigate to attestation page
+      setLocation(`/attest-batch/${batchId}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to close count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+
   // Mutation to finalize batch
   const finalizeBatchMutation = useMutation({
     mutationFn: async () => {
@@ -296,13 +329,15 @@ const BatchDetailPage = () => {
                   </Button>
                   <Button 
                     onClick={() => {
-                      console.log("Attest & Finalize button clicked, navigating to attestation page");
-                      setLocation(`/attest-batch/${batchId}`);
+                      console.log("Attest & Finalize button clicked, closing batch first");
+                      // First close the batch, then the mutation will navigate to attestation page
+                      closeBatchMutation.mutate();
                     }} 
                     className="bg-amber-500 hover:bg-amber-600 text-black"
+                    disabled={closeBatchMutation.isPending}
                   >
                     <UserCheck className="mr-2 h-4 w-4" />
-                    Attest &amp; Finalize
+                    {closeBatchMutation.isPending ? "Preparing..." : "Attest & Finalize"}
                   </Button>
                 </>
               )}
