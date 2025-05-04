@@ -56,10 +56,9 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     refetchInterval: false,
   });
   
-  // Fetch all users for secondary attestor selection
-  const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
-    queryKey: ['/api/users'],
-  });
+  // For simplicity, we're not using the users list anymore
+  // This avoids permission issues when non-admin users try to attest
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
   // Primary attestation form
   const primaryForm = useForm<{ name: string }>({
@@ -292,26 +291,10 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="attestorId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Second Attestor</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a user" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {users && users
-                              .filter(u => u.id !== user?.id && u.id !== batch.primaryAttestorId)
-                              .map(user => (
-                                <SelectItem key={user.id} value={user.id}>
-                                  {user.firstName} {user.lastName} ({user.email})
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Second Attestor ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter the attestor's ID" />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
