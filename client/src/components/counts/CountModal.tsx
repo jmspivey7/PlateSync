@@ -5,10 +5,11 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { insertBatchSchema, Batch } from "@shared/schema";
 import { useLocation } from "wouter";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 import {
   Dialog,
@@ -58,6 +59,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Initialize the form
   const form = useForm<FormValues>({
@@ -171,6 +173,40 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
         variant: "destructive",
       });
     },
+  });
+  
+  // Delete batch mutation
+  const deleteBatchMutation = useMutation<void, Error, void>({
+    mutationFn: async () => {
+      if (!batchId) return;
+      
+      const response = await apiRequest("DELETE", `/api/batches/${batchId}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete count");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      
+      toast({
+        title: "Count Deleted",
+        description: "The count and all associated donations have been deleted successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+      
+      onClose();
+      setLocation('/batches');
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
   });
   
   // Form submission handler
