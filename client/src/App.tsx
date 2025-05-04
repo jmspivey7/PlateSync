@@ -29,7 +29,10 @@ function Router() {
   
   // Use useEffect for redirect to avoid rendering issues
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && location !== "/login") {
+    const publicPaths = ["/login", "/verify"];
+    const isPublicPath = publicPaths.some(path => location.startsWith(path));
+    
+    if (!isLoading && !isAuthenticated && !isPublicPath) {
       setLocation("/login");
     }
   }, [isLoading, isAuthenticated, location, setLocation]);
@@ -69,16 +72,22 @@ function Router() {
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
+  const [location] = useLocation();
   
-  if (!isAuthenticated) {
+  // Don't show header/footer on login or verify pages
+  const isPublicPath = ["/login", "/verify"].some(path => location.startsWith(path));
+  
+  if (!isAuthenticated || isPublicPath) {
     return <>{children}</>;
   }
   
   return (
     <div className="min-h-screen flex flex-col">
+      <Header />
       <main className="flex-grow">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }

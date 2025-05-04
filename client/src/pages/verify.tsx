@@ -76,7 +76,6 @@ export default function Verify() {
       toast({
         title: "Verification successful",
         description: "Your email has been verified and password set successfully. You can now log in.",
-        variant: "default",
       });
       
       // Redirect to login page after a short delay
