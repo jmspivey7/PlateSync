@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
+import { setupTestEndpoints } from "./test-endpoints";
 import { eq } from "drizzle-orm";
 import * as crypto from "crypto";
 
@@ -1754,6 +1755,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete report recipient" });
     }
   });
+
+  // Add test endpoints
+  setupTestEndpoints(app);
 
   const httpServer = createServer(app);
   return httpServer;
