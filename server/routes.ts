@@ -1399,6 +1399,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Report Recipients endpoints (for Count Report Notifications)
+  // GET all report recipients
+  app.get('/api/report-recipients', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const recipients = await storage.getReportRecipients(userId);
+      res.json(recipients);
+    } catch (error) {
+      console.error("Error fetching report recipients:", error);
+      res.status(500).json({ message: "Failed to fetch report recipients" });
+    }
+  });
+
+  // GET single report recipient
+  app.get('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const recipientId = parseInt(req.params.id);
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: "Invalid recipient ID" });
+      }
+      
+      const recipient = await storage.getReportRecipient(recipientId, userId);
+      
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      res.json(recipient);
+    } catch (error) {
+      console.error("Error fetching report recipient:", error);
+      res.status(500).json({ message: "Failed to fetch report recipient" });
+    }
+  });
+
+  // CREATE new report recipient
+  app.post('/api/report-recipients', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const recipientData = {
+        ...req.body,
+        churchId: userId
+      };
+      
+      // Validate with zod schema
+      const validatedData = insertReportRecipientSchema.parse(recipientData);
+      const newRecipient = await storage.createReportRecipient(validatedData);
+      
+      res.status(201).json(newRecipient);
+    } catch (error) {
+      console.error("Error creating report recipient:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create report recipient" });
+    }
+  });
+
+  // UPDATE report recipient
+  app.patch('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const recipientId = parseInt(req.params.id);
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: "Invalid recipient ID" });
+      }
+      
+      // Create a partial schema for validation
+      const partialRecipientSchema = z.object({
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        email: z.string().email().optional(),
+        churchId: z.string().optional()
+      });
+      
+      const validatedData = partialRecipientSchema.parse(req.body);
+      const updatedRecipient = await storage.updateReportRecipient(recipientId, validatedData, userId);
+      
+      if (!updatedRecipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      res.json(updatedRecipient);
+    } catch (error) {
+      console.error("Error updating report recipient:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update report recipient" });
+    }
+  });
+
+  // DELETE report recipient
+  app.delete('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const recipientId = parseInt(req.params.id);
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: "Invalid recipient ID" });
+      }
+      
+      await storage.deleteReportRecipient(recipientId, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting report recipient:", error);
+      res.status(500).json({ message: "Failed to delete report recipient" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
