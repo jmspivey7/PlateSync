@@ -45,6 +45,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
 
   
+  // Profile routes
+  app.post('/api/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Validate incoming data with zod schema
+      const validatedData = updateUserSchema.parse(req.body);
+      
+      const updatedUser = await storage.updateUserSettings(userId, validatedData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+  
   // Settings routes
   app.patch('/api/settings', isAuthenticated, async (req: any, res) => {
     try {

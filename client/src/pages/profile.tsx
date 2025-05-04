@@ -1,154 +1,209 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
 } from "@/components/ui/card";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Save, User } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { updateUserSchema, type User } from "@shared/schema";
-import type { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { updateUserSchema } from "@shared/schema";
 
-type FormValues = z.infer<typeof updateUserSchema>;
+// Create a profile-specific schema based on updateUserSchema
+const profileSchema = z.object({
+  churchName: z.string().nullable().optional(),
+  role: z.string().optional(),
+  emailNotificationsEnabled: z.boolean().nullable().optional(),
+});
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const Profile = () => {
-  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { user, isLoading: isAuthLoading } = useAuth();
   
-  const form = useForm<FormValues>({
-    resolver: zodResolver(updateUserSchema),
+  // Set up form with default values
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
-      email: user?.email || "",
-      profileImageUrl: user?.profileImageUrl || "",
+      churchName: user?.churchName || "",
+      role: user?.role || "",
+      emailNotificationsEnabled: user?.emailNotificationsEnabled || false,
     },
   });
   
-  const { isPending, mutate } = useMutation({
-    mutationFn: async (values: FormValues) => {
-      return await apiRequest(`/api/users/profile`, {
-        method: "PATCH",
-        body: JSON.stringify(values),
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: ProfileFormValues) => {
+      return apiRequest('/api/profile', {
+        method: 'POST',
+        body: JSON.stringify(data),
       });
     },
     onSuccess: () => {
       toast({
-        title: "Profile updated",
-        description: "Your profile information has been updated",
+        title: 'Success',
+        description: 'Your profile has been updated successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
-        title: "Update failed",
-        description: "Failed to update profile information",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update your profile',
+        variant: 'destructive',
       });
     },
   });
   
-  const onSubmit = (data: FormValues) => {
-    mutate(data);
+  // Handle form submission
+  const onSubmit = (data: ProfileFormValues) => {
+    updateProfileMutation.mutate(data);
   };
   
+  // Show loading state if auth is still loading
+  if (isAuthLoading) {
+    return (
+      <PageLayout title="Profile" subtitle="Your account information">
+        <div className="flex justify-center py-10">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
+      </PageLayout>
+    );
+  }
+  
   return (
-    <PageLayout title="My Profile" subtitle="Manage your personal information">
+    <PageLayout title="Profile" subtitle="Your account information">
       <div className="max-w-3xl mx-auto">
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 border border-gray-200">
-                <AvatarImage src={user?.profileImageUrl || ""} />
-                <AvatarFallback className="bg-white text-gray-800 font-medium text-lg">
-                  {isAdmin ? "A" : "U"}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div>
-                <CardTitle className="text-xl">
-                  {user?.firstName || user?.username} {user?.lastName || ""}
-                </CardTitle>
-                <CardDescription>
-                  Role: {isAdmin ? "Administrator" : "Usher"}
-                </CardDescription>
-              </div>
-            </div>
+            <CardTitle>Account Profile</CardTitle>
+            <CardDescription>
+              Manage your account preferences and settings
+            </CardDescription>
           </CardHeader>
           
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input 
-                    id="firstName"
-                    {...form.register("firstName")}
-                  />
+          <CardContent>
+            <div className="space-y-6">
+              {/* Profile Avatar & Basic Info */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <Avatar className="h-24 w-24 bg-[#69ad4c]">
+                  {user?.profileImageUrl ? (
+                    <AvatarImage src={user.profileImageUrl} alt={user.username || "User"} />
+                  ) : (
+                    <AvatarFallback className="text-xl">
+                      {user?.role === "ADMIN" ? "A" : "U"}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="text-xl font-semibold">
+                    {user?.firstName && user?.lastName 
+                      ? `${user.firstName} ${user.lastName}`
+                      : user?.username || "User"}
+                  </h3>
+                  <p className="text-gray-500">{user?.email || "No email provided"}</p>
+                  <div className="mt-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {user?.role === "ADMIN" ? "Administrator" : "Usher"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input 
+                      id="firstName" 
+                      value={user?.firstName || ""} 
+                      disabled
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input 
+                      id="lastName" 
+                      value={user?.lastName || ""} 
+                      disabled
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input 
+                      id="username" 
+                      value={user?.username || ""} 
+                      disabled
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={user?.email || ""} 
+                      disabled
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="church-name">Church Name</Label>
+                    <Input 
+                      id="church-name" 
+                      placeholder="Enter your church name" 
+                      {...form.register("churchName")}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Input 
+                      id="role" 
+                      value={user?.role === "ADMIN" ? "Administrator" : "Usher"} 
+                      disabled
+                    />
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input 
-                    id="lastName"
-                    {...form.register("lastName")}
-                  />
+                <div className="pt-4">
+                  <Button 
+                    type="submit" 
+                    className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                    disabled={updateProfileMutation.isPending}
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input 
-                  id="email"
-                  type="email"
-                  {...form.register("email")}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="profileImageUrl">Profile Image URL</Label>
-                <Input 
-                  id="profileImageUrl"
-                  placeholder="https://example.com/profile.jpg"
-                  {...form.register("profileImageUrl")}
-                />
-                <p className="text-sm text-gray-500">
-                  Enter a URL to a publicly accessible image.
-                </p>
-              </div>
-            </CardContent>
-            
-            <CardFooter className="flex justify-end">
-              <Button type="submit" disabled={isPending} className="bg-[#69ad4c] hover:bg-[#588f3f]">
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
-            </CardFooter>
-          </form>
+              </form>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </PageLayout>
