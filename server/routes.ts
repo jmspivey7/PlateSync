@@ -5,7 +5,7 @@ import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { setupTestEndpoints } from "./test-endpoints";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as crypto from "crypto";
 
 // Password hashing function using scrypt
@@ -110,13 +110,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Verifying email with token:", token.substring(0, 10) + "...");
       
-      // Find user with matching token
-      const users_with_token = await db
-        .select()
-        .from(users)
-        .where(eq(users.passwordResetToken, token));
+      // Find user with matching token, using SQL query to handle column name mismatch
+      const users_with_token = await db.execute(
+        sql`SELECT * FROM users WHERE password_reset_token = ${token}`
+      );
       
-      const user = users_with_token[0];
+      const users = users_with_token.rows;
+      const user = users.length > 0 ? users[0] : null;
       
       if (!user) {
         console.log("No user found with this token");
@@ -135,20 +135,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the password
       const passwordHash = await scryptHash(password);
       
-      // Update user with password and mark as verified
-      const updatedUsers = await db
-        .update(users)
-        .set({
-          password: passwordHash,
-          isVerified: true,
-          passwordResetToken: null,
-          passwordResetExpires: null,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, user.id))
-        .returning();
+      // Update user with password and mark as verified using raw SQL
+      const updatedUsersResult = await db.execute(
+        sql`UPDATE users 
+            SET password = ${passwordHash}, 
+                is_verified = true, 
+                password_reset_token = NULL, 
+                password_reset_expires = NULL, 
+                updated_at = ${new Date()} 
+            WHERE id = ${user.id} 
+            RETURNING *`
+      );
         
-      const updatedUser = updatedUsers[0];
+      const updatedUsers = updatedUsersResult.rows;
+      const updatedUser = updatedUsers.length > 0 ? updatedUsers[0] : null;
+      
+      if (!updatedUser) {
+        console.error("Failed to update user");
+        return res.status(500).json({ message: "Failed to update user" });
+      }
       
       res.json({ 
         message: "Email verified and password set successfully",
