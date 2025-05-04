@@ -48,7 +48,8 @@ const UserManagement = () => {
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
     queryFn: async () => {
-      return await apiRequest('/api/users');
+      const response = await apiRequest('/api/users');
+      return response as User[];
     },
   });
   
@@ -58,7 +59,7 @@ const UserManagement = () => {
       return await apiRequest(`/api/users/${userId}/role`, {
         method: "PATCH",
         body: JSON.stringify({ role }),
-      });
+      }) as User;
     },
     onSuccess: () => {
       toast({
