@@ -690,7 +690,7 @@ export class DatabaseStorage implements IStorage {
       await db
         .update(serviceOptions)
         .set({ isDefault: false })
-        .where(eq(serviceOptions.churchId, optionData.churchId));
+        .where(sql`${serviceOptions.churchId} = ${optionData.churchId}`);
     }
     
     const [newOption] = await db
@@ -707,10 +707,7 @@ export class DatabaseStorage implements IStorage {
       await db
         .update(serviceOptions)
         .set({ isDefault: false })
-        .where(and(
-          eq(serviceOptions.churchId, churchId),
-          sql`${serviceOptions.id} != ${id}`
-        ));
+        .where(sql`${serviceOptions.churchId} = ${churchId} AND ${serviceOptions.id} != ${id}`);
     }
     
     const [updatedOption] = await db
@@ -719,10 +716,7 @@ export class DatabaseStorage implements IStorage {
         ...data,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(serviceOptions.id, id),
-        eq(serviceOptions.churchId, churchId)
-      ))
+      .where(sql`${serviceOptions.id} = ${id} AND ${serviceOptions.churchId} = ${churchId}`)
       .returning();
     
     return updatedOption;
@@ -731,10 +725,7 @@ export class DatabaseStorage implements IStorage {
   async deleteServiceOption(id: number, churchId: string): Promise<void> {
     await db
       .delete(serviceOptions)
-      .where(and(
-        eq(serviceOptions.id, id),
-        eq(serviceOptions.churchId, churchId)
-      ));
+      .where(sql`${serviceOptions.id} = ${id} AND ${serviceOptions.churchId} = ${churchId}`);
   }
 }
 

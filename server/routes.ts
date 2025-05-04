@@ -654,6 +654,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Service Options routes
+  app.get('/api/service-options', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const options = await storage.getServiceOptions(userId);
+      res.json(options);
+    } catch (error) {
+      console.error("Error fetching service options:", error);
+      res.status(500).json({ message: "Failed to fetch service options" });
+    }
+  });
+  
+  app.post('/api/service-options', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validatedData = insertServiceOptionSchema.parse({
+        ...req.body,
+        churchId: userId
+      });
+      
+      const newOption = await storage.createServiceOption(validatedData);
+      res.status(201).json(newOption);
+    } catch (error) {
+      console.error("Error creating service option:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create service option" });
+    }
+  });
+  
+  app.patch('/api/service-options/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const optionId = parseInt(req.params.id);
+      
+      if (isNaN(optionId)) {
+        return res.status(400).json({ message: "Invalid option ID" });
+      }
+      
+      // Make sure the option exists and belongs to this church
+      const existingOption = await storage.getServiceOption(optionId, userId);
+      if (!existingOption) {
+        return res.status(404).json({ message: "Service option not found" });
+      }
+      
+      const validatedData = insertServiceOptionSchema.partial().parse({
+        ...req.body,
+        churchId: userId
+      });
+      
+      const updatedOption = await storage.updateServiceOption(optionId, validatedData, userId);
+      res.json(updatedOption);
+    } catch (error) {
+      console.error("Error updating service option:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update service option" });
+    }
+  });
+  
+  app.delete('/api/service-options/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const optionId = parseInt(req.params.id);
+      
+      if (isNaN(optionId)) {
+        return res.status(400).json({ message: "Invalid option ID" });
+      }
+      
+      // Make sure the option exists and belongs to this church
+      const existingOption = await storage.getServiceOption(optionId, userId);
+      if (!existingOption) {
+        return res.status(404).json({ message: "Service option not found" });
+      }
+      
+      await storage.deleteServiceOption(optionId, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting service option:", error);
+      res.status(500).json({ message: "Failed to delete service option" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
