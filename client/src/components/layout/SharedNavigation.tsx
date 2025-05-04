@@ -13,9 +13,10 @@ interface SharedNavigationProps {
   title?: string;
   subtitle?: string;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
 }
 
-const SharedNavigation = ({ title, subtitle, icon }: SharedNavigationProps) => {
+const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationProps) => {
   const [_, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -125,9 +126,12 @@ const SharedNavigation = ({ title, subtitle, icon }: SharedNavigationProps) => {
       {/* Page Title (if provided) */}
       {title && (
         <div className="mb-6">
-          <div className="flex items-center">
-            {icon && <div className="mr-2">{icon}</div>}
-            <h2 className="text-2xl font-bold font-inter text-[#2D3748]">{title}</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              {icon && <div className="mr-2">{icon}</div>}
+              <h2 className="text-2xl font-bold font-inter text-[#2D3748]">{title}</h2>
+            </div>
+            {action && <div>{action}</div>}
           </div>
           {subtitle && <p className="text-gray-500 mt-1">{subtitle}</p>}
         </div>

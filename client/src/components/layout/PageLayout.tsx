@@ -7,13 +7,14 @@ interface PageLayoutProps {
   title?: string;
   subtitle?: string;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
 }
 
-const PageLayout = ({ children, title, subtitle, icon }: PageLayoutProps) => {
+const PageLayout = ({ children, title, subtitle, icon, action }: PageLayoutProps) => {
   return (
     <div className="max-w-4xl mx-auto px-4 mb-8">
       {/* Header/Navigation */}
-      <SharedNavigation title={title} subtitle={subtitle} icon={icon} />
+      <SharedNavigation title={title} subtitle={subtitle} icon={icon} action={action} />
       
       {/* Main Content */}
       {children}
