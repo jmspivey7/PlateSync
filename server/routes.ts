@@ -108,19 +108,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Token and password are required" });
       }
       
+      console.log("Verifying email with token:", token.substring(0, 10) + "...");
+      
       // Find user with matching token
-      const [user] = await db
+      const users_with_token = await db
         .select()
         .from(users)
         .where(eq(users.passwordResetToken, token));
       
+      const user = users_with_token[0];
+      
       if (!user) {
+        console.log("No user found with this token");
         return res.status(404).json({ message: "Invalid or expired token" });
       }
+      
+      console.log("Found user:", user.email);
       
       // Check if token is expired
       const now = new Date();
       if (user.passwordResetExpires && now > user.passwordResetExpires) {
+        console.log("Token expired at:", user.passwordResetExpires);
         return res.status(401).json({ message: "Token has expired" });
       }
       
@@ -128,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const passwordHash = await scryptHash(password);
       
       // Update user with password and mark as verified
-      const [updatedUser] = await db
+      const updatedUsers = await db
         .update(users)
         .set({
           password: passwordHash,
@@ -139,6 +147,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(users.id, user.id))
         .returning();
+        
+      const updatedUser = updatedUsers[0];
       
       res.json({ 
         message: "Email verified and password set successfully",

@@ -18,6 +18,11 @@ export default function Verify() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [tokenStatus, setTokenStatus] = useState<null | {
+    valid: boolean;
+    message: string;
+    details?: any;
+  }>(null);
   
   const [, setLocation] = useLocation();
   const search = useSearch();
@@ -31,6 +36,42 @@ export default function Verify() {
       setToken(tokenFromUrl);
     }
   }, [search]);
+  
+  // Function to check token validity
+  const checkToken = async () => {
+    if (!token) {
+      setTokenStatus({
+        valid: false,
+        message: "Please enter a token to check"
+      });
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/test-verification-token?token=${encodeURIComponent(token)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setTokenStatus({
+          valid: true,
+          message: `Token is valid for user: ${data.userEmail}`,
+          details: data
+        });
+        setError("");
+      } else {
+        setTokenStatus({
+          valid: false,
+          message: data.message,
+          details: data
+        });
+      }
+    } catch (err) {
+      setTokenStatus({
+        valid: false,
+        message: "Error checking token"
+      });
+    }
+  };
   
   // Form validation
   const validateForm = () => {
@@ -62,14 +103,22 @@ export default function Verify() {
     try {
       setLoading(true);
       
-      const response = await apiRequest("POST", "/api/auth/verify-email", {
-        token,
-        password
+      // Use fetch directly for better error handling instead of apiRequest
+      const response = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          password
+        })
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Verification failed");
+        throw new Error(data.message || "Verification failed");
       }
       
       setSuccess(true);
@@ -80,10 +129,11 @@ export default function Verify() {
       
       // Redirect to login page after a short delay
       setTimeout(() => {
-        setLocation("/login");
-      }, 3000);
+        setLocation("/");
+      }, 2000);
       
     } catch (err: any) {
+      console.error("Verification error:", err);
       setError(err.message || "Verification failed. Please try again or contact support.");
       toast({
         title: "Verification failed",

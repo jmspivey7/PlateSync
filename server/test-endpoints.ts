@@ -2,8 +2,60 @@ import { Express, Request, Response } from 'express';
 import { isAuthenticated } from './replitAuth';
 import { storage } from './storage';
 import { testSendGridConfiguration, sendCountReport } from './sendgrid';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
+import { db } from './db';
 
 export function setupTestEndpoints(app: Express) {
+  // Check token endpoint for verification debugging
+  app.get('/api/test-verification-token', async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: "Token is required"
+        });
+      }
+      
+      // Look up user with this token
+      const users_with_token = await db
+        .select()
+        .from(users)
+        .where(eq(users.passwordResetToken, token));
+      
+      if (users_with_token.length === 0) {
+        return res.json({
+          success: false,
+          message: "No user found with this token",
+          tokenProvided: token
+        });
+      }
+      
+      const user = users_with_token[0];
+      
+      // Check if token is expired
+      const now = new Date();
+      const isExpired = user.passwordResetExpires && now > user.passwordResetExpires;
+      
+      return res.json({
+        success: true,
+        message: "User found with this token",
+        userEmail: user.email,
+        isExpired: isExpired,
+        expiresAt: user.passwordResetExpires,
+        tokenLength: token.length
+      });
+      
+    } catch (error) {
+      console.error("Error checking verification token:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error checking token"
+      });
+    }
+  });
   // Test SendGrid configuration
   app.get('/api/test-sendgrid', isAuthenticated, async (_req: Request, res: Response) => {
     try {
