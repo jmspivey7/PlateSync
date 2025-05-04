@@ -10,6 +10,7 @@ import Donations from "@/pages/donations";
 import Members from "@/pages/members";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
+import Verify from "@/pages/verify";
 import Counts from "@/pages/counts";
 import BatchDetail from "@/pages/batch-detail";
 import Profile from "@/pages/profile";
@@ -45,6 +46,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/verify" component={Verify} />
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/donations" component={Donations} />
