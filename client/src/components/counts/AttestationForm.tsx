@@ -92,7 +92,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   const primaryForm = useForm<{ name: string }>({
     resolver: zodResolver(primaryAttestationSchema),
     defaultValues: {
-      name: user?.username || "",
+      name: "", // Keep name field blank
     },
   });
   
@@ -332,11 +332,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
-                            // When a user is selected, auto-populate the name field
-                            const selectedUser = users?.find((u: User) => u.id === value);
-                            if (selectedUser) {
-                              secondaryForm.setValue('name', selectedUser.username || '');
-                            }
+                            // Don't auto-populate the name field
                           }} 
                           value={field.value}
                         >
@@ -459,7 +455,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
             </p>
             <Button
               onClick={onComplete}
-              className="bg-gray-900 hover:bg-gray-800 text-white"
+              className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
             >
               Return to Counts
             </Button>

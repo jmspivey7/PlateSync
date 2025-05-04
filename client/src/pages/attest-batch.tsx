@@ -85,8 +85,8 @@ const AttestBatchPage = () => {
       description: "Count attestation completed successfully",
     });
     
-    // Navigate back to the batch details
-    setLocation(`/batch/${batchId}`);
+    // Navigate to Historical Counts page with Finalized filter selected
+    setLocation('/counts?filter=finalized');
   };
 
   if (isLoading) {
