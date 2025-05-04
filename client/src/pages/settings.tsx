@@ -643,7 +643,7 @@ const Settings = () => {
           </CardContent>
         </Card>
         
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle>Service Options</CardTitle>
             <CardDescription>
@@ -836,7 +836,7 @@ const Settings = () => {
           </CardContent>
         </Card>
             
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle>Import Members</CardTitle>
             <CardDescription>
