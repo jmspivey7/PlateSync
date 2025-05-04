@@ -343,13 +343,10 @@ const Settings = () => {
   // Create report recipient
   const createReportRecipientMutation = useMutation({
     mutationFn: async (recipient: { firstName: string; lastName: string; email: string }) => {
-      const response = await apiRequest("POST", "/api/report-recipients", recipient);
-      
-      if (!response.ok) {
-        throw new Error("Failed to add recipient");
-      }
-      
-      return response.json();
+      return apiRequest("/api/report-recipients", {
+        method: "POST",
+        body: recipient
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/report-recipients'] });
@@ -375,13 +372,10 @@ const Settings = () => {
   // Update report recipient
   const updateReportRecipientMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: { firstName: string; lastName: string; email: string } }) => {
-      const response = await apiRequest("PATCH", `/api/report-recipients/${id}`, data);
-      
-      if (!response.ok) {
-        throw new Error("Failed to update recipient");
-      }
-      
-      return response.json();
+      return apiRequest(`/api/report-recipients/${id}`, {
+        method: "PATCH",
+        body: data
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/report-recipients'] });
