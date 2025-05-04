@@ -1207,6 +1207,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Password reset routes
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (!user) {
+        // For security reasons, don't reveal whether the email exists or not
+        return res.json({ 
+          success: true, 
+          message: "If your email is registered, you will receive password reset instructions" 
+        });
+      }
+      
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      
+      // Set token expiration (1 hour from now)
+      const expires = new Date();
+      expires.setHours(expires.getHours() + 1);
+      
+      // Update user with reset token
+      await db
+        .update(users)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpires: expires,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id));
+      
+      // Build reset URL
+      const appUrl = `${req.protocol}://${req.get('host')}`;
+      const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
+      
+      // Send password reset email
+      await sendPasswordResetEmail({
+        to: email,
+        resetUrl
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "If your email is registered, you will receive password reset instructions" 
+      });
+    } catch (error) {
+      console.error("Error initiating password reset:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Error processing password reset request" 
+      });
+    }
+  });
+  
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      // Find user with matching token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.passwordResetToken, token));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Invalid or expired token" });
+      }
+      
+      // Check if token is expired
+      const now = new Date();
+      if (user.passwordResetExpires && now > user.passwordResetExpires) {
+        return res.status(401).json({ message: "Token has expired" });
+      }
+      
+      // Hash the new password
+      const passwordHash = await scryptHash(password);
+      
+      // Update user with new password and clear reset token
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          password: passwordHash,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+      
+      res.json({ 
+        success: true,
+        message: "Password has been reset successfully",
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email
+        }
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to reset password" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
