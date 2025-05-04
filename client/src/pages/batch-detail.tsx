@@ -18,7 +18,8 @@ import {
   ArrowLeft,
   Printer,
   Edit,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
