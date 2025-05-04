@@ -103,8 +103,8 @@ const CountsPage = () => {
 
   return (
     <PageLayout
-      title="Donation Counts"
-      subtitle="Manage and organize your donation counts"
+      title="Historical Counts"
+      subtitle="View and manage past donation counts"
     >
       <div className="mb-6 flex justify-end">
         <Button 
@@ -120,9 +120,9 @@ const CountsPage = () => {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Count List</CardTitle>
+              <CardTitle className="text-lg">Historical Count List</CardTitle>
               <CardDescription>
-                Organize your donations by worship service or collection date
+                View past donation counts by worship service or collection date
               </CardDescription>
               <Tabs defaultValue="all" className="mt-3" onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-3">
