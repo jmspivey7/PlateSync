@@ -671,80 +671,45 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     />
                   )}
                   
-                  <FormField
-                    control={form.control}
-                    name="batchId"
-                    render={({ field }) => (
-                      <FormItem className="col-span-1 md:col-span-2">
-                        <FormLabel>Batch/Count</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={!!defaultBatchId}
-                        >
+                  <div className="hidden">
+                    <FormField
+                      control={form.control}
+                      name="batchId"
+                      render={({ field }) => (
+                        <FormItem>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select batch" />
-                            </SelectTrigger>
+                            <Input type="hidden" {...field} />
                           </FormControl>
-                          <SelectContent>
-                            {batches?.map((batch) => (
-                              <SelectItem 
-                                key={batch.id} 
-                                value={batch.id.toString()}
-                              >
-                                {batch.name} ({format(new Date(batch.date), 'MMM d, yyyy')})
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="none">No batch (individual donation)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem className="col-span-1 md:col-span-2">
-                        <FormLabel>Notes (Optional)</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            rows={3} 
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
-                            value={field.value || ""}
-                            disabled={field.disabled}
-                            name={field.name}
-                            ref={field.ref}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {donorType === "existing" && (
-                    <div className="col-span-1 md:col-span-2 py-2">
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input type="hidden" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {donorType === "existing" && (
                       <FormField
                         control={form.control}
                         name="sendNotification"
                         render={({ field }) => (
-                          <div className="border rounded-lg p-4">
-                            <div className="flex justify-between items-center">
-                              <span className="text-base font-medium">Send Receipt Notification</span>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </div>
-                          </div>
+                          <FormItem>
+                            <FormControl>
+                              <Input type="hidden" {...field} />
+                            </FormControl>
+                          </FormItem>
                         )}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
               
