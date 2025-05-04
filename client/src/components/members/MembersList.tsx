@@ -32,7 +32,7 @@ interface MembersListProps {}
 const MembersList = ({}: MembersListProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState("nameAsc");
+  const [sortOption, setSortOption] = useState("lastNameAsc");
   const [_, setLocation] = useLocation();
   
   // Fetch members data
@@ -66,8 +66,12 @@ const MembersList = ({}: MembersListProps) => {
         return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
       case "nameDesc":
         return `${b.firstName} ${b.lastName}`.localeCompare(`${a.firstName} ${a.lastName}`);
+      case "lastNameAsc":
+        return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+      case "lastNameDesc":
+        return b.lastName.localeCompare(a.lastName) || b.firstName.localeCompare(a.firstName);
       default:
-        return 0;
+        return a.lastName.localeCompare(b.lastName); // Default to last name ascending
     }
   });
   
@@ -99,8 +103,10 @@ const MembersList = ({}: MembersListProps) => {
                   <SelectValue placeholder="Sort By" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="nameAsc">Name (A-Z)</SelectItem>
-                  <SelectItem value="nameDesc">Name (Z-A)</SelectItem>
+                  <SelectItem value="lastNameAsc">Last Name (A-Z)</SelectItem>
+                  <SelectItem value="lastNameDesc">Last Name (Z-A)</SelectItem>
+                  <SelectItem value="nameAsc">First Name (A-Z)</SelectItem>
+                  <SelectItem value="nameDesc">First Name (Z-A)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -126,10 +132,10 @@ const MembersList = ({}: MembersListProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Cell Phone</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="font-bold">Name</TableHead>
+                  <TableHead className="font-bold">Email</TableHead>
+                  <TableHead className="font-bold">Cell Phone</TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
