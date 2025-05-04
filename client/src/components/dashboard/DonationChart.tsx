@@ -42,7 +42,7 @@ export function DonationChart() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Donation Trends</CardTitle>
+          <CardTitle>Count Trends</CardTitle>
           <CardDescription>
             Loading chart data...
           </CardDescription>
@@ -116,7 +116,7 @@ export function DonationChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Donation Trends</CardTitle>
+        <CardTitle>Count Trends</CardTitle>
         <CardDescription>
           Cash vs. Check donations over time
         </CardDescription>
