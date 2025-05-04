@@ -169,29 +169,62 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         console.log("Using provided default batch ID:", defaultBatchId.toString());
         form.setValue("batchId", defaultBatchId.toString());
         
-        // Get batch info to set the date
-        if (specificBatch.date) {
-          // Handle timezone issues by adding a day offset
-          const dateString = specificBatch.date.toString();
-          let dateObj = new Date(dateString);
-          
-          // Adjust for timezone offset if needed
-          // This ensures the date displayed is the same as the one set in the batch
-          const batchDate = format(dateObj, 'yyyy-MM-dd');
-          
-          // Check if the formatted date matches what we expect from the batch name
-          // Batch name typically contains the date in "Month Day, Year" format
-          const expectedDateMatch = specificBatch.name.match(/,\s+([A-Za-z]+)\s+(\d+),\s+(\d{4})/);
-          if (expectedDateMatch) {
-            const [, month, day, year] = expectedDateMatch;
-            // Use the date from the name if available
-            const monthIndex = new Date(`${month} 1, 2000`).getMonth();
-            dateObj = new Date(parseInt(year), monthIndex, parseInt(day));
+        // Get batch info to set the date - DIRECT FROM BATCH NAME
+        if (specificBatch.name) {
+          try {
+            // The batch name format is "Service Type, Month Day, Year"
+            // Parse that directly to get the correct date
+            const nameParts = specificBatch.name.split(',');
+            if (nameParts.length >= 3) {
+              // Get month and day from the middle part, year from the last part
+              const monthDay = nameParts[1].trim();
+              const year = nameParts[2].trim();
+              
+              // Create the date string in YYYY-MM-DD format
+              // First parse it with JS Date
+              const datePart = `${monthDay} ${year}`;
+              console.log("Parsing date directly from batch name:", datePart);
+              
+              // Explicitly extract month, day, year using month names
+              const monthNames = ["January", "February", "March", "April", "May", "June",
+                                 "July", "August", "September", "October", "November", "December"];
+              
+              // Extract month and day from the string like "May 3"
+              const monthDayRegex = /([A-Za-z]+)\s+(\d+)/;
+              const monthDayMatch = monthDay.match(monthDayRegex);
+              
+              if (monthDayMatch) {
+                const [, monthName, dayStr] = monthDayMatch;
+                const yearNum = parseInt(year);
+                
+                // Find month index (0-11)
+                const monthIndex = monthNames.findIndex(m => 
+                  monthName.toLowerCase() === m.toLowerCase() || 
+                  (monthName.length >= 3 && m.toLowerCase().startsWith(monthName.toLowerCase()))
+                );
+                
+                if (monthIndex !== -1) {
+                  // JS months are 0-indexed
+                  const month = monthIndex + 1;
+                  const day = parseInt(dayStr);
+                  
+                  // Create date in YYYY-MM-DD format manually
+                  const formattedDate = `${yearNum}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  console.log("Setting date from specific batch name:", formattedDate);
+                  form.setValue("date", formattedDate);
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Error parsing date from batch name:", error);
+            // If there's an error, still try to use the date field as fallback
+            if (specificBatch.date) {
+              const dateObj = new Date(specificBatch.date.toString());
+              const fallbackDate = format(dateObj, 'yyyy-MM-dd');
+              console.log("Using fallback date from batch date field:", fallbackDate);
+              form.setValue("date", fallbackDate);
+            }
           }
-          
-          const correctedDate = format(dateObj, 'yyyy-MM-dd');
-          console.log("Setting date from specific batch:", correctedDate, "Original date:", specificBatch.date);
-          form.setValue("date", correctedDate);
         }
       }
       // Otherwise, use current batch if available
@@ -202,25 +235,61 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           console.log("Setting default batch ID:", currentBatch.id.toString());
           form.setValue("batchId", currentBatch.id.toString());
           
-          // Set date to match batch date
-          if (currentBatch.date) {
-            // Handle timezone issues by extracting date from batch name
-            const dateString = currentBatch.date.toString();
-            let dateObj = new Date(dateString);
-            
-            // Check if the formatted date matches what we expect from the batch name
-            // Batch name typically contains the date in "Month Day, Year" format
-            const expectedDateMatch = currentBatch.name.match(/,\s+([A-Za-z]+)\s+(\d+),\s+(\d{4})/);
-            if (expectedDateMatch) {
-              const [, month, day, year] = expectedDateMatch;
-              // Use the date from the name if available
-              const monthIndex = new Date(`${month} 1, 2000`).getMonth();
-              dateObj = new Date(parseInt(year), monthIndex, parseInt(day));
+          // Set date to match batch date - DIRECT FROM BATCH NAME
+          if (currentBatch.name) {
+            try {
+              // The batch name format is "Service Type, Month Day, Year"
+              // Parse that directly to get the correct date
+              const nameParts = currentBatch.name.split(',');
+              if (nameParts.length >= 3) {
+                // Get month and day from the middle part, year from the last part
+                const monthDay = nameParts[1].trim();
+                const year = nameParts[2].trim();
+                
+                // Create the date string in YYYY-MM-DD format
+                const datePart = `${monthDay} ${year}`;
+                console.log("Parsing date directly from current batch name:", datePart);
+                
+                // Explicitly extract month, day, year using month names
+                const monthNames = ["January", "February", "March", "April", "May", "June",
+                                   "July", "August", "September", "October", "November", "December"];
+                
+                // Extract month and day from the string like "May 3"
+                const monthDayRegex = /([A-Za-z]+)\s+(\d+)/;
+                const monthDayMatch = monthDay.match(monthDayRegex);
+                
+                if (monthDayMatch) {
+                  const [, monthName, dayStr] = monthDayMatch;
+                  const yearNum = parseInt(year);
+                  
+                  // Find month index (0-11)
+                  const monthIndex = monthNames.findIndex(m => 
+                    monthName.toLowerCase() === m.toLowerCase() || 
+                    (monthName.length >= 3 && m.toLowerCase().startsWith(monthName.toLowerCase()))
+                  );
+                  
+                  if (monthIndex !== -1) {
+                    // JS months are 0-indexed
+                    const month = monthIndex + 1;
+                    const day = parseInt(dayStr);
+                    
+                    // Create date in YYYY-MM-DD format manually
+                    const formattedDate = `${yearNum}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    console.log("Setting date from current batch name:", formattedDate);
+                    form.setValue("date", formattedDate);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Error parsing date from current batch name:", error);
+              // If there's an error, still try to use the date field as fallback
+              if (currentBatch.date) {
+                const dateObj = new Date(currentBatch.date.toString());
+                const fallbackDate = format(dateObj, 'yyyy-MM-dd');
+                console.log("Using fallback date from current batch date field:", fallbackDate);
+                form.setValue("date", fallbackDate);
+              }
             }
-            
-            const correctedDate = format(dateObj, 'yyyy-MM-dd');
-            console.log("Setting date from current batch:", correctedDate, "Original date:", currentBatch.date);
-            form.setValue("date", correctedDate);
           }
         }
       }
@@ -233,23 +302,60 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
       const batchId = form.watch("batchId");
       if (batchId && batchId !== "none") {
         const selectedBatch = batches?.find(batch => batch.id === parseInt(batchId));
-        if (selectedBatch && selectedBatch.date) {
-          // Handle timezone issues by extracting date from batch name
-          const dateString = selectedBatch.date.toString();
-          let dateObj = new Date(dateString);
-          
-          // Check if the date matches what we expect from the batch name
-          const expectedDateMatch = selectedBatch.name.match(/,\s+([A-Za-z]+)\s+(\d+),\s+(\d{4})/);
-          if (expectedDateMatch) {
-            const [, month, day, year] = expectedDateMatch;
-            // Use the date from the name if available
-            const monthIndex = new Date(`${month} 1, 2000`).getMonth();
-            dateObj = new Date(parseInt(year), monthIndex, parseInt(day));
+        if (selectedBatch && selectedBatch.name) {
+          try {
+            // The batch name format is "Service Type, Month Day, Year"
+            // Parse that directly to get the correct date
+            const nameParts = selectedBatch.name.split(',');
+            if (nameParts.length >= 3) {
+              // Get month and day from the middle part, year from the last part
+              const monthDay = nameParts[1].trim();
+              const year = nameParts[2].trim();
+              
+              // Create the date string in YYYY-MM-DD format
+              const datePart = `${monthDay} ${year}`;
+              console.log("Parsing date directly from selected batch name:", datePart);
+              
+              // Explicitly extract month, day, year using month names
+              const monthNames = ["January", "February", "March", "April", "May", "June",
+                                 "July", "August", "September", "October", "November", "December"];
+              
+              // Extract month and day from the string like "May 3"
+              const monthDayRegex = /([A-Za-z]+)\s+(\d+)/;
+              const monthDayMatch = monthDay.match(monthDayRegex);
+              
+              if (monthDayMatch) {
+                const [, monthName, dayStr] = monthDayMatch;
+                const yearNum = parseInt(year);
+                
+                // Find month index (0-11)
+                const monthIndex = monthNames.findIndex(m => 
+                  monthName.toLowerCase() === m.toLowerCase() || 
+                  (monthName.length >= 3 && m.toLowerCase().startsWith(monthName.toLowerCase()))
+                );
+                
+                if (monthIndex !== -1) {
+                  // JS months are 0-indexed
+                  const month = monthIndex + 1;
+                  const day = parseInt(dayStr);
+                  
+                  // Create date in YYYY-MM-DD format manually
+                  const formattedDate = `${yearNum}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  console.log("Setting date from selected batch name:", formattedDate);
+                  form.setValue("date", formattedDate);
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Error parsing date from selected batch name:", error);
+            // If there's an error, still try to use the date field as fallback
+            if (selectedBatch.date) {
+              const dateObj = new Date(selectedBatch.date.toString());
+              const fallbackDate = format(dateObj, 'yyyy-MM-dd');
+              console.log("Using fallback date from selected batch date field:", fallbackDate);
+              form.setValue("date", fallbackDate);
+            }
           }
-          
-          const correctedDate = format(dateObj, 'yyyy-MM-dd');
-          console.log("Setting date from batch selection:", correctedDate, "Original date:", selectedBatch.date);
-          form.setValue("date", correctedDate);
         }
       }
     }
