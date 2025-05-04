@@ -110,6 +110,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
   
+  // State to force re-render of member combobox when form is reset
+  const [comboboxKey, setComboboxKey] = useState(0);
+  
   // Load members for the dropdown
   const { data: members, isLoading: isLoadingMembers } = useQuery<Member[]>({
     queryKey: ['/api/members'],
@@ -545,6 +548,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         <FormControl>
                           {members && (
                             <ComboboxSearch
+                              key={comboboxKey}
                               options={members.map(member => ({
                                 value: member.id.toString(),
                                 label: `${member.firstName} ${member.lastName}`
