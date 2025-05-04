@@ -6,9 +6,10 @@ interface PageLayoutProps {
   children: React.ReactNode;
   title?: string;
   subtitle?: string;
+  icon?: React.ReactNode;
 }
 
-const PageLayout = ({ children, title, subtitle }: PageLayoutProps) => {
+const PageLayout = ({ children, title, subtitle, icon }: PageLayoutProps) => {
   return (
     <div className="max-w-4xl mx-auto px-4 mb-8">
       {/* Header/Navigation */}

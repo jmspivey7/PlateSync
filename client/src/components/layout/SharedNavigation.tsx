@@ -12,9 +12,10 @@ import redeemerLogo from "../../assets/redeemer-logo.png";
 interface SharedNavigationProps {
   title?: string;
   subtitle?: string;
+  icon?: React.ReactNode;
 }
 
-const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
+const SharedNavigation = ({ title, subtitle, icon }: SharedNavigationProps) => {
   const [_, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();

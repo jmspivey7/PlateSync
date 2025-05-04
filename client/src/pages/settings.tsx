@@ -836,31 +836,6 @@ const Settings = () => {
             </CardContent>
           </Card>
         )}
-        
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Generate Reports</CardTitle>
-            <CardDescription>
-              Export donation and member data for reporting purposes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="text-[#2D3748]">
-                Monthly Donation Report
-              </Button>
-              <Button variant="outline" className="text-[#2D3748]">
-                Annual Giving Statement
-              </Button>
-              <Button variant="outline" className="text-[#2D3748]">
-                Member Directory
-              </Button>
-            </div>
-            <p className="text-xs text-gray-500 mt-4">
-              * Reports will be generated in CSV format for easy import into spreadsheet software.
-            </p>
-          </CardContent>
-        </Card>
       </div>
       
       {showSuccessToast && (
