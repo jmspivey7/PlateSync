@@ -78,9 +78,10 @@ const AccountDropdown = () => {
             <span>Help</span>
           </DropdownMenuItem>
           
+          <DropdownMenuSeparator className="my-1" />
+          
           {isAdmin && (
             <>
-              <DropdownMenuSeparator className="my-1" />
               
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/settings")}>
                 <Settings className="mr-2 h-4 w-4" />
@@ -96,11 +97,11 @@ const AccountDropdown = () => {
                 <UserPlus className="mr-2 h-4 w-4" />
                 <span>Members</span>
               </DropdownMenuItem>
+              
+              <DropdownMenuSeparator className="my-1" />
             </>
           )}
         </DropdownMenuGroup>
-        
-        <DropdownMenuSeparator className="my-1" />
         
         <DropdownMenuItem 
           className="text-red-600 text-[1.1rem] py-2"
