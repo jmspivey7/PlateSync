@@ -105,11 +105,18 @@ const ServiceOptions = () => {
   // Create service option mutation
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      const response = await apiRequest('/api/service-options', {
-        method: 'POST',
-        body: data, // Pass object directly, apiRequest handles JSON.stringify internally
-      });
-      return response;
+      console.log('Creating service option with data:', data);
+      try {
+        const response = await apiRequest('/api/service-options', {
+          method: 'POST',
+          body: data, // Pass object directly, apiRequest handles JSON.stringify internally
+        });
+        console.log('Service option creation response:', response);
+        return response;
+      } catch (error) {
+        console.error('Service option creation failed:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({

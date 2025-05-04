@@ -1209,13 +1209,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/service-options', isAuthenticated, async (req: any, res) => {
     try {
+      console.log("POST /api/service-options - Request body:", req.body);
+      console.log("POST /api/service-options - User:", req.user);
+      
       const userId = req.user.claims.sub;
+      
+      // Ensure body is properly parsed
+      let bodyData = req.body;
+      if (typeof bodyData === 'string') {
+        try {
+          bodyData = JSON.parse(bodyData);
+        } catch (e) {
+          console.error("Failed to parse request body as JSON:", e);
+          return res.status(400).json({ message: "Invalid JSON in request body" });
+        }
+      }
+      
+      console.log("POST /api/service-options - Parsed body:", bodyData);
+      
       const validatedData = insertServiceOptionSchema.parse({
-        ...req.body,
+        ...bodyData,
         churchId: userId
       });
       
+      console.log("POST /api/service-options - Validated data:", validatedData);
+      
       const newOption = await storage.createServiceOption(validatedData);
+      console.log("POST /api/service-options - Created option:", newOption);
+      
       res.status(201).json(newOption);
     } catch (error) {
       console.error("Error creating service option:", error);
