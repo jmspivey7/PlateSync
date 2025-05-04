@@ -279,12 +279,9 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* Empty option */}
-                          <SelectItem value="">Select a service</SelectItem>
-                          
                           {/* Only configured service options */}
                           {isLoadingServiceOptions ? (
-                            <SelectItem value="" disabled>Loading options...</SelectItem>
+                            <SelectItem value="loading" disabled>Loading options...</SelectItem>
                           ) : serviceOptions.length > 0 ? (
                             serviceOptions.map((option) => (
                               <SelectItem key={option.id} value={option.value}>
@@ -292,7 +289,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                               </SelectItem>
                             ))
                           ) : (
-                            <SelectItem value="" disabled>No service options configured</SelectItem>
+                            <SelectItem value="none" disabled>No service options configured</SelectItem>
                           )}
                         </SelectContent>
                       </Select>
