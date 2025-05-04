@@ -82,6 +82,10 @@ const AccountDropdown = () => {
                 User Management
               </DropdownMenuItem>
               
+              <DropdownMenuItem onClick={() => setLocation("/members")}>
+                Members
+              </DropdownMenuItem>
+              
               <DropdownMenuItem onClick={() => setLocation("/service-options")}>
                 Service Options
               </DropdownMenuItem>
