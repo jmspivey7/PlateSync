@@ -163,8 +163,7 @@ const Dashboard = () => {
   
   return (
     <PageLayout
-      title="Dashboard"
-      icon={<BarChart2 className="h-6 w-6 text-gray-700" />}
+      // Removed Dashboard header and icon as requested
     >
       <div className="flex flex-col md:flex-row gap-6 mb-6">
         {/* Start New Count Card Button */}
