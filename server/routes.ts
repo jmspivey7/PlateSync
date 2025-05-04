@@ -1057,19 +1057,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (reportRecipients.length > 0) {
             console.log(`Sending count report emails to ${reportRecipients.length} recipients`);
+            console.log('Report recipients:', JSON.stringify(reportRecipients));
             
             for (const recipient of reportRecipients) {
-              await sendCountReport({
-                to: recipient.email,
-                recipientName: `${recipient.firstName} ${recipient.lastName}`,
-                churchName: user.churchName || 'Your Church',
-                batchName: updatedBatch.name,
-                batchDate: formattedDate,
-                totalAmount,
-                cashAmount,
-                checkAmount,
-                donationCount: donations.length
-              });
+              console.log(`Attempting to send email to ${recipient.email}`);
+              try {
+                const emailResult = await sendCountReport({
+                  to: recipient.email,
+                  recipientName: `${recipient.firstName} ${recipient.lastName}`,
+                  churchName: user.churchName || 'Your Church',
+                  batchName: updatedBatch.name,
+                  batchDate: formattedDate,
+                  totalAmount,
+                  cashAmount,
+                  checkAmount,
+                  donationCount: donations.length
+                });
+                console.log(`Email send result: ${emailResult ? 'Success' : 'Failed'}`);
+              } catch (innerError) {
+                console.error('Error sending individual report email:', innerError);
+              }
             }
           } else {
             console.log('No report recipients configured. Skipping count report notifications.');
