@@ -27,11 +27,9 @@ import { Loader2, Search, Mail, Phone } from "lucide-react";
 import { Member } from "@shared/schema";
 import { format } from "date-fns";
 
-interface MembersListProps {
-  onTotalMembersChange?: (count: number) => void;
-}
+interface MembersListProps {}
 
-const MembersList = ({ onTotalMembersChange }: MembersListProps) => {
+const MembersList = ({}: MembersListProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("lastNameAsc");
@@ -77,12 +75,7 @@ const MembersList = ({ onTotalMembersChange }: MembersListProps) => {
     }
   });
   
-  // Update the total members count in the parent component
-  useEffect(() => {
-    if (members && onTotalMembersChange) {
-      onTotalMembersChange(members.length);
-    }
-  }, [members, onTotalMembersChange]);
+
   
   return (
     <div className="space-y-6">

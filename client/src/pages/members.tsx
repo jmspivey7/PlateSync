@@ -11,7 +11,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { MemberWithDonations } from "@shared/schema";
+import { MemberWithDonations, Member } from "@shared/schema";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -214,12 +214,16 @@ const Members = () => {
     );
   } else {
     content = (
-      <MembersList onTotalMembersChange={(count) => setTotalMembers(count)} />
+      <MembersList />
     );
   }
   
-  // State to track total member count
-  const [totalMembers, setTotalMembers] = useState(0);
+  // Fetch all members to get the count
+  const { data: allMembers } = useQuery<Member[]>({
+    queryKey: ['/api/members'],
+  });
+  
+  const totalMembers = allMembers?.length || 0;
   
   return (
     <PageLayout 
