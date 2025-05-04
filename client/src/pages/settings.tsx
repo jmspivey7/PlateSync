@@ -370,7 +370,11 @@ const Settings = () => {
   };
   
   return (
-    <PageLayout title="Settings" subtitle="Manage your church and notification settings">
+    <PageLayout 
+      title="Settings" 
+      subtitle="Manage your church and notification settings"
+      icon={<SettingsIcon className="h-6 w-6 text-gray-700" />}
+    >
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
