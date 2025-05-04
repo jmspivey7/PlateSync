@@ -16,7 +16,8 @@ import {
   Settings, 
   Users, 
   UserPlus,
-  LogOut 
+  LogOut,
+  FileBarChart 
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,6 +97,11 @@ const AccountDropdown = () => {
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/members")}>
                 <UserPlus className="mr-2 h-4 w-4" />
                 <span>Members</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/reports")}>
+                <FileBarChart className="mr-2 h-4 w-4" />
+                <span>Reports</span>
               </DropdownMenuItem>
               
               <DropdownMenuSeparator className="my-2 border-t border-gray-300" />

@@ -20,6 +20,7 @@ import Help from "@/pages/help";
 import UserManagement from "@/pages/user-management";
 import ServiceOptions from "@/pages/service-options";
 import EmailSettings from "@/pages/email-settings";
+import Reports from "@/pages/reports";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/user-management" component={UserManagement} />
       <Route path="/service-options" component={ServiceOptions} />
       <Route path="/email-settings" component={EmailSettings} />
+      <Route path="/reports" component={Reports} />
       
       <Route component={NotFound} />
     </Switch>
