@@ -413,12 +413,6 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         <CardTitle className="text-xl font-bold text-[#2D3748]">
           {isEdit ? "Edit Donation" : "Record New Donation"}
         </CardTitle>
-        
-        {onClose && !isInsideDialog && (
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        )}
       </CardHeader>
       
       <CardContent>

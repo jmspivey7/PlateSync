@@ -20,12 +20,11 @@ import {
   Edit,
   AlertTriangle
 } from "lucide-react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { format } from "date-fns";
 import DonationForm from "../donations/DonationForm";
 import { Batch, BatchWithDonations, Donation, DonationWithMember, batchStatusEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { NoCloseDialog, NoCloseDialogContent } from "@/components/ui/no-close-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -412,20 +411,14 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
       </CardContent>
 
       {/* Modal for adding a donation */}
-      <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <DialogPrimitive.Content
-            className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg"
-          >
-            <DonationForm 
-              onClose={handleDonationAdded} 
-              defaultBatchId={batchId} 
-            />
-            {/* No close button here */}
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
-      </Dialog>
+      <NoCloseDialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
+        <NoCloseDialogContent className="sm:max-w-[800px] p-0">
+          <DonationForm 
+            onClose={handleDonationAdded} 
+            defaultBatchId={batchId} 
+          />
+        </NoCloseDialogContent>
+      </NoCloseDialog>
     </Card>
   );
 };
