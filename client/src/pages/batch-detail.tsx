@@ -478,29 +478,40 @@ const BatchDetailPage = () => {
         </Dialog>
         
         {/* Modal for attestation process */}
-        <Dialog 
-          open={isAttesting} 
-          onOpenChange={(open) => {
-            console.log("Dialog onOpenChange called with:", open);
-            setIsAttesting(open);
-          }}
-        >
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader className="pb-0">
-              <DialogTitle className="text-xl font-bold">Count Attestation</DialogTitle>
-            </DialogHeader>
-            {/* Attestation form renders below */}
-            <AttestationForm 
-              batchId={batchId}
-              onComplete={() => {
-                setIsAttesting(false);
-                // After attestation is complete, trigger a batch refetch and mark as finalized
-                queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
-                setIsFinalized(true);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        {isAttesting && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+            onClick={(e) => {
+              // Prevent the click from closing the dialog if it's on the backdrop
+              e.stopPropagation();
+            }}
+          >
+            <div 
+              className="bg-background rounded-lg p-6 max-w-[600px] w-full max-h-[90vh] overflow-y-auto relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button 
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                onClick={() => setIsAttesting(false)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="pb-4 mb-4 border-b">
+                <h2 className="text-xl font-bold">Count Attestation</h2>
+              </div>
+              {/* Attestation form renders below */}
+              <AttestationForm 
+                batchId={batchId}
+                onComplete={() => {
+                  setIsAttesting(false);
+                  // After attestation is complete, trigger a batch refetch and mark as finalized
+                  queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+                  setIsFinalized(true);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </Card>
     </PageLayout>
   );

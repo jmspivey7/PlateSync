@@ -48,6 +48,11 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   
+  // Log when the attestation form is mounted
+  useEffect(() => {
+    console.log("AttestationForm mounted with batchId:", batchId);
+  }, []);
+  
   const [step, setStep] = useState<'primary' | 'secondary' | 'confirmation' | 'complete'>('primary');
   
   // Fetch batch details
