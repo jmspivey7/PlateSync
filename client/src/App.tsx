@@ -15,6 +15,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Counts from "@/pages/counts";
 import BatchDetail from "@/pages/batch-detail";
+import AttestBatch from "@/pages/attest-batch";
 import Profile from "@/pages/profile";
 import Help from "@/pages/help";
 import UserManagement from "@/pages/user-management";
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/members" component={Members} />
       <Route path="/counts" component={Counts} />
       <Route path="/batch/:id" component={BatchDetail} />
+      <Route path="/attest-batch/:id" component={AttestBatch} />
       
       {/* Account and Settings Pages */}
       <Route path="/profile" component={Profile} />

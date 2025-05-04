@@ -296,11 +296,8 @@ const BatchDetailPage = () => {
                   </Button>
                   <Button 
                     onClick={() => {
-                      console.log("Attest & Finalize button clicked");
-                      console.log("Current batch status:", batch?.status);
-                      console.log("isAttesting state before:", isAttesting);
-                      setIsAttesting(true);
-                      console.log("isAttesting state after:", true);
+                      console.log("Attest & Finalize button clicked, navigating to attestation page");
+                      setLocation(`/attest-batch/${batchId}`);
                     }} 
                     className="bg-amber-500 hover:bg-amber-600 text-black"
                   >
