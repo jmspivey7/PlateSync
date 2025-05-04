@@ -214,12 +214,18 @@ const Members = () => {
     );
   } else {
     content = (
-      <MembersList />
+      <MembersList onTotalMembersChange={(count) => setTotalMembers(count)} />
     );
   }
   
+  // State to track total member count
+  const [totalMembers, setTotalMembers] = useState(0);
+  
   return (
-    <PageLayout title="Members" subtitle="Manage your church members and their information">
+    <PageLayout 
+      title={`Members (${totalMembers})`} 
+      subtitle="Manage your church members and their information"
+    >
       {content}
     </PageLayout>
   );
