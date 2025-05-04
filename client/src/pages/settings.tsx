@@ -255,6 +255,34 @@ const Settings = () => {
     }
   });
   
+  // Initialize service options mutation
+  const initializeServiceOptionsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/service-options/initialize", {});
+      
+      if (!response.ok) {
+        throw new Error("Failed to initialize service options");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
+      toast({
+        title: "Default Options Created",
+        description: "Default service options have been initialized successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to initialize options: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Test SendGrid configuration
   const testSendGridConfiguration = async () => {
     setSendgridTestStatus('loading');
@@ -495,26 +523,18 @@ const Settings = () => {
                       Add your first service option using the field above
                     </p>
                     <Button 
-                      onClick={() => {
-                        apiRequest("POST", "/api/service-options/initialize", {})
-                          .then(() => {
-                            queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
-                            toast({
-                              title: "Default service options created",
-                              description: "Default service options have been initialized",
-                            });
-                          })
-                          .catch((error) => {
-                            toast({
-                              title: "Error",
-                              description: "Failed to initialize default service options",
-                              variant: "destructive",
-                            });
-                          });
-                      }}
+                      onClick={() => initializeServiceOptionsMutation.mutate()}
+                      disabled={initializeServiceOptionsMutation.isPending}
                       className="mt-4 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
                     >
-                      Initialize Default Options
+                      {initializeServiceOptionsMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Initializing...
+                        </>
+                      ) : (
+                        "Initialize Default Options"
+                      )}
                     </Button>
                   </div>
                 ) : (
