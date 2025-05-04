@@ -333,16 +333,16 @@ const Settings = () => {
                   control={form.control}
                   name="emailNotificationsEnabled"
                   render={({ field }) => (
-                    <FormItem className="border rounded-lg p-6 mb-4 relative">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base font-medium">
+                    <FormItem className="border rounded-lg p-6 mb-4">
+                      <div className="space-y-1">
+                        <FormLabel className="text-lg font-medium">
                           Enable Email Notifications
                         </FormLabel>
                         <FormDescription className="text-gray-600">
                           Send email notifications to donors when donations are recorded
                         </FormDescription>
                       </div>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <div className="mt-8 flex justify-end">
                         <div className="flex items-center">
                           <FormControl>
                             <Switch
