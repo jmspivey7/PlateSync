@@ -727,23 +727,23 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   />
                   
                   {donorType === "existing" && (
-                    <FormField
-                      control={form.control}
-                      name="sendNotification"
-                      render={({ field }) => (
-                        <FormItem className="col-span-1 md:col-span-2 flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div>
-                            <FormLabel className="text-base">Send Receipt Notification</FormLabel>
+                    <div className="col-span-1 md:col-span-2 py-2">
+                      <FormField
+                        control={form.control}
+                        name="sendNotification"
+                        render={({ field }) => (
+                          <div className="border rounded-lg p-4">
+                            <div className="flex justify-between items-center">
+                              <span className="text-base font-medium">Send Receipt Notification</span>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </div>
                           </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                        )}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
