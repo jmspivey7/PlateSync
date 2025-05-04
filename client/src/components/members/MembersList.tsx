@@ -21,18 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Button } from "@/components/ui/button";
+
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Mail, Phone, FileEdit, Eye, DollarSign } from "lucide-react";
+import { Loader2, Search, Mail, Phone } from "lucide-react";
 import { Member } from "@shared/schema";
 import { format } from "date-fns";
 
@@ -136,26 +127,13 @@ const MembersList = ({}: MembersListProps) => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Contact Info</TableHead>
-                  <TableHead>Member Since</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Cell Phone</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedMembers.map((member) => {
-                  const handleViewDetails = () => {
-                    setLocation(`/members?id=${member.id}`);
-                  };
-                  
-                  const handleEdit = () => {
-                    setLocation(`/members?id=${member.id}&edit=true`);
-                  };
-                  
-                  const handleAddDonation = () => {
-                    setLocation(`/donations?new=true&memberId=${member.id}`);
-                  };
-                  
-                  return (
+                {sortedMembers.map((member) => (
                     <TableRow key={member.id}>
                       <TableCell>
                         <div className="font-medium">
@@ -168,89 +146,38 @@ const MembersList = ({}: MembersListProps) => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {member.email && (
-                            <div className="flex items-center text-sm">
-                              <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-gray-600">{member.email}</span>
-                            </div>
-                          )}
-                          {member.phone && (
-                            <div className="flex items-center text-sm">
-                              <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-gray-600">{member.phone}</span>
-                            </div>
-                          )}
-                        </div>
+                        {member.email ? (
+                          <div className="flex items-center text-sm">
+                            <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                            <span className="text-gray-600">{member.email}</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {member.createdAt ? format(new Date(member.createdAt), 'MMM d, yyyy') : 'Unknown'}
+                        {member.phone ? (
+                          <div className="flex items-center text-sm">
+                            <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                            <span className="text-gray-600">{member.phone}</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={handleViewDetails}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">View Details</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={handleEdit}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <FileEdit className="h-4 w-4" />
-                            <span className="sr-only">Edit Member</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={handleAddDonation} 
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <DollarSign className="h-4 w-4" />
-                            <span className="sr-only">Add Donation</span>
-                          </Button>
-                        </div>
+                      <TableCell>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
                       </TableCell>
                     </TableRow>
-                  );
-                })}
+                ))}
               </TableBody>
             </Table>
           </div>
           
 
-          
-          {/* Pagination Controls */}
-          <div className="mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" isActive>1</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">2</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">3</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+
         </>
       )}
     </div>
