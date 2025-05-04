@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Pagination,
   PaginationContent,
@@ -25,9 +32,9 @@ import {
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, UserPlus } from "lucide-react";
+import { Loader2, Search, UserPlus, Mail, Phone, Edit, FileEdit, Eye, DollarSign } from "lucide-react";
 import { Member } from "@shared/schema";
-import MemberCard from "./MemberCard";
+import { format } from "date-fns";
 
 interface MembersListProps {
   onAddMember: () => void;
@@ -37,6 +44,7 @@ const MembersList = ({ onAddMember }: MembersListProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("nameAsc");
+  const [_, setLocation] = useLocation();
   
   // Fetch members data
   const { data: members, isLoading, isError } = useQuery<Member[]>({
@@ -131,7 +139,7 @@ const MembersList = ({ onAddMember }: MembersListProps) => {
         <Card className="p-10 text-center">
           <p className="text-gray-500 mb-4">No members found.</p>
           <Button 
-            className="bg-[#4299E1] hover:bg-[#4299E1]/90"
+            className="bg-[#69ad4c] hover:bg-[#5c9a42]"
             onClick={onAddMember}
           >
             <UserPlus className="h-5 w-5 mr-2" />
@@ -140,10 +148,108 @@ const MembersList = ({ onAddMember }: MembersListProps) => {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedMembers.map((member) => (
-              <MemberCard key={member.id} member={member} />
-            ))}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Contact Info</TableHead>
+                  <TableHead>Member Since</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedMembers.map((member) => {
+                  const handleViewDetails = () => {
+                    setLocation(`/members?id=${member.id}`);
+                  };
+                  
+                  const handleEdit = () => {
+                    setLocation(`/members?id=${member.id}&edit=true`);
+                  };
+                  
+                  const handleAddDonation = () => {
+                    setLocation(`/donations?new=true&memberId=${member.id}`);
+                  };
+                  
+                  return (
+                    <TableRow key={member.id}>
+                      <TableCell>
+                        <div className="font-medium">
+                          {member.lastName}, {member.firstName}
+                        </div>
+                        {member.isVisitor && (
+                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full">
+                            Visitor
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {member.email && (
+                            <div className="flex items-center text-sm">
+                              <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                              <span className="text-gray-600">{member.email}</span>
+                            </div>
+                          )}
+                          {member.phone && (
+                            <div className="flex items-center text-sm">
+                              <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                              <span className="text-gray-600">{member.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {member.createdAt ? format(new Date(member.createdAt), 'MMM d, yyyy') : 'Unknown'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={handleViewDetails}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">View Details</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={handleEdit}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <FileEdit className="h-4 w-4" />
+                            <span className="sr-only">Edit Member</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={handleAddDonation} 
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <DollarSign className="h-4 w-4" />
+                            <span className="sr-only">Add Donation</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          
+          {/* Add Member Button */}
+          <div className="mt-4 hidden md:block">
+            <Button 
+              className="bg-[#69ad4c] hover:bg-[#5c9a42]"
+              onClick={onAddMember}
+            >
+              <UserPlus className="h-5 w-5 mr-2" />
+              Add Member
+            </Button>
           </div>
           
           {/* Pagination Controls */}
