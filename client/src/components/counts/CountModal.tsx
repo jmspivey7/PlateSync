@@ -91,7 +91,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
     queryFn: async () => {
       if (!batchId) return null;
       
-      const response = await apiRequest("GET", `/api/batches/${batchId}`);
+      const response = await fetch(`/api/batches/${batchId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch count");
       }
@@ -141,7 +141,13 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       const url = isEdit && batchId ? `/api/batches/${batchId}` : '/api/batches';
       const method = isEdit ? "PATCH" : "POST";
       
-      const response = await apiRequest(method, url, values);
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values)
+      });
       
       if (!response.ok) {
         const error = await response.json();
@@ -187,7 +193,9 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
     mutationFn: async () => {
       if (!batchId) return;
       
-      const response = await apiRequest("DELETE", `/api/batches/${batchId}`);
+      const response = await fetch(`/api/batches/${batchId}`, {
+        method: 'DELETE',
+      });
       
       if (!response.ok) {
         throw new Error("Failed to delete count");
