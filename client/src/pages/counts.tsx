@@ -42,7 +42,7 @@ const CountsPage = () => {
     queryKey: ["/api/batches", selectedBatchId, "details"],
     queryFn: async () => {
       if (!selectedBatchId) return null;
-      const response = await apiRequest("GET", `/api/batches/${selectedBatchId}`);
+      const response = await fetch(`/api/batches/${selectedBatchId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch count details");
       }
@@ -138,47 +138,55 @@ const CountsPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Name</th>
                     <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/5">Date</th>
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/5">Service</th>
                     <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/5">Amount</th>
                     <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/5">Status</th>
                     <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/10">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredBatches.map((batch) => (
-                    <tr 
-                      key={batch.id}
-                      className={`border-b hover:bg-gray-50 cursor-pointer ${
-                        selectedBatchId === batch.id ? 'bg-blue-50' : ''
-                      }`}
-                      onClick={() => handleViewBatch(batch.id)}
-                    >
-                      <td className="py-3 px-3 font-medium">{batch.name}</td>
-                      <td className="py-3 px-3 text-gray-500">
-                        {format(new Date(batch.date), 'MMM d, yyyy')}
-                      </td>
-                      <td className="py-3 px-3 font-medium text-[#48BB78]">
-                        {formatCurrency(batch.totalAmount || 0)}
-                      </td>
-                      <td className="py-3 px-3">
-                        <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditBatch(batch.id);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredBatches.map((batch) => {
+                    // Extract service name from the batch name
+                    const batchNameParts = batch.name.split(', ');
+                    const serviceName = batchNameParts.length > 1 ? batchNameParts[0] : 'Regular Service';
+                    
+                    return (
+                      <tr 
+                        key={batch.id}
+                        className={`border-b hover:bg-gray-50 cursor-pointer ${
+                          selectedBatchId === batch.id ? 'bg-blue-50' : ''
+                        }`}
+                        onClick={() => handleViewBatch(batch.id)}
+                      >
+                        <td className="py-3 px-3 text-gray-700 font-medium">
+                          {format(new Date(batch.date), 'MMMM d, yyyy')}
+                        </td>
+                        <td className="py-3 px-3 text-gray-700">
+                          {serviceName}
+                        </td>
+                        <td className="py-3 px-3 font-medium text-[#48BB78]">
+                          {formatCurrency(batch.totalAmount || 0)}
+                        </td>
+                        <td className="py-3 px-3">
+                          <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditBatch(batch.id);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -205,10 +213,19 @@ const CountsPage = () => {
         <Card>
           <CardHeader className="flex flex-row items-start justify-between">
             <div>
-              <CardTitle>{selectedBatch.name}</CardTitle>
-              <CardDescription>
-                Created on {format(new Date(selectedBatch.date), 'MMMM d, yyyy')}
-              </CardDescription>
+              {/* Extract service name from the batch name */}
+              {(() => {
+                const batchNameParts = selectedBatch.name.split(', ');
+                const serviceName = batchNameParts.length > 1 ? batchNameParts[0] : 'Regular Service';
+                return (
+                  <>
+                    <CardTitle>{format(new Date(selectedBatch.date), 'MMMM d, yyyy')}</CardTitle>
+                    <CardDescription>
+                      Service: {serviceName}
+                    </CardDescription>
+                  </>
+                );
+              })()}
             </div>
             <div className="flex space-x-2">
               <Button 
