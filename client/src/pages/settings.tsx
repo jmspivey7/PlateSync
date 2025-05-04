@@ -198,7 +198,7 @@ const Settings = () => {
   });
   
   // Delete service option
-  const deleteServiceOptionMutation = useMutation({
+  const deleteServiceOptionMutation = useMutation<boolean, Error, number>({
     mutationFn: async (id: number) => {
       const response = await apiRequest("DELETE", `/api/service-options/${id}`);
       
@@ -226,7 +226,7 @@ const Settings = () => {
   });
   
   // Set service option as default
-  const setAsDefaultMutation = useMutation({
+  const setAsDefaultMutation = useMutation<any, Error, number>({
     mutationFn: async (id: number) => {
       const response = await apiRequest("PATCH", `/api/service-options/${id}`, {
         isDefault: true
@@ -491,6 +491,7 @@ const Settings = () => {
               {/* Add new service option */}
               <div className="flex items-center space-x-2">
                 <Input
+                  id="new-service-option-input"
                   value={newServiceOption}
                   onChange={(e) => setNewServiceOption(e.target.value)}
                   placeholder="Add a new service option..."
@@ -509,15 +510,15 @@ const Settings = () => {
                 </Button>
               </div>
               
-              {/* Service options list */}
-              <div className="border rounded-md">
+              {/* Service options list as tags */}
+              <div className="rounded-md">
                 {isLoadingServiceOptions ? (
                   <div className="p-4 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                     <p className="text-sm text-gray-500 mt-2">Loading service options...</p>
                   </div>
                 ) : serviceOptions.length === 0 ? (
-                  <div className="p-6 text-center">
+                  <div className="p-6 text-center border rounded-md">
                     <p className="text-gray-500">No service options added yet</p>
                     <p className="text-sm text-gray-400 mt-1">
                       Add your first service option using the field above
@@ -538,94 +539,124 @@ const Settings = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="divide-y">
-                    {serviceOptions.map((option: ServiceOption) => (
-                      <div key={option.id} className="p-3 flex items-center justify-between">
-                        {serviceOptionEditId === option.id ? (
-                          <div className="flex-1 flex items-center space-x-2">
-                            <Input
-                              value={serviceOptionEditName}
-                              onChange={(e) => setServiceOptionEditName(e.target.value)}
-                              className="flex-1"
-                              autoFocus
-                            />
-                            <Button
-                              onClick={() => updateServiceOptionMutation.mutate({
-                                id: option.id,
-                                name: serviceOptionEditName
-                              })}
-                              disabled={!serviceOptionEditName.trim() || updateServiceOptionMutation.isPending}
-                              size="sm"
-                              className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-                            >
-                              {updateServiceOptionMutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "Save"
-                              )}
-                            </Button>
+                  <div className="space-y-4">
+                    {/* Tag editing UI */}
+                    {serviceOptionEditId !== null && (
+                      <div className="border rounded-md p-4 bg-gray-50">
+                        <h4 className="font-medium text-sm mb-2">Edit Service Option</h4>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            value={serviceOptionEditName}
+                            onChange={(e) => setServiceOptionEditName(e.target.value)}
+                            className="flex-1"
+                            autoFocus
+                            placeholder="Service option name"
+                          />
+                          <Button
+                            onClick={() => updateServiceOptionMutation.mutate({
+                              id: serviceOptionEditId,
+                              name: serviceOptionEditName
+                            })}
+                            disabled={!serviceOptionEditName.trim() || updateServiceOptionMutation.isPending}
+                            size="sm"
+                            className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                          >
+                            {updateServiceOptionMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Save"
+                            )}
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setServiceOptionEditId(null);
+                              setServiceOptionEditName("");
+                            }}
+                            size="sm"
+                            variant="outline"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Service options as tags */}
+                    <div className="flex flex-wrap gap-2">
+                      {serviceOptions.map((option: ServiceOption) => (
+                        <div 
+                          key={option.id} 
+                          className={`group inline-flex items-center rounded-full border px-2.5 py-1.5 text-sm font-medium
+                            ${option.isDefault 
+                              ? 'border-green-600 bg-green-100 text-green-800' 
+                              : 'border-gray-300 bg-gray-100 text-gray-900'
+                            } transition-colors hover:bg-gray-200`}
+                        >
+                          <span className="mr-1">{option.name}</span>
+                          
+                          <div className="ml-1 flex items-center gap-1">
+                            {!option.isDefault && (
+                              <Button
+                                onClick={() => setAsDefaultMutation.mutate(option.id)}
+                                disabled={setAsDefaultMutation.isPending}
+                                size="icon"
+                                variant="ghost"
+                                className="h-4 w-4 p-0 opacity-50 hover:opacity-100 hover:text-green-700"
+                                title="Set as default"
+                              >
+                                {setAsDefaultMutation.isPending && setAsDefaultMutation.variables === option.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <SettingsIcon className="h-3 w-3" />
+                                )}
+                              </Button>
+                            )}
+                            
                             <Button
                               onClick={() => {
-                                setServiceOptionEditId(null);
-                                setServiceOptionEditName("");
+                                setServiceOptionEditId(option.id);
+                                setServiceOptionEditName(option.name);
                               }}
-                              size="sm"
-                              variant="outline"
+                              size="icon"
+                              variant="ghost"
+                              className="h-4 w-4 p-0 opacity-50 hover:opacity-100 hover:text-blue-700"
+                              title="Edit"
                             >
-                              Cancel
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </Button>
+                            
+                            <Button
+                              onClick={() => deleteServiceOptionMutation.mutate(option.id)}
+                              disabled={deleteServiceOptionMutation.isPending || option.isDefault}
+                              size="icon"
+                              variant="ghost"
+                              className="h-4 w-4 p-0 opacity-50 hover:opacity-100 hover:text-red-700"
+                              title={option.isDefault ? "Cannot delete default option" : "Delete"}
+                            >
+                              {deleteServiceOptionMutation.isPending && deleteServiceOptionMutation.variables === option.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                              )}
                             </Button>
                           </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center space-x-2">
-                              <span>{option.name}</span>
-                              {option.isDefault && (
-                                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
-                                  Default
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              {!option.isDefault && (
-                                <Button
-                                  onClick={() => setAsDefaultMutation.mutate(option.id)}
-                                  disabled={setAsDefaultMutation.isPending}
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8"
-                                >
-                                  {setAsDefaultMutation.isPending ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    "Set as Default"
-                                  )}
-                                </Button>
-                              )}
-                              <Button
-                                onClick={() => {
-                                  setServiceOptionEditId(option.id);
-                                  setServiceOptionEditName(option.name);
-                                }}
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0"
-                              >
-                                <SettingsIcon className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                onClick={() => deleteServiceOptionMutation.mutate(option.id)}
-                                disabled={deleteServiceOptionMutation.isPending || option.isDefault}
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </>
-                        )}
+                        </div>
+                      ))}
+                      
+                      {/* Add new tag inline */}
+                      <div className="inline-flex items-center rounded-full border border-dashed border-gray-300 px-2.5 py-1.5 text-sm hover:border-gray-400 cursor-pointer"
+                        onClick={() => {
+                          // Focus the input field
+                          const inputElement = document.getElementById('new-service-option-input');
+                          if (inputElement) {
+                            inputElement.focus();
+                          }
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        <span className="text-gray-600">Add option</span>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 )}
               </div>
