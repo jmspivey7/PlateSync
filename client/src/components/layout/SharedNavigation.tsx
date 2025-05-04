@@ -3,6 +3,8 @@ import { useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AccountDropdown from "@/components/layout/AccountDropdown";
+import { useAuth } from "@/hooks/useAuth";
 
 // Import logos
 import redeemerLogo from "../../assets/redeemer-logo.png";
@@ -16,6 +18,7 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
   const [_, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { isAdmin } = useAuth();
   
   // Toggle mobile menu
   const toggleMobileMenu = () => {
@@ -42,12 +45,13 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
             )}
           </Button>
         ) : (
-          <div className="flex space-x-2">
-            <Button variant="ghost" onClick={() => setLocation("/counts")}>Historical Counts</Button>
-            <Button variant="ghost" onClick={() => setLocation("/donations")}>Donations</Button>
-            <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
-            <Button variant="ghost" onClick={() => setLocation("/settings")}>Settings</Button>
-            <Button variant="ghost" onClick={() => setLocation("/account")}>Account</Button>
+          <div className="flex items-center space-x-4">
+            <div className="flex space-x-2">
+              <Button variant="ghost" onClick={() => setLocation("/counts")}>Historical Counts</Button>
+              <Button variant="ghost" onClick={() => setLocation("/donations")}>Donations</Button>
+              <Button variant="ghost" onClick={() => setLocation("/members")}>Members</Button>
+            </div>
+            <AccountDropdown />
           </div>
         )}
       </div>
@@ -60,29 +64,69 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
               setLocation("/dashboard");
               setMobileMenuOpen(false);
             }}>Dashboard</Button>
+            
             <Button variant="ghost" onClick={() => {
               setLocation("/counts");
               setMobileMenuOpen(false);
             }}>Historical Counts</Button>
+            
             <Button variant="ghost" onClick={() => {
               setLocation("/donations");
               setMobileMenuOpen(false);
             }}>Donations</Button>
+            
             <Button variant="ghost" onClick={() => {
               setLocation("/members");
               setMobileMenuOpen(false);
             }}>Members</Button>
-            <Button variant="ghost" onClick={() => {
-              setLocation("/settings");
-              setMobileMenuOpen(false);
-            }}>Settings</Button>
-            <Button variant="ghost" onClick={() => {
-              setLocation("/account");
-              setMobileMenuOpen(false);
-            }}>Account</Button>
-            <Button variant="ghost" onClick={() => {
-              window.location.href = "/api/logout";
-            }}>Logout</Button>
+            
+            <div className="border-t border-gray-200 my-2 pt-2">
+              <p className="text-sm text-gray-500 px-2 mb-2">Account</p>
+              
+              <Button variant="ghost" onClick={() => {
+                setLocation("/profile");
+                setMobileMenuOpen(false);
+              }}>Profile</Button>
+              
+              {isAdmin ? (
+                <>
+                  <Button variant="ghost" onClick={() => {
+                    setLocation("/settings");
+                    setMobileMenuOpen(false);
+                  }}>App Settings</Button>
+                  
+                  <Button variant="ghost" onClick={() => {
+                    setLocation("/user-management");
+                    setMobileMenuOpen(false);
+                  }}>User Management</Button>
+                  
+                  <Button variant="ghost" onClick={() => {
+                    setLocation("/service-options");
+                    setMobileMenuOpen(false);
+                  }}>Service Options</Button>
+                  
+                  <Button variant="ghost" onClick={() => {
+                    setLocation("/email-settings");
+                    setMobileMenuOpen(false);
+                  }}>Email Settings</Button>
+                </>
+              ) : (
+                <Button variant="ghost" onClick={() => {
+                  setLocation("/help");
+                  setMobileMenuOpen(false);
+                }}>Help</Button>
+              )}
+              
+              <Button 
+                variant="ghost" 
+                className="text-red-600 mt-2"
+                onClick={() => {
+                  window.location.href = "/api/logout";
+                }}
+              >
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       )}

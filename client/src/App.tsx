@@ -12,6 +12,11 @@ import Settings from "@/pages/settings";
 import Login from "@/pages/login";
 import Counts from "@/pages/counts";
 import BatchDetail from "@/pages/batch-detail";
+import Profile from "@/pages/profile";
+import Help from "@/pages/help";
+import UserManagement from "@/pages/user-management";
+import ServiceOptions from "@/pages/service-options";
+import EmailSettings from "@/pages/email-settings";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,8 +51,15 @@ function Router() {
       <Route path="/members" component={Members} />
       <Route path="/counts" component={Counts} />
       <Route path="/batch/:id" component={BatchDetail} />
+      
+      {/* Account and Settings Pages */}
+      <Route path="/profile" component={Profile} />
+      <Route path="/help" component={Help} />
       <Route path="/settings" component={Settings} />
-      <Route path="/account" component={Settings} />
+      <Route path="/user-management" component={UserManagement} />
+      <Route path="/service-options" component={ServiceOptions} />
+      <Route path="/email-settings" component={EmailSettings} />
+      
       <Route component={NotFound} />
     </Switch>
   );

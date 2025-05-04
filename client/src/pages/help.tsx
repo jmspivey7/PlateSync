@@ -1,142 +1,123 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, HelpCircle, Lightbulb, FileQuestion } from "lucide-react";
 import PageLayout from "@/components/layout/PageLayout";
 
 const Help = () => {
   return (
-    <PageLayout 
-      title="Help Center" 
-      subtitle="Find answers to common questions and learn how to use the system"
-    >
-      <div className="max-w-3xl mx-auto space-y-6">
+    <PageLayout title="Help Center" subtitle="Find answers to common questions about using the application">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-[#69ad4c]" />
+              Frequently Asked Questions
+            </CardTitle>
             <CardDescription>
-              Basic information to help you get started with PlateSync
+              Answers to common questions about using the donation tracking system
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="item-1">
-                <AccordionTrigger>What is PlateSync?</AccordionTrigger>
+                <AccordionTrigger>How do I start a new count?</AccordionTrigger>
                 <AccordionContent>
-                  PlateSync is a church donation management system that helps track and manage tithes and collections from offering plates. The system provides features for recording donations, managing members, and generating reports.
+                  <p className="mb-2">
+                    To start a new count, follow these steps:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-4">
+                    <li>Go to the Dashboard</li>
+                    <li>Click the green "Start New Count" button</li>
+                    <li>Fill in the count details (date, service type)</li>
+                    <li>Click "Create Count" to begin</li>
+                  </ol>
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-2">
-                <AccordionTrigger>How do I record a new donation?</AccordionTrigger>
+                <AccordionTrigger>How do I record a donation?</AccordionTrigger>
                 <AccordionContent>
-                  <p>To record a new donation:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Go to the Dashboard</li>
-                    <li>Look for the current open Count/Batch</li>
-                    <li>Click "Record New Donation"</li>
-                    <li>Fill in the donation details including member, amount, and type</li>
+                  <p className="mb-2">
+                    To record a donation within a count:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-4">
+                    <li>Open the count you want to add a donation to</li>
+                    <li>Click the "Record New Donation" button</li>
+                    <li>Select the donor from the dropdown (start typing to search)</li>
+                    <li>Enter the donation amount</li>
+                    <li>Select the donation type (Cash or Check)</li>
+                    <li>For checks, enter the check number</li>
                     <li>Click "Record Donation" to save</li>
                   </ol>
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-3">
-                <AccordionTrigger>How do I start a new count?</AccordionTrigger>
+                <AccordionTrigger>How do I finalize a count?</AccordionTrigger>
                 <AccordionContent>
-                  <p>To start a new count:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Go to the Dashboard</li>
-                    <li>Click the "Start New Count" button</li>
-                    <li>Select the appropriate service date and option</li>
-                    <li>Click "Create Count" to begin</li>
+                  <p className="mb-2">
+                    When you've recorded all donations for a count and verified the total:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-4">
+                    <li>Review all donations in the count to ensure accuracy</li>
+                    <li>Verify that the total matches your physical count</li>
+                    <li>Click the gold "Finalize Count" button</li>
+                    <li>Confirm in the dialog that appears</li>
                   </ol>
+                  <p className="mt-2 text-amber-700">
+                    <AlertCircle className="inline h-4 w-4 mr-1" />
+                    Important: Once a count is finalized, it cannot be modified!
+                  </p>
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-4">
-                <AccordionTrigger>How do I search for a specific member?</AccordionTrigger>
+                <AccordionTrigger>How to handle check donations?</AccordionTrigger>
                 <AccordionContent>
-                  <p>To search for a member:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Go to the Members page</li>
-                    <li>Use the search box at the top of the page</li>
-                    <li>Type the member's name, email, or phone number</li>
-                    <li>The list will automatically filter as you type</li>
+                  <p className="mb-2">
+                    When recording check donations:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-4">
+                    <li>Select "Check" as the donation type</li>
+                    <li>Enter the check number in the field that appears</li>
+                    <li>Check numbers can help with reconciliation later</li>
                   </ol>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Common Tasks</CardTitle>
-            <CardDescription>
-              Step-by-step instructions for common tasks
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="task-1">
-                <AccordionTrigger>How to finalize a count</AccordionTrigger>
-                <AccordionContent>
-                  <p>When you've recorded all donations for a particular count:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Go to the Dashboard or the specific count details page</li>
-                    <li>Review all recorded donations for accuracy</li>
-                    <li>Click the "Finalize Count" button</li>
-                    <li>Confirm the action when prompted</li>
-                    <li>Once finalized, the count will be archived and can be viewed in Historical Counts</li>
-                  </ol>
+                  <p className="mt-2">
+                    <Lightbulb className="inline h-4 w-4 mr-1 text-amber-500" />
+                    Tip: Record each check separately, even if a donor has multiple checks.
+                  </p>
                 </AccordionContent>
               </AccordionItem>
               
-              <AccordionItem value="task-2">
-                <AccordionTrigger>How to view historical counts</AccordionTrigger>
+              <AccordionItem value="item-5">
+                <AccordionTrigger>How to view past counts?</AccordionTrigger>
                 <AccordionContent>
-                  <p>To view previous counts:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <p className="mb-2">
+                    To view historical count data:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-4">
                     <li>Click on "Historical Counts" in the navigation menu</li>
-                    <li>Browse the list of past counts</li>
-                    <li>Click on any count to view details including all donations</li>
-                    <li>Use filters if available to find specific counts</li>
+                    <li>Browse the list of past counts sorted by date</li>
+                    <li>Click on any count to view its details</li>
+                    <li>Use the "Back to List" button to return to the counts list</li>
                   </ol>
                 </AccordionContent>
               </AccordionItem>
               
-              <AccordionItem value="task-3">
-                <AccordionTrigger>How to update my profile</AccordionTrigger>
+              <AccordionItem value="item-6">
+                <AccordionTrigger>What if I can't find a member?</AccordionTrigger>
                 <AccordionContent>
-                  <p>To update your user profile:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Click on your account icon in the top-right corner</li>
-                    <li>Select "Profile" from the dropdown menu</li>
-                    <li>Update your information as needed</li>
-                    <li>Click "Save Changes" to apply your updates</li>
+                  <p>
+                    If you can't find a member when recording a donation:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-4 mt-2">
+                    <li>Double-check spelling (the search is case-sensitive)</li>
+                    <li>Try searching by just the last name</li>
+                    <li>Contact your administrator to add new members to the system</li>
                   </ol>
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem value="task-4">
-                <AccordionTrigger>How to log out</AccordionTrigger>
-                <AccordionContent>
-                  <p>To log out of the application:</p>
-                  <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Click on your account icon in the top-right corner</li>
-                    <li>Select "Logout" from the dropdown menu</li>
-                    <li>You will be redirected to the login page</li>
-                  </ol>
+                  <p className="mt-2 text-gray-600">
+                    Note: Members can only be added by administrators via CSV import.
+                  </p>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -145,16 +126,26 @@ const Help = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Need Additional Help?</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FileQuestion className="h-5 w-5 text-[#69ad4c]" />
+              Need Additional Help?
+            </CardTitle>
             <CardDescription>
-              Contact your administrator if you have questions not covered here
+              Contact information for further assistance
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600">
-              If you need further assistance, please contact your church administrator.
-              They can provide additional training or guidance on using the PlateSync system.
+            <p className="mb-4">
+              If you need additional help or have questions not covered in the FAQ:
             </p>
+            <div className="space-y-2">
+              <p className="font-medium">Contact your administrator:</p>
+              <ul className="list-disc list-inside space-y-1 pl-4">
+                <li>For questions about donation recording procedures</li>
+                <li>To report any issues with the system</li>
+                <li>To request new features or improvements</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       </div>
