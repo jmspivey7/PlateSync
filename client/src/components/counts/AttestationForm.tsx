@@ -94,14 +94,19 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   // Primary attestation mutation
   const primaryAttestMutation = useMutation({
     mutationFn: async (name: string) => {
-      const response = await apiRequest('POST', `/api/batches/${batchId}/attest-primary`, { name });
-      return response.json();
+      const response = await fetch(`/api/batches/${batchId}/attest-primary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name }),
+      });
+      return await response.json();
     },
     onSuccess: () => {
       toast({
         title: "Primary attestation complete",
         description: "Please select a second attestor to continue.",
-        className: "bg-white border border-gray-200",
       });
       refetchBatch();
       setStep('secondary');
@@ -118,14 +123,19 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   // Secondary attestation mutation
   const secondaryAttestMutation = useMutation({
     mutationFn: async (data: { attestorId: string, name: string }) => {
-      const response = await apiRequest('POST', `/api/batches/${batchId}/attest-secondary`, data);
-      return response.json();
+      const response = await fetch(`/api/batches/${batchId}/attest-secondary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      return await response.json();
     },
     onSuccess: () => {
       toast({
         title: "Secondary attestation complete",
         description: "You can now finalize the count.",
-        className: "bg-white border border-gray-200",
       });
       refetchBatch();
       setStep('confirmation');
@@ -142,14 +152,19 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   // Confirmation mutation
   const confirmAttestationMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', `/api/batches/${batchId}/confirm-attestation`, {});
-      return response.json();
+      const response = await fetch(`/api/batches/${batchId}/confirm-attestation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      return await response.json();
     },
     onSuccess: () => {
       toast({
         title: "Count finalized",
         description: "The count has been successfully finalized and attested.",
-        className: "bg-white border border-gray-200",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       setStep('complete');

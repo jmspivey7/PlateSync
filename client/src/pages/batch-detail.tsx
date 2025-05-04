@@ -44,6 +44,7 @@ const BatchDetailPage = () => {
   const [showSummary, setShowSummary] = useState(false);
   const [isFinalized, setIsFinalized] = useState(false);
   const [isPrintView, setIsPrintView] = useState(false);
+  const [isAttesting, setIsAttesting] = useState(false);
 
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
@@ -280,11 +281,11 @@ const BatchDetailPage = () => {
                     Edit Count
                   </Button>
                   <Button 
-                    onClick={handleFinalizeBatch} 
+                    onClick={() => setIsAttesting(true)} 
                     className="bg-amber-500 hover:bg-amber-600 text-black"
                   >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Finalize Count
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Attest &amp; Finalize
                   </Button>
                 </>
               )}
@@ -466,6 +467,24 @@ const BatchDetailPage = () => {
               defaultBatchId={batchId} 
               isInsideDialog={true} 
               onClose={() => setIsAddingDonation(false)} 
+            />
+          </DialogContent>
+        </Dialog>
+        
+        {/* Modal for attestation process */}
+        <Dialog open={isAttesting} onOpenChange={setIsAttesting}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader className="pb-0">
+              <DialogTitle className="text-xl font-bold">Count Attestation</DialogTitle>
+            </DialogHeader>
+            <AttestationForm 
+              batchId={batchId}
+              onComplete={() => {
+                setIsAttesting(false);
+                // After attestation is complete, trigger a batch refetch and mark as finalized
+                queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+                setIsFinalized(true);
+              }}
             />
           </DialogContent>
         </Dialog>
