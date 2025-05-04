@@ -73,6 +73,11 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
     },
   });
   
+  // Find the default service option when service options are loaded
+  const defaultServiceOption = 
+    serviceOptions.find(option => option.isDefault) ||
+    (serviceOptions.length > 0 ? serviceOptions[0] : null);
+  
   // Initialize the form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -81,7 +86,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       name: format(new Date(), 'MMMM d, yyyy'), // Automatically generate name from date
       status: "OPEN",
       notes: "",
-      service: "",
+      service: "", // Will be updated after service options load
     },
   });
   
@@ -113,6 +118,17 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       });
     }
   }, [batchData, form]);
+  
+  // Set default service option when options are loaded
+  useEffect(() => {
+    // Only set default for new counts (not when editing)
+    if (!isEdit && defaultServiceOption && serviceOptions.length > 0) {
+      const defaultValue = defaultServiceOption.value;
+      if (defaultValue && !form.getValues('service')) {
+        form.setValue('service', defaultValue);
+      }
+    }
+  }, [serviceOptions, defaultServiceOption, isEdit, form]);
   
   // Auto-generate name when date or service changes
   useEffect(() => {
