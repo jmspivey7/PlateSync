@@ -52,7 +52,10 @@ const Dashboard = () => {
   }
   
   return (
-    <PageLayout>
+    <PageLayout
+      title="Dashboard"
+      icon={<BarChart2 className="h-6 w-6 text-gray-700" />}
+    >
       <div className="flex flex-col md:flex-row gap-6 mb-6">
         {/* Start New Count Card Button */}
         <div className="md:w-1/3">
