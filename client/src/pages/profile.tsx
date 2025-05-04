@@ -170,16 +170,36 @@ const Profile = () => {
     updateProfileMutation.mutate(data);
   };
   
+  // Password change mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: PasswordFormValues) => {
+      const response = await apiRequest('/api/profile/password', 'POST', data);
+      return response.json();
+    },
+    onSuccess: (data: { success: boolean, message: string }) => {
+      toast({
+        title: 'Success',
+        description: data.message || 'Your password has been updated successfully',
+      });
+      // Reset the form after successful password change
+      passwordForm.reset({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update your password',
+        variant: 'destructive',
+      });
+    },
+  });
+  
   // Handle password form submission
   const onPasswordSubmit = (data: PasswordFormValues) => {
-    // We'll implement this function next
-    console.log("Password change requested:", data);
-    
-    // Call the password change API (to be implemented)
-    toast({
-      title: "Password change coming soon",
-      description: "This feature is being implemented",
-    });
+    changePasswordMutation.mutate(data);
   };
   
   // Show loading state if auth is still loading
@@ -437,9 +457,19 @@ const Profile = () => {
                     <Button 
                       type="submit" 
                       className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                      disabled={changePasswordMutation.isPending}
                     >
-                      <Lock className="mr-2 h-4 w-4" />
-                      Change Password
+                      {changePasswordMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="mr-2 h-4 w-4" />
+                          Change Password
+                        </>
+                      )}
                     </Button>
                   </div>
                 </form>
