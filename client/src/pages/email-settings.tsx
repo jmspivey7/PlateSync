@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Card, 
@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Loader2, CheckCircle2 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
 
@@ -57,25 +57,17 @@ const EmailSettings = () => {
   // Fetch email settings
   const { data: settings, isLoading } = useQuery<EmailSettings>({
     queryKey: ['/api/email-settings'],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest('/api/email-settings');
-        return response;
-      } catch (error) {
-        // Return default settings if no settings are found
-        return defaultEmailSettings;
-      }
-    },
+    queryFn: getQueryFn({ on401: "throw" })
   });
   
   const [formData, setFormData] = useState<EmailSettings>(defaultEmailSettings);
   
   // Update form data when settings are loaded
-  useState(() => {
+  useEffect(() => {
     if (settings) {
       setFormData(settings);
     }
-  });
+  }, [settings]);
   
   // Update email settings mutation
   const updateMutation = useMutation({
