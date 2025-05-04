@@ -50,7 +50,7 @@ const AccountDropdown = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
-          <Avatar className="h-8 w-8 bg-[#69ad4c]">
+          <Avatar className="h-[2.3rem] w-[2.3rem] bg-[#69ad4c]">
             {user?.profileImageUrl ? (
               <AvatarImage src={user.profileImageUrl} alt={getDisplayName()} />
             ) : (
