@@ -67,6 +67,13 @@ export interface IStorage {
   updateServiceOption(id: number, data: Partial<InsertServiceOption>, churchId: string): Promise<ServiceOption | undefined>;
   deleteServiceOption(id: number, churchId: string): Promise<void>;
   
+  // Report Recipients operations
+  getReportRecipients(churchId: string): Promise<ReportRecipient[]>;
+  getReportRecipient(id: number, churchId: string): Promise<ReportRecipient | undefined>;
+  createReportRecipient(recipient: InsertReportRecipient): Promise<ReportRecipient>;
+  updateReportRecipient(id: number, data: Partial<InsertReportRecipient>, churchId: string): Promise<ReportRecipient | undefined>;
+  deleteReportRecipient(id: number, churchId: string): Promise<void>;
+  
   // Dashboard statistics
   getTodaysDonations(churchId: string): Promise<{ total: string, percentChange: number }>;
   getWeeklyDonations(churchId: string): Promise<{ total: string, percentChange: number }>;

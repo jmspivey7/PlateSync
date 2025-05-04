@@ -238,3 +238,25 @@ export type BatchWithDonations = Batch & {
   donations?: Donation[];
   donationCount?: number;
 };
+
+// Report Recipients table for count report notifications
+export const reportRecipients = pgTable("report_recipients", {
+  id: serial("id").primaryKey(),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  email: varchar("email").notNull(),
+  churchId: varchar("church_id").notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertReportRecipientSchema = createInsertSchema(reportRecipients).pick({
+  firstName: true,
+  lastName: true,
+  email: true,
+  churchId: true,
+});
+
+export type InsertReportRecipient = z.infer<typeof insertReportRecipientSchema>;
+export type ReportRecipient = typeof reportRecipients.$inferSelect;
