@@ -45,6 +45,20 @@ const BatchDetailPage = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [isPrintView, setIsPrintView] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
+  
+  // Debug state management - this will help us see what's happening
+  useEffect(() => {
+    if (isAttesting) {
+      console.log("isAttesting changed to true, modal should display");
+      // Force the modal to appear after a slight delay
+      setTimeout(() => {
+        console.log("Forcing modal to appear");
+        document.body.style.overflow = "hidden"; // Prevent scrolling when modal is open
+      }, 100);
+    } else {
+      document.body.style.overflow = "auto"; // Allow scrolling when modal is closed
+    }
+  }, [isAttesting]);
 
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
@@ -477,29 +491,24 @@ const BatchDetailPage = () => {
           </DialogContent>
         </Dialog>
         
-        {/* Modal for attestation process */}
-        {isAttesting && (
+        {/* Modal for attestation process - fixed version */}
+        <div 
+          className={`fixed inset-0 bg-black/50 z-50 items-center justify-center ${isAttesting ? 'flex' : 'hidden'}`}
+        >
           <div 
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-            onClick={(e) => {
-              // Prevent the click from closing the dialog if it's on the backdrop
-              e.stopPropagation();
-            }}
+            className="bg-white rounded-lg p-6 max-w-[600px] w-full max-h-[90vh] overflow-y-auto relative"
           >
-            <div 
-              className="bg-background rounded-lg p-6 max-w-[600px] w-full max-h-[90vh] overflow-y-auto relative"
-              onClick={(e) => e.stopPropagation()}
+            <button 
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              onClick={() => setIsAttesting(false)}
             >
-              <button 
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-                onClick={() => setIsAttesting(false)}
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <div className="pb-4 mb-4 border-b">
-                <h2 className="text-xl font-bold">Count Attestation</h2>
-              </div>
-              {/* Attestation form renders below */}
+              <X className="h-5 w-5" />
+            </button>
+            <div className="pb-4 mb-4 border-b">
+              <h2 className="text-xl font-bold">Count Attestation</h2>
+            </div>
+            {/* Attestation form renders below */}
+            {isAttesting && (
               <AttestationForm 
                 batchId={batchId}
                 onComplete={() => {
@@ -509,9 +518,9 @@ const BatchDetailPage = () => {
                   setIsFinalized(true);
                 }}
               />
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </Card>
     </PageLayout>
   );
