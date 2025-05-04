@@ -44,16 +44,49 @@ export function DonationChart() {
   // For navigation to counts page
   const [, navigate] = useLocation();
   
-  // Fetch batch data with their donations
-  const { data: batches, isLoading } = useQuery<BatchWithDonations[]>({
-    queryKey: ['/api/batches/with-donations'],
+  // Fetch all batches
+  const { data: batches, isLoading } = useQuery<Batch[]>({
+    queryKey: ['/api/batches'],
     select: (data) => {
-      console.log("Chart received batch data with donations:", data);
+      console.log("Chart received batch data:", data);
       return data;
     }
   });
+  
+  // For each batch, fetch its donations
+  const { data: batchDonations, isLoading: isDonationsLoading } = useQuery<Record<number, Donation[]>>({
+    queryKey: ['/api/batches/donations'],
+    queryFn: async () => {
+      if (!batches || batches.length === 0) return {};
+      
+      // Fetch donations for all batches that have a totalAmount > 0
+      const relevantBatches = batches.filter(batch => 
+        parseFloat(batch.totalAmount?.toString() || '0') > 0
+      );
+      
+      // Create a map of batchId to donations
+      const donationsMap: Record<number, Donation[]> = {};
+      
+      // Fetch donations for each batch in parallel
+      await Promise.all(relevantBatches.map(async (batch) => {
+        try {
+          const response = await fetch(`/api/batches/${batch.id}/donations`);
+          if (response.ok) {
+            const donations = await response.json();
+            donationsMap[batch.id] = donations;
+          }
+        } catch (error) {
+          console.error(`Error fetching donations for batch ${batch.id}:`, error);
+        }
+      }));
+      
+      console.log("Fetched donations for batches:", donationsMap);
+      return donationsMap;
+    },
+    enabled: !!batches && batches.length > 0
+  });
 
-  if (isLoading || !batches) {
+  if (isLoading || isDonationsLoading || !batches) {
     return (
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
@@ -80,14 +113,18 @@ export function DonationChart() {
 
   // Get the most recent batches (up to 6)
   const recentBatches = [...batches]
+    .filter(batch => parseFloat(batch.totalAmount?.toString() || '0') > 0)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 6)
     .reverse();
 
+  console.log("Recent batches for chart:", recentBatches.map(b => b.id));
+
   // Calculate cash and check totals for each batch
   const chartData = recentBatches.map(batch => {
-    // Group donations by type if they exist
-    const donations = batch.donations || [];
+    // Get donations for this batch from our fetched data
+    const donations = (batchDonations && batchDonations[batch.id]) || [];
+    console.log(`Batch ${batch.id} donations:`, donations);
     
     // Calculate cash and check totals
     const cashTotal = donations

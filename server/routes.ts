@@ -778,6 +778,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch latest finalized batch" });
     }
   });
+  
+  // GET all batches with their donations (for chart)
+  app.get('/api/batches/with-donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batches = await storage.getBatches(userId);
+      
+      // For each batch, get its donations
+      const batchesWithDonations = await Promise.all(
+        batches.map(async (batch) => {
+          const donations = await storage.getDonationsByBatch(batch.id, userId);
+          return {
+            ...batch,
+            donations: donations
+          };
+        })
+      );
+      
+      res.json(batchesWithDonations);
+    } catch (error) {
+      console.error("Error fetching batches with donations:", error);
+      res.status(500).json({ message: "Failed to fetch batches with donations" });
+    }
+  });
 
   app.get('/api/batches/:id', isAuthenticated, async (req: any, res) => {
     try {
