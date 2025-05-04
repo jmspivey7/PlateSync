@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,12 +34,9 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { X, Loader2, Check, ChevronsUpDown, User } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Member, Donation, Batch } from "@shared/schema";
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Create a schema that extends the donation schema with UI-specific fields
 const formSchema = z.object({
@@ -288,15 +285,21 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
       // If we're in edit mode and have a donation ID
       if (isEdit && donationId) {
         // Update existing donation
-        const donationResponse = await apiRequest("PATCH", `/api/donations/${donationId}`, {
-          date: values.date,
-          amount: values.amount,
-          donationType: values.donationType,
-          checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
-          notes: values.notes,
-          memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
-          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
-          sendNotification: values.sendNotification && values.donorType === "existing",
+        const donationResponse = await fetch(`/api/donations/${donationId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            date: values.date,
+            amount: values.amount,
+            donationType: values.donationType,
+            checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
+            notes: values.notes,
+            memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
+            batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
+            sendNotification: values.sendNotification && values.donorType === "existing"
+          })
         });
         
         if (!donationResponse.ok) {
@@ -312,12 +315,18 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           throw new Error("Please provide a valid email address for new members");
         }
         
-        const memberResponse = await apiRequest("POST", "/api/members", {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email || null, // Use null if email is empty
-          phone: values.phone || null, // Use null if phone is empty
-          isVisitor: false,
+        const memberResponse = await fetch("/api/members", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: values.firstName,
+            lastName: values.lastName,
+            email: values.email || null, // Use null if email is empty
+            phone: values.phone || null, // Use null if phone is empty
+            isVisitor: false
+          })
         });
         
         if (!memberResponse.ok) {
@@ -327,15 +336,21 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         const newMember = await memberResponse.json();
         
         // Now create the donation with the new member ID
-        const donationResponse = await apiRequest("POST", "/api/donations", {
-          date: values.date,
-          amount: values.amount,
-          donationType: values.donationType,
-          checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
-          notes: values.notes,
-          memberId: newMember.id,
-          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
-          sendNotification: values.sendNotification,
+        const donationResponse = await fetch("/api/donations", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            date: values.date,
+            amount: values.amount,
+            donationType: values.donationType,
+            checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
+            notes: values.notes,
+            memberId: newMember.id,
+            batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
+            sendNotification: values.sendNotification
+          })
         });
         
         if (!donationResponse.ok) {
@@ -345,15 +360,21 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         return donationResponse.json();
       } else {
         // Create donation with existing member or as visitor
-        const donationResponse = await apiRequest("POST", "/api/donations", {
-          date: values.date,
-          amount: values.amount,
-          donationType: values.donationType,
-          checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
-          notes: values.notes || "", 
-          memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
-          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
-          sendNotification: values.sendNotification && values.donorType === "existing",
+        const donationResponse = await fetch("/api/donations", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            date: values.date,
+            amount: values.amount,
+            donationType: values.donationType,
+            checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
+            notes: values.notes || "", 
+            memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
+            batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
+            sendNotification: values.sendNotification && values.donorType === "existing"
+          })
         });
         
         if (!donationResponse.ok) {
@@ -595,14 +616,14 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     name="donationType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Type</FormLabel>
+                        <FormLabel>Donation Type</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -610,6 +631,25 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             <SelectItem value="CHECK">Check</SelectItem>
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="0.00" 
+                            step="0.01" 
+                            type="number"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -633,131 +673,106 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   
                   <FormField
                     control={form.control}
-                    name="amount"
+                    name="batchId"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Amount</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <span className="text-gray-500 sm:text-sm">$</span>
-                            </div>
-                            <Input {...field} className="pl-7" placeholder="0.00" />
-                          </div>
-                        </FormControl>
+                      <FormItem className="col-span-1 md:col-span-2">
+                        <FormLabel>Batch/Count</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={!!defaultBatchId}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select batch" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {batches?.map((batch) => (
+                              <SelectItem 
+                                key={batch.id} 
+                                value={batch.id.toString()}
+                              >
+                                {batch.name} ({format(new Date(batch.date), 'MMM d, yyyy')})
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="none">No batch (individual donation)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          The batch or count this donation belongs to.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-                
-                {/* Batch selection - hide when defaultBatchId is provided */}
-                {!defaultBatchId && (
-                  <div className="mt-4">
-                    <FormField
-                      control={form.control}
-                      name="batchId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Batch (Optional)</FormLabel>
-                          <Select
-                            value={field.value || "none"} 
-                            onValueChange={(val) => {
-                              console.log("Batch selection changed to:", val);
-                              field.onChange(val);
-                            }}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a batch..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">None (Add to batch later)</SelectItem>
-                              {batches && batches.length > 0 ? (
-                                batches.map((batch) => (
-                                  <SelectItem key={batch.id} value={batch.id.toString()}>
-                                    {batch.name} {batch.status !== "FINALIZED" ? `(${batch.status})` : ""}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="none" disabled>No batches available</SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            {currentBatch ? 
-                              `Current open batch: ${currentBatch.name}` : 
-                              "No open batch available. You can create one in the Batches section."}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-                
-                <div className="mt-4">
+                  
                   <FormField
                     control={form.control}
                     name="notes"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="col-span-1 md:col-span-2">
                         <FormLabel>Notes (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={3} />
+                          <Textarea 
+                            rows={3} 
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            value={field.value || ""}
+                            disabled={field.disabled}
+                            name={field.name}
+                            ref={field.ref}
+                            placeholder="Add any additional notes here..."
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-                
-                {donorType !== "visitor" && (
-                  <div className="mt-4">
+                  
+                  {donorType === "existing" && (
                     <FormField
                       control={form.control}
                       name="sendNotification"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md">
+                        <FormItem className="col-span-1 md:col-span-2 flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Send Receipt Notification</FormLabel>
+                            <FormDescription>
+                              Send an email notification to the donor with donation receipt details.
+                            </FormDescription>
+                          </div>
                           <FormControl>
                             <Switch
                               checked={field.value}
                               onCheckedChange={field.onChange}
                             />
                           </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Send email notification</FormLabel>
-                            <FormDescription>
-                              An email receipt will be sent to the donor via SendGrid
-                            </FormDescription>
-                          </div>
                         </FormItem>
                       )}
                     />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose || (() => setLocation("/donations"))}
-                >
-                  Cancel
-                </Button>
+              <div className="flex justify-end mt-6 space-x-2">
+                {!isInsideDialog && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setLocation("/donations")}
+                  >
+                    Cancel
+                  </Button>
+                )}
                 <Button 
                   type="submit" 
-                  className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                   disabled={createDonationMutation.isPending}
-                  onClick={(e) => {
-                    // Manual form validation check - if there are errors, log them
-                    if (Object.keys(form.formState.errors).length > 0) {
-                      console.error("Submit clicked but form has errors:", form.formState.errors);
-                    } else {
-                      console.log("Form submission attempt with values:", form.getValues());
-                    }
+                  onClick={() => {
+                    // Log form state before submission
+                    console.log("Form state:", form.getValues());
+                    console.log("Form errors:", form.formState.errors);
                     // Don't use preventDefault() as we want the normal form submit to happen
                   }}
                 >
