@@ -39,6 +39,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   churchName: varchar("church_name"),
+  emailNotificationsEnabled: boolean("email_notifications_enabled").default(true),
 });
 
 // Church members table
