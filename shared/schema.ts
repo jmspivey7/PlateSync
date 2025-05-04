@@ -49,6 +49,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   churchName: varchar("church_name"),
+  churchLogoUrl: varchar("church_logo_url"),
   emailNotificationsEnabled: boolean("email_notifications_enabled").default(true),
 });
 
@@ -183,6 +184,7 @@ export const insertDonationSchema = createInsertSchema(donations)
 // Schema for updating user/church settings
 export const updateUserSchema = createInsertSchema(users).pick({
   churchName: true,
+  churchLogoUrl: true,
   emailNotificationsEnabled: true,
   role: true,
 });
