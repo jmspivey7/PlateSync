@@ -271,3 +271,85 @@ please contact the church office directly.
     html
   });
 }
+
+interface WelcomeEmailParams {
+  to: string;
+  firstName: string;
+  lastName: string;
+  churchName: string;
+  verificationToken: string;
+  verificationUrl: string;
+}
+
+export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
+  
+  const subject = `Welcome to PlateSync for ${params.churchName}`;
+  
+  // Plain text version of the email
+  const text = `
+Dear ${params.firstName} ${params.lastName},
+
+Welcome to PlateSync! You have been added as a user for ${params.churchName}.
+
+Please verify your email and set up your password by clicking the following link:
+${params.verificationUrl}?token=${params.verificationToken}
+
+This link will expire in 48 hours.
+
+If you did not request this account, you can safely ignore this email.
+
+Sincerely,
+The PlateSync Team
+  `;
+  
+  // HTML version of the email with nicer formatting
+  const html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Welcome to ${params.churchName}</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>${params.firstName} ${params.lastName}</strong>,</p>
+    
+    <p>Welcome to PlateSync! You have been added as a user for <strong>${params.churchName}</strong>.</p>
+    
+    <p>To complete your account setup, please verify your email and create a password by clicking the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${params.verificationUrl}?token=${params.verificationToken}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Verify Email & Set Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 48 hours for security reasons.</p>
+    
+    <p>Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.</p>
+    
+    <p>If you did not request this account, you can safely ignore this email.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>
+  `;
+  
+  return await sendEmail({
+    to: params.to,
+    from: fromEmail,
+    subject,
+    text,
+    html
+  });
+}

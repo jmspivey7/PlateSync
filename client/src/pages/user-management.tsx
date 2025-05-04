@@ -91,7 +91,6 @@ const CreateUserForm = ({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
       email: "",
       firstName: "",
       lastName: "",
@@ -101,20 +100,7 @@ const CreateUserForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Username*</FormLabel>
-              <FormControl>
-                <Input placeholder="johndoe" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
         
         <FormField
           control={form.control}
@@ -318,7 +304,6 @@ const UserManagement = () => {
   const filteredUsers = users?.filter(user => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      user.username.toLowerCase().includes(searchLower) ||
       (user.email && user.email.toLowerCase().includes(searchLower)) ||
       (user.firstName && user.firstName.toLowerCase().includes(searchLower)) ||
       (user.lastName && user.lastName.toLowerCase().includes(searchLower))
@@ -377,7 +362,7 @@ const UserManagement = () => {
                   <DialogHeader>
                     <DialogTitle>Create New User</DialogTitle>
                     <DialogDescription>
-                      Add a new user to the system. They'll be able to log in using Replit authentication.
+                      Add a new user to the system. A welcome email will be sent with instructions to verify their email and set up a password.
                     </DialogDescription>
                   </DialogHeader>
                   <CreateUserForm 
@@ -405,7 +390,6 @@ const UserManagement = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>User</TableHead>
-                    <TableHead>Username</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Created</TableHead>
@@ -431,8 +415,6 @@ const UserManagement = () => {
                           </div>
                         </div>
                       </TableCell>
-                      
-                      <TableCell>{user.username}</TableCell>
                       
                       <TableCell>{user.email || "—"}</TableCell>
                       
