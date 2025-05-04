@@ -403,7 +403,8 @@ const Settings = () => {
   const deleteReportRecipientMutation = useMutation<boolean, Error, number>({
     mutationFn: async (id: number) => {
       await apiRequest(`/api/report-recipients/${id}`, {
-        method: "DELETE"
+        method: "DELETE",
+        returnRaw: true
       });
       return true;
     },
