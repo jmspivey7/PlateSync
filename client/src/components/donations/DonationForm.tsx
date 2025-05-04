@@ -171,8 +171,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         
         // Get batch info to set the date
         if (specificBatch.date) {
-          const batchDate = format(new Date(specificBatch.date), 'yyyy-MM-dd');
-          console.log("Setting date from specific batch:", batchDate);
+          // Force a new date object to ensure it's correctly processed
+          const dateObj = new Date(specificBatch.date);
+          const batchDate = format(dateObj, 'yyyy-MM-dd');
+          console.log("Setting date from specific batch:", batchDate, "Original date:", specificBatch.date);
           form.setValue("date", batchDate);
         }
       }
@@ -186,8 +188,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           
           // Set date to match batch date
           if (currentBatch.date) {
-            const batchDate = format(new Date(currentBatch.date), 'yyyy-MM-dd');
-            console.log("Setting date from current batch:", batchDate);
+            // Force a new date object to ensure it's correctly processed
+            const dateObj = new Date(currentBatch.date);
+            const batchDate = format(dateObj, 'yyyy-MM-dd');
+            console.log("Setting date from current batch:", batchDate, "Original date:", currentBatch.date);
             form.setValue("date", batchDate);
           }
         }
@@ -202,7 +206,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
       if (batchId && batchId !== "none") {
         const selectedBatch = batches?.find(batch => batch.id === parseInt(batchId));
         if (selectedBatch && selectedBatch.date) {
-          const batchDate = format(new Date(selectedBatch.date), 'yyyy-MM-dd');
+          // Force a new date object to ensure it's correctly processed
+          const dateObj = new Date(selectedBatch.date);
+          const batchDate = format(dateObj, 'yyyy-MM-dd');
+          console.log("Setting date from batch selection:", batchDate, "Original date:", selectedBatch.date);
           form.setValue("date", batchDate);
         }
       }
