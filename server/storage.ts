@@ -379,6 +379,60 @@ export class DatabaseStorage implements IStorage {
     
     return updatedBatch;
   }
+  
+  async addPrimaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        primaryAttestorId: attestorId,
+        primaryAttestorName: attestorName,
+        primaryAttestationDate: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async addSecondaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        secondaryAttestorId: attestorId,
+        secondaryAttestorName: attestorName,
+        secondaryAttestationDate: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async confirmAttestation(id: number, confirmerId: string, churchId: string): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        attestationConfirmedBy: confirmerId,
+        attestationConfirmationDate: new Date(),
+        status: 'FINALIZED',
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
 
   async deleteBatch(id: number, churchId: string): Promise<void> {
     // First, delete all donations associated with this batch

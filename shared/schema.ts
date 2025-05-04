@@ -99,6 +99,15 @@ export const batches = pgTable("batches", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   churchId: varchar("church_id").references(() => users.id),
+  // Attestation fields
+  primaryAttestorId: varchar("primary_attestor_id").references(() => users.id),
+  primaryAttestorName: varchar("primary_attestor_name"),
+  primaryAttestationDate: timestamp("primary_attestation_date"),
+  secondaryAttestorId: varchar("secondary_attestor_id").references(() => users.id),
+  secondaryAttestorName: varchar("secondary_attestor_name"),
+  secondaryAttestationDate: timestamp("secondary_attestation_date"),
+  attestationConfirmedBy: varchar("attestation_confirmed_by").references(() => users.id),
+  attestationConfirmationDate: timestamp("attestation_confirmation_date"),
 });
 
 // Donations table
@@ -159,6 +168,14 @@ export const insertBatchSchema = createInsertSchema(batches).pick({
   churchId: true,
 });
 
+// Schema for batch attestation
+export const batchAttestationSchema = z.object({
+  primaryAttestorId: z.string(),
+  primaryAttestorName: z.string().min(1, "Name is required"),
+  secondaryAttestorId: z.string().min(1, "Secondary attestor is required"),
+  secondaryAttestorName: z.string().min(1, "Name is required"),
+});
+
 // Schema validation for donations
 export const insertDonationSchema = createInsertSchema(donations)
   .pick({
@@ -215,6 +232,7 @@ export type Member = typeof members.$inferSelect;
 
 export type InsertBatch = z.infer<typeof insertBatchSchema>;
 export type Batch = typeof batches.$inferSelect;
+export type BatchAttestation = z.infer<typeof batchAttestationSchema>;
 
 export type InsertDonation = z.infer<typeof insertDonationSchema>;
 export type Donation = typeof donations.$inferSelect;
