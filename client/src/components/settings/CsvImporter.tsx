@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, Users } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Link } from 'wouter';
 
 const CsvImporter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -162,11 +163,19 @@ const CsvImporter = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Import Members</CardTitle>
-        <CardDescription>
-          Upload a CSV file to import members into the system
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Import Members</CardTitle>
+          <CardDescription>
+            Upload a CSV file to import members into the system
+          </CardDescription>
+        </div>
+        <Link href="/members">
+          <Button className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
+            <Users className="mr-2 h-4 w-4" />
+            View Current Members
+          </Button>
+        </Link>
       </CardHeader>
       <CardContent>
         <div 
