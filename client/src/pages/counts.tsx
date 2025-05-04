@@ -213,6 +213,13 @@ const CountsPage = () => {
               <Button 
                 variant="outline" 
                 className="text-[#2D3748]"
+                onClick={() => setSelectedBatchId(null)}
+              >
+                Back to List
+              </Button>
+              <Button 
+                variant="outline" 
+                className="text-[#2D3748]"
                 onClick={() => handleEditBatch(selectedBatchId)}
               >
                 Edit Count
