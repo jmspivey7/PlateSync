@@ -62,7 +62,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Load service options
-  const { data: serviceOptions = [], isLoading: isLoadingServiceOptions } = useQuery({
+  const { data: serviceOptions = [], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
     queryKey: ['/api/service-options'],
     enabled: isOpen,
   });
