@@ -135,6 +135,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
     queryKey: ['/api/batches/current'],
   });
   
+  // Initialize form with today's date, will be updated with batch date when available
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -154,18 +155,24 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
     },
   });
   
+  // Load specific batch data if defaultBatchId is provided
+  const { data: specificBatch, isLoading: isLoadingSpecificBatch } = useQuery<Batch>({
+    queryKey: ['/api/batches', defaultBatchId?.toString()],
+    enabled: !!defaultBatchId,
+  });
+  
   // Set form default batch value when current batch is loaded
   useEffect(() => {
     if (!isEdit) {
-      // If defaultBatchId is provided, use it
-      if (defaultBatchId) {
+      // If defaultBatchId is provided, use it and get batch info from specific query
+      if (defaultBatchId && specificBatch) {
         console.log("Using provided default batch ID:", defaultBatchId.toString());
         form.setValue("batchId", defaultBatchId.toString());
         
         // Get batch info to set the date
-        const selectedBatch = batches?.find(batch => batch.id === defaultBatchId);
-        if (selectedBatch && selectedBatch.date) {
-          const batchDate = format(new Date(selectedBatch.date), 'yyyy-MM-dd');
+        if (specificBatch.date) {
+          const batchDate = format(new Date(specificBatch.date), 'yyyy-MM-dd');
+          console.log("Setting date from specific batch:", batchDate);
           form.setValue("date", batchDate);
         }
       }
@@ -180,12 +187,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           // Set date to match batch date
           if (currentBatch.date) {
             const batchDate = format(new Date(currentBatch.date), 'yyyy-MM-dd');
+            console.log("Setting date from current batch:", batchDate);
             form.setValue("date", batchDate);
           }
         }
       }
     }
-  }, [currentBatch, batches, form, isEdit, defaultBatchId]);
+  }, [currentBatch, specificBatch, form, isEdit, defaultBatchId]);
   
   // When batch selection changes, update the date field
   useEffect(() => {
@@ -495,7 +503,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
       )}
       
       <CardContent>
-        {(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch) && (
+        {(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch || isLoadingSpecificBatch) && (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
           </div>
