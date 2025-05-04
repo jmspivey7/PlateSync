@@ -22,18 +22,40 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { AlertCircle, CheckCircle2, Loader2, Mail, Save } from "lucide-react";
+import { 
+  AlertCircle, 
+  CheckCircle2, 
+  Loader2, 
+  Mail, 
+  Plus, 
+  Save, 
+  Settings as SettingsIcon,
+  Trash2
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ToastNotification from "@/components/ui/toast-notification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import PageLayout from "@/components/layout/PageLayout";
 import CsvImporter from "@/components/settings/CsvImporter";
+
+// Define the service option type
+interface ServiceOption {
+  id: number;
+  name: string;
+  isDefault: boolean;
+  churchId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // Create a schema for settings form
 const formSchema = z.object({
   churchName: z.string().min(1, "Church name is required"),
+  emailNotificationsEnabled: z.boolean().default(true),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -46,11 +68,18 @@ const Settings = () => {
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
   
+  // Fetch service options
+  const { data: serviceOptions = [] as ServiceOption[], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
+    queryKey: ['/api/service-options'],
+    enabled: !!user,
+  });
+  
   // React Hook Form setup
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       churchName: user?.churchName || "",
+      emailNotificationsEnabled: user?.emailNotificationsEnabled !== false, // Default to true if not set
     },
   });
   
@@ -89,6 +118,134 @@ const Settings = () => {
   const onSubmit = (values: FormValues) => {
     updateSettingsMutation.mutate(values);
   };
+  
+  // Service Option mutations
+  const [newServiceOption, setNewServiceOption] = useState<string>("");
+  const [serviceOptionEditId, setServiceOptionEditId] = useState<number | null>(null);
+  const [serviceOptionEditName, setServiceOptionEditName] = useState<string>("");
+  
+  // Create service option
+  const createServiceOptionMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/service-options", {
+        name,
+        isDefault: (serviceOptions as ServiceOption[]).length === 0 // Make it default if it's the first one
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to create service option");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
+      setNewServiceOption("");
+      toast({
+        title: "Service Option Added",
+        description: "The service option has been added successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to create service option: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update service option
+  const updateServiceOptionMutation = useMutation({
+    mutationFn: async ({ id, name, isDefault }: { id: number, name: string, isDefault?: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/service-options/${id}`, {
+        name,
+        isDefault
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update service option");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
+      setServiceOptionEditId(null);
+      setServiceOptionEditName("");
+      toast({
+        title: "Service Option Updated",
+        description: "The service option has been updated successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update service option: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Delete service option
+  const deleteServiceOptionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/service-options/${id}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete service option");
+      }
+      
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
+      toast({
+        title: "Service Option Deleted",
+        description: "The service option has been deleted successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete service option: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Set service option as default
+  const setAsDefaultMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("PATCH", `/api/service-options/${id}`, {
+        isDefault: true
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to set service option as default");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
+      toast({
+        title: "Default Updated",
+        description: "The default service option has been updated.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update default: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
   
   // Test SendGrid configuration
   const testSendGridConfiguration = async () => {
@@ -170,6 +327,50 @@ const Settings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="emailNotificationsEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Enable Email Notifications
+                        </FormLabel>
+                        <FormDescription>
+                          Send email notifications to donors when donations are recorded
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                    disabled={updateSettingsMutation.isPending}
+                  >
+                    {updateSettingsMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            </Form>
+            
+            <Separator className="my-6" />
+            
             <div className="text-sm text-gray-600 mb-4">
               <p>Email notifications are sent via SendGrid when donations are recorded.</p>
               <p className="mt-2">Notification emails include:</p>
@@ -230,6 +431,154 @@ const Settings = () => {
           </CardContent>
         </Card>
         
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Service Options</CardTitle>
+            <CardDescription>
+              Manage service options for donation counts
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600 mb-2">
+                <p>Service options are used when creating a new count. They represent different service types such as Sunday morning, Sunday evening, Wednesday night, etc.</p>
+              </div>
+              
+              {/* Add new service option */}
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={newServiceOption}
+                  onChange={(e) => setNewServiceOption(e.target.value)}
+                  placeholder="Add a new service option..."
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => createServiceOptionMutation.mutate(newServiceOption)}
+                  disabled={!newServiceOption.trim() || createServiceOptionMutation.isPending}
+                  className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                >
+                  {createServiceOptionMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              {/* Service options list */}
+              <div className="border rounded-md">
+                {isLoadingServiceOptions ? (
+                  <div className="p-4 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                    <p className="text-sm text-gray-500 mt-2">Loading service options...</p>
+                  </div>
+                ) : serviceOptions.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <p className="text-gray-500">No service options added yet</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Add your first service option using the field above
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {serviceOptions.map((option: ServiceOption) => (
+                      <div key={option.id} className="p-3 flex items-center justify-between">
+                        {serviceOptionEditId === option.id ? (
+                          <div className="flex-1 flex items-center space-x-2">
+                            <Input
+                              value={serviceOptionEditName}
+                              onChange={(e) => setServiceOptionEditName(e.target.value)}
+                              className="flex-1"
+                              autoFocus
+                            />
+                            <Button
+                              onClick={() => updateServiceOptionMutation.mutate({
+                                id: option.id,
+                                name: serviceOptionEditName
+                              })}
+                              disabled={!serviceOptionEditName.trim() || updateServiceOptionMutation.isPending}
+                              size="sm"
+                              className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                            >
+                              {updateServiceOptionMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                "Save"
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setServiceOptionEditId(null);
+                                setServiceOptionEditName("");
+                              }}
+                              size="sm"
+                              variant="outline"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center space-x-2">
+                              <span>{option.name}</span>
+                              {option.isDefault && (
+                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              {!option.isDefault && (
+                                <Button
+                                  onClick={() => setAsDefaultMutation.mutate(option.id)}
+                                  disabled={setAsDefaultMutation.isPending}
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                >
+                                  {setAsDefaultMutation.isPending ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    "Set as Default"
+                                  )}
+                                </Button>
+                              )}
+                              <Button
+                                onClick={() => {
+                                  setServiceOptionEditId(option.id);
+                                  setServiceOptionEditName(option.name);
+                                }}
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                              >
+                                <SettingsIcon className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                onClick={() => deleteServiceOptionMutation.mutate(option.id)}
+                                disabled={deleteServiceOptionMutation.isPending || option.isDefault}
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-xs text-gray-500 mt-2">
+                * The default service option will be pre-selected when creating a new count
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+            
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Import Members</CardTitle>
