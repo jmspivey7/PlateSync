@@ -395,23 +395,18 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       }
       
-      // For normal editing operations (not in a batch entry flow)
-      if (isEdit || onClose) {
+      // For normal editing operations
+      if (isEdit) {
         toast({
           title: "Success",
-          description: isEdit 
-            ? "Donation updated successfully." 
-            : "Donation recorded successfully.",
+          description: "Donation updated successfully.",
           className: "bg-[#48BB78] text-white",
         });
         
-        if (onClose) {
-          onClose();
-        } else if (isEdit) {
-          setLocation("/donations");
-        }
+        // For edit mode, navigate back to donations list
+        setLocation("/donations");
       } 
-      // For "Record & Next" flow in a batch, show more targeted message and reset form
+      // For "Record & Next" flow, show targeted message and reset form
       else {
         // Get donor name for message if it's an existing member
         let donorName = "";

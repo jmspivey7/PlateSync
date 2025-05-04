@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
 import { Batch, BatchWithDonations, Donation, DonationWithMember, batchStatusEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -457,8 +457,19 @@ const BatchDetailPage = () => {
         {/* Modal for adding a donation */}
         <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
           <DialogContent className="sm:max-w-[800px] p-0">
-            <DialogTitle className="sr-only">Add New Donation</DialogTitle>
-            <DonationForm onClose={handleDonationAdded} defaultBatchId={batchId} />
+            <DialogHeader className="px-6 pt-6 pb-0 flex justify-between items-center">
+              <DialogTitle className="text-xl font-bold">Record New Donation</DialogTitle>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsAddingDonation(false)}
+                className="rounded-full h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogHeader>
+            <DonationForm defaultBatchId={batchId} isInsideDialog={true} />
           </DialogContent>
         </Dialog>
       </Card>
