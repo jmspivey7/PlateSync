@@ -78,7 +78,7 @@ const AccountDropdown = () => {
             <span>Help</span>
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator className="my-1" />
+          <DropdownMenuSeparator className="my-2 border-t border-gray-300" />
           
           {isAdmin && (
             <>
@@ -98,7 +98,7 @@ const AccountDropdown = () => {
                 <span>Members</span>
               </DropdownMenuItem>
               
-              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuSeparator className="my-2 border-t border-gray-300" />
             </>
           )}
         </DropdownMenuGroup>
