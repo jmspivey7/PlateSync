@@ -34,8 +34,8 @@ export type UserRole = z.infer<typeof userRoleEnum>;
 // User storage table for Replit Auth
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
-  username: varchar("username").unique().notNull(),
-  email: varchar("email").unique(),
+  username: varchar("username").unique(),
+  email: varchar("email").unique().notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   bio: text("bio"),
@@ -45,6 +45,10 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
   churchName: varchar("church_name"),
   emailNotificationsEnabled: boolean("email_notifications_enabled").default(true),
+  passwordResetToken: varchar("password_reset_token").unique(),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  password: varchar("password"),
+  isVerified: boolean("is_verified").default(false),
 });
 
 // Church members table
@@ -184,7 +188,6 @@ export const updateUserSchema = createInsertSchema(users).pick({
 
 // Schema for creating new users (admin only)
 export const createUserSchema = createInsertSchema(users).pick({
-  username: true,
   email: true,
   firstName: true,
   lastName: true,
