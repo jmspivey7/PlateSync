@@ -851,6 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: z.date().optional(),
         status: z.string().optional(),
         notes: z.string().optional().nullable(),
+        service: z.string().optional().nullable(),
         totalAmount: z.string().optional(),
         churchId: z.string().optional()
       });
