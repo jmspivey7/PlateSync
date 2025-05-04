@@ -1,5 +1,13 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, XAxis, ResponsiveContainer } from "recharts";
+import { 
+  Area, 
+  AreaChart, 
+  CartesianGrid, 
+  XAxis, 
+  ResponsiveContainer,
+  Tooltip,
+  Legend 
+} from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
@@ -17,10 +25,8 @@ import {
 import {
   ChartConfig,
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Batch, Donation, BatchWithDonations } from "@shared/schema";
+import { Batch, Donation } from "@shared/schema";
 
 // Chart configuration with colors for cash and check donations
 const chartConfig = {
@@ -39,6 +45,42 @@ if (typeof document !== 'undefined') {
   document.documentElement.style.setProperty('--color-cash', '#69ad4c');
   document.documentElement.style.setProperty('--color-check', '#3b82f6');
 }
+
+// Custom tooltip component for the chart
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    // Format currency
+    const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    };
+    
+    return (
+      <div className="bg-white p-2 border shadow-sm rounded-md">
+        <p className="font-medium text-sm">{payload[0]?.payload?.fullDate}</p>
+        <div className="flex flex-col gap-1 mt-1">
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center gap-2">
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-xs">{entry.name}:</span>
+              <span className="text-xs font-medium">
+                {formatCurrency(entry.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export function DonationChart() {
   // For navigation to counts page
@@ -210,29 +252,18 @@ export function DonationChart() {
                 axisLine={false} 
                 tickMargin={8}
               />
-              <ChartTooltip
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-white p-2 border shadow-sm rounded-md">
-                        <p className="font-medium text-sm">{payload[0]?.payload?.fullDate}</p>
-                        <div className="flex flex-col gap-1 mt-1">
-                          {payload.map((entry, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: entry.color }}
-                              />
-                              <span className="text-xs">{entry.name}:</span>
-                              <span className="text-xs font-medium">{formatCurrency(entry.value as number)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
+              <Tooltip 
+                content={<CustomTooltip />}
+                cursor={{ stroke: '#69ad4c', strokeWidth: 1, strokeDasharray: '5 5' }}
+              />
+              <Legend 
+                iconType="circle" 
+                iconSize={8}
+                wrapperStyle={{ 
+                  visibility: 'hidden', 
+                  height: 0, 
+                  position: 'absolute' 
+                }} 
               />
               <Area
                 type="monotone"
