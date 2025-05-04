@@ -198,7 +198,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       });
       
       onClose();
-      setLocation('/batches');
+      setLocation('/counts');
     },
     onError: (error) => {
       toast({

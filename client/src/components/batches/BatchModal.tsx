@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
 import { 
   Dialog, 
   DialogContent, 
@@ -56,6 +57,7 @@ interface BatchModalProps {
 const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [_, setLocation] = useLocation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Load batch data if editing
