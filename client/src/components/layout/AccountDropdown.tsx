@@ -82,12 +82,6 @@ const AccountDropdown = () => {
           
           {isAdmin && (
             <>
-              
-              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/settings")}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/user-management")}>
                 <Users className="mr-2 h-4 w-4" />
                 <span>User Management</span>
@@ -96,6 +90,11 @@ const AccountDropdown = () => {
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/reports")}>
                 <FileBarChart className="mr-2 h-4 w-4" />
                 <span>Reports</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/settings")}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
               </DropdownMenuItem>
               
               <DropdownMenuSeparator className="my-2 border-t border-gray-300" />

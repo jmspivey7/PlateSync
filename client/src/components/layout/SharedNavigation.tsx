@@ -78,14 +78,19 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
               {isAdmin ? (
                 <>
                   <Button variant="ghost" onClick={() => {
-                    setLocation("/settings");
-                    setMobileMenuOpen(false);
-                  }}>App Settings</Button>
-                  
-                  <Button variant="ghost" onClick={() => {
                     setLocation("/user-management");
                     setMobileMenuOpen(false);
                   }}>User Management</Button>
+                  
+                  <Button variant="ghost" onClick={() => {
+                    setLocation("/reports");
+                    setMobileMenuOpen(false);
+                  }}>Reports</Button>
+                  
+                  <Button variant="ghost" onClick={() => {
+                    setLocation("/settings");
+                    setMobileMenuOpen(false);
+                  }}>Settings</Button>
                   
                   <Button variant="ghost" onClick={() => {
                     setLocation("/members");
