@@ -269,8 +269,8 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
     }
   }, [donationData, members, form]);
   
-  // Handle donor type changes to show appropriate fields
-  const donorType = form.watch("donorType");
+  // Handle form field changes to show appropriate fields
+  const formDonorType = form.watch("donorType");
   const donationType = form.watch("donationType");
   
   // Create/update donation mutation
@@ -455,8 +455,8 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           batchId: currentBatchId,
         });
         
-        // Clear any UI state related to selected member
-        setDonorType("existing"); // Reset the UI radio button
+        // Increment combobox key to force re-render
+        setComboboxKey(prevKey => prevKey + 1);
       }
     },
     onError: (error) => {
@@ -538,7 +538,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 />
                 
                 {/* Existing Member Selector with Custom Combobox */}
-                {donorType === "existing" && (
+                {formDonorType === "existing" && (
                   <FormField
                     control={form.control}
                     name="memberId"
@@ -579,7 +579,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 )}
                 
                 {/* New Member Form */}
-                {donorType === "new" && (
+                {formDonorType === "new" && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
@@ -642,7 +642,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 )}
                 
                 {/* Visitor Information */}
-                {donorType === "visitor" && (
+                {formDonorType === "visitor" && (
                   <div className="bg-gray-50 p-4 rounded border border-gray-200">
                     <p className="text-sm text-gray-700">
                       This donation will be recorded as anonymous or from a visitor. No receipt will be generated.
@@ -733,7 +733,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   {/* Hidden fields - don't use Input component with type="hidden" */}
                   <input type="hidden" name="batchId" value={form.getValues("batchId")} />
                   <input type="hidden" name="notes" value={form.getValues("notes") || ""} />
-                  {donorType === "existing" && (
+                  {formDonorType === "existing" && (
                     <input
                       type="hidden"
                       name="sendNotification"
