@@ -489,12 +489,10 @@ const BatchDetailPage = () => {
             <DialogHeader className="pb-0">
               <DialogTitle className="text-xl font-bold">Count Attestation</DialogTitle>
             </DialogHeader>
-            {/* Log when the attestation form is rendered */}
-            {console.log("Rendering AttestationForm with batchId:", batchId)}
+            {/* Attestation form renders below */}
             <AttestationForm 
               batchId={batchId}
               onComplete={() => {
-                console.log("AttestationForm onComplete called");
                 setIsAttesting(false);
                 // After attestation is complete, trigger a batch refetch and mark as finalized
                 queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });

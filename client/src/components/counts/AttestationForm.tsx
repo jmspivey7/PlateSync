@@ -3,10 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Batch } from "@shared/schema";
+import { Batch, Donation, Member } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
 import {
   Form,
   FormControl,
@@ -19,6 +18,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Define the types needed for batch with donations
+interface DonationWithMember extends Donation {
+  member?: Member;
+}
+
+interface BatchWithDonations extends Batch {
+  donations: DonationWithMember[];
+}
 
 interface AttestationFormProps {
   batchId: number;
@@ -43,8 +51,16 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   const [step, setStep] = useState<'primary' | 'secondary' | 'confirmation' | 'complete'>('primary');
   
   // Fetch batch details
-  const { data: batch, isLoading: isLoadingBatch, refetch: refetchBatch } = useQuery<Batch>({
-    queryKey: ['/api/batches', batchId.toString()],
+  const { data: batch, isLoading: isLoadingBatch, refetch: refetchBatch } = useQuery<BatchWithDonations>({
+    queryKey: ["/api/batches", batchId, "details"],
+    queryFn: async () => {
+      const response = await fetch(`/api/batches/${batchId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch count details");
+      }
+      const data = await response.json();
+      return data;
+    },
     refetchInterval: false,
   });
   
