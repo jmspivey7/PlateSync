@@ -74,24 +74,24 @@ const Dashboard = () => {
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : lastBatch ? (
+          ) : lastFinalizedBatch ? (
             <Card className="border rounded-xl shadow-sm">
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-lg text-muted-foreground font-medium">Last Count Submitted</h2>
+                  <h2 className="text-lg text-muted-foreground font-medium">Last Count Finalized</h2>
                   <div className="bg-background border rounded-full px-3 py-1 flex items-center text-sm font-medium">
                     <TrendingUp className="h-4 w-4 mr-1" /> +0.0%
                   </div>
                 </div>
                 <div className="text-3xl font-bold my-2">
-                  {formatCurrency(lastBatch.totalAmount || 0)}
+                  {formatCurrency(lastFinalizedBatch.totalAmount || 0)}
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="text-base font-medium flex items-center">
                     Trending up <TrendingUp className="h-4 w-4 ml-1" />
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {format(new Date(lastBatch.date), 'EEEE, MMMM d, yyyy')}
+                    {format(new Date(lastFinalizedBatch.date), 'EEEE, MMMM d, yyyy')}
                   </div>
                 </div>
               </CardContent>
@@ -99,8 +99,8 @@ const Dashboard = () => {
           ) : (
             <Card className="bg-muted">
               <CardContent className="p-4 text-center">
-                <h2 className="text-lg font-medium mb-1">No Counts Yet</h2>
-                <p className="text-muted-foreground">Create your first count to get started</p>
+                <h2 className="text-lg font-medium mb-1">No Finalized Counts Yet</h2>
+                <p className="text-muted-foreground">Finalize a count to see it displayed here</p>
               </CardContent>
             </Card>
           )}
