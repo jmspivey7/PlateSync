@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,10 +30,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Batch, batchStatusEnum } from "@shared/schema";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 // Create a schema for batch form
 const formSchema = z.object({
@@ -55,6 +56,7 @@ interface BatchModalProps {
 const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Load batch data if editing
   const { data: batchData, isLoading: isLoadingBatch } = useQuery<Batch>({
@@ -144,19 +146,53 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
     },
   });
   
+  // Delete batch mutation
+  const deleteBatchMutation = useMutation<void, Error, void>({
+    mutationFn: async () => {
+      if (!batchId) return;
+      
+      const response = await apiRequest("DELETE", `/api/batches/${batchId}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete count");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      
+      toast({
+        title: "Count Deleted",
+        description: "The count and all associated donations have been deleted successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+      
+      onClose();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+
   // Form submission handler
   const onSubmit = (values: FormValues) => {
     createBatchMutation.mutate(values);
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#2D3748]">
-            {isEdit ? "Edit Count" : "Create New Count"}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#2D3748]">
+              {isEdit ? "Edit Count" : "Create New Count"}
+            </DialogTitle>
+          </DialogHeader>
         
         {isLoadingBatch ? (
           <div className="flex justify-center items-center py-8">
@@ -247,30 +283,57 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                 )}
               />
               
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  disabled={createBatchMutation.isPending}
-                >
-                  {createBatchMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {isEdit ? "Update Count" : "Create Count"}
-                </Button>
+              <DialogFooter className="flex justify-between sm:justify-between">
+                {isEdit && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-red-500 text-red-600 hover:bg-red-50"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Count
+                  </Button>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                    disabled={createBatchMutation.isPending}
+                  >
+                    {createBatchMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isEdit ? "Update Count" : "Create Count"}
+                  </Button>
+                </div>
               </DialogFooter>
             </form>
           </Form>
         )}
       </DialogContent>
     </Dialog>
+    
+    {/* Delete confirmation dialog */}
+    <ConfirmDialog
+      isOpen={showDeleteConfirm}
+      onClose={() => setShowDeleteConfirm(false)}
+      onConfirm={() => deleteBatchMutation.mutate()}
+      title="Delete Count"
+      description="Are you sure you want to delete this count? This action cannot be undone and will permanently delete the count and all associated donations."
+      confirmText="Delete Count"
+      cancelText="Cancel"
+      isPending={deleteBatchMutation.isPending}
+      destructive={true}
+    />
+    </>
   );
 };
 
