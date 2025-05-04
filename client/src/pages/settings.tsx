@@ -342,16 +342,19 @@ const Settings = () => {
                           Send email notifications to donors when donations are recorded
                         </FormDescription>
                       </div>
-                      <div className="mt-3 flex items-center justify-end">
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <span className="ml-2 text-sm font-medium">
-                          {field.value ? 'ON' : 'OFF'}
-                        </span>
+                      <div className="absolute right-4 top-10">
+                        <div className="flex items-center">
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="enhanced-switch"
+                            />
+                          </FormControl>
+                          <span className="ml-2 text-base font-bold">
+                            {field.value ? 'ON' : 'OFF'}
+                          </span>
+                        </div>
                       </div>
                     </FormItem>
                   )}
