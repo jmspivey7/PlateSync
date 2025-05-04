@@ -413,7 +413,11 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
       {/* Modal for adding a donation */}
       <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
         <DialogContent className="sm:max-w-[800px] p-0">
-          <DonationForm onClose={handleDonationAdded} defaultBatchId={batchId} />
+          <DonationForm 
+            onClose={handleDonationAdded} 
+            defaultBatchId={batchId} 
+            isInsideDialog={true} 
+          />
         </DialogContent>
       </Dialog>
     </Card>

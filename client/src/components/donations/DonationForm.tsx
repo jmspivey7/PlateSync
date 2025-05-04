@@ -104,9 +104,11 @@ interface DonationFormProps {
   isEdit?: boolean;
   onClose?: () => void;
   defaultBatchId?: number;
+  /** Set to true when this form is used inside a Dialog component */
+  isInsideDialog?: boolean;
 }
 
-const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: DonationFormProps) => {
+const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isInsideDialog = false }: DonationFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
@@ -412,7 +414,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId }: D
           {isEdit ? "Edit Donation" : "Record New Donation"}
         </CardTitle>
         
-        {onClose && (
+        {onClose && !isInsideDialog && (
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
