@@ -35,7 +35,10 @@ import {
   Settings as SettingsIcon,
   Trash2,
   Upload,
-  ImageIcon
+  ImageIcon,
+  Edit,
+  MailCheck,
+  UserPlus
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ToastNotification from "@/components/ui/toast-notification";
@@ -50,6 +53,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Define types
 interface ServiceOption {
@@ -61,6 +81,15 @@ interface ServiceOption {
   updatedAt: string;
 }
 
+interface ReportRecipient {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  churchId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 
 // Create a schema for settings form
@@ -81,7 +110,20 @@ const Settings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoRemoving, setLogoRemoving] = useState(false);
+  
+  // Report recipient state
+  const [isAddRecipientDialogOpen, setIsAddRecipientDialogOpen] = useState(false);
+  const [isEditRecipientDialogOpen, setIsEditRecipientDialogOpen] = useState(false);
+  const [recipientFirstName, setRecipientFirstName] = useState("");
+  const [recipientLastName, setRecipientLastName] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [editingRecipientId, setEditingRecipientId] = useState<number | null>(null);
 
+  // Fetch report recipients
+  const { data: reportRecipients = [], isLoading: isLoadingReportRecipients } = useQuery<ReportRecipient[]>({
+    queryKey: ['/api/report-recipients'],
+    enabled: !!user,
+  });
   
   // Fetch service options
   const { data: serviceOptions = [] as ServiceOption[], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
@@ -298,8 +340,152 @@ const Settings = () => {
     }
   });
   
-
+  // Create report recipient
+  const createReportRecipientMutation = useMutation({
+    mutationFn: async (recipient: { firstName: string; lastName: string; email: string }) => {
+      const response = await apiRequest("POST", "/api/report-recipients", recipient);
+      
+      if (!response.ok) {
+        throw new Error("Failed to add recipient");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/report-recipients'] });
+      setIsAddRecipientDialogOpen(false);
+      setRecipientFirstName("");
+      setRecipientLastName("");
+      setRecipientEmail("");
+      toast({
+        title: "Recipient Added",
+        description: "The report recipient has been added successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to add recipient: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
   
+  // Update report recipient
+  const updateReportRecipientMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { firstName: string; lastName: string; email: string } }) => {
+      const response = await apiRequest("PATCH", `/api/report-recipients/${id}`, data);
+      
+      if (!response.ok) {
+        throw new Error("Failed to update recipient");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/report-recipients'] });
+      setIsEditRecipientDialogOpen(false);
+      setEditingRecipientId(null);
+      setRecipientFirstName("");
+      setRecipientLastName("");
+      setRecipientEmail("");
+      toast({
+        title: "Recipient Updated",
+        description: "The report recipient has been updated successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update recipient: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Delete report recipient
+  const deleteReportRecipientMutation = useMutation<boolean, Error, number>({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/report-recipients/${id}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete recipient");
+      }
+      
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/report-recipients'] });
+      toast({
+        title: "Recipient Deleted",
+        description: "The report recipient has been deleted successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete recipient: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Helper functions for recipient management
+  const openAddRecipientDialog = () => {
+    setRecipientFirstName("");
+    setRecipientLastName("");
+    setRecipientEmail("");
+    setIsAddRecipientDialogOpen(true);
+  };
+  
+  const openEditRecipientDialog = (recipient: ReportRecipient) => {
+    setEditingRecipientId(recipient.id);
+    setRecipientFirstName(recipient.firstName);
+    setRecipientLastName(recipient.lastName);
+    setRecipientEmail(recipient.email);
+    setIsEditRecipientDialogOpen(true);
+  };
+  
+  const handleAddRecipient = () => {
+    if (!recipientFirstName || !recipientLastName || !recipientEmail) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all recipient fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    createReportRecipientMutation.mutate({
+      firstName: recipientFirstName,
+      lastName: recipientLastName,
+      email: recipientEmail
+    });
+  };
+  
+  const handleUpdateRecipient = () => {
+    if (!editingRecipientId || !recipientFirstName || !recipientLastName || !recipientEmail) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all recipient fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateReportRecipientMutation.mutate({
+      id: editingRecipientId,
+      data: {
+        firstName: recipientFirstName,
+        lastName: recipientLastName,
+        email: recipientEmail
+      }
+    });
+  };
+
   // Test SendGrid configuration
   const testSendGridConfiguration = async () => {
     setSendgridTestStatus('loading');
@@ -823,8 +1009,216 @@ const Settings = () => {
           </CardContent>
         </Card>
         
+        <Card>
+          <CardHeader>
+            <CardTitle>Count Report Notifications</CardTitle>
+            <CardDescription>
+              Configure recipients for count report notifications
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {isLoadingReportRecipients ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="text-sm font-medium">Recipients</div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={openAddRecipientDialog}
+                      className="bg-[#69ad4c] hover:bg-[#5c9b43]"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Recipient
+                    </Button>
+                  </div>
+                  
+                  {reportRecipients.length === 0 ? (
+                    <div className="text-center py-6 border rounded-md bg-muted/10">
+                      <MailCheck className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-500">No recipients configured</p>
+                      <p className="text-xs text-gray-400 mt-1">Add recipients to receive count reports</p>
+                    </div>
+                  ) : (
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead className="w-[100px] text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {reportRecipients.map((recipient) => (
+                            <TableRow key={recipient.id}>
+                              <TableCell>{recipient.firstName} {recipient.lastName}</TableCell>
+                              <TableCell>{recipient.email}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end space-x-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEditRecipientDialog(recipient)}
+                                    title="Edit"
+                                  >
+                                    <Edit className="h-4 w-4 text-gray-500" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-gray-500" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-500 mt-2">
+                    These recipients will receive an email notification when a count is closed
+                  </p>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
       </div>
+      
+      {/* Add Recipient Dialog */}
+      <Dialog open={isAddRecipientDialogOpen} onOpenChange={setIsAddRecipientDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Report Recipient</DialogTitle>
+            <DialogDescription>
+              Add a new recipient for count report notifications
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">First Name</FormLabel>
+              <Input
+                value={recipientFirstName}
+                onChange={(e) => setRecipientFirstName(e.target.value)}
+                className="col-span-3"
+                placeholder="John"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">Last Name</FormLabel>
+              <Input
+                value={recipientLastName}
+                onChange={(e) => setRecipientLastName(e.target.value)}
+                className="col-span-3"
+                placeholder="Doe"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">Email</FormLabel>
+              <Input
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                className="col-span-3"
+                placeholder="john.doe@example.com"
+                type="email"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsAddRecipientDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              className="bg-[#69ad4c] hover:bg-[#5c9b43]"
+              onClick={handleAddRecipient}
+              disabled={createReportRecipientMutation.isPending}
+            >
+              {createReportRecipientMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Add Recipient
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Recipient Dialog */}
+      <Dialog open={isEditRecipientDialogOpen} onOpenChange={setIsEditRecipientDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Report Recipient</DialogTitle>
+            <DialogDescription>
+              Update recipient information for count report notifications
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">First Name</FormLabel>
+              <Input
+                value={recipientFirstName}
+                onChange={(e) => setRecipientFirstName(e.target.value)}
+                className="col-span-3"
+                placeholder="John"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">Last Name</FormLabel>
+              <Input
+                value={recipientLastName}
+                onChange={(e) => setRecipientLastName(e.target.value)}
+                className="col-span-3"
+                placeholder="Doe"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">Email</FormLabel>
+              <Input
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                className="col-span-3"
+                placeholder="john.doe@example.com"
+                type="email"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsEditRecipientDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              className="bg-[#69ad4c] hover:bg-[#5c9b43]"
+              onClick={handleUpdateRecipient}
+              disabled={updateReportRecipientMutation.isPending}
+            >
+              {updateReportRecipientMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Update Recipient
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {showSuccessToast && (
         <ToastNotification
