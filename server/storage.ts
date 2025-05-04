@@ -52,6 +52,7 @@ export interface IStorage {
   updateBatch(id: number, data: Partial<InsertBatch>, churchId: string): Promise<Batch | undefined>;
   deleteBatch(id: number, churchId: string): Promise<void>;
   getCurrentBatch(churchId: string): Promise<Batch | undefined>;
+  getLatestFinalizedBatch(churchId: string): Promise<Batch | undefined>;
   
   // Donation operations
   getDonations(churchId: string): Promise<Donation[]>;
@@ -424,6 +425,21 @@ export class DatabaseStorage implements IStorage {
     };
     
     return this.createBatch(newBatch);
+  }
+  
+  async getLatestFinalizedBatch(churchId: string): Promise<Batch | undefined> {
+    // Get the most recent FINALIZED batch
+    const [finalizedBatch] = await db
+      .select()
+      .from(batches)
+      .where(and(
+        eq(batches.churchId, churchId),
+        eq(batches.status, 'FINALIZED')
+      ))
+      .orderBy(desc(batches.date))
+      .limit(1);
+    
+    return finalizedBatch;
   }
 
   // Donation operations

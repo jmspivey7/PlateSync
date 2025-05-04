@@ -14,9 +14,9 @@ const Dashboard = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   
-  // Fetch the current/last batch for display
-  const { data: lastBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
-    queryKey: ['/api/batches/current'],
+  // Fetch the latest finalized batch for display
+  const { data: lastFinalizedBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
+    queryKey: ['/api/batches/latest-finalized'],
     enabled: isAuthenticated,
   });
   
