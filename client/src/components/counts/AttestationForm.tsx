@@ -344,7 +344,9 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                           <SelectContent>
                             {users && users.map((u: User) => (
                               <SelectItem key={u.id} value={u.id}>
-                                {u.username || u.email || 'Unknown user'}
+                                {u.lastName && u.firstName 
+                                  ? `${u.lastName}, ${u.firstName}` 
+                                  : u.username || u.email || 'Unknown user'}
                               </SelectItem>
                             ))}
                           </SelectContent>
