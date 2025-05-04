@@ -59,17 +59,7 @@ interface ServiceOption {
   updatedAt: string;
 }
 
-interface UserInfo {
-  id: string;
-  username: string;
-  email: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  profileImageUrl: string | null;
-  role: "ADMIN" | "USHER";
-  createdAt: string;
-  updatedAt: string;
-}
+
 
 // Create a schema for settings form
 const formSchema = z.object({
@@ -87,11 +77,7 @@ const Settings = () => {
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
   
-  // Fetch users (admin only)
-  const { data: users = [] as UserInfo[], isLoading: isLoadingUsers } = useQuery<UserInfo[]>({
-    queryKey: ['/api/users'],
-    enabled: !!user && isAdmin,
-  });
+
   
   // Fetch service options
   const { data: serviceOptions = [] as ServiceOption[], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
@@ -308,33 +294,7 @@ const Settings = () => {
     }
   });
   
-  // Update user role mutation (admin only)
-  const updateUserRoleMutation = useMutation({
-    mutationFn: async ({ id, role }: { id: string, role: string }) => {
-      const response = await apiRequest("PATCH", `/api/users/${id}/role`, { role });
-      
-      if (!response.ok) {
-        throw new Error("Failed to update user role");
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      toast({
-        title: "User Role Updated",
-        description: "The user's role has been updated successfully.",
-        className: "bg-[#48BB78] text-white",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update user role: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    }
-  });
+
   
   // Test SendGrid configuration
   const testSendGridConfiguration = async () => {
