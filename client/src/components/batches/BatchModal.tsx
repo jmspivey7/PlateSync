@@ -64,13 +64,8 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
   // Load service options
   const { data: serviceOptions = [], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
     queryKey: ['/api/service-options'],
-    enabled: isOpen,
+    // Always enabled to ensure options are available when the modal opens
   });
-  
-  // For debugging - log service options when they change
-  useEffect(() => {
-    console.log("Service options loaded:", serviceOptions);
-  }, [serviceOptions]);
   
   // Load batch data if editing
   const { data: batchData, isLoading: isLoadingBatch } = useQuery<Batch>({
@@ -301,7 +296,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                           {/* Only configured service options */}
                           {Array.isArray(serviceOptions) && serviceOptions.length > 0 ? (
                             serviceOptions.map((option: ServiceOption) => (
-                              <SelectItem key={option.id} value={option.name}>
+                              <SelectItem key={option.id} value={option.value}>
                                 {option.name}
                               </SelectItem>
                             ))
