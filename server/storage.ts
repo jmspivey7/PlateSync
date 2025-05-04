@@ -727,6 +727,26 @@ export class DatabaseStorage implements IStorage {
       .delete(serviceOptions)
       .where(sql`${serviceOptions.id} = ${id} AND ${serviceOptions.churchId} = ${churchId}`);
   }
+  
+  // Create default service options for new users
+  async createDefaultServiceOptions(churchId: string): Promise<void> {
+    const defaultOptions = [
+      { name: "Sunday Morning", isDefault: true, churchId },
+      { name: "Sunday Evening", isDefault: false, churchId },
+      { name: "Wednesday Night", isDefault: false, churchId },
+      { name: "Special Event", isDefault: false, churchId }
+    ];
+    
+    // Check if options already exist for this church
+    const existingOptions = await this.getServiceOptions(churchId);
+    
+    // Only create defaults if no options exist
+    if (existingOptions.length === 0) {
+      for (const option of defaultOptions) {
+        await this.createServiceOption(option);
+      }
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

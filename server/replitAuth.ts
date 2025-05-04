@@ -57,8 +57,12 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
+  const userId = claims["sub"];
+  const isNewUser = !(await storage.getUser(userId));
+  
+  // Create or update the user
   await storage.upsertUser({
-    id: claims["sub"],
+    id: userId,
     username: claims["username"],
     email: claims["email"],
     firstName: claims["first_name"],
@@ -66,6 +70,11 @@ async function upsertUser(
     bio: claims["bio"],
     profileImageUrl: claims["profile_image_url"],
   });
+  
+  // If this is a new user, create default service options
+  if (isNewUser) {
+    await storage.createDefaultServiceOptions(userId);
+  }
 }
 
 export async function setupAuth(app: Express) {
