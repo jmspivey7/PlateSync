@@ -34,7 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Batch, batchStatusEnum } from "@shared/schema";
+import { Batch, batchStatusEnum, ServiceOption } from "@shared/schema";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 // Create a schema for batch form
@@ -43,6 +43,7 @@ const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   status: z.enum(["OPEN", "CLOSED", "FINALIZED"]),
   notes: z.string().optional(),
+  service: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -60,6 +61,12 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
   const [_, setLocation] = useLocation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
+  // Load service options
+  const { data: serviceOptions = [], isLoading: isLoadingServiceOptions } = useQuery({
+    queryKey: ['/api/service-options'],
+    enabled: isOpen,
+  });
+  
   // Load batch data if editing
   const { data: batchData, isLoading: isLoadingBatch } = useQuery<Batch>({
     queryKey: batchId ? [`/api/batches/${batchId}`] : ['/api/batches'],
@@ -74,6 +81,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
       date: new Date().toISOString().split('T')[0],
       status: "OPEN",
       notes: "",
+      service: "",
     },
   });
   
@@ -87,6 +95,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
         date: formattedDate,
         status: batchData.status as "OPEN" | "CLOSED" | "FINALIZED",
         notes: batchData.notes || "",
+        service: batchData.service || "",
       });
     }
   }, [batchData, form, isEdit]);
@@ -101,6 +110,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
           date: values.date,
           status: values.status,
           notes: values.notes,
+          service: values.service,
         });
         
         if (!response.ok) {
@@ -115,6 +125,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
           date: values.date,
           status: values.status,
           notes: values.notes,
+          service: values.service,
         });
         
         if (!response.ok) {
@@ -263,6 +274,41 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                         Open: Still collecting donations<br />
                         Closed: No more donations accepted<br />
                         Finalized: Count verified and ready for accounting
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="service"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Service</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a service" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {serviceOptions.length === 0 ? (
+                            <SelectItem value="none">None</SelectItem>
+                          ) : (
+                            serviceOptions.map((option) => (
+                              <SelectItem key={option.id} value={option.name}>
+                                {option.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        The type of service this count is for.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
