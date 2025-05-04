@@ -545,13 +545,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Send notification if requested and if it's not an anonymous donation
+      // Send notification if requested, if it's not an anonymous donation, and if notifications are enabled
       if (req.body.sendNotification && validatedData.memberId) {
         try {
           const member = await storage.getMember(validatedData.memberId, userId);
           const user = await storage.getUser(userId);
           
-          if (member && member.email && user) {
+          // Check if user has email notifications enabled
+          const emailNotificationsEnabled = user?.emailNotificationsEnabled !== false;
+          
+          if (member && member.email && user && emailNotificationsEnabled) {
             const churchName = user.churchName || "Our Church";
             
             // Send email notification via SendGrid

@@ -355,7 +355,7 @@ const Settings = () => {
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
-                    className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                    className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
                     disabled={updateSettingsMutation.isPending}
                   >
                     {updateSettingsMutation.isPending ? (
