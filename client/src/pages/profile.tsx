@@ -360,10 +360,6 @@ const Profile = () => {
                       />
                     </div>
                   </div>
-                  
-                  <div className="pt-2 text-sm text-muted-foreground">
-                    <p>This information is managed by your Replit account. To update these details, please edit your Replit profile.</p>
-                  </div>
                 </div>
               </TabsContent>
               
