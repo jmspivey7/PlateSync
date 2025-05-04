@@ -170,7 +170,8 @@ export function DonationChart() {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(value);
   };
 
@@ -210,10 +211,28 @@ export function DonationChart() {
                 tickMargin={8}
               />
               <ChartTooltip
-                content={
-                  <ChartTooltipContent indicator="dot" />
-                }
-                formatter={(value: any) => formatCurrency(value)}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-white p-2 border shadow-sm rounded-md">
+                        <p className="font-medium text-sm">{payload[0]?.payload?.fullDate}</p>
+                        <div className="flex flex-col gap-1 mt-1">
+                          {payload.map((entry, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: entry.color }}
+                              />
+                              <span className="text-xs">{entry.name}:</span>
+                              <span className="text-xs font-medium">{formatCurrency(entry.value as number)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
               />
               <Area
                 type="monotone"
