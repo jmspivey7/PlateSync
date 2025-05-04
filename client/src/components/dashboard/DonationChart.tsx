@@ -190,7 +190,7 @@ export function DonationChart() {
           View Historical Counts
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <ChartContainer config={chartConfig} className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -236,6 +236,18 @@ export function DonationChart() {
             </AreaChart>
           </ResponsiveContainer>
         </ChartContainer>
+        
+        {/* Chart legend positioned in bottom right */}
+        <div className="absolute bottom-4 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
+          <div className="flex items-center">
+            <div className="w-3 h-3 rounded-full bg-[#69ad4c] mr-1.5"></div>
+            <span className="text-xs text-muted-foreground">Cash</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-1.5"></div>
+            <span className="text-xs text-muted-foreground">Check</span>
+          </div>
+        </div>
       </CardContent>
       <CardFooter>
         <div className="flex w-full items-start gap-2 text-sm">
