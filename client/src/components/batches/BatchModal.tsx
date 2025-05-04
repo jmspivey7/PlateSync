@@ -171,6 +171,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
       });
       
       onClose();
+      setLocation('/counts');
     },
     onError: (error) => {
       toast({
