@@ -13,7 +13,8 @@ import {
   donationTypeEnum,
   notificationStatusEnum,
   batchStatusEnum,
-  updateUserSchema
+  updateUserSchema,
+  insertServiceOptionSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
