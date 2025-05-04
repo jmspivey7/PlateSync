@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { insertBatchSchema, Batch } from "@shared/schema";
+import { insertBatchSchema, Batch, ServiceOption } from "@shared/schema";
 import { useLocation } from "wouter";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 
@@ -61,6 +61,18 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   const [_, setLocation] = useLocation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
+  // Fetch service options from the API
+  const { data: serviceOptions = [], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
+    queryKey: ['/api/service-options'],
+    queryFn: async () => {
+      const response = await fetch('/api/service-options');
+      if (!response.ok) {
+        throw new Error("Failed to fetch service options");
+      }
+      return response.json();
+    },
+  });
+  
   // Initialize the form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -102,7 +114,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
     }
   }, [batchData, form]);
   
-  // Auto-generate name when date changes
+  // Auto-generate name when date or service changes
   useEffect(() => {
     const date = form.watch('date');
     const service = form.watch('service');
@@ -111,22 +123,17 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       let formattedDate = format(new Date(date), 'MMMM d, yyyy');
       let nameValue = formattedDate;
       
-      if (service) {
-        const serviceLabel = {
-          'morning': 'Morning',
-          'evening': 'Evening',
-          'midweek': 'Midweek',
-          'special': 'Special'
-        }[service];
-        
-        if (serviceLabel) {
-          nameValue = `${serviceLabel} Service, ${formattedDate}`;
+      // Find the service option by value
+      if (service && serviceOptions.length > 0) {
+        const serviceOption = serviceOptions.find(option => option.value === service);
+        if (serviceOption) {
+          nameValue = `${serviceOption.name}, ${formattedDate}`;
         }
       }
       
       form.setValue('name', nameValue);
     }
-  }, [form.watch('date'), form.watch('service'), form]);
+  }, [form.watch('date'), form.watch('service'), serviceOptions, form]);
   
   // Create/update batch mutation
   const createBatchMutation = useMutation({
@@ -264,10 +271,21 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="morning">Morning Service</SelectItem>
-                          <SelectItem value="evening">Evening Service</SelectItem>
-                          <SelectItem value="midweek">Midweek Service</SelectItem>
-                          <SelectItem value="special">Special Event</SelectItem>
+                          {/* Empty option */}
+                          <SelectItem value="">Select a service</SelectItem>
+                          
+                          {/* Only configured service options */}
+                          {isLoadingServiceOptions ? (
+                            <SelectItem value="" disabled>Loading options...</SelectItem>
+                          ) : serviceOptions.length > 0 ? (
+                            serviceOptions.map((option) => (
+                              <SelectItem key={option.id} value={option.value}>
+                                {option.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>No service options configured</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                       <FormDescription>
