@@ -2,6 +2,8 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, ResponsiveContainer } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
 
 import {
   Card,
@@ -33,6 +35,9 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function DonationChart() {
+  // For navigation to counts page
+  const [, navigate] = useLocation();
+  
   // Fetch batch data with their donations
   const { data: batches, isLoading } = useQuery<BatchWithDonations[]>({
     queryKey: ['/api/batches'],
@@ -41,11 +46,20 @@ export function DonationChart() {
   if (isLoading || !batches) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Count Trends</CardTitle>
-          <CardDescription>
-            Loading chart data...
-          </CardDescription>
+        <CardHeader className="flex flex-row justify-between items-start">
+          <div>
+            <CardTitle>Count Trends</CardTitle>
+            <CardDescription>
+              Loading chart data...
+            </CardDescription>
+          </div>
+          <Button 
+            className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
+            onClick={() => navigate("/counts")}
+            disabled={true}
+          >
+            View Historical Counts
+          </Button>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -115,11 +129,19 @@ export function DonationChart() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Count Trends</CardTitle>
-        <CardDescription>
-          Cash vs. Check donations over time
-        </CardDescription>
+      <CardHeader className="flex flex-row justify-between items-start">
+        <div>
+          <CardTitle>Count Trends</CardTitle>
+          <CardDescription>
+            Cash vs. Check donations over time
+          </CardDescription>
+        </div>
+        <Button 
+          className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
+          onClick={() => navigate("/counts")}
+        >
+          View Historical Counts
+        </Button>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px]">
