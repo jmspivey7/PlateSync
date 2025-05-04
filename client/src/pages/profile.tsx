@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Card, 
   CardContent, 
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, User } from "lucide-react";
+import { Loader2, Save, Upload, Camera, ImageIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
@@ -34,6 +34,9 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 const Profile = () => {
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Set up form with default values
   const form = useForm<ProfileFormValues>({
@@ -68,6 +71,75 @@ const Profile = () => {
     },
   });
   
+  // Upload avatar mutation
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Profile picture updated',
+        description: 'Your profile picture has been uploaded successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      setIsUploading(false);
+    },
+    onError: () => {
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload profile picture. Please try again.',
+        variant: 'destructive',
+      });
+      setIsUploading(false);
+    },
+  });
+  
+  // Handle avatar upload
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload an image file (JPEG, PNG, etc.)',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload an image smaller than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsUploading(true);
+    uploadAvatarMutation.mutate(file);
+  };
+  
+  // Trigger file input click
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+  
   // Handle form submission
   const onSubmit = (data: ProfileFormValues) => {
     updateProfileMutation.mutate(data);
@@ -99,15 +171,42 @@ const Profile = () => {
             <div className="space-y-6">
               {/* Profile Avatar & Basic Info */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                <Avatar className="h-24 w-24 bg-[#69ad4c]">
-                  {user?.profileImageUrl ? (
-                    <AvatarImage src={user.profileImageUrl} alt={user.username || "User"} />
-                  ) : (
-                    <AvatarFallback className="text-xl">
-                      {user?.role === "ADMIN" ? "A" : "U"}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
+                <div className="relative group">
+                  <Avatar className="h-24 w-24 bg-[#69ad4c]">
+                    {user?.profileImageUrl ? (
+                      <AvatarImage src={user.profileImageUrl} alt={user.username || "User"} />
+                    ) : (
+                      <AvatarFallback className="text-xl">
+                        {user?.role === "ADMIN" ? "A" : "U"}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  
+                  {/* Hidden file input */}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleAvatarUpload}
+                  />
+                  
+                  {/* Upload button overlay */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="absolute bottom-0 right-0 rounded-full bg-white border border-gray-200 p-1.5 shadow-sm hover:bg-gray-50 text-gray-700"
+                    onClick={triggerFileInput}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
                 
                 <div className="flex-1 text-center sm:text-left">
                   <h3 className="text-xl font-semibold">
@@ -120,6 +219,28 @@ const Profile = () => {
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       {user?.role === "ADMIN" ? "Administrator" : "Usher"}
                     </span>
+                  </div>
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-sm"
+                      onClick={triggerFileInput}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-1 h-3 w-3" />
+                          Upload profile picture
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>
