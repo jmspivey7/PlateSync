@@ -116,7 +116,7 @@ const CountsPage = () => {
         </Button>
       </div>
 
-      {/* Historical Count List in Horizontal Row Layout */}
+      {/* Historical Count List as Table with Rows and Columns */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">Historical Count List</CardTitle>
@@ -134,30 +134,52 @@ const CountsPage = () => {
         <CardContent>
           {filteredBatches && filteredBatches.length > 0 ? (
             <div className="overflow-x-auto">
-              <div className="flex flex-row space-x-4 pb-2 overflow-x-auto">
-                {filteredBatches.map((batch) => (
-                  <div 
-                    key={batch.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors flex-shrink-0 w-[200px] ${
-                      selectedBatchId === batch.id ? 'border-[#4299E1] bg-blue-50' : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => handleViewBatch(batch.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="font-medium truncate">{batch.name}</div>
-                      <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
-                    </div>
-                    <div className="mt-2 flex items-center text-sm text-gray-500">
-                      <Calendar className="mr-1 h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="truncate">{format(new Date(batch.date), 'MMM d, yyyy')}</span>
-                    </div>
-                    <div className="mt-1 flex items-center text-sm font-medium">
-                      <DollarSign className="mr-1 h-3.5 w-3.5 text-[#48BB78] flex-shrink-0" />
-                      {formatCurrency(batch.totalAmount || 0)}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Name</th>
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/5">Date</th>
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/5">Amount</th>
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/5">Status</th>
+                    <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/10">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBatches.map((batch) => (
+                    <tr 
+                      key={batch.id}
+                      className={`border-b hover:bg-gray-50 cursor-pointer ${
+                        selectedBatchId === batch.id ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => handleViewBatch(batch.id)}
+                    >
+                      <td className="py-3 px-3 font-medium">{batch.name}</td>
+                      <td className="py-3 px-3 text-gray-500">
+                        {format(new Date(batch.date), 'MMM d, yyyy')}
+                      </td>
+                      <td className="py-3 px-3 font-medium text-[#48BB78]">
+                        {formatCurrency(batch.totalAmount || 0)}
+                      </td>
+                      <td className="py-3 px-3">
+                        <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditBatch(batch.id);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
@@ -178,7 +200,7 @@ const CountsPage = () => {
       </Card>
 
       {/* Selected Count Details */}
-      {selectedBatchId && selectedBatch ? (
+      {selectedBatchId && selectedBatch && (
         <Card>
           <CardHeader className="flex flex-row items-start justify-between">
             <div>
@@ -259,24 +281,6 @@ const CountsPage = () => {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="flex items-center justify-center">
-          <CardContent className="pt-10 text-center">
-            <Package className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium mb-2">Select a Count</h3>
-            <p className="text-gray-500 mb-6 max-w-md">
-              Choose a count from the list to view details or create a new one to organize your donations.
-            </p>
-            <Button
-              onClick={handleCreateBatch}
-              variant="outline"
-              className="mx-auto"
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Count
-            </Button>
           </CardContent>
         </Card>
       )}
