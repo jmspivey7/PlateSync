@@ -533,50 +533,44 @@ const Settings = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
-                <FormField
-                  control={form.control}
-                  name="emailNotificationsEnabled"
-                  render={({ field }) => (
-                    <FormItem className="border rounded-lg p-6 mb-4">
-                      <div className="space-y-1">
-                        <FormLabel className="text-lg font-medium">
-                          Enable Email Notifications
-                        </FormLabel>
-                        <FormDescription className="text-gray-600">
-                          Send email notifications to donors when donations are recorded
-                        </FormDescription>
-                      </div>
-                      <div className="mt-8 flex justify-end">
-                        <div className="flex items-center">
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              className="enhanced-switch"
-                            />
-                          </FormControl>
-                          <span className="ml-2 text-base font-bold">
-                            {field.value ? 'ON' : 'OFF'}
-                          </span>
-                        </div>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex justify-end mt-4">
-                  <Button 
-                    type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-                    disabled={updateSettingsMutation.isPending}
-                  >
-                    {updateSettingsMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
-                    Save Changes
-                  </Button>
+                <div className="border rounded-lg p-6 mb-4">
+                  <div className="space-y-1">
+                    <div className="text-lg font-medium">
+                      Enable Email Notifications
+                    </div>
+                    <div className="text-gray-600">
+                      Send email notifications to donors when donations are recorded
+                    </div>
+                  </div>
+                  <div className="mt-8 flex justify-end">
+                    <div className="flex items-center">
+                      <Switch
+                        checked={form.watch("emailNotificationsEnabled")}
+                        onCheckedChange={(checked) => {
+                          // Update the form value
+                          form.setValue("emailNotificationsEnabled", checked);
+                          
+                          // Save the change immediately
+                          updateSettingsMutation.mutate({
+                            churchName: form.getValues("churchName"),
+                            emailNotificationsEnabled: checked
+                          }, {
+                            onSuccess: () => {
+                              toast({
+                                title: "Notification Setting Updated",
+                                description: `Email notifications have been turned ${checked ? 'ON' : 'OFF'}.`,
+                                className: "bg-[#69ad4c] text-white",
+                              });
+                            }
+                          });
+                        }}
+                        className="enhanced-switch"
+                      />
+                      <span className="ml-2 text-base font-bold">
+                        {form.watch("emailNotificationsEnabled") ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </form>
             </Form>
