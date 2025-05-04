@@ -7,6 +7,8 @@ import { isAdmin, hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
+import path from "path";
+import fs from "fs";
 import { 
   insertMemberSchema, 
   insertDonationSchema,
@@ -26,6 +28,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB limit
     },
+  });
+  
+  // Set up multer for avatar uploads with disk storage
+  const avatarStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, 'public/avatars');
+    },
+    filename: (_req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'avatar-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const avatarUpload = multer({ 
+    storage: avatarStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (_req, file, cb) => {
+      // Accept only image files
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    }
   });
   
   // Auth middleware
@@ -61,6 +88,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+  
+  // Avatar upload route (Available to both Admin and Usher roles)
+  app.post('/api/profile/avatar', isAuthenticated, avatarUpload.single('avatar'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Check if file was uploaded
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file provided" });
+      }
+      
+      // Get the relative path to the uploaded file
+      const avatarUrl = `/avatars/${req.file.filename}`;
+      
+      // Update user profile with the new avatar URL
+      const updatedUser = await storage.updateUserSettings(userId, {
+        profileImageUrl: avatarUrl
+      });
+      
+      res.json({
+        success: true,
+        message: "Profile picture updated successfully",
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      res.status(500).json({ 
+        success: false,
+        message: `Failed to upload avatar: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   });
   
