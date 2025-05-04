@@ -307,7 +307,7 @@ const Profile = () => {
                 <TabsTrigger 
                   value="profile" 
                   onClick={() => setActiveTab("profile")}
-                  className={`font-bold text-sm py-2.5 ${activeTab === "profile" ? "bg-[#69ad4c] text-white shadow-md" : ""}`}
+                  className={`font-bold text-sm py-2.5 border-r border-gray-200 ${activeTab === "profile" ? "bg-[#69ad4c] text-white shadow-md" : ""}`}
                 >
                   Profile Information
                 </TabsTrigger>
