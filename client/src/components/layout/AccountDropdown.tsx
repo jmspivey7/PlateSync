@@ -49,22 +49,22 @@ const AccountDropdown = () => {
               <AvatarFallback>{getInitials()}</AvatarFallback>
             )}
           </Avatar>
-          <span>{getDisplayName()}</span>
+          <span className="text-[1.1rem]">{getDisplayName()}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       
       <DropdownMenuContent className="bg-white w-56" align="end">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-[1.1rem]">My Account</DropdownMenuLabel>
         
         <DropdownMenuSeparator />
         
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => setLocation("/profile")}>
+          <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/profile")}>
             Profile
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={() => setLocation("/help")}>
+          <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/help")}>
             Help
           </DropdownMenuItem>
           
@@ -72,21 +72,21 @@ const AccountDropdown = () => {
             <>
               <DropdownMenuSeparator />
               
-              <DropdownMenuLabel>Admin</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[1.1rem]">Admin</DropdownMenuLabel>
               
-              <DropdownMenuItem onClick={() => setLocation("/settings")}>
+              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/settings")}>
                 App Settings
               </DropdownMenuItem>
               
-              <DropdownMenuItem onClick={() => setLocation("/user-management")}>
+              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/user-management")}>
                 User Management
               </DropdownMenuItem>
               
-              <DropdownMenuItem onClick={() => setLocation("/members")}>
+              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/members")}>
                 Members
               </DropdownMenuItem>
               
-              <DropdownMenuItem onClick={() => setLocation("/service-options")}>
+              <DropdownMenuItem className="text-[1.1rem]" onClick={() => setLocation("/service-options")}>
                 Service Options
               </DropdownMenuItem>
             </>
@@ -96,7 +96,7 @@ const AccountDropdown = () => {
         <DropdownMenuSeparator />
         
         <DropdownMenuItem 
-          className="text-red-600"
+          className="text-red-600 text-[1.1rem]"
           onClick={() => {
             window.location.href = "/api/logout";
           }}

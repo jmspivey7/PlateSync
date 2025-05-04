@@ -32,7 +32,7 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
         <img 
           src={redeemerLogo} 
           alt="Redeemer NOLA Presbyterian Church" 
-          className="h-16 sm:h-24 object-contain cursor-pointer"
+          className="h-[4.6rem] sm:h-[6.9rem] object-contain cursor-pointer" /* Increased by 15% from original h-16 (4rem) and sm:h-24 (6rem) */
           onClick={() => setLocation("/dashboard")}
         />
         
@@ -47,7 +47,7 @@ const SharedNavigation = ({ title, subtitle }: SharedNavigationProps) => {
         ) : (
           <div className="flex items-center space-x-4">
             <div className="flex space-x-2">
-              <Button variant="ghost" onClick={() => setLocation("/counts")}>Historical Counts</Button>
+              <Button variant="ghost" className="text-[1.1rem]" onClick={() => setLocation("/counts")}>Historical Counts</Button>
             </div>
             <AccountDropdown />
           </div>
