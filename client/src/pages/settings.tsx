@@ -751,24 +751,60 @@ const Settings = () => {
               </Alert>
             )}
             
-            <Button
-              onClick={testSendGridConfiguration}
-              disabled={sendgridTestStatus === 'loading'}
-              variant="outline"
-              className="w-full"
-            >
-              {sendgridTestStatus === 'loading' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Testing SendGrid Configuration...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Test SendGrid Configuration
-                </>
-              )}
-            </Button>
+            <div className="flex flex-col space-y-3">
+              <Button
+                onClick={testSendGridConfiguration}
+                disabled={sendgridTestStatus === 'loading'}
+                variant="outline"
+                className="w-full"
+              >
+                {sendgridTestStatus === 'loading' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Testing SendGrid Configuration...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Test SendGrid Configuration
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  fetch('/api/test-count-report')
+                    .then(response => response.json())
+                    .then(data => {
+                      if (data.success) {
+                        toast({
+                          title: "Test Email Sent",
+                          description: data.message,
+                          className: "bg-[#69ad4c] text-white",
+                        });
+                      } else {
+                        toast({
+                          title: "Test Failed",
+                          description: data.message,
+                          variant: "destructive",
+                        });
+                      }
+                    })
+                    .catch(error => {
+                      toast({
+                        title: "Error",
+                        description: "Failed to send test email. Make sure you have report recipients configured.",
+                        variant: "destructive",
+                      });
+                    });
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Test Count Report Email
+              </Button>
+            </div>
           </CardContent>
         </Card>
         
