@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail } from "./sendgrid";
+import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { eq } from "drizzle-orm";
 import * as crypto from "crypto";
 
@@ -1023,6 +1023,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Confirm attestation and finalize the batch
       const updatedBatch = await storage.confirmAttestation(batchId, userId, userId);
+      
+      // Send count report notifications
+      try {
+        // Get batch donations to prepare report data
+        const batchWithDonations = await storage.getBatchWithDonations(batchId, userId);
+        
+        // Get user info for church name
+        const user = await storage.getUser(userId);
+        
+        if (updatedBatch && batchWithDonations && user && user.emailNotificationsEnabled !== false) {
+          // Calculate donation amounts
+          const donations = batchWithDonations.donations || [];
+          const totalAmount = parseFloat(updatedBatch.totalAmount || '0').toFixed(2);
+          
+          // Calculate cash and check amounts
+          const cashDonations = donations.filter(d => d.donationType === 'CASH');
+          const checkDonations = donations.filter(d => d.donationType === 'CHECK');
+          
+          const cashAmount = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0).toFixed(2);
+          const checkAmount = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0).toFixed(2);
+          
+          // Format date for display
+          const batchDate = new Date(updatedBatch.date);
+          const formattedDate = batchDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+          
+          // Get report recipients and send emails
+          const reportRecipients = await storage.getReportRecipients(userId);
+          
+          if (reportRecipients.length > 0) {
+            console.log(`Sending count report emails to ${reportRecipients.length} recipients`);
+            
+            for (const recipient of reportRecipients) {
+              await sendCountReport({
+                to: recipient.email,
+                recipientName: `${recipient.firstName} ${recipient.lastName}`,
+                churchName: user.churchName || 'Your Church',
+                batchName: updatedBatch.name,
+                batchDate: formattedDate,
+                totalAmount,
+                cashAmount,
+                checkAmount,
+                donationCount: donations.length
+              });
+            }
+          } else {
+            console.log('No report recipients configured. Skipping count report notifications.');
+          }
+        }
+      } catch (emailError) {
+        console.error('Error sending count report notifications:', emailError);
+        // Don't throw error, allow the API to succeed even if email sending fails
+      }
       
       res.json(updatedBatch);
     } catch (error) {
