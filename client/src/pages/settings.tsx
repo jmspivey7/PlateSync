@@ -41,7 +41,6 @@ import {
   UserPlus
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import ToastNotification from "@/components/ui/toast-notification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import PageLayout from "@/components/layout/PageLayout";
@@ -1189,15 +1188,7 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
       
-      {showSuccessToast && (
-        <ToastNotification
-          title="Settings Saved"
-          message="Your church settings have been updated successfully."
-          variant="success"
-          duration={3000}
-          onClose={() => setShowSuccessToast(false)}
-        />
-      )}
+      {/* Removed competing toast notification */}
     </PageLayout>
   );
 };
