@@ -19,7 +19,6 @@ import {
   updateUserSchema,
   insertServiceOptionSchema,
   createUserSchema,
-  userRoleEnum,
   userRoleEnum
 } from "@shared/schema";
 

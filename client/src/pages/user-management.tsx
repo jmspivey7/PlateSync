@@ -207,7 +207,7 @@ const CreateUserForm = ({
 };
 
 const UserManagement = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user: currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -470,7 +470,7 @@ const UserManagement = () => {
                           </Select>
                           
                           {/* Don't allow deleting self */}
-                          {user.id !== useAuth().user?.id && (
+                          {user.id !== currentUser?.id && (
                           <AlertDialog open={deleteDialogOpen && selectedUserId === user.id} onOpenChange={(open) => {
                             setDeleteDialogOpen(open);
                             if (!open) setSelectedUserId(null);
