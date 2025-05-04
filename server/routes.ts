@@ -46,6 +46,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve static avatar files
   app.use('/avatars', express.static(path.join('public', 'avatars')));
+  
+  // Serve static logo files
+  app.use('/logos', express.static(path.join('public', 'logos')));
   // Set up multer for file uploads
   const upload = multer({ 
     storage: multer.memoryStorage(),
@@ -302,6 +305,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+  
+  // Setup logo storage for church logos
+  const logoStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, 'public/logos');
+    },
+    filename: (_req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'church-logo-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const logoUpload = multer({ 
+    storage: logoStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (_req, file, cb) => {
+      // Accept only image files
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    }
+  });
+  
+  // Church logo upload endpoint
+  app.post('/api/settings/logo', isAuthenticated, logoUpload.single('logo'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file uploaded" });
+      }
+      
+      const userId = req.user.claims.sub;
+      const logoUrl = `/logos/${req.file.filename}`;
+      
+      const updatedUser = await storage.updateUserSettings(userId, { churchLogoUrl: logoUrl });
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      res.status(500).json({ message: "Failed to upload logo" });
+    }
+  });
+  
+  // Remove church logo endpoint
+  app.delete('/api/settings/logo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get current user to find the logo path
+      const user = await storage.getUser(userId);
+      
+      if (user?.churchLogoUrl) {
+        const logoPath = path.join('public', user.churchLogoUrl);
+        
+        // Check if file exists before attempting to delete
+        if (fs.existsSync(logoPath)) {
+          fs.unlinkSync(logoPath);
+        }
+      }
+      
+      // Update user record to remove logo URL
+      const updatedUser = await storage.updateUserSettings(userId, { churchLogoUrl: null });
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error removing logo:", error);
+      res.status(500).json({ message: "Failed to remove logo" });
     }
   });
   

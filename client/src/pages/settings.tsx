@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,7 +33,9 @@ import {
   Plus, 
   Save, 
   Settings as SettingsIcon,
-  Trash2
+  Trash2,
+  Upload,
+  ImageIcon
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ToastNotification from "@/components/ui/toast-notification";
@@ -76,7 +78,9 @@ const Settings = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoRemoving, setLogoRemoving] = useState(false);
 
   
   // Fetch service options
@@ -353,7 +357,148 @@ const Settings = () => {
                   )}
                 />
                 
-                <div className="flex justify-end">
+                <div className="space-y-4 mt-6">
+                  <FormLabel>Church Logo</FormLabel>
+                  
+                  {/* Logo Display Section */}
+                  <div className="border rounded-lg p-6 flex flex-col items-center">
+                    {user?.churchLogoUrl ? (
+                      <div className="mb-4 flex flex-col items-center">
+                        <div className="w-32 h-32 rounded-lg border overflow-hidden mb-2 flex items-center justify-center bg-gray-50">
+                          <img 
+                            src={user.churchLogoUrl} 
+                            alt={`${user.churchName || 'Church'} logo`} 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                        <p className="text-sm text-gray-500">Current logo</p>
+                      </div>
+                    ) : (
+                      <div className="mb-4 flex flex-col items-center">
+                        <div className="w-32 h-32 rounded-lg border flex items-center justify-center bg-gray-50">
+                          <ImageIcon className="h-16 w-16 text-gray-300" />
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">No logo uploaded</p>
+                      </div>
+                    )}
+                    
+                    {/* Hidden file input */}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        // Create FormData for upload
+                        const formData = new FormData();
+                        formData.append('logo', file);
+                        
+                        try {
+                          setLogoUploading(true);
+                          
+                          const response = await fetch('/api/settings/logo', {
+                            method: 'POST',
+                            body: formData,
+                          });
+                          
+                          if (!response.ok) {
+                            throw new Error('Failed to upload logo');
+                          }
+                          
+                          // Refresh user data to get updated logo URL
+                          queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                          
+                          toast({
+                            title: "Logo updated",
+                            description: "Your church logo has been updated successfully.",
+                            className: "bg-[#48BB78] text-white",
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Upload failed",
+                            description: `Failed to upload logo: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setLogoUploading(false);
+                          // Clear the file input
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    
+                    {/* Logo Action Buttons */}
+                    <div className="flex space-x-2 mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={logoUploading}
+                        className="flex items-center"
+                      >
+                        {logoUploading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="mr-2 h-4 w-4" />
+                        )}
+                        {user?.churchLogoUrl ? 'Change Logo' : 'Upload Logo'}
+                      </Button>
+                      
+                      {user?.churchLogoUrl && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={async () => {
+                            try {
+                              setLogoRemoving(true);
+                              
+                              const response = await fetch('/api/settings/logo', {
+                                method: 'DELETE',
+                              });
+                              
+                              if (!response.ok) {
+                                throw new Error('Failed to remove logo');
+                              }
+                              
+                              // Refresh user data to remove logo URL
+                              queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                              
+                              toast({
+                                title: "Logo removed",
+                                description: "Your church logo has been removed.",
+                                className: "bg-[#48BB78] text-white",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Remove failed",
+                                description: `Failed to remove logo: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setLogoRemoving(false);
+                            }
+                          }}
+                          disabled={logoRemoving}
+                          className="flex items-center"
+                        >
+                          {logoRemoving ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="mr-2 h-4 w-4" />
+                          )}
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end mt-6">
                   <Button 
                     type="submit" 
                     className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
