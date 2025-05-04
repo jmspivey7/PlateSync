@@ -453,10 +453,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         const currentBatchId = form.getValues("batchId");
         const currentDate = form.getValues("date");
         
+        // First manually reset the amount field to ensure it's cleared
+        form.setValue("amount", "");
+        
         // Reset form completely
         form.reset({
           date: currentDate,
-          amount: "",
+          amount: "",  // Setting explicitly to empty string
           donationType: "CASH",
           checkNumber: "",
           notes: "",
@@ -469,6 +472,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           sendNotification: true,
           batchId: currentBatchId,
         });
+        
+        // Force a re-render of the amount field
+        setTimeout(() => {
+          form.setValue("amount", "");
+        }, 0);
         
         // Increment combobox key to force re-render
         setComboboxKey(prevKey => prevKey + 1);
@@ -722,6 +730,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             placeholder="0.00" 
                             step="0.01" 
                             type="number"
+                            value={field.value || ""} // Ensure it's never undefined
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
