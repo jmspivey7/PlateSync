@@ -225,7 +225,7 @@ const ServiceOptions = () => {
     <PageLayout 
       title="Service Options" 
       subtitle="Manage service options for creating new counts"
-      icon={<ListChecks className="h-6 w-6 text-gray-700" />}
+      icon={<ListChecks className="h-6 w-6 text-[#69ad4c]" />}
     >
       <Card>
         <CardHeader>

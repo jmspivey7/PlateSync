@@ -8,7 +8,7 @@ const Help = () => {
     <PageLayout 
       title="Help Center" 
       subtitle="Find answers to common questions about using the application"
-      icon={<HelpCircle className="h-6 w-6 text-gray-700" />}
+      icon={<HelpCircle className="h-6 w-6 text-[#69ad4c]" />}
     >
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>

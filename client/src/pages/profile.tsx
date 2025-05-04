@@ -205,7 +205,7 @@ const Profile = () => {
   // Show loading state if auth is still loading
   if (isAuthLoading) {
     return (
-      <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-gray-700" />}>
+      <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
         <div className="flex justify-center py-10">
           <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
         </div>
@@ -214,7 +214,7 @@ const Profile = () => {
   }
   
   return (
-    <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-gray-700" />}>
+    <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
       <div className="max-w-3xl mx-auto">
         <Card>
           <CardHeader>
