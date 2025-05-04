@@ -328,31 +328,36 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)}>
                 <FormField
                   control={form.control}
                   name="emailNotificationsEnabled"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <FormItem className="border rounded-lg p-4 mb-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">
+                        <FormLabel className="text-base font-medium">
                           Enable Email Notifications
                         </FormLabel>
-                        <FormDescription>
+                        <FormDescription className="text-gray-600">
                           Send email notifications to donors when donations are recorded
                         </FormDescription>
                       </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
+                      <div className="mt-3 flex items-center justify-end">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <span className="ml-2 text-sm font-medium">
+                          {field.value ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
                     </FormItem>
                   )}
                 />
                 
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-4">
                   <Button 
                     type="submit" 
                     className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
@@ -455,7 +460,7 @@ const Settings = () => {
                 <Button
                   onClick={() => createServiceOptionMutation.mutate(newServiceOption)}
                   disabled={!newServiceOption.trim() || createServiceOptionMutation.isPending}
-                  className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                  className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
                 >
                   {createServiceOptionMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -498,7 +503,7 @@ const Settings = () => {
                               })}
                               disabled={!serviceOptionEditName.trim() || updateServiceOptionMutation.isPending}
                               size="sm"
-                              className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                              className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
                             >
                               {updateServiceOptionMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -522,7 +527,7 @@ const Settings = () => {
                             <div className="flex items-center space-x-2">
                               <span>{option.name}</span>
                               {option.isDefault && (
-                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">
+                                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
                                   Default
                                 </span>
                               )}
