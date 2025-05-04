@@ -65,6 +65,17 @@ export const notificationStatusEnum = z.enum(["PENDING", "SENT", "FAILED", "NOT_
 // Batch status enum
 export const batchStatusEnum = z.enum(["OPEN", "CLOSED", "FINALIZED"]);
 
+// Service options table
+export const serviceOptions = pgTable("service_options", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  value: varchar("value", { length: 50 }).notNull(),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  churchId: varchar("church_id").references(() => users.id),
+});
+
 // Batches table
 export const batches = pgTable("batches", {
   id: serial("id").primaryKey(),
@@ -162,6 +173,15 @@ export const insertDonationSchema = createInsertSchema(donations)
 // Schema for updating user/church settings
 export const updateUserSchema = createInsertSchema(users).pick({
   churchName: true,
+  emailNotificationsEnabled: true,
+});
+
+// Schema for service options
+export const insertServiceOptionSchema = createInsertSchema(serviceOptions).pick({
+  name: true,
+  value: true,
+  isDefault: true,
+  churchId: true,
 });
 
 // Types for InsertUser from Replit Auth
@@ -177,6 +197,9 @@ export type Batch = typeof batches.$inferSelect;
 
 export type InsertDonation = z.infer<typeof insertDonationSchema>;
 export type Donation = typeof donations.$inferSelect;
+
+export type InsertServiceOption = z.infer<typeof insertServiceOptionSchema>;
+export type ServiceOption = typeof serviceOptions.$inferSelect;
 
 // Extended types for front-end display
 export type DonationWithMember = Donation & {

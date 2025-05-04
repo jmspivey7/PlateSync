@@ -3,6 +3,7 @@ import {
   members,
   donations,
   batches,
+  serviceOptions,
   type User,
   type UpsertUser,
   type Member,
@@ -13,7 +14,9 @@ import {
   type InsertDonation,
   type MemberWithDonations,
   type DonationWithMember,
-  type BatchWithDonations
+  type BatchWithDonations,
+  type ServiceOption,
+  type InsertServiceOption
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, sum, count } from "drizzle-orm";
@@ -50,6 +53,13 @@ export interface IStorage {
   createDonation(donation: InsertDonation): Promise<Donation>;
   updateDonation(id: number, data: Partial<InsertDonation>, churchId: string): Promise<Donation | undefined>;
   updateDonationNotificationStatus(id: number, status: string): Promise<void>;
+  
+  // Service options operations
+  getServiceOptions(churchId: string): Promise<ServiceOption[]>;
+  getServiceOption(id: number, churchId: string): Promise<ServiceOption | undefined>;
+  createServiceOption(option: InsertServiceOption): Promise<ServiceOption>;
+  updateServiceOption(id: number, data: Partial<InsertServiceOption>, churchId: string): Promise<ServiceOption | undefined>;
+  deleteServiceOption(id: number, churchId: string): Promise<void>;
   
   // Dashboard statistics
   getTodaysDonations(churchId: string): Promise<{ total: string, percentChange: number }>;
@@ -651,6 +661,80 @@ export class DatabaseStorage implements IStorage {
       count: activeDonors.length,
       newCount: newDonors.length
     };
+  }
+
+  // Service options operations
+  async getServiceOptions(churchId: string): Promise<ServiceOption[]> {
+    return db
+      .select()
+      .from(serviceOptions)
+      .where(eq(serviceOptions.churchId, churchId))
+      .orderBy(desc(serviceOptions.createdAt));
+  }
+
+  async getServiceOption(id: number, churchId: string): Promise<ServiceOption | undefined> {
+    const [option] = await db
+      .select()
+      .from(serviceOptions)
+      .where(and(
+        eq(serviceOptions.id, id),
+        eq(serviceOptions.churchId, churchId)
+      ));
+    
+    return option;
+  }
+
+  async createServiceOption(optionData: InsertServiceOption): Promise<ServiceOption> {
+    // If this is set as default, clear other defaults first
+    if (optionData.isDefault) {
+      await db
+        .update(serviceOptions)
+        .set({ isDefault: false })
+        .where(eq(serviceOptions.churchId, optionData.churchId));
+    }
+    
+    const [newOption] = await db
+      .insert(serviceOptions)
+      .values(optionData)
+      .returning();
+    
+    return newOption;
+  }
+
+  async updateServiceOption(id: number, data: Partial<InsertServiceOption>, churchId: string): Promise<ServiceOption | undefined> {
+    // If this is set as default, clear other defaults first
+    if (data.isDefault) {
+      await db
+        .update(serviceOptions)
+        .set({ isDefault: false })
+        .where(and(
+          eq(serviceOptions.churchId, churchId),
+          sql`${serviceOptions.id} != ${id}`
+        ));
+    }
+    
+    const [updatedOption] = await db
+      .update(serviceOptions)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(serviceOptions.id, id),
+        eq(serviceOptions.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedOption;
+  }
+
+  async deleteServiceOption(id: number, churchId: string): Promise<void> {
+    await db
+      .delete(serviceOptions)
+      .where(and(
+        eq(serviceOptions.id, id),
+        eq(serviceOptions.churchId, churchId)
+      ));
   }
 }
 
