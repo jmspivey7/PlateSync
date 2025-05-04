@@ -3,8 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BatchAttestation, Batch, User } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { Batch } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -16,13 +15,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -39,7 +31,7 @@ const primaryAttestationSchema = z.object({
 });
 
 const secondaryAttestationSchema = z.object({
-  attestorId: z.string().min(1, "Please select a second attestor"),
+  attestorId: z.string().min(1, "Second attestor ID is required"),
   name: z.string().min(1, "Name is required"),
 });
 
@@ -55,10 +47,6 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     queryKey: ['/api/batches', batchId.toString()],
     refetchInterval: false,
   });
-  
-  // For simplicity, we're not using the users list anymore
-  // This avoids permission issues when non-admin users try to attest
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
   // Primary attestation form
   const primaryForm = useForm<{ name: string }>({
@@ -193,7 +181,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     confirmAttestationMutation.mutate();
   };
   
-  if (isLoadingBatch || isLoadingUsers) {
+  if (isLoadingBatch) {
     return (
       <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
