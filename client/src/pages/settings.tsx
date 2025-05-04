@@ -744,6 +744,99 @@ const Settings = () => {
           </CardContent>
         </Card>
         
+        {/* User Role Management (Admin Only) */}
+        {isAdmin && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <div className="flex items-center">
+                <UserCog className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                <CardTitle>User Role Management</CardTitle>
+              </div>
+              <CardDescription>
+                Manage access permissions for users in your organization
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600 mb-4">
+                  <p>User roles determine what actions each staff member can perform in PlateSync.</p>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li><strong>Admin:</strong> Full access to all features, including settings and user management</li>
+                    <li><strong>Usher:</strong> Limited access for donation counting and basic features</li>
+                  </ul>
+                </div>
+                
+                {isLoadingUsers ? (
+                  <div className="text-center p-6">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-[#69ad4c]" />
+                    <p>Loading users...</p>
+                  </div>
+                ) : users.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Username</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Current Role</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((userData) => (
+                          <TableRow key={userData.id}>
+                            <TableCell className="font-medium">{userData.username}</TableCell>
+                            <TableCell>{userData.email || "-"}</TableCell>
+                            <TableCell>
+                              <Badge
+                                className={userData.role === "ADMIN" ? "bg-[#69ad4c]" : "bg-blue-500"}
+                              >
+                                {userData.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {userData.id === user?.id ? (
+                                <span className="text-sm text-gray-500 italic">Cannot change your own role</span>
+                              ) : (
+                                <Select
+                                  defaultValue={userData.role}
+                                  onValueChange={(value) => 
+                                    updateUserRoleMutation.mutate({ id: userData.id, role: value })
+                                  }
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="ADMIN">Admin</SelectItem>
+                                    <SelectItem value="USHER">Usher</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center p-6 border rounded-lg">
+                    <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p>No users found</p>
+                  </div>
+                )}
+                
+                <Alert className="bg-blue-50 border-blue-200 mt-4">
+                  <AlertTitle className="text-blue-800">User Access Tip</AlertTitle>
+                  <AlertDescription className="text-blue-700 text-sm">
+                    For security reasons, there should always be at least one Admin user who can manage the system.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Generate Reports</CardTitle>
