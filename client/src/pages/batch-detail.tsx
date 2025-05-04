@@ -96,7 +96,6 @@ const BatchDetailPage = () => {
       toast({
         title: "Success",
         description: "Count has been finalized successfully.",
-        className: "bg-primary text-primary-foreground",
       });
       
       setIsFinalized(true);
