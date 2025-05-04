@@ -437,11 +437,16 @@ const BatchDetailPage = () => {
             </Button>
             {batch.donations && batch.donations.length > 0 && (
               <Button 
-                onClick={handleShowSummary}
+                onClick={() => {
+                  console.log("Finalize Count button clicked, closing batch first");
+                  // First close the batch, then the mutation will navigate to attestation page
+                  closeBatchMutation.mutate();
+                }}
                 className="bg-amber-500 hover:bg-amber-600 text-black"
+                disabled={closeBatchMutation.isPending}
               >
-                <FileText className="mr-2 h-4 w-4" />
-                Finalize Count
+                <UserCheck className="mr-2 h-4 w-4" />
+                {closeBatchMutation.isPending ? "Preparing..." : "Finalize Count"}
               </Button>
             )}
           </div>
