@@ -285,6 +285,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                   )}
                 />
                 
+                {/* Service Dropdown Field */}
                 <FormField
                   control={form.control}
                   name="service"
@@ -292,7 +293,7 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                     <FormItem>
                       <FormLabel>Service</FormLabel>
                       <Select
-                        value={field.value}
+                        value={field.value || ""}
                         onValueChange={field.onChange}
                       >
                         <FormControl>
@@ -301,22 +302,18 @@ const BatchModal = ({ isOpen, onClose, batchId, isEdit = false }: BatchModalProp
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* Only show configured service options from settings */}
-                          {serviceOptions.length === 0 ? (
-                            <SelectItem value="none">None</SelectItem>
-                          ) : (
-                            <>
-                              {/* Display all service options from API */}
-                              {serviceOptions.map((option) => (
-                                <SelectItem key={option.id} value={option.name}>
-                                  {option.name}
-                                </SelectItem>
-                              ))}
-                              {/* For debugging - add a marker to see if this section renders */}
-                              <SelectItem value="__debug__" disabled>
-                                ---- API options end here ----
+                          {/* Empty option */}
+                          <SelectItem value="">Select a service</SelectItem>
+                          
+                          {/* Only configured service options */}
+                          {Array.isArray(serviceOptions) && serviceOptions.length > 0 ? (
+                            serviceOptions.map((option: ServiceOption) => (
+                              <SelectItem key={option.id} value={option.name}>
+                                {option.name}
                               </SelectItem>
-                            </>
+                            ))
+                          ) : (
+                            <SelectItem value="none" disabled>No service options configured</SelectItem>
                           )}
                         </SelectContent>
                       </Select>
