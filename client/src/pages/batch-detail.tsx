@@ -277,7 +277,7 @@ const BatchDetailPage = () => {
                   </Button>
                   <Button 
                     onClick={handleFinalizeBatch} 
-                    className="bg-amber-500 hover:bg-amber-600 text-white"
+                    className="bg-amber-500 hover:bg-amber-600 text-black"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Finalize Count
@@ -381,7 +381,7 @@ const BatchDetailPage = () => {
             {batch.donations && batch.donations.length > 0 && (
               <Button 
                 onClick={handleShowSummary}
-                className="bg-amber-500 hover:bg-amber-600 text-white"
+                className="bg-amber-500 hover:bg-amber-600 text-black"
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Finalize Count
