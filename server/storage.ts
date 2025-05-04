@@ -42,6 +42,7 @@ export interface IStorage {
   getBatchWithDonations(id: number, churchId: string): Promise<BatchWithDonations | undefined>;
   createBatch(batch: InsertBatch): Promise<Batch>;
   updateBatch(id: number, data: Partial<InsertBatch>, churchId: string): Promise<Batch | undefined>;
+  deleteBatch(id: number, churchId: string): Promise<void>;
   getCurrentBatch(churchId: string): Promise<Batch | undefined>;
   
   // Donation operations
@@ -292,6 +293,24 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedBatch;
+  }
+
+  async deleteBatch(id: number, churchId: string): Promise<void> {
+    // First, delete all donations associated with this batch
+    await db
+      .delete(donations)
+      .where(and(
+        eq(donations.batchId, id),
+        eq(donations.churchId, churchId)
+      ));
+    
+    // Then delete the batch itself
+    await db
+      .delete(batches)
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ));
   }
 
   async getCurrentBatch(churchId: string): Promise<Batch | undefined> {

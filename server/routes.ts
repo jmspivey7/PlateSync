@@ -375,6 +375,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // DELETE endpoint for deleting a batch
+  app.delete('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Check if batch exists first
+      const batch = await storage.getBatch(batchId, userId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Delete the batch and its donations
+      await storage.deleteBatch(batchId, userId);
+      
+      res.status(200).json({ message: "Batch and associated donations deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting batch:", error);
+      res.status(500).json({ message: "Failed to delete batch" });
+    }
+  });
+  
   // Add PATCH endpoint for updating donations
   app.patch('/api/donations/:id', isAuthenticated, async (req: any, res) => {
     try {
