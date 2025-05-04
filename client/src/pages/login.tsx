@@ -56,7 +56,7 @@ export default function Login() {
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="grid lg:grid-cols-2 gap-8 w-full max-w-6xl mx-auto">
+      <div className="w-full max-w-md mx-auto">
         {/* Login Form */}
         <Card className="w-full shadow-lg">
           <CardHeader className="space-y-3 text-center">
@@ -165,9 +165,6 @@ export default function Login() {
             </TabsContent>
           </Tabs>
         </Card>
-        
-        {/* Empty column on the right */}
-        <div className="hidden lg:block"></div>
       </div>
     </div>
   );
