@@ -215,148 +215,175 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px] bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#2D3748]">
-            {isEdit ? "Edit Count" : "Create New Count"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        {isLoadingBatch ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
-          </div>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="date" />
-                    </FormControl>
-                    <FormDescription>
-                      The date when this count of donations was collected.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="service"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Service</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[500px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#2D3748]">
+              {isEdit ? "Edit Count" : "Create New Count"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {isLoadingBatch ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
+            </div>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a service" />
-                        </SelectTrigger>
+                        <Input {...field} type="date" />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="morning">Morning Service</SelectItem>
-                        <SelectItem value="evening">Evening Service</SelectItem>
-                        <SelectItem value="midweek">Midweek Service</SelectItem>
-                        <SelectItem value="special">Special Event</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      The type of service this count is for.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="OPEN">Open</SelectItem>
-                        <SelectItem value="CLOSED">Closed</SelectItem>
-                        <SelectItem value="FINALIZED">Finalized</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Open: Still collecting donations<br />
-                      Closed: No more donations accepted<br />
-                      Finalized: Count verified and ready for accounting
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        rows={3} 
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={field.value || ""}
-                        disabled={field.disabled}
-                        name={field.name}
-                        ref={field.ref}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Any additional information about this count.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  disabled={createBatchMutation.isPending}
-                >
-                  {createBatchMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <FormDescription>
+                        The date when this count of donations was collected.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  {isEdit ? "Update Count" : "Create Count"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        )}
-      </DialogContent>
-    </Dialog>
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="service"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Service</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a service" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="morning">Morning Service</SelectItem>
+                          <SelectItem value="evening">Evening Service</SelectItem>
+                          <SelectItem value="midweek">Midweek Service</SelectItem>
+                          <SelectItem value="special">Special Event</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        The type of service this count is for.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="OPEN">Open</SelectItem>
+                          <SelectItem value="CLOSED">Closed</SelectItem>
+                          <SelectItem value="FINALIZED">Finalized</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Open: Still collecting donations<br />
+                        Closed: No more donations accepted<br />
+                        Finalized: Count verified and ready for accounting
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          rows={3} 
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          value={field.value || ""}
+                          disabled={field.disabled}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Any additional information about this count.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter className="flex justify-between sm:justify-between">
+                  {isEdit && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-red-500 text-red-600 hover:bg-red-50"
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Count
+                    </Button>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={onClose}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                      disabled={createBatchMutation.isPending}
+                    >
+                      {createBatchMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {isEdit ? "Update Count" : "Create Count"}
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => deleteBatchMutation.mutate()}
+        title="Delete Count"
+        description="Are you sure you want to delete this count? This action cannot be undone and will permanently delete the count and all associated donations."
+        confirmText="Delete Count"
+        cancelText="Cancel"
+        isPending={deleteBatchMutation.isPending}
+        destructive={true}
+      />
+    </>
   );
 };
 
