@@ -87,13 +87,20 @@ const AttestBatchPage = () => {
         subtitle={`${batch.name}`}
       >
         <Card className="max-w-xl mx-auto">
-          <CardHeader>
-            <CardTitle>Attestation Not Available</CardTitle>
-            <CardDescription>
-              This count has already been finalized
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <div className="p-6 flex items-center justify-between border-b">
+            <Button 
+              variant="outline"
+              onClick={handleBackToCount}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Count
+            </Button>
+            <div className="text-right">
+              <h2 className="text-xl font-semibold">Attestation Not Available</h2>
+              <p className="text-sm text-gray-500">This count has already been finalized</p>
+            </div>
+          </div>
+          <CardContent className="pt-6">
             <div className="mb-6 p-4 bg-amber-50 rounded-md border border-amber-200">
               <Alert>
                 <AlertCircle className="h-4 w-4 text-amber-600 mr-2" />
@@ -101,16 +108,6 @@ const AttestBatchPage = () => {
                   This count has already been attested and finalized. No further attestation is needed.
                 </AlertDescription>
               </Alert>
-            </div>
-            
-            <div className="flex justify-between">
-              <Button 
-                variant="outline"
-                onClick={handleBackToCount}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Count
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -125,24 +122,20 @@ const AttestBatchPage = () => {
       subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
     >
       <Card className="max-w-xl mx-auto">
-        <CardHeader>
-          <CardTitle>Count Attestation</CardTitle>
-          <CardDescription>
-            Complete the attestation process to finalize this count
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <Button 
-              variant="outline"
-              onClick={handleBackToCount}
-              className="mb-6"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Count
-            </Button>
+        <div className="p-6 flex items-center justify-between border-b">
+          <Button 
+            variant="outline"
+            onClick={handleBackToCount}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Count
+          </Button>
+          <div className="text-right">
+            <h2 className="text-xl font-semibold">Count Attestation</h2>
+            <p className="text-sm text-gray-500">Complete the attestation process to finalize this count</p>
           </div>
-
+        </div>
+        <CardContent className="pt-6">
           <AttestationForm 
             batchId={batchId}
             onComplete={handleAttestationComplete}
