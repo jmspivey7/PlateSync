@@ -425,7 +425,6 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="OPEN">Open</SelectItem>
-                            <SelectItem value="CLOSED">Closed</SelectItem>
                             <SelectItem value="FINALIZED">Finalized</SelectItem>
                           </SelectContent>
                         </Select>
