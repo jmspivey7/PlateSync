@@ -1191,17 +1191,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Confirm attestation and finalize the batch
       const updatedBatch = await storage.confirmAttestation(batchId, userId, churchId);
       
-      // Send count report notifications
+      // Process all notification tasks now that the batch is finalized
       try {
         // Get batch donations to prepare report data
         const batchWithDonations = await storage.getBatchWithDonations(batchId, churchId);
         
-        // Get user info for church name
-        const user = await storage.getUser(userId);
+        // Get admin user info to check if email notifications are enabled church-wide
+        const adminId = await storage.getAdminIdForChurch(churchId);
+        const adminUser = adminId ? await storage.getUser(adminId) : null;
         
-        if (updatedBatch && batchWithDonations && user && user.emailNotificationsEnabled !== false) {
-          // Calculate donation amounts
+        // Check if emails are enabled at the church level (by ADMIN)
+        const emailNotificationsEnabled = adminUser?.emailNotificationsEnabled !== false;
+        
+        if (updatedBatch && batchWithDonations && emailNotificationsEnabled) {
+          console.log(`Processing finalized batch ${batchId} with ${batchWithDonations.donations.length} donations`);
+          
+          // 1. FIRST TASK: Process individual donation notifications that were marked as PENDING
           const donations = batchWithDonations.donations || [];
+          const pendingNotifications = donations.filter(d => 
+            d.notificationStatus === notificationStatusEnum.enum.PENDING && 
+            d.memberId && 
+            d.member?.email
+          );
+          
+          console.log(`Found ${pendingNotifications.length} pending donation notifications to process`);
+          
+          // Process all pending donation notifications
+          for (const donation of pendingNotifications) {
+            try {
+              if (donation.member && donation.member.email) {
+                const churchName = adminUser?.churchName || "Our Church";
+                
+                // Send email notification via SendGrid
+                const notificationSent = await sendDonationNotification({
+                  to: donation.member.email,
+                  amount: donation.amount.toString(),
+                  date: donation.date instanceof Date ? 
+                    donation.date.toLocaleDateString() : 
+                    new Date(donation.date).toLocaleDateString(),
+                  donorName: `${donation.member.firstName} ${donation.member.lastName}`,
+                  churchName: churchName,
+                });
+                
+                // Update donation notification status based on result
+                if (notificationSent) {
+                  await storage.updateDonationNotificationStatus(
+                    donation.id, 
+                    notificationStatusEnum.enum.SENT
+                  );
+                  console.log(`Successfully sent delayed notification for donation ${donation.id}`);
+                } else {
+                  await storage.updateDonationNotificationStatus(
+                    donation.id, 
+                    notificationStatusEnum.enum.FAILED
+                  );
+                  console.log(`Failed to send delayed notification for donation ${donation.id}`);
+                }
+              }
+            } catch (notificationError) {
+              console.error(`Error sending notification for donation ${donation.id}:`, notificationError);
+              await storage.updateDonationNotificationStatus(
+                donation.id, 
+                notificationStatusEnum.enum.FAILED
+              );
+            }
+          }
+          
+          // 2. SECOND TASK: Send count report emails to report recipients
+          // Calculate donation amounts
           const totalAmount = parseFloat(updatedBatch.totalAmount || '0').toFixed(2);
           
           // Calculate cash and check amounts
@@ -1224,15 +1281,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (reportRecipients.length > 0) {
             console.log(`Sending count report emails to ${reportRecipients.length} recipients`);
-            console.log('Report recipients:', JSON.stringify(reportRecipients));
             
             for (const recipient of reportRecipients) {
-              console.log(`Attempting to send email to ${recipient.email}`);
+              console.log(`Attempting to send count report email to ${recipient.email}`);
               try {
                 const emailResult = await sendCountReport({
                   to: recipient.email,
                   recipientName: `${recipient.firstName} ${recipient.lastName}`,
-                  churchName: user.churchName || 'Your Church',
+                  churchName: adminUser?.churchName || 'Your Church',
                   batchName: updatedBatch.name,
                   batchDate: formattedDate,
                   totalAmount,
@@ -1248,9 +1304,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             console.log('No report recipients configured. Skipping count report notifications.');
           }
+        } else if (!emailNotificationsEnabled) {
+          console.log('Email notifications are disabled by admin. Skipping all notification emails.');
         }
       } catch (emailError) {
-        console.error('Error sending count report notifications:', emailError);
+        console.error('Error processing batch finalization notifications:', emailError);
         // Don't throw error, allow the API to succeed even if email sending fails
       }
       

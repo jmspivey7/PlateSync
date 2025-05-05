@@ -179,6 +179,51 @@ export class DatabaseStorage implements IStorage {
     return userId;
   }
   
+  async getAdminIdForChurch(churchId: string): Promise<string | null> {
+    // For this application, the churchId is the admin's user ID in most cases
+    // But we'll double-check by querying for users with ADMIN role for this church
+    
+    // First, check if the churchId itself is an ADMIN user
+    const adminUser = await this.getUser(churchId);
+    if (adminUser && adminUser.role === 'ADMIN') {
+      console.log(`ChurchId ${churchId} is the admin's ID`);
+      return churchId;
+    }
+    
+    // Otherwise, look for an ADMIN user associated with this church
+    const [admin] = await db
+      .select()
+      .from(users)
+      .where(and(
+        eq(users.role, 'ADMIN'),
+        // Users don't have a direct churchId field, but in our case the ADMIN's ID is the churchId
+        // For a multi-tenant system, we'd need to join with other tables
+        sql`${users.id} = ${churchId}`
+      ))
+      .limit(1);
+    
+    if (admin) {
+      console.log(`Found admin user ${admin.id} for church ${churchId}`);
+      return admin.id;
+    }
+    
+    // If we can't find a specific admin, try to find any admin in the system
+    // This is a fallback for when the church structure is not properly set up
+    const [anyAdmin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'ADMIN'))
+      .limit(1);
+      
+    if (anyAdmin) {
+      console.log(`Found fallback admin user ${anyAdmin.id} for church ${churchId}`);
+      return anyAdmin.id;
+    }
+    
+    console.log(`No admin found for church ${churchId}`);
+    return null;
+  }
+  
   async getUsers(churchId: string): Promise<User[]> {
     // Currently, we only need to get users from the same church
     // In a multi-tenant environment, this would be filtered by a tenant or church ID
