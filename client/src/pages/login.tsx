@@ -119,7 +119,7 @@ export default function Login() {
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="font-bold">Email:</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <MailIcon className="h-5 w-5 text-gray-400" />
@@ -137,7 +137,7 @@ export default function Login() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="font-bold">Password:</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <LockIcon className="h-5 w-5 text-gray-400" />
