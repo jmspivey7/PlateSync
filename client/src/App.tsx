@@ -24,6 +24,7 @@ import UserManagement from "@/pages/user-management";
 import ServiceOptions from "@/pages/service-options";
 import EmailSettings from "@/pages/email-settings";
 import Reports from "@/pages/reports";
+import EmailTemplateEditor from "@/pages/email-template-editor";
 
 import { useAuth } from "@/hooks/useAuth";
 
@@ -93,6 +94,7 @@ function Router() {
       <Route path="/service-options" component={ServiceOptions} />
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/reports" component={Reports} />
+      <Route path="/email-template/:id" component={EmailTemplateEditor} />
       
       <Route component={NotFound} />
     </Switch>
