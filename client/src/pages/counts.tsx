@@ -20,7 +20,6 @@ import PageLayout from "@/components/layout/PageLayout";
 
 const statusColors = {
   OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
-  CLOSED: "bg-orange-100 text-orange-800 hover:bg-orange-100",
   FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
 };
 
@@ -63,10 +62,9 @@ const CountsPage = () => {
     enabled: !!selectedBatchId,
   });
 
-  // Filter batches by status
+  // Filter batches by status - simplified to just OPEN and FINALIZED
   const filteredBatches = batches?.filter((batch) => {
     if (activeTab === "open") return batch.status === "OPEN";
-    if (activeTab === "closed") return batch.status === "CLOSED";
     if (activeTab === "finalized") return batch.status === "FINALIZED";
     return true;
   });
@@ -139,18 +137,12 @@ const CountsPage = () => {
             View past donation counts by worship service or collection date
           </CardDescription>
           <Tabs value={activeTab} defaultValue="open" className="mt-3" onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-3 p-1 shadow-sm border border-gray-200 rounded-md">
+            <TabsList className="grid w-full grid-cols-2 p-1 shadow-sm border border-gray-200 rounded-md">
               <TabsTrigger 
                 value="open"
                 className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
               >
                 Open
-              </TabsTrigger>
-              <TabsTrigger 
-                value="closed"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
-              >
-                Closed
               </TabsTrigger>
               <TabsTrigger 
                 value="finalized"
