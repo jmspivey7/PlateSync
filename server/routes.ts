@@ -1851,6 +1851,493 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete report recipient" });
     }
   });
+  
+  // Email Templates endpoints
+  // Initialize email templates with defaults if they don't exist
+  app.post('/api/email-templates/initialize', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const churchName = req.user.churchName || 'Your Church';
+      
+      // Define default template types to check for
+      const templateTypes = [
+        'WELCOME_EMAIL',
+        'PASSWORD_RESET',
+        'DONATION_CONFIRMATION',
+        'COUNT_REPORT'
+      ];
+      
+      const results = [];
+      
+      // For each template type, check if it exists and create if it doesn't
+      for (const templateType of templateTypes) {
+        const existingTemplate = await storage.getEmailTemplateByType(templateType, userId);
+        
+        if (!existingTemplate) {
+          // Create template with default content based on type
+          let template = {
+            templateType,
+            churchId: userId,
+            subject: '',
+            bodyText: '',
+            bodyHtml: ''
+          };
+          
+          switch (templateType) {
+            case 'WELCOME_EMAIL':
+              template.subject = `Welcome to PlateSync`;
+              template.bodyText = `
+Dear {{firstName}} {{lastName}},
+
+Welcome to PlateSync! You have been added as a user for {{churchName}}.
+
+Please verify your email and set up your password by clicking the following link:
+{{verificationUrl}}?token={{verificationToken}}
+
+This link will expire in 48 hours.
+
+If you did not request this account, you can safely ignore this email.
+
+Sincerely,
+The PlateSync Team`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Welcome to {{churchName}}</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{firstName}} {{lastName}}</strong>,</p>
+    
+    <p>Welcome to PlateSync! You have been added as a user for <strong>{{churchName}}</strong>.</p>
+    
+    <p>To complete your account setup, please verify your email and create a password by clicking the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{verificationUrl}}?token={{verificationToken}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Verify Email & Set Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 48 hours for security reasons.</p>
+    
+    <p>Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.</p>
+    
+    <p>If you did not request this account, you can safely ignore this email.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>`;
+              break;
+              
+            case 'PASSWORD_RESET':
+              template.subject = `PlateSync Password Reset Request`;
+              template.bodyText = `
+Hello,
+
+We received a request to reset your password for your PlateSync account.
+
+Please click on the following link to reset your password:
+{{resetUrl}}
+
+This link will expire in 1 hour for security reasons.
+
+If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.
+
+Sincerely,
+The PlateSync Team`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Hello,</p>
+    
+    <p>We received a request to reset the password for your PlateSync account.</p>
+    
+    <p>To set a new password, please click the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{resetUrl}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 1 hour for security reasons.</p>
+    
+    <p>If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>`;
+              break;
+              
+            case 'DONATION_CONFIRMATION':
+              template.subject = `Thank You for Your Donation to {{churchName}}`;
+              template.bodyText = `
+Dear {{donorName}},
+
+Thank you for your donation of ${{amount}} on {{date}} to {{churchName}}.
+
+Donation Details:
+- Amount: ${{amount}}
+- Date: {{date}}
+- Donation ID: #{{donationId}}
+
+Your generosity makes a difference! Your contribution helps us:
+- Support outreach programs in our community
+- Maintain our facilities and services
+- Fund special ministries and programs
+- Continue our mission work
+
+This donation confirmation serves as your official receipt for tax purposes.
+
+We are grateful for your continued support and commitment to our church family.
+
+Blessings,
+{{churchName}}
+
+--
+This is an automated receipt from {{churchName}} via PlateSync.
+Please do not reply to this email. If you have any questions about your donation,
+please contact the church office directly.`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #2D3748; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{donorName}}</strong>,</p>
+    
+    <p>Thank you for your generous donation to {{churchName}}. Your support is a blessing to our church community and helps us continue our mission and ministry.</p>
+    
+    <!-- Donation Details Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Donation Details</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Amount:</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">${{amount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Date:</td>
+          <td style="padding: 8px 0;">{{date}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Receipt #:</td>
+          <td style="padding: 8px 0;">{{donationId}}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>Your contribution will help us:</p>
+    <ul style="padding-left: 20px; line-height: 1.6;">
+      <li>Support outreach programs and assistance to those in need</li>
+      <li>Maintain our facilities and services for worship</li>
+      <li>Fund special ministries and programs</li>
+      <li>Continue our mission work in our community and beyond</li>
+    </ul>
+    
+    <p>This email serves as your official receipt for tax purposes.</p>
+    
+    <p>We are grateful for your continued support and commitment to our church family.</p>
+    
+    <p style="margin-bottom: 0;">Blessings,<br>
+    <strong>{{churchName}}</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated receipt from {{churchName}} via PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email. If you have any questions about your donation, please contact the church office directly.</p>
+  </div>
+</div>`;
+              break;
+              
+            case 'COUNT_REPORT':
+              template.subject = `Count Report: {{batchName}} - {{churchName}}`;
+              template.bodyText = `
+Dear {{recipientName}},
+
+A count has been finalized for {{churchName}}.
+
+Count Details:
+- Count: {{batchName}}
+- Date: {{batchDate}}
+- Total Amount: ${{totalAmount}}
+- Cash: ${{cashAmount}}
+- Checks: ${{checkAmount}}
+- Number of Donations: {{donationCount}}
+
+This report is automatically generated by PlateSync when a count is finalized after attestation.
+
+Sincerely,
+PlateSync Reporting System`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{recipientName}}</strong>,</p>
+    
+    <p>A count has been finalized for <strong>{{churchName}}</strong>.</p>
+    
+    <!-- Count Details Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Count Details</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Count Name:</td>
+          <td style="padding: 8px 0;">{{batchName}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Date:</td>
+          <td style="padding: 8px 0;">{{batchDate}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">${{totalAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Cash:</td>
+          <td style="padding: 8px 0;">${{cashAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Checks:</td>
+          <td style="padding: 8px 0;">${{checkAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
+          <td style="padding: 8px 0;">{{donationCount}}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>This report was automatically generated when the count was finalized after attestation.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>PlateSync Reporting System</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>`;
+              break;
+              
+            default:
+              // Skip if unknown template type
+              continue;
+          }
+          
+          const newTemplate = await storage.createEmailTemplate(template);
+          results.push({
+            templateType,
+            created: true,
+            template: newTemplate
+          });
+        } else {
+          results.push({
+            templateType,
+            created: false,
+            templateId: existingTemplate.id
+          });
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: "Email templates initialization completed",
+        results
+      });
+    } catch (error) {
+      console.error("Error initializing email templates:", error);
+      res.status(500).json({ message: "Failed to initialize email templates" });
+    }
+  });
+  
+  // GET all email templates
+  app.get('/api/email-templates', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const templates = await storage.getEmailTemplates(userId);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching email templates:", error);
+      res.status(500).json({ message: "Failed to fetch email templates" });
+    }
+  });
+  
+  // GET single email template
+  app.get('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      
+      const template = await storage.getEmailTemplate(templateId, userId);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching email template:", error);
+      res.status(500).json({ message: "Failed to fetch email template" });
+    }
+  });
+  
+  // GET email template by type
+  app.get('/api/email-templates/type/:type', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const templateType = req.params.type;
+      
+      const template = await storage.getEmailTemplateByType(templateType, userId);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching email template by type:", error);
+      res.status(500).json({ message: "Failed to fetch email template" });
+    }
+  });
+  
+  // CREATE new email template
+  app.post('/api/email-templates', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Validate incoming data with zod schema
+      const validatedData = insertEmailTemplateSchema.parse(req.body);
+      
+      // Check if template with this type already exists
+      const existingTemplate = await storage.getEmailTemplateByType(validatedData.templateType, userId);
+      
+      if (existingTemplate) {
+        return res.status(409).json({ message: "A template with this type already exists" });
+      }
+      
+      // Create new template
+      const newTemplate = await storage.createEmailTemplate({
+        ...validatedData,
+        churchId: userId
+      });
+      
+      res.status(201).json(newTemplate);
+    } catch (error) {
+      console.error("Error creating email template:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create email template" });
+    }
+  });
+  
+  // UPDATE email template
+  app.patch('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      
+      // Fetch the existing template
+      const existingTemplate = await storage.getEmailTemplate(templateId, userId);
+      
+      if (!existingTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      // Validate incoming data with zod schema
+      const validatedData = insertEmailTemplateSchema
+        .partial()
+        .parse(req.body);
+      
+      // Update template
+      const updatedTemplate = await storage.updateEmailTemplate(templateId, validatedData, userId);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error("Error updating email template:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update email template" });
+    }
+  });
+  
+  // RESET email template to default
+  app.post('/api/email-templates/:id/reset', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      
+      // Reset template to default
+      const resetTemplate = await storage.resetEmailTemplateToDefault(templateId, userId);
+      
+      if (!resetTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(resetTemplate);
+    } catch (error) {
+      console.error("Error resetting email template:", error);
+      res.status(500).json({ message: "Failed to reset email template" });
+    }
+  });
 
   // Add test endpoints
   setupTestEndpoints(app);
