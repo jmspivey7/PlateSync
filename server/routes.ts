@@ -47,6 +47,7 @@ import {
   insertServiceOptionSchema,
   createUserSchema,
   userRoleEnum,
+  insertEmailTemplateSchema,
   users
 } from "@shared/schema";
 

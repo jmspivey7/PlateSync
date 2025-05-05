@@ -989,6 +989,392 @@ export class DatabaseStorage implements IStorage {
         eq(reportRecipients.churchId, churchId)
       ));
   }
+  
+  // Email Templates operations
+  async getEmailTemplates(churchId: string): Promise<EmailTemplate[]> {
+    return db
+      .select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.churchId, churchId))
+      .orderBy(asc(emailTemplates.templateType));
+  }
+  
+  async getEmailTemplate(id: number, churchId: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(emailTemplates)
+      .where(and(
+        eq(emailTemplates.id, id),
+        eq(emailTemplates.churchId, churchId)
+      ));
+    
+    return template;
+  }
+  
+  async getEmailTemplateByType(templateType: string, churchId: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(emailTemplates)
+      .where(and(
+        eq(emailTemplates.templateType, templateType),
+        eq(emailTemplates.churchId, churchId)
+      ));
+    
+    return template;
+  }
+  
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [newTemplate] = await db
+      .insert(emailTemplates)
+      .values(template)
+      .returning();
+    
+    return newTemplate;
+  }
+  
+  async updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId: string): Promise<EmailTemplate | undefined> {
+    const [updatedTemplate] = await db
+      .update(emailTemplates)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(emailTemplates.id, id),
+        eq(emailTemplates.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedTemplate;
+  }
+  
+  async resetEmailTemplateToDefault(id: number, churchId: string): Promise<EmailTemplate | undefined> {
+    // First, get the template to determine its type
+    const [template] = await db
+      .select()
+      .from(emailTemplates)
+      .where(and(
+        eq(emailTemplates.id, id),
+        eq(emailTemplates.churchId, churchId)
+      ));
+    
+    if (!template) return undefined;
+    
+    // Create default template content based on type
+    let defaultTemplate: Partial<InsertEmailTemplate> = {};
+    
+    switch (template.templateType) {
+      case 'WELCOME_EMAIL':
+        defaultTemplate = {
+          subject: `Welcome to PlateSync`,
+          bodyText: `
+Dear {{firstName}} {{lastName}},
+
+Welcome to PlateSync! You have been added as a user for {{churchName}}.
+
+Please verify your email and set up your password by clicking the following link:
+{{verificationUrl}}?token={{verificationToken}}
+
+This link will expire in 48 hours.
+
+If you did not request this account, you can safely ignore this email.
+
+Sincerely,
+The PlateSync Team
+          `,
+          bodyHtml: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Welcome to {{churchName}}</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{firstName}} {{lastName}}</strong>,</p>
+    
+    <p>Welcome to PlateSync! You have been added as a user for <strong>{{churchName}}</strong>.</p>
+    
+    <p>To complete your account setup, please verify your email and create a password by clicking the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{verificationUrl}}?token={{verificationToken}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Verify Email & Set Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 48 hours for security reasons.</p>
+    
+    <p>Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.</p>
+    
+    <p>If you did not request this account, you can safely ignore this email.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>
+          `
+        };
+        break;
+        
+      case 'PASSWORD_RESET':
+        defaultTemplate = {
+          subject: `PlateSync Password Reset Request`,
+          bodyText: `
+Hello,
+
+We received a request to reset your password for your PlateSync account.
+
+Please click on the following link to reset your password:
+{{resetUrl}}
+
+This link will expire in 1 hour for security reasons.
+
+If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.
+
+Sincerely,
+The PlateSync Team
+          `,
+          bodyHtml: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Hello,</p>
+    
+    <p>We received a request to reset the password for your PlateSync account.</p>
+    
+    <p>To set a new password, please click the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{resetUrl}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 1 hour for security reasons.</p>
+    
+    <p>If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>
+          `
+        };
+        break;
+        
+      case 'DONATION_CONFIRMATION':
+        defaultTemplate = {
+          subject: `Thank You for Your Donation to {{churchName}}`,
+          bodyText: `
+Dear {{donorName}},
+
+Thank you for your donation of ${{amount}} on {{date}} to {{churchName}}.
+
+Donation Details:
+- Amount: ${{amount}}
+- Date: {{date}}
+- Donation ID: #{{donationId}}
+
+Your generosity makes a difference! Your contribution helps us:
+- Support outreach programs in our community
+- Maintain our facilities and services
+- Fund special ministries and programs
+- Continue our mission work
+
+This donation confirmation serves as your official receipt for tax purposes.
+
+We are grateful for your continued support and commitment to our church family.
+
+Blessings,
+{{churchName}}
+
+--
+This is an automated receipt from {{churchName}} via PlateSync.
+Please do not reply to this email. If you have any questions about your donation,
+please contact the church office directly.
+          `,
+          bodyHtml: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #2D3748; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{donorName}}</strong>,</p>
+    
+    <p>Thank you for your generous donation to {{churchName}}. Your support is a blessing to our church community and helps us continue our mission and ministry.</p>
+    
+    <!-- Donation Details Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Donation Details</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Amount:</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">${{amount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Date:</td>
+          <td style="padding: 8px 0;">{{date}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Receipt #:</td>
+          <td style="padding: 8px 0;">{{donationId}}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>Your contribution will help us:</p>
+    <ul style="padding-left: 20px; line-height: 1.6;">
+      <li>Support outreach programs and assistance to those in need</li>
+      <li>Maintain our facilities and services for worship</li>
+      <li>Fund special ministries and programs</li>
+      <li>Continue our mission work in our community and beyond</li>
+    </ul>
+    
+    <p>This email serves as your official receipt for tax purposes.</p>
+    
+    <p>We are grateful for your continued support and commitment to our church family.</p>
+    
+    <p style="margin-bottom: 0;">Blessings,<br>
+    <strong>{{churchName}}</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated receipt from {{churchName}} via PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email. If you have any questions about your donation, please contact the church office directly.</p>
+  </div>
+</div>
+          `
+        };
+        break;
+        
+      case 'COUNT_REPORT':
+        defaultTemplate = {
+          subject: `Count Report: {{batchName}} - {{churchName}}`,
+          bodyText: `
+Dear {{recipientName}},
+
+A count has been finalized for {{churchName}}.
+
+Count Details:
+- Count: {{batchName}}
+- Date: {{batchDate}}
+- Total Amount: ${{totalAmount}}
+- Cash: ${{cashAmount}}
+- Checks: ${{checkAmount}}
+- Number of Donations: {{donationCount}}
+
+This report is automatically generated by PlateSync when a count is finalized after attestation.
+
+Sincerely,
+PlateSync Reporting System
+          `,
+          bodyHtml: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{recipientName}}</strong>,</p>
+    
+    <p>A count has been finalized for <strong>{{churchName}}</strong>.</p>
+    
+    <!-- Count Details Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Count Details</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Count Name:</td>
+          <td style="padding: 8px 0;">{{batchName}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Date:</td>
+          <td style="padding: 8px 0;">{{batchDate}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">${{totalAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Cash:</td>
+          <td style="padding: 8px 0;">${{cashAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Checks:</td>
+          <td style="padding: 8px 0;">${{checkAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
+          <td style="padding: 8px 0;">{{donationCount}}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>This report was automatically generated when the count was finalized after attestation.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>PlateSync Reporting System</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>
+          `
+        };
+        break;
+        
+      default:
+        return undefined;
+    }
+    
+    // Update the template with default values
+    const [updatedTemplate] = await db
+      .update(emailTemplates)
+      .set({
+        ...defaultTemplate,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(emailTemplates.id, id),
+        eq(emailTemplates.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedTemplate;
+  }
 }
 
 export const storage = new DatabaseStorage();
