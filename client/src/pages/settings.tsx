@@ -471,17 +471,28 @@ const Settings = () => {
 
   // Test SendGrid configuration
   const testSendGridConfiguration = async () => {
-    setSendgridTestStatus('loading');
-    setSendgridTestMessage(null);
-    
     try {
+      // Show loading toast
+      toast({
+        title: "Testing SendGrid...",
+        description: "Please wait while we verify your SendGrid configuration.",
+      });
+      
       const data = await apiRequest('/api/test-sendgrid', 'GET');
       
-      setSendgridTestStatus('success');
-      setSendgridTestMessage(data.message);
+      // Show success toast instead of alert
+      toast({
+        title: "SendGrid is configured correctly",
+        description: "SendGrid configuration is working correctly! Your account is ready to send donation notifications.",
+        className: "bg-[#69ad4c] text-white",
+      });
     } catch (error) {
-      setSendgridTestStatus('error');
-      setSendgridTestMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
+      // Show error toast
+      toast({
+        title: "SendGrid configuration issue",
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        variant: "destructive",
+      });
     }
   };
   
@@ -772,28 +783,8 @@ const Settings = () => {
             
             <Separator className="my-6" />
             
-            {sendgridTestStatus === 'success' && (
-              <Alert className="mb-4 bg-green-50 border-green-200">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-800">SendGrid is configured correctly</AlertTitle>
-                <AlertDescription className="text-green-700 text-sm">
-                  {sendgridTestMessage}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {sendgridTestStatus === 'error' && (
-              <Alert className="mb-4 bg-red-50 border-red-200">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertTitle className="text-red-800">SendGrid configuration issue</AlertTitle>
-                <AlertDescription className="text-red-700 text-sm">
-                  {sendgridTestMessage || 'There was a problem testing your SendGrid configuration.'}
-                </AlertDescription>
-              </Alert>
-            )}
-            
             <div className="flex flex-col space-y-3">
-              {/* Test Count Report Email button removed - now accessible in Count Report Notifications section */}
+              {/* Test Count Report Email button and SendGrid status alerts removed */}
             </div>
           </CardContent>
         </Card>
