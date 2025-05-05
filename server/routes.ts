@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { users } from "../shared/schema";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { setupTestEndpoints } from "./test-endpoints";
 import { eq, sql } from "drizzle-orm";
@@ -518,43 +517,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New endpoint for attestation users - accessible by both ADMIN and USHER roles
   app.get('/api/attestation-users', isAuthenticated, async (req: any, res) => {
     try {
-      console.log("Accessing /api/attestation-users endpoint");
       const userId = req.user.claims.sub;
+      console.log(`Getting attestation users for user ${userId}`);
       
-      // Simple approach: Always include both the current user and the church ADMIN
-      // For ADMIN, the church ADMIN is themselves
-      // For USHER, we need to find the church ADMIN
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const userRole = user.role;
+      const userRole = await storage.getUserRole(userId);
       console.log(`User ${userId} has role ${userRole}`);
       
-      // Get all ADMINs in the system - this is a small list in most cases
-      const admins = await db
-        .select()
-        .from(users)
-        .where(eq(users.role, 'ADMIN'));
+      // For ADMIN users, get all users in the system (both ADMIN and USHER)
+      // For USHER users, get all users in their church (including ADMIN)
+      let allUsers = [];
       
-      console.log(`Found ${admins.length} ADMIN users in the system`);
-      
-      // Always return the ADMIN user(s) plus the current user (if they're not already included)
       if (userRole === 'ADMIN') {
-        // For ADMIN, just return themselves and any other ADMIN users
-        return res.json(admins);
+        // Get all users
+        allUsers = await db.select().from(users);
+        console.log(`Found ${allUsers.length} users for ADMIN`);
       } else {
-        // For USHER, return all ADMIN users and themselves
-        const isUsherIncluded = admins.some(admin => admin.id === userId);
+        // For USHER, get the church ID
+        const churchId = await storage.getChurchIdForUser(userId);
+        console.log(`Using churchId ${churchId} for USHER ${userId}`);
         
-        if (!isUsherIncluded) {
-          admins.push(user);
+        if (!churchId) {
+          return res.status(404).json({ message: "Church not found for USHER" });
         }
         
-        return res.json(admins);
+        // First get the admin
+        const adminUser = await storage.getUser(churchId);
+        if (adminUser) {
+          allUsers.push(adminUser);
+          console.log(`Added admin user ${adminUser.id} to the list`);
+        }
+        
+        // Then get the current USHER if not already included
+        const usherUser = await storage.getUser(userId);
+        if (usherUser && usherUser.id !== churchId) {
+          allUsers.push(usherUser);
+          console.log(`Added USHER user ${usherUser.id} to the list`);
+        }
+        
+        // Get any other users associated with this church
+        const otherUsers = await storage.getUsers(churchId);
+        
+        // Filter out users we've already added
+        const existingIds = allUsers.map(u => u.id);
+        const filteredOtherUsers = otherUsers.filter(u => !existingIds.includes(u.id));
+        
+        allUsers = [...allUsers, ...filteredOtherUsers];
+        console.log(`Total users for USHER including ADMIN: ${allUsers.length}`);
       }
+      
+      // Make sure the current user is included
+      const currentUserIncluded = allUsers.some(u => u.id === userId);
+      if (!currentUserIncluded) {
+        const currentUser = await storage.getUser(userId);
+        if (currentUser) {
+          allUsers.push(currentUser);
+        }
+      }
+      
+      res.json(allUsers);
     } catch (error) {
       console.error("Error fetching attestation users:", error);
       res.status(500).json({ message: "Failed to fetch attestation users" });
