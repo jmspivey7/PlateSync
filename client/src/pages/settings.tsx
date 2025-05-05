@@ -523,6 +523,7 @@ const Settings = () => {
                           {...field} 
                           placeholder="First Baptist Church" 
                           maxLength={35} 
+                          className="border-gray-400"
                           onChange={(e) => {
                             // Limit to 35 characters
                             if (e.target.value.length <= 35) {
