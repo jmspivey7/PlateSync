@@ -713,7 +713,7 @@ const Settings = () => {
                       <div className="text-lg font-medium">
                         Enable or Disable Email Notifications
                       </div>
-                      <div className="text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 mt-1">
                         Email notifications are sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries.
                       </div>
                     </div>
