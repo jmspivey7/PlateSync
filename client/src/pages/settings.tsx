@@ -496,7 +496,7 @@ const Settings = () => {
                   name="churchName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Church Name</FormLabel>
+                      <FormLabel><strong>Church Name:</strong></FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="First Baptist Church" />
                       </FormControl>
@@ -510,7 +510,7 @@ const Settings = () => {
                 
                 <div className="space-y-4 mt-6">
                   <div className="flex justify-between items-center">
-                    <FormLabel>Church Logo</FormLabel>
+                    <FormLabel><strong>Church Logo:</strong></FormLabel>
                     <span className="text-sm text-gray-500">Recommended size: 400x200px</span>
                   </div>
                   <FormDescription className="mt-0">
