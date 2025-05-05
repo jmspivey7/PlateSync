@@ -143,7 +143,7 @@ export function DonationChart() {
             onClick={() => navigate("/counts")}
             disabled={true}
           >
-            View Historical Counts
+            View History
           </Button>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
@@ -230,7 +230,7 @@ export function DonationChart() {
           className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
           onClick={() => navigate("/counts")}
         >
-          View Historical Counts
+          View History
         </Button>
       </CardHeader>
       <CardContent className="relative pb-6">

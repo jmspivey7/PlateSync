@@ -78,7 +78,7 @@ export function CurrentCount() {
               className="w-full"
               onClick={() => setLocation("/counts")}
             >
-              View Historical Counts
+              View History
             </Button>
           </div>
         ) : (
