@@ -162,8 +162,8 @@ export default function EmailTemplates() {
               <TableHeader>
                 <TableRow className="bg-gray-50">
                   <TableHead className="font-bold">Template Name</TableHead>
-                  <TableHead className="font-bold">Customized</TableHead>
                   <TableHead className="font-bold">Last Edited</TableHead>
+                  <TableHead className="font-bold">Customized By</TableHead>
                   <TableHead className="font-bold text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -186,8 +186,8 @@ export default function EmailTemplates() {
                     <TableCell className="font-medium">
                       {templateTypeInfo[template.templateType]?.name || template.templateType}
                     </TableCell>
-                    <TableCell>{isTemplateCustomized(template) ? "YES" : "NO"}</TableCell>
                     <TableCell>{formatLastEdited(template)}</TableCell>
+                    <TableCell>{isTemplateCustomized(template) ? "System Administrator" : "N/A"}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
