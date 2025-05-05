@@ -1039,27 +1039,28 @@ const Settings = () => {
                       <p className="text-xs text-gray-400 mt-0.5">Add recipients to receive count reports</p>
                     </div>
                   ) : (
-                    <div className="border rounded-md overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead className="w-[100px] text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                    <div className="overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 font-bold">Name</th>
+                            <th className="text-left py-2 font-bold">Email</th>
+                            <th className="w-[100px] text-right py-2 font-bold">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
                           {reportRecipients.map((recipient) => (
-                            <TableRow key={recipient.id}>
-                              <TableCell>{recipient.firstName} {recipient.lastName}</TableCell>
-                              <TableCell>{recipient.email}</TableCell>
-                              <TableCell className="text-right">
+                            <tr key={recipient.id} className="hover:bg-gray-50">
+                              <td className="py-2">{recipient.firstName} {recipient.lastName}</td>
+                              <td className="py-2">{recipient.email}</td>
+                              <td className="text-right py-2">
                                 <div className="flex justify-end space-x-2">
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => openEditRecipientDialog(recipient)}
                                     title="Edit"
+                                    className="h-7 w-7"
                                   >
                                     <Edit className="h-4 w-4 text-gray-500" />
                                   </Button>
@@ -1068,15 +1069,16 @@ const Settings = () => {
                                     size="icon"
                                     onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
                                     title="Delete"
+                                    className="h-7 w-7"
                                   >
                                     <Trash2 className="h-4 w-4 text-gray-500" />
                                   </Button>
                                 </div>
-                              </TableCell>
-                            </TableRow>
+                              </td>
+                            </tr>
                           ))}
-                        </TableBody>
-                      </Table>
+                        </tbody>
+                      </table>
                     </div>
                   )}
                   
