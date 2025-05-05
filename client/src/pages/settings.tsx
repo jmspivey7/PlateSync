@@ -628,7 +628,7 @@ const Settings = () => {
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={logoUploading}
-                        className="flex items-center"
+                        className="flex items-center border-gray-400"
                       >
                         {logoUploading ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
