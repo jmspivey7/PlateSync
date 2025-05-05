@@ -120,7 +120,7 @@ export default function EmailTemplates() {
 
   return (
     <div>
-      <h3 className="text-lg font-medium mb-4">Email Templates</h3>
+      <h3 className="text-lg font-medium mb-2">Email Templates</h3>
       {isLoading ? (
         <div className="text-center py-4">
           <Loader2 className="h-6 w-6 animate-spin mx-auto" />
@@ -149,8 +149,8 @@ export default function EmailTemplates() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600 mb-4">
+        <div className="space-y-2">
+          <p className="text-sm text-gray-600 mb-2">
             Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
           </p>
           

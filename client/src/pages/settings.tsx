@@ -725,7 +725,7 @@ const Settings = () => {
             
             {/* Email Notifications Section */}
             <div className="mb-8">
-              <h3 className="text-lg font-medium mb-4">Email Notifications</h3>
+              <h3 className="text-lg font-medium mb-2">Email Notifications</h3>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="mb-2">
@@ -796,15 +796,15 @@ const Settings = () => {
             
             {/* Count Report Notifications Section */}
             <div>
-              <h3 className="text-lg font-medium mb-4">Count Report Notifications</h3>
-              <div className="space-y-3">
+              <h3 className="text-lg font-medium mb-2">Count Report Notifications</h3>
+              <div className="space-y-2">
                 {isLoadingReportRecipients ? (
                   <div className="flex justify-center py-3">
                     <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
                   </div>
                 ) : (
                   <>
-                    <div className="mb-3">
+                    <div className="mb-2">
                       <div className="text-sm text-gray-600">
                         Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
                           onClick={() => {
