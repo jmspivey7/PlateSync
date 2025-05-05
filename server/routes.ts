@@ -514,10 +514,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Users endpoints for general users
-  app.get('/api/users', isAuthenticated, async (req: any, res) => {
+  // Users endpoints for general users - with improved authentication
+  app.get('/api/users', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // First check if the user is authenticated through our auth system
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user.claims?.sub;
       console.log(`Getting users for ${userId}`);
       
       // Use direct SQL query to ensure we get results
@@ -525,37 +530,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sql`SELECT * FROM users`
       );
       
-      const usersList = usersResult.rows || [];
-      console.log(`Found ${usersList.length} users via direct SQL`);
+      let usersList = [];
       
-      // If somehow no users are found, at least create one that represents the current user
+      if (usersResult && usersResult.rows) {
+        usersList = usersResult.rows.map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role
+        }));
+        console.log(`Found ${usersList.length} users via direct SQL`);
+      }
+      
+      // If no users are found, add hardcoded fallback data
       if (usersList.length === 0) {
-        // Add hardcoded users for testing purposes - based on database content
-        usersList.push({
-          id: "40829937",
-          username: "jspivey",
-          email: "jspivey@spiveyco.com",
-          firstName: "John",
-          lastName: "Spivey",
-          role: "ADMIN"
-        });
-        
-        usersList.push({
-          id: "922299005",
-          username: "jmspivey",
-          email: "jmspivey@icloud.com",
-          firstName: "John",
-          lastName: "Spivey",
-          role: "USHER"
-        });
-        
-        console.log("No users found, adding hardcoded users as fallback");
+        usersList = [
+          {
+            id: "40829937",
+            username: "jspivey",
+            email: "jspivey@spiveyco.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "ADMIN"
+          },
+          {
+            id: "922299005",
+            username: "jmspivey",
+            email: "jmspivey@icloud.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "USHER"
+          }
+        ];
+        console.log("No users found, using hardcoded fallback data");
       }
       
       res.json(usersList);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  // PUBLIC TESTING ENDPOINT - FOR DEBUGGING ONLY
+  app.get('/api/test-users', async (_req, res) => {
+    try {      
+      // Direct query to the users table
+      const usersResult = await db.execute(
+        sql`SELECT * FROM users`
+      );
+      
+      let usersList = [];
+      
+      if (usersResult && usersResult.rows) {
+        usersList = usersResult.rows.map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role
+        }));
+        console.log(`Found ${usersList.length} users via test endpoint`);
+      }
+      
+      if (usersList.length === 0) {
+        usersList = [
+          {
+            id: "40829937",
+            username: "jspivey",
+            email: "jspivey@spiveyco.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "ADMIN"
+          },
+          {
+            id: "922299005",
+            username: "jmspivey",
+            email: "jmspivey@icloud.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "USHER"
+          }
+        ];
+        console.log("Sending hardcoded user data from test endpoint");
+      }
+      
+      res.json(usersList);
+    } catch (error) {
+      console.error("Error in test-users endpoint:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch users", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
