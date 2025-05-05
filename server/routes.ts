@@ -517,34 +517,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New endpoint for attestation users - accessible by both ADMIN and USHER roles
   app.get('/api/attestation-users', isAuthenticated, async (req: any, res) => {
     try {
+      console.log("Accessing /api/attestation-users endpoint");
       const userId = req.user.claims.sub;
       
-      // Get the church ID using the helper function in storage
-      const churchId = await storage.getChurchIdForUser(userId);
+      // Get ADMIN user for this church - this could be the user's own ID if they're an ADMIN
+      // For USHER users, we need to determine which ADMIN they belong to
+      const userRole = await storage.getUserRole(userId);
+      console.log(`User ${userId} has role ${userRole}`);
       
-      if (!churchId) {
-        return res.status(404).json({ message: "Church not found" });
-      }
-      
-      // Get all users from the same church
-      // First, get the ADMIN user (church owner)
-      const adminId = await storage.getAdminIdForChurch(churchId);
-      
-      // Get all users who have participated in batches for this church
-      const users = await storage.getUsers(churchId);
-      
-      // Make sure the admin is included in the list
-      const adminIncluded = users.some(user => user.id === adminId);
-      
-      // If admin is not in the list, add them manually
-      if (adminId && !adminIncluded) {
-        const adminUser = await storage.getUser(adminId);
-        if (adminUser) {
-          users.push(adminUser);
+      if (userRole === 'ADMIN') {
+        // For ADMIN users, we fetch all USHERs in their church plus themselves
+        const users = await storage.getUsers(userId);
+        console.log(`Found ${users.length} users for ADMIN ${userId}`);
+        
+        // Make sure the ADMIN user is in the list
+        const adminIncluded = users.some(user => user.id === userId);
+        if (!adminIncluded) {
+          const adminUser = await storage.getUser(userId);
+          if (adminUser) users.push(adminUser);
         }
+        
+        return res.json(users);
+      } else if (userRole === 'USHER') {
+        // For USHER users, we need to find their ADMIN
+        const churchId = await storage.getChurchIdForUser(userId);
+        console.log(`Determined churchId ${churchId} for USHER ${userId}`);
+        
+        if (!churchId) {
+          return res.status(404).json({ message: "Church not found" });
+        }
+        
+        // Get all users from the same church - this should include both ADMIN and USHER roles
+        const allUsers = await storage.getUsers(churchId);
+        console.log(`Found ${allUsers.length} users for churchId ${churchId}`);
+        
+        // Make sure ADMIN is included
+        const adminId = await storage.getAdminIdForChurch(churchId);
+        const adminIncluded = adminId && allUsers.some(user => user.id === adminId);
+        
+        if (adminId && !adminIncluded) {
+          const adminUser = await storage.getUser(adminId);
+          if (adminUser) {
+            console.log(`Adding admin ${adminId} to the list`);
+            allUsers.push(adminUser);
+          }
+        }
+        
+        return res.json(allUsers);
       }
       
-      res.json(users);
+      // Fallback if role is neither ADMIN nor USHER
+      res.status(403).json({ message: "Invalid user role" });
     } catch (error) {
       console.error("Error fetching attestation users:", error);
       res.status(500).json({ message: "Failed to fetch attestation users" });

@@ -51,7 +51,7 @@ export const users = pgTable("users", {
   churchName: varchar("church_name"),
   churchLogoUrl: varchar("church_logo_url"),
   emailNotificationsEnabled: boolean("email_notifications_enabled").default(true),
-  churchId: varchar("church_id").references(() => users.id),
+  churchId: varchar("church_id"),
 });
 
 // Church members table
