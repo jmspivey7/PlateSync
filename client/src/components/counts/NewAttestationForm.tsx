@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, AlertTriangle, InfoIcon } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, InfoIcon, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Select,
@@ -60,7 +60,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     console.log("AttestationForm mounted with batchId:", batchId);
   }, []);
   
-  const [step, setStep] = useState<'primary' | 'secondary' | 'confirmation' | 'complete'>('primary');
+  const [step, setStep] = useState<'primary' | 'secondary' | 'print' | 'confirmation' | 'complete'>('primary');
   
   // Fetch batch details
   const { data: batch, isLoading: isLoadingBatch, refetch: refetchBatch } = useQuery<BatchWithDonations>({
@@ -109,14 +109,17 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   useEffect(() => {
     if (batch) {
       if (batch.primaryAttestorId && batch.secondaryAttestorId) {
-        setStep('confirmation');
+        // If we're coming from 'print' step don't go back to confirmation
+        if (step !== 'print' && step !== 'confirmation') {
+          setStep('print');
+        }
       } else if (batch.primaryAttestorId) {
         setStep('secondary');
       } else {
         setStep('primary');
       }
     }
-  }, [batch]);
+  }, [batch, step]);
   
   // Primary attestation mutation
   const primaryAttestMutation = useMutation({
@@ -162,10 +165,10 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     onSuccess: () => {
       toast({
         title: "Secondary attestation complete",
-        description: "You can now finalize the count.",
+        description: "Please print a report for the money bag before finalizing.",
       });
       refetchBatch();
-      setStep('confirmation');
+      setStep('print');
     },
     onError: (error) => {
       toast({
@@ -392,6 +395,68 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                   </Button>
                 </form>
               </Form>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    if (step === 'print') {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Print Count Report</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-center p-3 bg-gray-50 rounded-md">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                  <div>
+                    <p className="font-medium">Primary attestation complete</p>
+                    <p className="text-sm text-gray-600">
+                      By: {batch.primaryAttestorName || "Unknown"}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center p-3 bg-gray-50 rounded-md">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                  <div>
+                    <p className="font-medium">Secondary attestation complete</p>
+                    <p className="text-sm text-gray-600">
+                      By: {batch.secondaryAttestorName || "Unknown"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-blue-800 flex items-start">
+                <AlertTriangle className="h-5 w-5 text-blue-500 inline-block mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Print Report:</p>
+                  <p>Please print a physical report now to include with the money bag. You can print multiple copies if needed.</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col space-y-3">
+                <Button 
+                  onClick={() => {
+                    window.location.href = `/print-report?batchId=${batchId}`;
+                  }}
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Print Report
+                </Button>
+                
+                <Button 
+                  onClick={() => setStep('confirmation')}
+                  className="bg-amber-500 hover:bg-amber-600 text-black"
+                >
+                  Continue to Finalize
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
