@@ -255,11 +255,11 @@ const CsvImporter = () => {
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex justify-center">
           <Button
             onClick={handleImport}
             disabled={!file || importStatus === 'loading'}
-            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6"
           >
             {importStatus === 'loading' ? (
               <>
