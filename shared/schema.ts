@@ -278,3 +278,26 @@ export const insertReportRecipientSchema = createInsertSchema(reportRecipients).
 
 export type InsertReportRecipient = z.infer<typeof insertReportRecipientSchema>;
 export type ReportRecipient = typeof reportRecipients.$inferSelect;
+
+// Email templates schema
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  templateType: varchar("template_type", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  bodyHtml: text("body_html").notNull(),
+  bodyText: text("body_text").notNull(),
+  churchId: varchar("church_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).pick({
+  templateType: true,
+  subject: true,
+  bodyHtml: true,
+  bodyText: true,
+  churchId: true,
+});
+
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;

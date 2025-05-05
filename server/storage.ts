@@ -6,6 +6,7 @@ import {
   batches,
   serviceOptions,
   reportRecipients,
+  emailTemplates,
   type User,
   type UpsertUser,
   type Member,
@@ -20,7 +21,9 @@ import {
   type ServiceOption,
   type InsertServiceOption,
   type ReportRecipient,
-  type InsertReportRecipient
+  type InsertReportRecipient,
+  type EmailTemplate,
+  type InsertEmailTemplate
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, sum, count, asc } from "drizzle-orm";
@@ -86,6 +89,14 @@ export interface IStorage {
   getWeeklyDonations(churchId: string): Promise<{ total: string, percentChange: number }>;
   getMonthlyDonations(churchId: string): Promise<{ total: string, percentChange: number }>;
   getActiveDonorCount(churchId: string): Promise<{ count: number, newCount: number }>;
+  
+  // Email Templates operations
+  getEmailTemplates(churchId: string): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: number, churchId: string): Promise<EmailTemplate | undefined>;
+  getEmailTemplateByType(templateType: string, churchId: string): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId: string): Promise<EmailTemplate | undefined>;
+  resetEmailTemplateToDefault(id: number, churchId: string): Promise<EmailTemplate | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
