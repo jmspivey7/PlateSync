@@ -348,7 +348,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                   name="date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date</FormLabel>
+                      <FormLabel className="font-bold">Date:</FormLabel>
                       <FormControl>
                         <Input {...field} type="date" />
                       </FormControl>
@@ -365,7 +365,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                   name="service"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Service</FormLabel>
+                      <FormLabel className="font-bold">Service:</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
@@ -403,7 +403,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel className="font-bold">Status:</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
@@ -432,7 +432,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Notes (Optional)</FormLabel>
+                      <FormLabel className="font-bold">Notes (Optional):</FormLabel>
                       <FormControl>
                         <Textarea 
                           rows={3} 
