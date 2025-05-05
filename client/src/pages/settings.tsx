@@ -950,19 +950,7 @@ const Settings = () => {
                         </div>
                       ))}
                       
-                      {/* Add new tag inline */}
-                      <div className="inline-flex items-center rounded-full border border-dashed border-gray-300 px-2.5 py-1.5 text-sm hover:border-gray-400 cursor-pointer"
-                        onClick={() => {
-                          // Focus the input field
-                          const inputElement = document.getElementById('new-service-option-input');
-                          if (inputElement) {
-                            inputElement.focus();
-                          }
-                        }}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        <span className="text-gray-600">Add option</span>
-                      </div>
+                      {/* Removed "Add option" button as it was confusing - input field with add button is sufficient */}
                     </div>
                   </div>
                 )}
