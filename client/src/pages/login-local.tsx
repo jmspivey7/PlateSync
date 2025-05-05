@@ -36,7 +36,8 @@ export default function LoginLocal() {
   };
   
   const handleLoginWithReplit = () => {
-    window.location.href = "/api/login";
+    // Redirect to regular Replit Auth login (handled by OpenID Connect)
+    window.location.href = "/login";
   };
   
   const togglePasswordVisibility = () => {

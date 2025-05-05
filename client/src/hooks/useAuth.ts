@@ -29,7 +29,10 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       try {
-        return await apiRequest("POST", "/api/login", credentials);
+        return await apiRequest<any>("/api/login-local", {
+          method: "POST",
+          body: credentials
+        });
       } catch (error) {
         console.error("Login error:", error);
         throw error;
@@ -55,7 +58,9 @@ export function useAuth() {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      await apiRequest<any>("/api/logout", {
+        method: "POST"
+      });
       return;
     },
     onSuccess: () => {
