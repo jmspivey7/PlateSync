@@ -46,6 +46,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import PageLayout from "@/components/layout/PageLayout";
 import CsvImporter from "@/components/settings/CsvImporter";
+import EmailTemplates from "@/components/settings/EmailTemplates";
 import {
   Select,
   SelectContent,
@@ -781,6 +782,9 @@ const Settings = () => {
             </Form>
           </CardContent>
         </Card>
+        
+        {/* Email Templates Section */}
+        <EmailTemplates />
         
         <Card>
           <CardHeader className="pb-3">
