@@ -127,18 +127,21 @@
 
 /* Custom Switch Styles */
 .enhanced-switch {
-  border: 2px solid #69ad4c !important;
-  box-shadow: 0 0 4px 1px rgba(105, 173, 76, 0.5) !important;
   height: 24px !important;
   width: 44px !important;
 }
 
+/* Apply different styles based on state */
 .enhanced-switch[data-state="checked"] {
+  border: 2px solid #69ad4c !important;
+  box-shadow: 0 0 4px 1px rgba(105, 173, 76, 0.5) !important;
   background-color: #69ad4c !important;
 }
 
 .enhanced-switch[data-state="unchecked"] {
-  background-color: white !important;
+  border: 2px solid #c4c4c4 !important;
+  box-shadow: none !important;
+  background-color: #e5e5e5 !important;
 }
 
 /* Switch thumb (the circle that moves) */
