@@ -56,17 +56,16 @@ export default function LoginLocal() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-md p-6">
-        <div className="text-center mb-8">
-          <img 
-            src={plateSyncLogo} 
-            alt="PlateSync Logo" 
-            className="mx-auto h-[5.25rem]" /* 25% reduction from h-28 (7rem) */
-          />
-        </div>
-        
         <Card className="w-full border border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-left">Sign In</CardTitle>
+          <CardHeader className="pb-0">
+            <div className="text-center mb-4">
+              <img 
+                src={plateSyncLogo} 
+                alt="PlateSync Logo" 
+                className="mx-auto h-[5.25rem]" /* 25% reduction from h-28 (7rem) */
+              />
+            </div>
+            <CardTitle className="text-left mt-2">Sign In</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
