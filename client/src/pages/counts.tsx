@@ -92,7 +92,7 @@ const CountsPage = () => {
   // For USHER users viewing finalized counts - redirects directly to the detail page
   const handleViewSummary = (batchId: number) => {
     // Navigate to the batch detail page
-    setLocation(`/batch-detail/${batchId}`);
+    setLocation(`/batch/${batchId}`);
   };
 
   const handleModalClose = () => {
@@ -188,7 +188,14 @@ const CountsPage = () => {
                         className={`border-b hover:bg-gray-50 cursor-pointer ${
                           selectedBatchId === batch.id ? 'bg-blue-50' : ''
                         }`}
-                        onClick={() => handleViewBatch(batch.id)}
+                        onClick={() => {
+                          // For USHER users with finalized counts, navigate directly to detail page
+                          if (!isAdmin && batch.status === "FINALIZED") {
+                            handleViewSummary(batch.id);
+                          } else {
+                            handleViewBatch(batch.id);
+                          }
+                        }}
                       >
                         <td className="py-3 px-3 text-gray-700 font-medium">
                           {format(new Date(batch.date), 'MMMM d, yyyy')}
@@ -276,13 +283,25 @@ const CountsPage = () => {
               >
                 Back to List
               </Button>
-              <Button 
-                variant="outline" 
-                className="text-[#2D3748]"
-                onClick={() => handleEditBatch(selectedBatchId)}
-              >
-                Edit Count
-              </Button>
+              {/* Only show Edit button for ADMIN users or non-finalized counts */}
+              {(isAdmin || selectedBatch.status !== "FINALIZED") ? (
+                <Button 
+                  variant="outline" 
+                  className="text-[#2D3748]"
+                  onClick={() => handleEditBatch(selectedBatchId)}
+                >
+                  Edit Count
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="text-[#2D3748]"
+                  onClick={() => handleViewSummary(selectedBatchId)}
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  View Summary
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
