@@ -475,9 +475,7 @@ const Settings = () => {
     setSendgridTestMessage(null);
     
     try {
-      const data = await apiRequest('/api/test-sendgrid', {
-        method: 'GET'
-      });
+      const data = await apiRequest('/api/test-sendgrid', 'GET');
       
       setSendgridTestStatus('success');
       setSendgridTestMessage(data.message);
