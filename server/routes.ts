@@ -514,70 +514,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // New endpoint for attestation users - accessible by both ADMIN and USHER roles
-  app.get('/api/attestation-users', isAuthenticated, async (req: any, res) => {
+  // Users endpoints for general users
+  app.get('/api/users', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      console.log(`Getting attestation users for user ${userId}`);
+      console.log(`Getting users for ${userId}`);
       
-      const userRole = await storage.getUserRole(userId);
-      console.log(`User ${userId} has role ${userRole}`);
+      const usersList = await db.select().from(users);
+      console.log(`Found ${usersList.length} users in the system`);
       
-      // For ADMIN users, get all users in the system (both ADMIN and USHER)
-      // For USHER users, get all users in their church (including ADMIN)
-      let allUsers = [];
-      
-      if (userRole === 'ADMIN') {
-        // Get all users
-        allUsers = await db.select().from(users);
-        console.log(`Found ${allUsers.length} users for ADMIN`);
-      } else {
-        // For USHER, get the church ID
-        const churchId = await storage.getChurchIdForUser(userId);
-        console.log(`Using churchId ${churchId} for USHER ${userId}`);
-        
-        if (!churchId) {
-          return res.status(404).json({ message: "Church not found for USHER" });
-        }
-        
-        // First get the admin
-        const adminUser = await storage.getUser(churchId);
-        if (adminUser) {
-          allUsers.push(adminUser);
-          console.log(`Added admin user ${adminUser.id} to the list`);
-        }
-        
-        // Then get the current USHER if not already included
-        const usherUser = await storage.getUser(userId);
-        if (usherUser && usherUser.id !== churchId) {
-          allUsers.push(usherUser);
-          console.log(`Added USHER user ${usherUser.id} to the list`);
-        }
-        
-        // Get any other users associated with this church
-        const otherUsers = await storage.getUsers(churchId);
-        
-        // Filter out users we've already added
-        const existingIds = allUsers.map(u => u.id);
-        const filteredOtherUsers = otherUsers.filter(u => !existingIds.includes(u.id));
-        
-        allUsers = [...allUsers, ...filteredOtherUsers];
-        console.log(`Total users for USHER including ADMIN: ${allUsers.length}`);
-      }
-      
-      // Make sure the current user is included
-      const currentUserIncluded = allUsers.some(u => u.id === userId);
-      if (!currentUserIncluded) {
+      // If somehow no users are found, at least create one that represents the current user
+      if (usersList.length === 0) {
         const currentUser = await storage.getUser(userId);
         if (currentUser) {
-          allUsers.push(currentUser);
+          usersList.push(currentUser);
+          console.log(`Added current user ${userId} to the list`);
         }
       }
       
-      res.json(allUsers);
+      res.json(usersList);
     } catch (error) {
-      console.error("Error fetching attestation users:", error);
-      res.status(500).json({ message: "Failed to fetch attestation users" });
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
     }
   });
   
