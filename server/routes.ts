@@ -846,7 +846,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/batches', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const batches = await storage.getBatches(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const batches = await storage.getBatches(churchId);
       res.json(batches);
     } catch (error) {
       console.error("Error fetching batches:", error);
@@ -857,7 +859,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/batches/current', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const currentBatch = await storage.getCurrentBatch(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const currentBatch = await storage.getCurrentBatch(churchId);
       res.json(currentBatch);
     } catch (error) {
       console.error("Error fetching current batch:", error);
@@ -868,7 +872,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/batches/latest-finalized', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const finalizedBatch = await storage.getLatestFinalizedBatch(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const finalizedBatch = await storage.getLatestFinalizedBatch(churchId);
       res.json(finalizedBatch);
     } catch (error) {
       console.error("Error fetching latest finalized batch:", error);
@@ -880,12 +886,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/batches/with-donations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const batches = await storage.getBatches(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const batches = await storage.getBatches(churchId);
       
       // For each batch, get its donations
       const batchesWithDonations = await Promise.all(
         batches.map(async (batch) => {
-          const donations = await storage.getDonationsByBatch(batch.id, userId);
+          const donations = await storage.getDonationsByBatch(batch.id, churchId);
           return {
             ...batch,
             donations: donations
@@ -909,7 +917,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
-      const batch = await storage.getBatchWithDonations(batchId, userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const batch = await storage.getBatchWithDonations(batchId, churchId);
       
       if (!batch) {
         return res.status(404).json({ message: "Batch not found" });
@@ -931,7 +941,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
-      const donations = await storage.getDonationsByBatch(batchId, userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const donations = await storage.getDonationsByBatch(batchId, churchId);
       res.json(donations);
     } catch (error) {
       console.error("Error fetching batch donations:", error);
@@ -942,9 +954,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/batches', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const batchData = { 
         ...req.body, 
-        churchId: userId,
+        churchId: churchId,
         // Convert string date to Date object if provided
         date: req.body.date ? new Date(req.body.date) : new Date()
       };
@@ -971,6 +986,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       // Handle date conversion if present
       const updateData = { ...req.body };
       if (updateData.date) {
@@ -989,7 +1007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const validatedData = partialBatchSchema.parse(updateData);
-      const updatedBatch = await storage.updateBatch(batchId, validatedData, userId);
+      const updatedBatch = await storage.updateBatch(batchId, validatedData, churchId);
       
       if (!updatedBatch) {
         return res.status(404).json({ message: "Batch not found" });
@@ -1015,6 +1033,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       // Validate attestor name
       const { name } = req.body;
       if (!name || name.trim() === '') {
@@ -1022,7 +1043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get batch to verify it exists and check status
-      const batch = await storage.getBatch(batchId, userId);
+      const batch = await storage.getBatch(batchId, churchId);
       if (!batch) {
         return res.status(404).json({ message: "Batch not found" });
       }
@@ -1035,7 +1056,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add primary attestation
-      const updatedBatch = await storage.addPrimaryAttestation(batchId, userId, name, userId);
+      const updatedBatch = await storage.addPrimaryAttestation(batchId, userId, name, churchId);
       
       res.json(updatedBatch);
     } catch (error) {
@@ -1054,6 +1075,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       // Validate attestor info
       const { attestorId, name } = req.body;
       
@@ -1066,7 +1090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get batch to verify it exists and check status
-      const batch = await storage.getBatch(batchId, userId);
+      const batch = await storage.getBatch(batchId, churchId);
       if (!batch) {
         return res.status(404).json({ message: "Batch not found" });
       }
@@ -1086,7 +1110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add secondary attestation
-      const updatedBatch = await storage.addSecondaryAttestation(batchId, attestorId, name, userId);
+      const updatedBatch = await storage.addSecondaryAttestation(batchId, attestorId, name, churchId);
       
       res.json(updatedBatch);
     } catch (error) {
@@ -1105,8 +1129,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       // Get batch to verify it exists and check status
-      const batch = await storage.getBatch(batchId, userId);
+      const batch = await storage.getBatch(batchId, churchId);
       if (!batch) {
         return res.status(404).json({ message: "Batch not found" });
       }
@@ -1119,12 +1146,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Confirm attestation and finalize the batch
-      const updatedBatch = await storage.confirmAttestation(batchId, userId, userId);
+      const updatedBatch = await storage.confirmAttestation(batchId, userId, churchId);
       
       // Send count report notifications
       try {
         // Get batch donations to prepare report data
-        const batchWithDonations = await storage.getBatchWithDonations(batchId, userId);
+        const batchWithDonations = await storage.getBatchWithDonations(batchId, churchId);
         
         // Get user info for church name
         const user = await storage.getUser(userId);
@@ -1150,7 +1177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           // Get report recipients and send emails
-          const reportRecipients = await storage.getReportRecipients(userId);
+          const reportRecipients = await storage.getReportRecipients(churchId);
           
           if (reportRecipients.length > 0) {
             console.log(`Sending count report emails to ${reportRecipients.length} recipients`);
@@ -1201,8 +1228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       // Check if batch exists first
-      const batch = await storage.getBatch(batchId, userId);
+      const batch = await storage.getBatch(batchId, churchId);
       if (!batch) {
         return res.status(404).json({ message: "Batch not found" });
       }
@@ -1221,7 +1251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Delete the batch and its donations
-      await storage.deleteBatch(batchId, userId);
+      await storage.deleteBatch(batchId, churchId);
       
       res.status(200).json({ message: "Batch and associated donations deleted successfully" });
     } catch (error) {
@@ -1365,9 +1395,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/donations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const donationData = { 
         ...req.body, 
-        churchId: userId, 
+        churchId: churchId, 
         // Ensure proper format for donation type
         donationType: req.body.donationType?.toUpperCase(),
         // Convert string date to Date object
@@ -1376,7 +1409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If no batch is specified, get or create a current batch
       if (!donationData.batchId) {
-        const currentBatch = await storage.getCurrentBatch(userId);
+        const currentBatch = await storage.getCurrentBatch(churchId);
         if (currentBatch) {
           donationData.batchId = currentBatch.id;
         }
@@ -1389,13 +1422,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update the batch total amount
       if (newDonation.batchId) {
-        const batch = await storage.getBatch(newDonation.batchId, userId);
+        const batch = await storage.getBatch(newDonation.batchId, churchId);
         if (batch) {
           const newTotal = parseFloat(batch.totalAmount.toString()) + parseFloat(newDonation.amount.toString());
           await storage.updateBatch(
             batch.id,
             { totalAmount: newTotal.toString() },
-            userId
+            churchId
           );
         }
       }
@@ -1403,7 +1436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send notification if requested, if it's not an anonymous donation, and if notifications are enabled
       if (req.body.sendNotification && validatedData.memberId) {
         try {
-          const member = await storage.getMember(validatedData.memberId, userId);
+          const member = await storage.getMember(validatedData.memberId, churchId);
           const user = await storage.getUser(userId);
           
           // Check if user has email notifications enabled
@@ -1454,7 +1487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch the donation with updated notification status
-      const finalDonation = await storage.getDonation(newDonation.id, userId);
+      const finalDonation = await storage.getDonation(newDonation.id, churchId);
       
       res.status(201).json(finalDonation);
     } catch (error) {
