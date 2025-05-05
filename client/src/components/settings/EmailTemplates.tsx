@@ -154,9 +154,27 @@ export default function EmailTemplates() {
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600 mb-4">
-              Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
-            </p>
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-gray-600">
+                Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
+              </p>
+              <Button
+                onClick={() => initializeTemplatesMutation.mutate()}
+                disabled={initializeTemplatesMutation.isPending}
+                variant="outline"
+                size="sm"
+                className="border-gray-400"
+              >
+                {initializeTemplatesMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  "Refresh Templates"
+                )}
+              </Button>
+            </div>
             
             <Table className="border border-gray-400 rounded-md overflow-hidden">
               <TableHeader>
