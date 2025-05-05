@@ -51,28 +51,33 @@ const Dashboard = () => {
       // to create a more interesting display
       if (finalizedBatches.length === 1) {
         const latestFinalizedBatch = finalizedBatches[0];
+        const finalizedAmount = parseFloat(latestFinalizedBatch.totalAmount || '0');
         
-        // Find the latest closed batch to compare with
+        // Find up to 4 closed batches to compare with
         const closedBatches = allBatches
           .filter(batch => batch.status === 'CLOSED' && batch.id !== latestFinalizedBatch.id)
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 4); // Take up to 4 most recent closed batches
         
         if (closedBatches.length > 0) {
-          const latestClosedBatch = closedBatches[0];
-          
           console.log("Latest finalized batch:", latestFinalizedBatch.id, latestFinalizedBatch.totalAmount);
-          console.log("Latest closed batch for comparison:", latestClosedBatch.id, latestClosedBatch.totalAmount);
+          console.log(`Using ${closedBatches.length} closed batches for comparison:`, 
+            closedBatches.map(b => ({ id: b.id, amount: b.totalAmount })));
           
-          // Calculate percentage change
-          const finalizedAmount = parseFloat(latestFinalizedBatch.totalAmount || '0');
-          const closedAmount = parseFloat(latestClosedBatch.totalAmount || '0');
+          // Calculate average of closed batches
+          const totalClosedAmount = closedBatches.reduce((sum, batch) => {
+            return sum + parseFloat(batch.totalAmount || '0');
+          }, 0);
           
-          if (closedAmount > 0) {
-            const percentageChange = ((finalizedAmount - closedAmount) / closedAmount) * 100;
-            console.log("Calculated trend using closed batch:", {
+          const averageClosedAmount = totalClosedAmount / closedBatches.length;
+          
+          if (averageClosedAmount > 0) {
+            const percentageChange = ((finalizedAmount - averageClosedAmount) / averageClosedAmount) * 100;
+            console.log("Calculated trend using average of closed batches:", {
               finalizedAmount,
-              closedAmount,
-              percentageChange
+              averageClosedAmount,
+              percentageChange,
+              numberOfBatchesAveraged: closedBatches.length
             });
             
             setTrend({
@@ -97,26 +102,39 @@ const Dashboard = () => {
       } else if (finalizedBatches.length >= 2) {
         // We have at least 2 finalized batches to calculate trend
         const latestBatch = finalizedBatches[0];
-        const previousBatch = finalizedBatches[1];
+        const latestAmount = parseFloat(latestBatch.totalAmount || '0');
+        
+        // Get up to 4 previous batches (exclude the most recent one)
+        const previousBatches = finalizedBatches.slice(1, Math.min(finalizedBatches.length, 5));
         
         console.log("Latest finalized batch:", latestBatch.id, latestBatch.totalAmount);
-        console.log("Previous finalized batch:", previousBatch.id, previousBatch.totalAmount);
+        console.log(`Previous ${previousBatches.length} batches:`, previousBatches.map(b => ({ id: b.id, amount: b.totalAmount })));
         
-        // Calculate percentage change
-        const latestAmount = parseFloat(latestBatch.totalAmount || '0');
-        const previousAmount = parseFloat(previousBatch.totalAmount || '0');
+        // Calculate the average amount of the previous counts (up to 4)
+        const totalPreviousAmount = previousBatches.reduce((sum, batch) => {
+          return sum + parseFloat(batch.totalAmount || '0');
+        }, 0);
         
-        if (previousAmount > 0) {
-          const percentageChange = ((latestAmount - previousAmount) / previousAmount) * 100;
-          console.log("Calculated trend between finalized batches:", {
+        const averagePreviousAmount = totalPreviousAmount / previousBatches.length;
+        
+        if (averagePreviousAmount > 0) {
+          const percentageChange = ((latestAmount - averagePreviousAmount) / averagePreviousAmount) * 100;
+          console.log("Calculated trend using average of last few batches:", {
             latestAmount,
-            previousAmount,
-            percentageChange
+            averagePreviousAmount,
+            percentageChange,
+            numberOfBatchesAveraged: previousBatches.length
           });
           
           setTrend({
             percentage: Math.abs(percentageChange),
             trending: percentageChange >= 0 ? 'up' : 'down'
+          });
+        } else {
+          // Default if average is zero
+          setTrend({
+            percentage: 10,
+            trending: 'up'
           });
         }
       } else {

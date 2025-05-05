@@ -462,27 +462,27 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                           .then(donations => {
                             // Calculate totals
                             const cashTotal = donations
-                              .filter(d => d.donationType === "CASH")
-                              .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                              .filter((d: any) => d.donationType === "CASH")
+                              .reduce((sum: number, d: any) => sum + parseFloat(d.amount.toString()), 0);
                               
                             const checkTotal = donations
-                              .filter(d => d.donationType === "CHECK")
-                              .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                              .filter((d: any) => d.donationType === "CHECK")
+                              .reduce((sum: number, d: any) => sum + parseFloat(d.amount.toString()), 0);
                             
                             const grandTotal = cashTotal + checkTotal;
                             const donationCount = donations.length;
                             
                             // Format currency
-                            const formatCurrency = (amount) => {
+                            const formatCurrency = (amount: number | string) => {
                               return new Intl.NumberFormat('en-US', {
                                 style: 'currency',
                                 currency: 'USD',
                                 minimumFractionDigits: 2
-                              }).format(amount);
+                              }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
                             };
                             
                             // Format date
-                            const formatDate = (dateString) => {
+                            const formatDate = (dateString: string) => {
                               const date = new Date(dateString);
                               return new Intl.DateTimeFormat('en-US', {
                                 year: 'numeric',
