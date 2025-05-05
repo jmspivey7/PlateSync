@@ -511,7 +511,6 @@ const Settings = () => {
                 <div className="space-y-4 mt-6">
                   <div className="flex justify-between items-center">
                     <FormLabel><strong>Church Logo:</strong></FormLabel>
-                    <span className="text-sm text-gray-500">Recommended size: 400x200px</span>
                   </div>
                   <FormDescription className="mt-0">
                     Your logo will appear in the navigation header and on receipts
@@ -656,6 +655,7 @@ const Settings = () => {
                 </div>
                 
                 <div className="flex justify-end mt-6">
+                  <span className="text-sm text-gray-500 mr-auto">Recommended size: 400x200px</span>
                   <Button 
                     type="submit" 
                     className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
