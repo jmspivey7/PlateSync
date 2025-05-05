@@ -32,9 +32,8 @@ type RequestConfig = {
 
 // Function overloads for better type checking
 export async function apiRequest<T = any>(url: string): Promise<T>;
-export async function apiRequest<T = any>(url: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"): Promise<T>;
 export async function apiRequest<T = any>(url: string, config: RequestConfig): Promise<T>;
-export async function apiRequest<T = any>(url: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", body: any): Promise<T>;
+export async function apiRequest<T = any>(url: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", body?: any): Promise<T>;
 
 // Implementation
 export async function apiRequest<T = any>(
