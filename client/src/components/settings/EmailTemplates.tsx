@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Edit } from "lucide-react";
@@ -120,91 +119,87 @@ export default function EmailTemplates() {
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle>Email Templates</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-2">
-        {isLoading ? (
-          <div className="text-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-            <p className="text-sm text-gray-500 mt-2">Loading email templates...</p>
-          </div>
-        ) : templates.length === 0 ? (
-          <div className="text-center py-6 border rounded-md">
-            <Mail className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">No email templates found</p>
-            <p className="text-sm text-gray-500 mt-1">
-              Initialize default templates to customize emails sent by the system
-            </p>
-            <Button 
-              onClick={() => initializeTemplatesMutation.mutate()}
-              disabled={initializeTemplatesMutation.isPending}
-              className="mt-4 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-            >
-              {initializeTemplatesMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Initializing...
-                </>
-              ) : (
-                "Initialize Default Templates"
-              )}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600 mb-4">
-              Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
-            </p>
-            
-            <Table className="border border-gray-400 rounded-md overflow-hidden">
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="font-bold">Template Name</TableHead>
-                  <TableHead className="font-bold">Last Edited</TableHead>
-                  <TableHead className="font-bold">Customized By</TableHead>
-                  <TableHead className="font-bold text-right">Action</TableHead>
+    <div>
+      <h3 className="text-lg font-medium mb-4">Email Templates</h3>
+      {isLoading ? (
+        <div className="text-center py-4">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500 mt-2">Loading email templates...</p>
+        </div>
+      ) : templates.length === 0 ? (
+        <div className="text-center py-6 border rounded-md">
+          <Mail className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-gray-600">No email templates found</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Initialize default templates to customize emails sent by the system
+          </p>
+          <Button 
+            onClick={() => initializeTemplatesMutation.mutate()}
+            disabled={initializeTemplatesMutation.isPending}
+            className="mt-4 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+          >
+            {initializeTemplatesMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Initializing...
+              </>
+            ) : (
+              "Initialize Default Templates"
+            )}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 mb-4">
+            Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
+          </p>
+          
+          <Table className="border border-gray-400 rounded-md overflow-hidden">
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="font-bold">Template Name</TableHead>
+                <TableHead className="font-bold">Last Edited</TableHead>
+                <TableHead className="font-bold">Customized By</TableHead>
+                <TableHead className="font-bold text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...templates]
+                .sort((a, b) => {
+                  // Define the order of template types
+                  const templateOrder = {
+                    'WELCOME_EMAIL': 1,
+                    'PASSWORD_RESET': 2,
+                    'DONATION_CONFIRMATION': 3,
+                    'COUNT_REPORT': 4
+                  };
+                  
+                  // Sort based on the defined order
+                  return templateOrder[a.templateType as TemplateType] - templateOrder[b.templateType as TemplateType];
+                })
+                .map((template) => (
+                <TableRow key={template.id}>
+                  <TableCell className="font-medium">
+                    {templateTypeInfo[template.templateType]?.name || template.templateType}
+                  </TableCell>
+                  <TableCell>{formatLastEdited(template)}</TableCell>
+                  <TableCell>{isTemplateCustomized(template) ? "System Administrator" : "N/A"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      onClick={() => handleEditTemplate(template)}
+                      className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...templates]
-                  .sort((a, b) => {
-                    // Define the order of template types
-                    const templateOrder = {
-                      'WELCOME_EMAIL': 1,
-                      'PASSWORD_RESET': 2,
-                      'DONATION_CONFIRMATION': 3,
-                      'COUNT_REPORT': 4
-                    };
-                    
-                    // Sort based on the defined order
-                    return templateOrder[a.templateType as TemplateType] - templateOrder[b.templateType as TemplateType];
-                  })
-                  .map((template) => (
-                  <TableRow key={template.id}>
-                    <TableCell className="font-medium">
-                      {templateTypeInfo[template.templateType]?.name || template.templateType}
-                    </TableCell>
-                    <TableCell>{formatLastEdited(template)}</TableCell>
-                    <TableCell>{isTemplateCustomized(template) ? "System Administrator" : "N/A"}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => handleEditTemplate(template)}
-                        className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
   );
 }

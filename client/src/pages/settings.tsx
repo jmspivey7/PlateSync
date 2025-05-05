@@ -718,7 +718,6 @@ const Settings = () => {
           <CardContent className="pt-2">
             {/* Email Templates Section */}
             <div className="mb-8">
-              <h3 className="text-lg font-medium mb-4">Email Templates</h3>
               <EmailTemplates />
             </div>
             
