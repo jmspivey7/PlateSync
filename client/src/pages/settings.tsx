@@ -522,7 +522,7 @@ const Settings = () => {
                         />
                       </FormControl>
                       <FormDescription className="flex justify-between">
-                        <span>This will be displayed on receipts and throughout the application</span>
+                        <span></span>
                         <span className="text-muted-foreground">
                           {form.watch("churchName")?.length || 0} of 35 Characters Allowed
                         </span>
@@ -537,7 +537,7 @@ const Settings = () => {
                     <FormLabel><strong>Church Logo:</strong></FormLabel>
                   </div>
                   <FormDescription className="mt-0">
-                    Your logo will appear in the navigation header and on receipts
+                    
                   </FormDescription>
                   
                   {/* Logo Display Section */}
