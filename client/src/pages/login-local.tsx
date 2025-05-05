@@ -1,76 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import plateSyncLogo from "../assets/platesync-logo.png";
 
 export default function LoginLocal() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   
+  const { user, isLoading: authLoading, login, loginStatus } = useAuth();
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
+  
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      setLocation("/dashboard");
+    }
+  }, [user, authLoading, setLocation]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      setError("Email and password are required");
       return;
     }
     
-    setIsLoading(true);
-    setError("");
-    
-    try {
-      const response = await fetch("/api/login-local", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username: email, password }),
-        credentials: "include",
-      });
-      
-      if (response.ok) {
-        // Successful login
-        toast({
-          title: "Success",
-          description: "Logged in successfully",
-        });
-        // Use window.location for full page navigation
-        window.location.href = "/dashboard";
-      } else {
-        const data = await response.json().catch(() => ({ message: "Invalid credentials" }));
-        setError(data.message || "Login failed");
-        
-        toast({
-          title: "Login Failed",
-          description: data.message || "Invalid email or password",
-          variant: "destructive",
-        });
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("An error occurred. Please try again.");
-      
-      toast({
-        title: "Error",
-        description: "An error occurred during login. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    login({ username: email, password });
   };
   
   const togglePasswordVisibility = () => {
@@ -78,9 +40,17 @@ export default function LoginLocal() {
   };
   
   const handleLoginWithReplit = () => {
-    // Direct Replit Auth login
     window.location.href = "/api/login";
   };
+  
+  // Show loading spinner while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#69ad4c]"></div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -106,9 +76,9 @@ export default function LoginLocal() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
+                {loginStatus.error && (
                   <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm mb-4">
-                    {error}
+                    {loginStatus.error.message}
                   </div>
                 )}
                 
@@ -125,7 +95,7 @@ export default function LoginLocal() {
                       className="pl-10"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      disabled={isLoading}
+                      disabled={loginStatus.isLoading}
                     />
                   </div>
                 </div>
@@ -151,7 +121,7 @@ export default function LoginLocal() {
                       className="pl-10 pr-10"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      disabled={isLoading}
+                      disabled={loginStatus.isLoading}
                     />
                     <button
                       type="button"
@@ -171,9 +141,9 @@ export default function LoginLocal() {
                 <Button 
                   type="submit" 
                   className="w-full bg-[#69ad4c] hover:bg-[#59ad3c] text-white" 
-                  disabled={isLoading}
+                  disabled={loginStatus.isLoading}
                 >
-                  {isLoading ? "Logging in..." : "Log In"}
+                  {loginStatus.isLoading ? "Logging in..." : "Log In"}
                 </Button>
                 
                 <div className="relative my-4">

@@ -98,6 +98,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Logout endpoint for local authentication
+  app.post('/api/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.sendStatus(200);
+    });
+  });
+
   // Direct login with email/password
   app.post('/api/login-local', async (req, res) => {
     try {
