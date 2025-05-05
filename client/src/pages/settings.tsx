@@ -491,6 +491,7 @@ const Settings = () => {
         title: "SendGrid configuration issue",
         description: error instanceof Error ? error.message : 'An unexpected error occurred',
         variant: "destructive",
+        className: "bg-white border-red-600",
       });
     }
   };
@@ -609,6 +610,7 @@ const Settings = () => {
                             title: "Upload failed",
                             description: `Failed to upload logo: ${error instanceof Error ? error.message : 'Unknown error'}`,
                             variant: "destructive",
+                            className: "bg-white border-red-600",
                           });
                         } finally {
                           setLogoUploading(false);
@@ -666,6 +668,7 @@ const Settings = () => {
                                 title: "Remove failed",
                                 description: `Failed to remove logo: ${error instanceof Error ? error.message : 'Unknown error'}`,
                                 variant: "destructive",
+                                className: "bg-white border-red-600",
                               });
                             } finally {
                               setLogoRemoving(false);
@@ -766,6 +769,7 @@ const Settings = () => {
                               title: "Error",
                               description: `Failed to update setting: ${error.message}`,
                               variant: "destructive",
+                              className: "bg-white border-red-600",
                             });
                           });
                         }}
@@ -1001,6 +1005,7 @@ const Settings = () => {
                                   title: "Test Failed",
                                   description: data.message,
                                   variant: "destructive",
+                                  className: "bg-white border-red-600",
                                 });
                               }
                             })
@@ -1009,6 +1014,7 @@ const Settings = () => {
                                 title: "Error",
                                 description: "Failed to send test email. Make sure you have report recipients configured.",
                                 variant: "destructive",
+                                className: "bg-white border-red-600",
                               });
                             });
                         }}
