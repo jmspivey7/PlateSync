@@ -378,11 +378,20 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           {isLoadingServiceOptions ? (
                             <SelectItem value="loading" disabled>Loading options...</SelectItem>
                           ) : serviceOptions.length > 0 ? (
-                            serviceOptions.map((option) => (
-                              <SelectItem key={option.id} value={option.value}>
-                                {option.name}
-                              </SelectItem>
-                            ))
+                            // Sort service options to put default option first
+                            [...serviceOptions]
+                              .sort((a, b) => {
+                                // Put default option first
+                                if (a.isDefault) return -1;
+                                if (b.isDefault) return 1;
+                                // Otherwise sort alphabetically
+                                return a.name.localeCompare(b.name);
+                              })
+                              .map((option) => (
+                                <SelectItem key={option.id} value={option.value}>
+                                  {option.name}
+                                </SelectItem>
+                              ))
                           ) : (
                             <SelectItem value="none" disabled>No service options configured</SelectItem>
                           )}
