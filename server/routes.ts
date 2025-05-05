@@ -708,7 +708,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/members', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const members = await storage.getMembers(userId);
+      // Get the church ID for the current user - this works for both ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const members = await storage.getMembers(churchId);
       res.json(members);
     } catch (error) {
       console.error("Error fetching members:", error);
@@ -725,7 +727,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid member ID" });
       }
       
-      const member = await storage.getMemberWithDonations(memberId, userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const member = await storage.getMemberWithDonations(memberId, churchId);
       
       if (!member) {
         return res.status(404).json({ message: "Member not found" });
@@ -741,7 +745,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/members', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const memberData = { ...req.body, churchId: userId };
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const memberData = { ...req.body, churchId: churchId };
       
       const validatedData = insertMemberSchema.parse(memberData);
       const newMember = await storage.createMember(validatedData);
@@ -765,8 +772,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid member ID" });
       }
       
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const validatedData = insertMemberSchema.partial().parse(req.body);
-      const updatedMember = await storage.updateMember(memberId, validatedData, userId);
+      const updatedMember = await storage.updateMember(memberId, validatedData, churchId);
       
       if (!updatedMember) {
         return res.status(404).json({ message: "Member not found" });
@@ -786,6 +796,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/members/import', isAuthenticated, upload.single('csvFile'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -833,7 +845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: record['Email'] || null,
             phone: record['Mobile Phone Number'] || null,
             notes: '',
-            churchId: userId
+            churchId: churchId
           };
           
           // Validate data
