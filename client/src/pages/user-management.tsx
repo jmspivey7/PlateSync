@@ -211,10 +211,7 @@ const UserManagement = () => {
   // Create user mutation
   const { mutate: createUser, isPending: isCreating } = useMutation({
     mutationFn: async (userData: FormValues) => {
-      return await apiRequest<User>('/api/users', {
-        method: "POST",
-        body: userData,
-      });
+      return await apiRequest<User>('/api/users', "POST", userData);
     },
     onSuccess: () => {
       toast({
@@ -238,9 +235,7 @@ const UserManagement = () => {
   const { mutate: deleteUser, isPending: isDeleting } = useMutation({
     mutationFn: async (userId: string) => {
       try {
-        return await apiRequest<void>(`/api/users/${userId}`, {
-          method: "DELETE"
-        });
+        return await apiRequest<void>(`/api/users/${userId}`, "DELETE");
       } catch (error) {
         console.error("Error deleting user:", error);
         throw error;

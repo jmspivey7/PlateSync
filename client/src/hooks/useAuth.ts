@@ -6,6 +6,7 @@ export function useAuth() {
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     retry: false,
+    staleTime: 30000, // 30 seconds
     refetchInterval: false,
     refetchOnWindowFocus: false,
     queryFn: getQueryFn({ on401: "returnNull" }),
