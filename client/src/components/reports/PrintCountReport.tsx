@@ -1,0 +1,238 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { Printer, FileText, ArrowLeft } from "lucide-react";
+import { Batch, Donation } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useLocation } from "wouter";
+
+interface PrintCountReportProps {
+  batchId: number;
+  onBack?: () => void;
+}
+
+const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) => {
+  const [isPrintView, setIsPrintView] = useState(false);
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  // Fetch batch details
+  const { data: batch, isLoading: isBatchLoading } = useQuery<Batch>({
+    queryKey: [`/api/batches/${batchId}`],
+  });
+
+  // Fetch donations for this batch
+  const { data: donations, isLoading: isDonationsLoading } = useQuery<Donation[]>({
+    queryKey: [`/api/batches/${batchId}/donations`],
+    enabled: !!batch,
+  });
+
+  const handlePrint = () => {
+    setIsPrintView(true);
+    // Use setTimeout to allow the state to update before printing
+    setTimeout(() => {
+      window.print();
+      setIsPrintView(false);
+    }, 100);
+  };
+
+  const formatCurrency = (amount: string | number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
+  };
+
+  const handleBackToFinalized = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate("/counts?filter=FINALIZED");
+    }
+  };
+
+  // Calculate totals
+  const calculateTotals = () => {
+    if (!donations) return { cashTotal: 0, checkTotal: 0, grandTotal: 0, donationCount: 0 };
+    
+    const cashTotal = donations
+      .filter(d => d.donationType === "CASH")
+      .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+    
+    const checkTotal = donations
+      .filter(d => d.donationType === "CHECK")
+      .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+    
+    return {
+      cashTotal,
+      checkTotal,
+      grandTotal: cashTotal + checkTotal,
+      donationCount: donations.length
+    };
+  };
+
+  const { cashTotal, checkTotal, grandTotal, donationCount } = calculateTotals();
+
+  // Loading state
+  if (isBatchLoading || isDonationsLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Print view
+  if (isPrintView && batch) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold">{batch.name} - Count Report</h1>
+          <p className="text-muted-foreground">{format(new Date(batch.date), 'MMMM d, yyyy')}</p>
+          <p className="text-muted-foreground">Status: {batch.status}</p>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Count Summary</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="border rounded-md p-4">
+              <p className="text-sm text-muted-foreground">Cash Total</p>
+              <p className="text-xl font-medium">{formatCurrency(cashTotal)}</p>
+            </div>
+            <div className="border rounded-md p-4">
+              <p className="text-sm text-muted-foreground">Check Total</p>
+              <p className="text-xl font-medium">{formatCurrency(checkTotal)}</p>
+            </div>
+            <div className="border rounded-md p-4">
+              <p className="text-sm text-muted-foreground">Number of Donations</p>
+              <p className="text-xl font-medium">{donationCount}</p>
+            </div>
+            <div className="border rounded-md p-4 bg-gray-50">
+              <p className="text-sm text-muted-foreground">Grand Total</p>
+              <p className="text-xl font-bold">{formatCurrency(grandTotal)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Attestation Information</h2>
+          <div className="border rounded-md p-4 mb-4">
+            <p className="font-medium">Primary Attestor</p>
+            <p>{batch.primaryAttestorName || "Unknown"}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {batch.primaryAttestationDate ? 
+                format(new Date(batch.primaryAttestationDate), 'MMMM d, yyyy h:mm a') : 
+                "No date recorded"}
+            </p>
+          </div>
+          <div className="border rounded-md p-4">
+            <p className="font-medium">Secondary Attestor</p>
+            <p>{batch.secondaryAttestorName || "Unknown"}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {batch.secondaryAttestationDate ? 
+                format(new Date(batch.secondaryAttestationDate), 'MMMM d, yyyy h:mm a') : 
+                "No date recorded"}
+            </p>
+          </div>
+        </div>
+
+        {/* Signature lines */}
+        <div className="mt-12 mb-8">
+          <div className="flex flex-col gap-8">
+            <div>
+              <div className="border-t border-gray-300 pt-2 w-64"></div>
+              <p className="text-sm">Primary Attestor Signature</p>
+            </div>
+            <div>
+              <div className="border-t border-gray-300 pt-2 w-64"></div>
+              <p className="text-sm">Secondary Attestor Signature</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 text-center text-muted-foreground text-sm">
+          <p>Printed on {format(new Date(), 'MMMM d, yyyy h:mm a')}</p>
+          <p>PlateSync - Church Collection Management</p>
+          <p className="mt-2">This report is to be included with the money bag.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular view
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Print Count Report</CardTitle>
+        <CardDescription>
+          Print this report to include with the money bag
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {batch && (
+          <>
+            <div className="mb-6">
+              <Button
+                variant="outline"
+                onClick={handleBackToFinalized}
+                className="mb-6"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Finalized Counts
+              </Button>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+              <h3 className="font-medium text-green-800 flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                Count Finalized Successfully
+              </h3>
+              <p className="text-green-700 mt-1">
+                Count {batch.name} has been finalized and attested by two people.
+                Please print this report to include with the money bag.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border rounded-md p-4">
+                  <p className="text-sm text-muted-foreground">Cash Total</p>
+                  <p className="text-xl font-medium">{formatCurrency(cashTotal)}</p>
+                </div>
+                <div className="border rounded-md p-4">
+                  <p className="text-sm text-muted-foreground">Check Total</p>
+                  <p className="text-xl font-medium">{formatCurrency(checkTotal)}</p>
+                </div>
+                <div className="border rounded-md p-4">
+                  <p className="text-sm text-muted-foreground">Number of Donations</p>
+                  <p className="text-xl font-medium">{donationCount}</p>
+                </div>
+                <div className="border rounded-md p-4 bg-gray-50">
+                  <p className="text-sm text-muted-foreground">Grand Total</p>
+                  <p className="text-xl font-bold">{formatCurrency(grandTotal)}</p>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handlePrint}
+                className="w-full bg-[#69ad4c] hover:bg-[#5a9941] text-white mt-4"
+              >
+                <Printer className="mr-2 h-5 w-5" />
+                Print Report
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default PrintCountReport;
