@@ -444,19 +444,19 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                   )}
                 />
                 
-                <DialogFooter className="flex justify-between sm:justify-between">
+                <DialogFooter className="flex sm:flex">
                   {isEdit && (
                     <Button
                       type="button"
                       variant="outline"
-                      className="border-red-500 text-red-600 hover:bg-red-50"
+                      className="border-red-500 text-red-600 hover:bg-red-50 mr-auto"
                       onClick={() => setShowDeleteConfirm(true)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete Count
                     </Button>
                   )}
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 ml-auto">
                     <Button
                       type="button"
                       variant="outline"
