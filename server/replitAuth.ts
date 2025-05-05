@@ -141,10 +141,23 @@ export async function setupAuth(app: Express) {
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated()) {
+    // For API calls, return 401 instead of redirecting
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    // For UI pages, send 401 so client can handle the redirect
     return res.status(401).json({ message: "Unauthorized" });
   }
 
+  // Local auth doesn't have expiry logic, so if we have a user without expires_at,
+  // they're using local auth and should be considered authenticated
+  if (!user.expires_at) {
+    return next();
+  }
+
+  // For Replit auth, check expiration
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
     return next();
@@ -152,7 +165,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
-    return res.redirect("/api/login");
+    return res.status(401).json({ message: "Session expired" });
   }
 
   try {
@@ -161,6 +174,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     updateUserSession(user, tokenResponse);
     return next();
   } catch (error) {
-    return res.redirect("/api/login");
+    console.error("Token refresh error:", error);
+    return res.status(401).json({ message: "Session refresh failed" });
   }
 };

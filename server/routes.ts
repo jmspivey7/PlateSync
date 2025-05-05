@@ -57,11 +57,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     fs.mkdirSync(avatarsDir, { recursive: true });
   }
 
+  // Serve static files
+  app.use(express.static('public'));
+  
   // Serve static avatar files
   app.use('/avatars', express.static(path.join('public', 'avatars')));
   
   // Serve static logo files
   app.use('/logos', express.static(path.join('public', 'logos')));
+  // Root path handler to redirect to login-local
+  app.get('/', (req, res) => {
+    res.redirect('/redirect.html');
+  });
+
   // Set up multer for file uploads
   const upload = multer({ 
     storage: multer.memoryStorage(),
