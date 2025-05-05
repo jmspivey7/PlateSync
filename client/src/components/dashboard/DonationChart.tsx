@@ -286,21 +286,9 @@ export function DonationChart() {
             </AreaChart>
           </ResponsiveContainer>
         </ChartContainer>
-        
-        {/* Chart legend positioned in bottom right, away from date axis */}
-        <div className="absolute bottom-2 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
-          <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-[#69ad4c] mr-1.5"></div>
-            <span className="text-xs text-muted-foreground">Cash</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-1.5"></div>
-            <span className="text-xs text-muted-foreground">Check</span>
-          </div>
-        </div>
       </CardContent>
       <CardFooter className="pt-2 pb-3">
-        <div className="flex w-full items-start gap-2 text-sm">
+        <div className="flex w-full justify-between items-center">
           <div className="grid gap-1">
             <div className="flex items-center gap-2 font-medium leading-none">
               {trending === "up" ? (
@@ -315,6 +303,18 @@ export function DonationChart() {
               Recent Collections: {chartData.length > 0 ? 
                 `${chartData[0].fullDate} - ${chartData[chartData.length-1].fullDate}` : 
                 "No data available"}
+            </div>
+          </div>
+          
+          {/* Legend moved to the footer to be on the same line as trending information */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full bg-[#69ad4c] mr-1.5"></div>
+              <span className="text-xs text-muted-foreground">Cash</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-1.5"></div>
+              <span className="text-xs text-muted-foreground">Check</span>
             </div>
           </div>
         </div>
