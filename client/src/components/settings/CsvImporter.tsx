@@ -174,7 +174,7 @@ const CsvImporter = () => {
 
   return (
     <Card className="shadow-none border-0 pt-0">
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 pb-3">
         <div 
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer mb-4 
             ${isDragging ? 'border-[#4299E1] bg-[#4299E1]/10' : 'border-gray-300'}`}

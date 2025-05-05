@@ -960,11 +960,11 @@ const Settings = () => {
         </Card>
             
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle>Import Members</CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
-            <div className="mb-3">
+          <CardContent className="pt-1 pb-4">
+            <div className="mb-2">
               <p className="text-sm text-gray-600">
                 Upload a CSV file to import members in bulk to the database. Subsequent imports will overwrite the member list. To see a list of the most recent member import <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
               </p>
