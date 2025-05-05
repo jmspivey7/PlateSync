@@ -102,7 +102,7 @@ export default function Login() {
           <img 
             src={plateSyncLogo} 
             alt="PlateSync Logo" 
-            className="mx-auto h-28"
+            className="mx-auto h-[5.25rem]" /* 25% reduction from h-28 (7rem) */
           />
         </div>
         
