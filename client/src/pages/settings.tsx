@@ -535,7 +535,6 @@ const Settings = () => {
                 <div className="space-y-4 mt-6">
                   <div className="flex justify-between items-center">
                     <FormLabel><strong>Church Logo:</strong></FormLabel>
-                    <span className="text-sm text-muted-foreground">Recommended size: 400x200px</span>
                   </div>
                   <FormDescription className="mt-0">
                     
@@ -676,6 +675,9 @@ const Settings = () => {
                         </Button>
                       )}
                     </div>
+                  </div>
+                  <div className="flex justify-end mt-2">
+                    <span className="text-sm text-muted-foreground">Recommended size: 400x200px</span>
                   </div>
                 </div>
                 
