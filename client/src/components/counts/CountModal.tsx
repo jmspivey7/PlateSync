@@ -394,32 +394,39 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">Status:</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="OPEN">Open</SelectItem>
-                          <SelectItem value="CLOSED">Closed</SelectItem>
-                          <SelectItem value="FINALIZED">Finalized</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* 
+                  Status field - hidden in Create mode, only shown in Edit mode
+                  For new counts, status is always set to OPEN in the form values
+                */}
+                {isEdit ? (
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold">Status:</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="OPEN">Open</SelectItem>
+                            <SelectItem value="CLOSED">Closed</SelectItem>
+                            <SelectItem value="FINALIZED">Finalized</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <input type="hidden" name="status" value="OPEN" />
+                )}
                 
                 <FormField
                   control={form.control}
