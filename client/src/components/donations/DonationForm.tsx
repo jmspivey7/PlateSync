@@ -694,11 +694,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="new" id="new" />
-                          <Label htmlFor="new">New Member</Label>
+                          <Label htmlFor="new">Known Visitor</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="visitor" id="visitor" />
-                          <Label htmlFor="visitor">Visitor/Anonymous</Label>
+                          <Label htmlFor="visitor">Anonymous</Label>
                         </div>
                       </RadioGroup>
                     </FormItem>
@@ -746,7 +746,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   />
                 )}
                 
-                {/* New Member Form */}
+                {/* Known Visitor Form */}
                 {formDonorType === "new" && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -809,11 +809,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   </div>
                 )}
                 
-                {/* Visitor Information */}
+                {/* Anonymous Information */}
                 {formDonorType === "visitor" && (
                   <div className="bg-gray-50 p-4 rounded border border-gray-200">
                     <p className="text-sm text-gray-700">
-                      This donation will be recorded as anonymous or from a visitor. No receipt will be generated.
+                      This donation will be recorded as anonymous. No receipt will be generated.
                     </p>
                   </div>
                 )}
