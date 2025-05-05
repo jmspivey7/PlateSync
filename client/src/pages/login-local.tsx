@@ -53,7 +53,7 @@ export default function LoginLocal() {
   }
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-md p-6">
         <div className="text-center mb-8">
           <img 
@@ -63,7 +63,7 @@ export default function LoginLocal() {
           />
         </div>
         
-        <Card className="w-full shadow-lg">
+        <Card className="w-full border border-gray-100">
           <CardHeader>
             <CardTitle className="text-center">Log In</CardTitle>
             <CardDescription className="text-center">
