@@ -985,7 +985,7 @@ const Settings = () => {
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="mb-3">
                     <div className="text-sm text-gray-600">
                       Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
                         onClick={() => {
@@ -1021,64 +1021,81 @@ const Settings = () => {
                         Count Report email
                       </button>.
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={openAddRecipientDialog}
-                      className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Add Recipient
-                    </Button>
                   </div>
                   
                   {reportRecipients.length === 0 ? (
-                    <div className="text-center py-4 border rounded-md bg-muted/10">
-                      <MailCheck className="h-10 w-10 mx-auto text-gray-400 mb-1" />
-                      <p className="text-sm text-gray-500">No recipients configured</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Add recipients to receive count reports</p>
+                    <div>
+                      <div className="text-center py-4 border rounded-md bg-muted/10">
+                        <MailCheck className="h-10 w-10 mx-auto text-gray-400 mb-1" />
+                        <p className="text-sm text-gray-500">No recipients configured</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Add recipients to receive count reports</p>
+                      </div>
+                      
+                      <div className="mt-4 flex justify-center">
+                        <Button
+                          type="button"
+                          onClick={openAddRecipientDialog}
+                          className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Add Recipient
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="overflow-hidden">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 font-bold">Name</th>
-                            <th className="text-left py-2 font-bold">Email</th>
-                            <th className="w-[100px] text-right py-2 font-bold">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {reportRecipients.map((recipient) => (
-                            <tr key={recipient.id} className="hover:bg-gray-50">
-                              <td className="py-2">{recipient.firstName} {recipient.lastName}</td>
-                              <td className="py-2">{recipient.email}</td>
-                              <td className="text-right py-2">
-                                <div className="flex justify-end space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => openEditRecipientDialog(recipient)}
-                                    title="Edit"
-                                    className="h-7 w-7"
-                                  >
-                                    <Edit className="h-4 w-4 text-gray-500" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
-                                    title="Delete"
-                                    className="h-7 w-7"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-gray-500" />
-                                  </Button>
-                                </div>
-                              </td>
+                    <div>
+                      <div className="overflow-hidden">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-2 font-bold">Name</th>
+                              <th className="text-left py-2 font-bold">Email</th>
+                              <th className="w-[100px] text-right py-2 font-bold">Actions</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {reportRecipients.map((recipient) => (
+                              <tr key={recipient.id} className="hover:bg-gray-50">
+                                <td className="py-2">{recipient.firstName} {recipient.lastName}</td>
+                                <td className="py-2">{recipient.email}</td>
+                                <td className="text-right py-2">
+                                  <div className="flex justify-end space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => openEditRecipientDialog(recipient)}
+                                      title="Edit"
+                                      className="h-7 w-7"
+                                    >
+                                      <Edit className="h-4 w-4 text-gray-500" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
+                                      title="Delete"
+                                      className="h-7 w-7"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-gray-500" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      <div className="mt-4 flex justify-center">
+                        <Button
+                          type="button"
+                          onClick={openAddRecipientDialog}
+                          className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Add Recipient
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </>
