@@ -66,7 +66,7 @@ export default function LoginLocal() {
         
         <Card className="w-full border border-gray-100">
           <CardHeader>
-            <CardTitle className="text-center">Log In</CardTitle>
+            <CardTitle className="text-left">Sign In</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,7 +129,7 @@ export default function LoginLocal() {
                 className="w-full bg-[#69ad4c] hover:bg-[#59ad3c] text-white" 
                 disabled={loginStatus.isLoading}
               >
-                {loginStatus.isLoading ? "Logging in..." : "Log In"}
+                {loginStatus.isLoading ? "Signing in..." : "Sign In"}
               </Button>
               
               <div className="text-center mt-4">
@@ -156,7 +156,7 @@ export default function LoginLocal() {
                 className="w-full"
                 onClick={handleLoginWithReplit}
               >
-                Login with Replit (jspivey@spiveyco.com)
+                Sign In with Replit (jspivey@spiveyco.com)
               </Button>
             </form>
           </CardContent>
