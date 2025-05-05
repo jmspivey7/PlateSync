@@ -73,8 +73,8 @@ export const donationTypeEnum = z.enum(["CASH", "CHECK"]);
 // Notification status enum
 export const notificationStatusEnum = z.enum(["PENDING", "SENT", "FAILED", "NOT_REQUIRED"]);
 
-// Batch status enum
-export const batchStatusEnum = z.enum(["OPEN", "CLOSED", "FINALIZED"]);
+// Batch status enum - simplified workflow with only OPEN and FINALIZED states
+export const batchStatusEnum = z.enum(["OPEN", "FINALIZED"]);
 
 // Service options table
 export const serviceOptions = pgTable("service_options", {
