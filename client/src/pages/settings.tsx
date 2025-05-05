@@ -1122,7 +1122,6 @@ const Settings = () => {
                 value={recipientFirstName}
                 onChange={(e) => setRecipientFirstName(e.target.value)}
                 className="col-span-3"
-                placeholder="John"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -1131,7 +1130,6 @@ const Settings = () => {
                 value={recipientLastName}
                 onChange={(e) => setRecipientLastName(e.target.value)}
                 className="col-span-3"
-                placeholder="Doe"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -1140,7 +1138,6 @@ const Settings = () => {
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
                 className="col-span-3"
-                placeholder="john.doe@example.com"
                 type="email"
               />
             </div>
@@ -1184,7 +1181,6 @@ const Settings = () => {
                 value={recipientFirstName}
                 onChange={(e) => setRecipientFirstName(e.target.value)}
                 className="col-span-3"
-                placeholder="John"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -1193,7 +1189,6 @@ const Settings = () => {
                 value={recipientLastName}
                 onChange={(e) => setRecipientLastName(e.target.value)}
                 className="col-span-3"
-                placeholder="Doe"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -1202,7 +1197,6 @@ const Settings = () => {
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
                 className="col-span-3"
-                placeholder="john.doe@example.com"
                 type="email"
               />
             </div>
