@@ -888,9 +888,11 @@ const Settings = () => {
                       </div>
                     )}
                     
-                    {/* Service options as tags */}
+                    {/* Service options as tags - sort to show default first */}
                     <div className="flex flex-wrap gap-2">
-                      {serviceOptions.map((option: ServiceOption) => (
+                      {serviceOptions
+                        .sort((a, b) => Number(b.isDefault) - Number(a.isDefault)) // Sort to show default option first
+                        .map((option: ServiceOption) => (
                         <div 
                           key={option.id} 
                           className={`group inline-flex items-center rounded-full border px-2.5 py-1.5 text-sm font-medium
