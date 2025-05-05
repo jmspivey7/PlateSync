@@ -276,10 +276,7 @@ const UserManagement = () => {
   // Update user role mutation
   const { mutate, isPending } = useMutation({
     mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
-      return await apiRequest<User>(`/api/users/${userId}/role`, {
-        method: "PATCH",
-        body: { role },
-      });
+      return await apiRequest<User>(`/api/users/${userId}/role`, "PATCH", { role });
     },
     onSuccess: () => {
       toast({

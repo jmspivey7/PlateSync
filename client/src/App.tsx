@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { useEffect, useState } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -25,37 +25,55 @@ import EmailSettings from "@/pages/email-settings";
 import Reports from "@/pages/reports";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useLocation } from "wouter";
+
+// Public paths that don't require authentication
+const PUBLIC_PATHS = ["/login", "/verify", "/forgot-password", "/reset-password"];
+
+function isPublicPath(path: string) {
+  return PUBLIC_PATHS.some(publicPath => path.startsWith(publicPath));
+}
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
+  const [redirectInProgress, setRedirectInProgress] = useState(false);
   
-  // Use useEffect for redirect to avoid rendering issues
+  // Check authentication and redirect if needed
   useEffect(() => {
-    const publicPaths = ["/login", "/verify", "/forgot-password", "/reset-password"];
-    const isPublicPath = publicPaths.some(path => location.startsWith(path));
+    if (isLoading || redirectInProgress) return;
     
-    if (!isLoading && !isAuthenticated && !isPublicPath) {
+    const currentPathIsPublic = isPublicPath(location);
+    
+    if (!user && !currentPathIsPublic) {
+      setRedirectInProgress(true);
       setLocation("/login");
+    } else if (user && currentPathIsPublic && location !== "/verify") {
+      // If user is logged in and on a public page (except verify), redirect to dashboard
+      setRedirectInProgress(true);
+      setLocation("/dashboard");
+    } else {
+      setRedirectInProgress(false);
     }
-  }, [isLoading, isAuthenticated, location, setLocation]);
+  }, [user, isLoading, location, setLocation, redirectInProgress]);
   
-  // Only render routes once authentication check is complete
+  // Show loading spinner while checking auth
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4299E1]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#69ad4c]" />
       </div>
     );
   }
 
   return (
     <Switch>
+      {/* Public routes */}
       <Route path="/login" component={Login} />
       <Route path="/verify" component={Verify} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      
+      {/* Protected routes */}
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/donations" component={Donations} />
@@ -80,13 +98,13 @@ function Router() {
 }
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [location] = useLocation();
   
   // Don't show header/footer on public pages
-  const isPublicPath = ["/login", "/verify", "/forgot-password", "/reset-password"].some(path => location.startsWith(path));
+  const currentPathIsPublic = isPublicPath(location);
   
-  if (!isAuthenticated || isPublicPath) {
+  if (!user || currentPathIsPublic) {
     return <>{children}</>;
   }
   
