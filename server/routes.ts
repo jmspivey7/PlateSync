@@ -1476,47 +1476,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Send notification if requested, if it's not an anonymous donation, and if notifications are enabled
+      // Mark donation for notification if requested and if it's not an anonymous donation
+      // Actual notifications will be sent when the batch is finalized
       if (req.body.sendNotification && validatedData.memberId) {
         try {
+          // Get the member to check if they have an email
           const member = await storage.getMember(validatedData.memberId, churchId);
-          const user = await storage.getUser(userId);
           
-          // Check if user has email notifications enabled
-          const emailNotificationsEnabled = user?.emailNotificationsEnabled !== false;
+          // Get the admin user for this church to check email notification settings
+          const adminId = await storage.getAdminIdForChurch(churchId);
+          const adminUser = adminId ? await storage.getUser(adminId) : null;
           
-          if (member && member.email && user && emailNotificationsEnabled) {
-            const churchName = user.churchName || "Our Church";
-            
-            // Send email notification via SendGrid
-            const notificationSent = await sendDonationNotification({
-              to: member.email,
-              amount: validatedData.amount.toString(),
-              date: validatedData.date instanceof Date ? validatedData.date.toLocaleDateString() : new Date().toLocaleDateString(),
-              donorName: `${member.firstName} ${member.lastName}`,
-              churchName: churchName,
-            });
-            
-            // Update donation notification status
-            if (notificationSent) {
-              await storage.updateDonationNotificationStatus(
-                newDonation.id, 
-                notificationStatusEnum.enum.SENT
-              );
-            } else {
-              await storage.updateDonationNotificationStatus(
-                newDonation.id, 
-                notificationStatusEnum.enum.FAILED
-              );
-            }
+          // Check if email notifications are enabled at the church level (by ADMIN)
+          const emailNotificationsEnabled = adminUser?.emailNotificationsEnabled !== false;
+          
+          if (member && member.email && emailNotificationsEnabled) {
+            // Don't send email now, just mark as PENDING - it will be sent when batch is finalized
+            await storage.updateDonationNotificationStatus(
+              newDonation.id, 
+              notificationStatusEnum.enum.PENDING
+            );
+            console.log(`Marked donation ${newDonation.id} for notification when batch is finalized`);
           } else {
+            // Cannot send notification (missing email or notifications disabled by admin)
             await storage.updateDonationNotificationStatus(
               newDonation.id, 
               notificationStatusEnum.enum.NOT_REQUIRED
             );
+            
+            // Log why we're not sending
+            if (!member || !member.email) {
+              console.log(`Donation ${newDonation.id} not marked for notification: Member has no email`);
+            } else if (!emailNotificationsEnabled) {
+              console.log(`Donation ${newDonation.id} not marked for notification: Notifications disabled by admin`);
+            }
           }
-        } catch (notificationError) {
-          console.error("Error sending notification:", notificationError);
+        } catch (error) {
+          console.error("Error preparing donation notification:", error);
           await storage.updateDonationNotificationStatus(
             newDonation.id, 
             notificationStatusEnum.enum.FAILED

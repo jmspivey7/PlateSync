@@ -35,6 +35,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUsers(churchId: string): Promise<User[]>;
   getChurchIdForUser(userId: string): Promise<string>;
+  getAdminIdForChurch(churchId: string): Promise<string | null>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
   updateUserRole(id: string, role: string): Promise<User>;
