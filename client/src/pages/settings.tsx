@@ -1047,7 +1047,7 @@ const Settings = () => {
                       <div className="overflow-hidden">
                         <table className="w-full">
                           <thead>
-                            <tr className="border-b">
+                            <tr className="border-b border-gray-400">
                               <th className="text-left py-2 font-bold">Name</th>
                               <th className="text-left py-2 font-bold">Email</th>
                               <th className="w-[100px] text-right py-2 font-bold">Actions</th>
