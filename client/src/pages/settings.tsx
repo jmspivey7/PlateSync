@@ -532,7 +532,7 @@ const Settings = () => {
                       </FormControl>
                       <FormDescription className="flex justify-between">
                         <span></span>
-                        <span className="text-gray-500">
+                        <span className="text-gray-600 text-sm">
                           {form.watch("churchName")?.length || 0} of 35 Characters Allowed
                         </span>
                       </FormDescription>
@@ -688,7 +688,7 @@ const Settings = () => {
                     </div>
                   </div>
                   <div className="flex justify-end mt-2">
-                    <span className="text-sm text-gray-500">Recommended Size: 400x200px</span>
+                    <span className="text-sm text-gray-600">Recommended Size: 400x200px</span>
                   </div>
                 </div>
                 
