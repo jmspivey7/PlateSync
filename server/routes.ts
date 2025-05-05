@@ -1889,32 +1889,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
               template.bodyText = `
 Dear {{firstName}} {{lastName}},
 
-Welcome to PlateSync! You have been added as a user for {{churchName}}.
+Welcome to PlateSync...the perfect app for counting plate donations with ease and efficiency!
+{{churchName}} has added you as a user to assist in the plate collection and counting as an usher.
 
-Please verify your email and set up your password by clicking the following link:
+To complete your account setup, please verify your email and create a password by clicking on the link below:
 {{verificationUrl}}?token={{verificationToken}}
 
-This link will expire in 48 hours.
+This link will expire in 48 hours for security reasons.
+
+Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.
 
 If you did not request this account, you can safely ignore this email.
 
 Sincerely,
 The PlateSync Team`;
               template.bodyHtml = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748; border: 1px solid #e2e8f0; border-radius: 8px;">
   <!-- Header with Logo and Title -->
-  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Welcome to {{churchName}}</p>
+  <div style="padding: 25px; text-align: center;">
+    <div style="display: block; margin: 0 auto;">
+      <img src="https://platesync.replit.app/logo-with-text.png" alt="PlateSync" style="max-width: 350px; height: auto;" />
+      <div style="font-size: 14px; color: #555; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px;">
+        CHURCH COLLECTION MANAGEMENT
+      </div>
+    </div>
   </div>
   
   <!-- Main Content -->
-  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+  <div style="background-color: #ffffff; padding: 0 30px 30px;">
     <p style="margin-top: 0;">Dear <strong>{{firstName}} {{lastName}}</strong>,</p>
     
-    <p>Welcome to PlateSync! You have been added as a user for <strong>{{churchName}}</strong>.</p>
+    <p>Welcome to PlateSync...the perfect app for counting plate donations with ease and efficiency!</p>
     
-    <p>To complete your account setup, please verify your email and create a password by clicking the button below:</p>
+    <p><strong>{{churchName}}</strong> has added you as a user to assist in the plate collection and counting as an usher.</p>
+    
+    <p>To complete your account setup, please verify your email and create a password by clicking on the button below:</p>
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="{{verificationUrl}}?token={{verificationToken}}" 
@@ -1931,12 +1940,6 @@ The PlateSync Team`;
     
     <p style="margin-bottom: 0;">Sincerely,<br>
     <strong>The PlateSync Team</strong></p>
-  </div>
-  
-  <!-- Footer -->
-  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p style="margin: 0;">This is an automated message from PlateSync.</p>
-    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
   </div>
 </div>`;
               break;
