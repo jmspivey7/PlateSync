@@ -16,7 +16,6 @@ export default function Verify() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -207,95 +206,61 @@ export default function Verify() {
               </div>
             )}
             
-            {/* Hidden token field - only show if advanced options toggled */}
-            {showAdvanced && (
-              <div className="space-y-2">
-                <Label htmlFor="token">Verification Token</Label>
-                <Input
-                  id="token"
-                  type="text"
-                  value={token}
-                  onChange={(e) => {
-                    setToken(e.target.value);
-                    if (e.target.value.length > 32) {
-                      validateToken(e.target.value);
-                    }
-                  }}
-                  placeholder="Enter your verification token"
-                  required
-                  className="w-full font-mono text-xs"
-                />
-              </div>
+            {/* Password input - only show when token is valid */}
+            {tokenValid !== false && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Create a secure password"
+                      required
+                      className="pr-10"
+                      disabled={loading || success}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOffIcon className="h-4 w-4" />
+                      ) : (
+                        <EyeIcon className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Password must be at least 8 characters long
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    required
+                    disabled={loading || success}
+                  />
+                </div>
+              </>
             )}
             
-            {/* Password input */}
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a secure password"
-                  required
-                  className="pr-10"
-                  disabled={loading || success || tokenValid === false}
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="h-4 w-4" />
-                  ) : (
-                    <EyeIcon className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Password must be at least 8 characters long
-              </p>
-            </div>
-            
-            {/* Confirm Password input */}
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type={showPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-                required
-                disabled={loading || success || tokenValid === false}
-              />
-            </div>
-            
-            {/* Advanced options toggle */}
-            <div className="pt-2">
-              <button
-                type="button"
-                className="text-sm text-muted-foreground hover:text-foreground flex items-center"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-              >
-                {showAdvanced ? "Hide" : "Show"} advanced options
-                {showAdvanced ? (
-                  <span className="ml-1">▲</span>
-                ) : (
-                  <span className="ml-1">▼</span>
-                )}
-              </button>
-            </div>
-            
-            {/* Token regeneration */}
-            {(tokenValid === false || showAdvanced) && (
-              <div className="pt-2">
+            {/* Token regeneration - only show when token is invalid */}
+            {tokenValid === false && (
+              <div className="pt-4">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="default"
                   className="w-full"
                   onClick={handleGenerateToken}
                 >
