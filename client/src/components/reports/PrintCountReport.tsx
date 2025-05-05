@@ -96,6 +96,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">{batch.name} - Count Report</h1>
           <p className="text-muted-foreground">{format(new Date(batch.date), 'MMMM d, yyyy')}</p>
+          <p className="text-muted-foreground">Service: {batch.service || "Not specified"}</p>
           <p className="text-muted-foreground">Status: {batch.status}</p>
         </div>
 
@@ -185,18 +186,31 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
                 className="mb-6"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Finalized Counts
+                Back to Counts
               </Button>
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
-              <h3 className="font-medium text-green-800 flex items-center">
+            <div className={`border rounded-md p-4 mb-6 ${
+              batch.status === 'FINALIZED' 
+                ? 'bg-green-50 border-green-200' 
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <h3 className={`font-medium flex items-center ${
+                batch.status === 'FINALIZED' ? 'text-green-800' : 'text-blue-800'
+              }`}>
                 <FileText className="h-5 w-5 mr-2" />
-                Count Finalized Successfully
+                {batch.status === 'FINALIZED' 
+                  ? 'Count Finalized Successfully' 
+                  : 'Count Report'
+                }
               </h3>
-              <p className="text-green-700 mt-1">
-                Count {batch.name} has been finalized and attested by two people.
-                Please print this report to include with the money bag.
+              <p className={batch.status === 'FINALIZED' ? 'text-green-700 mt-1' : 'text-blue-700 mt-1'}>
+                {batch.status === 'FINALIZED'
+                  ? `Count ${batch.name} has been finalized and attested by two people.
+                     Please print this report to include with the money bag.`
+                  : `This is a printable report for count ${batch.name}.
+                     Please print this report to include with the money bag.`
+                }
               </p>
             </div>
 

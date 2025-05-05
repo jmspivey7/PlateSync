@@ -432,7 +432,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               </div>
               
               <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-blue-800 flex items-start">
-                <AlertTriangle className="h-5 w-5 text-blue-500 inline-block mr-2 flex-shrink-0 mt-0.5" />
+                <Printer className="h-5 w-5 text-blue-500 inline-block mr-2 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Print Report:</p>
                   <p>Please print a physical report now to include with the money bag. You can print multiple copies if needed.</p>
@@ -446,7 +446,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >
-                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  <Printer className="mr-2 h-4 w-4" />
                   Print Report
                 </Button>
                 
