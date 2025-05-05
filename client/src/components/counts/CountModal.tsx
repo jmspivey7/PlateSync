@@ -5,11 +5,12 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { insertBatchSchema, Batch, ServiceOption } from "@shared/schema";
 import { useLocation } from "wouter";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Dialog,
@@ -59,7 +60,9 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
+  const { isAdmin } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFinalizedDeleteConfirm, setShowFinalizedDeleteConfirm] = useState(false);
   
   // Fetch service options from the API
   const { data: serviceOptions = [], isLoading: isLoadingServiceOptions } = useQuery<ServiceOption[]>({
@@ -461,15 +464,25 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                 
                 <DialogFooter className="flex sm:flex">
                   {isEdit && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border-red-500 text-red-600 hover:bg-red-50 mr-auto"
-                      onClick={() => setShowDeleteConfirm(true)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Count
-                    </Button>
+                    // Only show delete button if it's an OPEN batch or user is ADMIN
+                    (!batchData || batchData.status === "OPEN" || isAdmin) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-red-500 text-red-600 hover:bg-red-50 mr-auto"
+                        onClick={() => {
+                          // For FINALIZED batches, if user is ADMIN, show special warning
+                          if (batchData && batchData.status === "FINALIZED" && isAdmin) {
+                            setShowFinalizedDeleteConfirm(true);
+                          } else {
+                            setShowDeleteConfirm(true);
+                          }
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Count
+                      </Button>
+                    )
                   )}
                   <div className="flex gap-2 ml-auto">
                     <Button
@@ -497,6 +510,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
         </DialogContent>
       </Dialog>
       
+      {/* Regular delete confirmation dialog for OPEN counts */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
@@ -504,6 +518,31 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
         title="Delete Count"
         description="Are you sure you want to delete this count? This action cannot be undone and will permanently delete the count and all associated donations."
         confirmText="Delete Count"
+        cancelText="Cancel"
+        isPending={deleteBatchMutation.isPending}
+        destructive={true}
+      />
+      
+      {/* Special warning dialog for FINALIZED counts (Admin only) */}
+      <ConfirmDialog
+        isOpen={showFinalizedDeleteConfirm}
+        onClose={() => setShowFinalizedDeleteConfirm(false)}
+        onConfirm={() => deleteBatchMutation.mutate()}
+        title="Delete Finalized Count - Warning!"
+        description={
+          <div className="space-y-3">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+              <p className="text-amber-700">
+                You are about to delete a FINALIZED count. This is irreversible and will permanently delete all associated financial records.
+              </p>
+            </div>
+            <p className="font-semibold text-destructive">
+              This action cannot be undone and may impact your financial records!
+            </p>
+          </div>
+        }
+        confirmText="Yes, Delete Finalized Count"
         cancelText="Cancel"
         isPending={deleteBatchMutation.isPending}
         destructive={true}

@@ -1207,6 +1207,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Batch not found" });
       }
       
+      // Check if batch is FINALIZED - only ADMIN users can delete FINALIZED batches
+      if (batch.status === 'FINALIZED') {
+        // Get the user with their role from the database
+        const user = await storage.getUser(userId);
+        
+        // Only ADMIN users can delete FINALIZED batches
+        if (!user || user.role !== 'ADMIN') {
+          return res.status(403).json({ 
+            message: "Forbidden: Only administrators can delete finalized counts" 
+          });
+        }
+      }
+      
       // Delete the batch and its donations
       await storage.deleteBatch(batchId, userId);
       
