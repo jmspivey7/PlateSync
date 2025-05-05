@@ -287,8 +287,8 @@ export function DonationChart() {
           </ResponsiveContainer>
         </ChartContainer>
         
-        {/* Chart legend positioned in bottom right */}
-        <div className="absolute bottom-4 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
+        {/* Chart legend positioned lower in bottom right */}
+        <div className="absolute bottom-1 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-[#69ad4c] mr-1.5"></div>
             <span className="text-xs text-muted-foreground">Cash</span>
