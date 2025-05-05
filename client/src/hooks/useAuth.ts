@@ -28,12 +28,12 @@ export function useAuth() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await apiRequest("POST", "/api/login-local", credentials);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Login failed" }));
-        throw new Error(errorData.message || "Invalid credentials");
+      try {
+        return await apiRequest("POST", "/api/login", credentials);
+      } catch (error) {
+        console.error("Login error:", error);
+        throw error;
       }
-      return await response.json();
     },
     onSuccess: () => {
       // Invalidate user query to refetch user data
