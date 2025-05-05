@@ -34,8 +34,11 @@ export interface IStorage {
   // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   getUsers(churchId: string): Promise<User[]>;
+  getUserRole(userId: string): Promise<string | null>;
   getChurchIdForUser(userId: string): Promise<string>;
   getAdminIdForChurch(churchId: string): Promise<string | null>;
+  getChurchByAdminId(adminId: string): Promise<{ id: string; name: string } | null>;
+  getUsersByChurchId(churchId: string): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
   updateUserRole(id: string, role: string): Promise<User>;
@@ -225,12 +228,116 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUsers(churchId: string): Promise<User[]> {
-    // Filter by church ID to get only users from the same church
-    return db
-      .select()
-      .from(users)
-      .where(eq(users.churchId, churchId))
-      .orderBy(desc(users.username));
+    try {
+      // First find all users who have participated in batches for this church
+      const usersFromBatches = await db
+        .select({ userId: sql<string>`DISTINCT 
+          CASE 
+            WHEN ${batches.primaryAttestorId} IS NOT NULL THEN ${batches.primaryAttestorId}
+            WHEN ${batches.secondaryAttestorId} IS NOT NULL THEN ${batches.secondaryAttestorId}
+            WHEN ${batches.attestationConfirmedBy} IS NOT NULL THEN ${batches.attestationConfirmedBy}
+          END` })
+        .from(batches)
+        .where(eq(batches.churchId, churchId));
+      
+      const userIds = usersFromBatches
+        .map(u => u.userId)
+        .filter(id => id !== null && id !== undefined) as string[];
+      
+      if (userIds.length === 0) {
+        // If no users found from batches, get all users
+        return db
+          .select()
+          .from(users)
+          .orderBy(desc(users.username));
+      }
+      
+      // Get user details
+      return db
+        .select()
+        .from(users)
+        .where(sql`${users.id} IN (${userIds.join(',')})`)
+        .orderBy(desc(users.username));
+    } catch (error) {
+      console.error("Error in getUsers:", error);
+      return [];
+    }
+  }
+  
+  async getUserRole(userId: string): Promise<string | null> {
+    try {
+      const user = await this.getUser(userId);
+      return user?.role || null;
+    } catch (error) {
+      console.error("Error getting user role:", error);
+      return null;
+    }
+  }
+  
+  async getChurchByAdminId(adminId: string): Promise<{ id: string; name: string } | null> {
+    try {
+      const admin = await this.getUser(adminId);
+      
+      if (!admin || admin.role !== 'ADMIN') {
+        return null;
+      }
+      
+      return {
+        id: admin.id,
+        name: admin.churchName || 'Unnamed Church'
+      };
+    } catch (error) {
+      console.error("Error getting church by admin ID:", error);
+      return null;
+    }
+  }
+  
+  async getUsersByChurchId(churchId: string): Promise<User[]> {
+    try {
+      // Get both ADMIN and USHER users associated with this church
+      // First, get the ADMIN user (church owner)
+      const adminId = await this.getAdminIdForChurch(churchId);
+      
+      // Get all users who have participated in batches for this church
+      const usersFromBatches = await db
+        .select({ userId: sql<string>`DISTINCT 
+          CASE 
+            WHEN ${batches.primaryAttestorId} IS NOT NULL THEN ${batches.primaryAttestorId}
+            WHEN ${batches.secondaryAttestorId} IS NOT NULL THEN ${batches.secondaryAttestorId}
+            WHEN ${batches.attestationConfirmedBy} IS NOT NULL THEN ${batches.attestationConfirmedBy}
+          END` })
+        .from(batches)
+        .where(eq(batches.churchId, churchId));
+      
+      const userIds = usersFromBatches
+        .map(u => u.userId)
+        .filter(id => id !== null && id !== undefined) as string[];
+      
+      // Make sure to include the admin ID if it exists
+      if (adminId && !userIds.includes(adminId)) {
+        userIds.push(adminId);
+      }
+      
+      if (userIds.length === 0) {
+        // If no users found, find all ADMIN users as a fallback
+        const admins = await db
+          .select()
+          .from(users)
+          .where(eq(users.role, 'ADMIN'));
+        
+        return admins;
+      }
+      
+      // Get user details
+      return db
+        .select()
+        .from(users)
+        .where(sql`${users.id} IN (${userIds.join(',')})`)
+        .orderBy(desc(users.username));
+    } catch (error) {
+      console.error("Error in getUsersByChurchId:", error);
+      return [];
+    }
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {

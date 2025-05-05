@@ -518,29 +518,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/attestation-users', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const role = await storage.getUserRole(userId);
       
-      // Get the church ID
-      let churchId: string | null = null;
-      
-      if (role === 'ADMIN') {
-        const church = await storage.getChurchByAdminId(userId);
-        if (church) {
-          churchId = church.id;
-        }
-      } else if (role === 'USHER') {
-        const user = await storage.getUser(userId);
-        if (user && user.churchId) {
-          churchId = user.churchId;
-        }
-      }
+      // Get the church ID using the helper function in storage
+      const churchId = await storage.getChurchIdForUser(userId);
       
       if (!churchId) {
         return res.status(404).json({ message: "Church not found" });
       }
       
       // Get all users from the same church
-      const users = await storage.getUsersByChurchId(churchId);
+      // First, get the ADMIN user (church owner)
+      const adminId = await storage.getAdminIdForChurch(churchId);
+      
+      // Get all users who have participated in batches for this church
+      const users = await storage.getUsers(churchId);
+      
+      // Make sure the admin is included in the list
+      const adminIncluded = users.some(user => user.id === adminId);
+      
+      // If admin is not in the list, add them manually
+      if (adminId && !adminIncluded) {
+        const adminUser = await storage.getUser(adminId);
+        if (adminUser) {
+          users.push(adminUser);
+        }
+      }
+      
       res.json(users);
     } catch (error) {
       console.error("Error fetching attestation users:", error);

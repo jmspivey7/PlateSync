@@ -76,13 +76,13 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     refetchInterval: false,
   });
   
-  // Fetch users for dropdown
+  // Fetch users for dropdown - using the attestation-users endpoint that works for both ADMIN and USHER roles
   const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/attestation-users"],
     queryFn: async () => {
-      const response = await fetch(`/api/users`);
+      const response = await fetch(`/api/attestation-users`);
       if (!response.ok) {
-        throw new Error("Failed to fetch users");
+        throw new Error("Failed to fetch attestation users");
       }
       return response.json();
     },
