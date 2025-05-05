@@ -206,35 +206,28 @@ export default function Verify() {
             {/* Token input and debug section */}
             <div className="space-y-2">
               <Label htmlFor="token">Verification Token</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="token"
-                  type="text"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder="Enter your verification token"
-                  required
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={checkToken}
-                >
-                  Test Token
-                </Button>
-              </div>
+              <Input
+                id="token"
+                type="text"
+                value={token}
+                onChange={(e) => {
+                  setToken(e.target.value);
+                  // Auto-check token after typing
+                  if (e.target.value.length > 32) {
+                    setTimeout(checkToken, 500);
+                  }
+                }}
+                placeholder="Enter your verification token"
+                required
+                className="w-full"
+              />
               
-              {/* Token status */}
+              {/* Token status - simplified */}
               {tokenStatus && (
                 <div className={`p-3 rounded-md text-sm ${tokenStatus.valid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                  {tokenStatus.message}
-                  {tokenStatus.details && (
-                    <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-32">
-                      {JSON.stringify(tokenStatus.details, null, 2)}
-                    </pre>
-                  )}
+                  {tokenStatus.valid 
+                    ? 'Token is valid. You can now set your password.'
+                    : 'Invalid token. Please check your email for the correct link or generate a new token.'}
                 </div>
               )}
               
