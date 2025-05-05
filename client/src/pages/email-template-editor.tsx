@@ -53,7 +53,7 @@ const templateTypeInfo: Record<TemplateType, { name: string; description: string
 export default function EmailTemplateEditor() {
   const { id } = useParams();
   const templateId = parseInt(id || '0');
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("edit");
@@ -206,10 +206,10 @@ export default function EmailTemplateEditor() {
   const handleBack = () => {
     if (isFormDirty) {
       if (confirm("You have unsaved changes. Are you sure you want to leave this page? Your changes will be lost.")) {
-        navigate("/settings");
+        setLocation("/settings");
       }
     } else {
-      navigate("/settings");
+      setLocation("/settings");
     }
   };
 
@@ -399,7 +399,7 @@ export default function EmailTemplateEditor() {
                     </ScrollArea>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Note: Placeholders like {{churchName}} will be replaced with actual values when the email is sent.
+                    Note: Placeholders will be replaced with actual values when the email is sent.
                   </p>
                 </div>
               </div>
