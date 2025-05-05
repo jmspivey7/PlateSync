@@ -535,6 +535,7 @@ const Settings = () => {
                 <div className="space-y-4 mt-6">
                   <div className="flex justify-between items-center">
                     <FormLabel><strong>Church Logo:</strong></FormLabel>
+                    <span className="text-sm text-muted-foreground">Recommended size: 400x200px</span>
                   </div>
                   <FormDescription className="mt-0">
                     
@@ -678,23 +679,19 @@ const Settings = () => {
                   </div>
                 </div>
                 
-                <div className="flex mt-6">
-                  <div className="w-full flex justify-between items-center">
-                    <div></div>
-                    <Button 
-                      type="submit" 
-                      className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white mx-auto"
-                      disabled={updateSettingsMutation.isPending}
-                    >
-                      {updateSettingsMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="mr-2 h-4 w-4" />
-                      )}
-                      Save Changes
-                    </Button>
-                    <span className="text-sm text-muted-foreground">Recommended size: 400x200px</span>
-                  </div>
+                <div className="flex justify-center mt-6">
+                  <Button 
+                    type="submit" 
+                    className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                    disabled={updateSettingsMutation.isPending}
+                  >
+                    {updateSettingsMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save Changes
+                  </Button>
                 </div>
               </form>
             </Form>
