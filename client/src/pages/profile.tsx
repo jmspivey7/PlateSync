@@ -18,34 +18,33 @@ import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User } from "lucid
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { updateUserSchema } from "@shared/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
-// Create a profile-specific schema based on updateUserSchema
+// Define Zod schemas for validation
 const profileSchema = z.object({
-  churchName: z.string().nullable().optional(),
+  churchName: z.string().optional(),
   role: z.string().optional(),
-  emailNotificationsEnabled: z.boolean().nullable().optional(),
+  emailNotificationsEnabled: z.boolean().default(false),
 });
 
-type ProfileFormValues = z.infer<typeof profileSchema>;
-
-// Password change schema with validation
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string()
+  newPassword: z
+    .string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
-}).refine((data) => data.newPassword === data.confirmPassword, {
+}).refine(data => data.newPassword === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
+// Define form value types
+type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const Profile = () => {
@@ -102,55 +101,48 @@ const Profile = () => {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const response = await fetch('/api/profile/avatar', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to upload image');
+      try {
+        await apiRequest('POST', '/api/profile/avatar', formData);
+        
+        // Invalidate user query to refresh the avatar
+        queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+        
+        toast({
+          title: 'Success',
+          description: 'Your profile picture has been updated',
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to upload profile picture',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsUploading(false);
       }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Profile picture updated',
-        description: 'Your profile picture has been uploaded successfully',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      setIsUploading(false);
-    },
-    onError: () => {
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload profile picture. Please try again.',
-        variant: 'destructive',
-      });
-      setIsUploading(false);
     },
   });
   
-  // Handle avatar upload
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Handle file change for avatar upload
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
     
-    // Check file type
+    // Check if file is an image
     if (!file.type.startsWith('image/')) {
       toast({
-        title: 'Invalid file type',
-        description: 'Please upload an image file (JPEG, PNG, etc.)',
+        title: 'Error',
+        description: 'Please upload an image file',
         variant: 'destructive',
       });
       return;
     }
     
-    // Check file size (max 5MB)
+    // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: 'File too large',
-        description: 'Please upload an image smaller than 5MB',
+        title: 'Error',
+        description: 'Image size should be less than 5MB',
         variant: 'destructive',
       });
       return;
@@ -173,8 +165,7 @@ const Profile = () => {
   // Password change mutation
   const changePasswordMutation = useMutation({
     mutationFn: async (data: PasswordFormValues) => {
-      const response = await apiRequest('/api/profile/password', 'POST', data);
-      return response.json();
+      return apiRequest('/api/profile/password', 'POST', data);
     },
     onSuccess: (data: { success: boolean, message: string }) => {
       toast({
@@ -206,8 +197,14 @@ const Profile = () => {
   if (isAuthLoading) {
     return (
       <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
-        <div className="flex justify-center py-10">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <div className="max-w-4xl mx-auto">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#69ad4c]"></div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </PageLayout>
     );
@@ -215,72 +212,56 @@ const Profile = () => {
   
   return (
     <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <Card>
-          <CardHeader>
-            <CardTitle>Account Profile</CardTitle>
-            <CardDescription>
-              Manage your account preferences and settings
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            {/* Profile Avatar & Basic Info */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
-              <div className="relative group">
-                <Avatar className="h-24 w-24 bg-[#69ad4c]">
+          <CardContent className="pt-6">
+            {/* Profile header with avatar */}
+            <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
+              <div className="relative">
+                <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
                   {user?.profileImageUrl ? (
-                    <AvatarImage src={user.profileImageUrl} alt={user.username || "User"} />
+                    <AvatarImage src={user.profileImageUrl} alt="Profile" />
                   ) : (
-                    <AvatarFallback className="text-xl">
-                      {user?.role === "ADMIN" ? "A" : "U"}
+                    <AvatarFallback className="bg-[#69ad4c] text-white text-xl">
+                      {user?.firstName && user?.lastName 
+                        ? `${user.firstName[0]}${user.lastName[0]}`
+                        : user?.username?.[0] || "U"}
                     </AvatarFallback>
                   )}
                 </Avatar>
                 
-                {/* Hidden file input */}
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleAvatarUpload}
-                />
-                
-                {/* Upload button overlay */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="absolute bottom-0 right-0 rounded-full bg-white border border-gray-200 p-1.5 shadow-sm hover:bg-gray-50 text-gray-700"
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="absolute bottom-0 right-0 rounded-full bg-white"
                   onClick={triggerFileInput}
                   disabled={isUploading}
                 >
-                  {isUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
+                  <Camera className="h-4 w-4" />
+                  <span className="sr-only">Upload profile picture</span>
                 </Button>
+                
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
               </div>
               
-              <div className="flex-1 text-center sm:text-left">
-                <h3 className="text-xl font-semibold">
+              <div className="flex-1 text-center md:text-left">
+                <h3 className="text-xl font-bold">
                   {user?.firstName && user?.lastName 
                     ? `${user.firstName} ${user.lastName}`
                     : user?.username || "User"}
                 </h3>
-                <p className="text-gray-500">{user?.email || "No email provided"}</p>
+                <p className="text-muted-foreground">{user?.role === "ADMIN" ? "Administrator" : "Usher"}</p>
+                
                 <div className="mt-2">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {user?.role === "ADMIN" ? "Administrator" : "Usher"}
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
                     className="text-sm"
                     onClick={triggerFileInput}
                     disabled={isUploading}

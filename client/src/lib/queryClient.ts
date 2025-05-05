@@ -23,34 +23,51 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+export async function apiRequest(
+  method: string,
+  url: string,
+  body?: any,
+  headers?: Record<string, string>
+): Promise<Response>;
 export async function apiRequest<T = any>(
   url: string,
-  options?: {
-    method?: string;
-    body?: any;
-    headers?: Record<string, string>;
-    returnRaw?: boolean;
-  }
-): Promise<T> {
-  const isFormData = options?.body instanceof FormData;
-  const method = options?.method || 'GET';
+  method?: string,
+  body?: any,
+  headers?: Record<string, string>
+): Promise<T>;
+export async function apiRequest<T = any>(
+  methodOrUrl: string,
+  urlOrMethod?: string,
+  bodyOrHeaders?: any,
+  headersOrUndefined?: Record<string, string>
+): Promise<T | Response> {
+  // Determine if the first argument is a method or URL
+  const isFirstArgMethod = ["GET", "POST", "PUT", "DELETE", "PATCH"].includes(methodOrUrl.toUpperCase());
+  
+  // Set up variables based on the calling pattern
+  const method = isFirstArgMethod ? methodOrUrl : (urlOrMethod || "GET");
+  const url = isFirstArgMethod ? urlOrMethod as string : methodOrUrl;
+  const body = isFirstArgMethod ? bodyOrHeaders : urlOrMethod === "GET" ? undefined : bodyOrHeaders;
+  const headers = isFirstArgMethod ? headersOrUndefined : bodyOrHeaders && typeof bodyOrHeaders === "object" && !Array.isArray(bodyOrHeaders) ? bodyOrHeaders : undefined;
+  
+  const isFormData = body instanceof FormData;
   
   const res = await fetch(url, {
     method,
     // Don't set Content-Type when using FormData - the browser will set it automatically with the correct boundary
     headers: {
-      ...(options?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
-      ...options?.headers,
+      ...(body && !isFormData ? { "Content-Type": "application/json" } : {}),
+      ...headers,
     },
     // Don't stringify FormData objects
-    body: options?.body ? (isFormData ? options.body : JSON.stringify(options.body)) : undefined,
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
   
-  // Return raw response if requested
-  if (options?.returnRaw) {
+  // Return raw response if requested in the first signature
+  if (isFirstArgMethod) {
     return res as unknown as T;
   }
   
@@ -64,28 +81,38 @@ export async function apiRequest<T = any>(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
+export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior }): QueryFunction<T> => {
+  return async ({ queryKey }) => {
+    try {
+      const res = await fetch(queryKey[0] as string, {
+        credentials: "include",
+      });
 
-    await throwIfResNotOk(res);
-    
-    // For 204 No Content responses, return an empty object
-    if (res.status === 204) {
-      return {} as any;
+      if (res.status === 401) {
+        if (options.on401 === "returnNull") {
+          return null as any;
+        } else {
+          // Redirect to login
+          window.location.href = "/login";
+          return null as any;
+        }
+      }
+
+      await throwIfResNotOk(res);
+      
+      // For 204 No Content responses, return an empty object
+      if (res.status === 204) {
+        return {} as T;
+      }
+      
+      return await res.json();
+    } catch (error) {
+      console.error("Query error:", error);
+      throw error;
     }
-    
-    return await res.json();
   };
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
