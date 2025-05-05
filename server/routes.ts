@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { users } from "../shared/schema";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { setupTestEndpoints } from "./test-endpoints";
 import { eq, sql } from "drizzle-orm";
@@ -520,54 +521,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Accessing /api/attestation-users endpoint");
       const userId = req.user.claims.sub;
       
-      // Get ADMIN user for this church - this could be the user's own ID if they're an ADMIN
-      // For USHER users, we need to determine which ADMIN they belong to
-      const userRole = await storage.getUserRole(userId);
-      console.log(`User ${userId} has role ${userRole}`);
+      // Simple approach: Always include both the current user and the church ADMIN
+      // For ADMIN, the church ADMIN is themselves
+      // For USHER, we need to find the church ADMIN
       
-      if (userRole === 'ADMIN') {
-        // For ADMIN users, we fetch all USHERs in their church plus themselves
-        const users = await storage.getUsers(userId);
-        console.log(`Found ${users.length} users for ADMIN ${userId}`);
-        
-        // Make sure the ADMIN user is in the list
-        const adminIncluded = users.some(user => user.id === userId);
-        if (!adminIncluded) {
-          const adminUser = await storage.getUser(userId);
-          if (adminUser) users.push(adminUser);
-        }
-        
-        return res.json(users);
-      } else if (userRole === 'USHER') {
-        // For USHER users, we need to find their ADMIN
-        const churchId = await storage.getChurchIdForUser(userId);
-        console.log(`Determined churchId ${churchId} for USHER ${userId}`);
-        
-        if (!churchId) {
-          return res.status(404).json({ message: "Church not found" });
-        }
-        
-        // Get all users from the same church - this should include both ADMIN and USHER roles
-        const allUsers = await storage.getUsers(churchId);
-        console.log(`Found ${allUsers.length} users for churchId ${churchId}`);
-        
-        // Make sure ADMIN is included
-        const adminId = await storage.getAdminIdForChurch(churchId);
-        const adminIncluded = adminId && allUsers.some(user => user.id === adminId);
-        
-        if (adminId && !adminIncluded) {
-          const adminUser = await storage.getUser(adminId);
-          if (adminUser) {
-            console.log(`Adding admin ${adminId} to the list`);
-            allUsers.push(adminUser);
-          }
-        }
-        
-        return res.json(allUsers);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
       
-      // Fallback if role is neither ADMIN nor USHER
-      res.status(403).json({ message: "Invalid user role" });
+      const userRole = user.role;
+      console.log(`User ${userId} has role ${userRole}`);
+      
+      // Get all ADMINs in the system - this is a small list in most cases
+      const admins = await db
+        .select()
+        .from(users)
+        .where(eq(users.role, 'ADMIN'));
+      
+      console.log(`Found ${admins.length} ADMIN users in the system`);
+      
+      // Always return the ADMIN user(s) plus the current user (if they're not already included)
+      if (userRole === 'ADMIN') {
+        // For ADMIN, just return themselves and any other ADMIN users
+        return res.json(admins);
+      } else {
+        // For USHER, return all ADMIN users and themselves
+        const isUsherIncluded = admins.some(admin => admin.id === userId);
+        
+        if (!isUsherIncluded) {
+          admins.push(user);
+        }
+        
+        return res.json(admins);
+      }
     } catch (error) {
       console.error("Error fetching attestation users:", error);
       res.status(500).json({ message: "Failed to fetch attestation users" });
