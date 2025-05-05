@@ -1057,8 +1057,8 @@ const Settings = () => {
                           <tbody>
                             {reportRecipients.map((recipient) => (
                               <tr key={recipient.id} className="hover:bg-gray-50">
-                                <td className="py-2">{recipient.firstName} {recipient.lastName}</td>
-                                <td className="py-2">{recipient.email}</td>
+                                <td className="py-2 text-sm">{recipient.firstName} {recipient.lastName}</td>
+                                <td className="py-2 text-sm">{recipient.email}</td>
                                 <td className="text-right py-2">
                                   <div className="flex justify-end space-x-2">
                                     <Button
