@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Print-specific styles */
+@media print {
+  body {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  /* Hide non-printable elements */
+  nav, header, footer, button, .non-printable {
+    display: none !important;
+  }
+  
+  /* Ensure elements within the printable area are visible */
+  .print-view {
+    display: block !important;
+    width: 100% !important;
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Ensure borders print properly */
+  .border, .border-t, .border-b, .border-l, .border-r {
+    border-color: #000 !important;
+  }
+}
+
 :root {
   --radius: 0.5rem;
   --background: oklch(1 0 0);

@@ -442,7 +442,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <div className="flex flex-col space-y-3">
                 <Button 
                   onClick={() => {
-                    window.location.href = `/print-report?batchId=${batchId}&fromAttest=true`;
+                    // Open in a new tab for direct printing
+                    window.open(`/print-report?batchId=${batchId}&fromAttest=true`, '_blank');
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >

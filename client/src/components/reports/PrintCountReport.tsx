@@ -34,8 +34,11 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
     // Use setTimeout to allow the state to update before printing
     setTimeout(() => {
       window.print();
-      setIsPrintView(false);
-    }, 100);
+      // Keep print view active a bit longer to ensure the print dialog has time to appear
+      setTimeout(() => {
+        setIsPrintView(false);
+      }, 500);
+    }, 300);
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -92,7 +95,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
   // Print view
   if (isPrintView && batch) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="print-view p-8 max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">{batch.name} - Count Report</h1>
           <p className="text-muted-foreground">{format(new Date(batch.date), 'MMMM d, yyyy')}</p>
@@ -183,7 +186,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
               <Button
                 variant="outline"
                 onClick={handleBackToFinalized}
-                className="mb-6"
+                className="mb-6 non-printable"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Counts
@@ -236,7 +239,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
 
               <Button 
                 onClick={handlePrint}
-                className="w-full bg-[#69ad4c] hover:bg-[#5a9941] text-white mt-4"
+                className="w-full bg-[#69ad4c] hover:bg-[#5a9941] text-white mt-4 non-printable"
               >
                 <Printer className="mr-2 h-5 w-5" />
                 Print Report
