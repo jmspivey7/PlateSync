@@ -233,7 +233,7 @@ export function DonationChart() {
           View Historical Counts
         </Button>
       </CardHeader>
-      <CardContent className="relative pb-14">
+      <CardContent className="relative pb-6">
         <ChartContainer config={chartConfig} className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -242,7 +242,7 @@ export function DonationChart() {
                 top: 10,
                 right: 30,
                 left: 0,
-                bottom: 0,
+                bottom: 5, // Reduced bottom margin to tighten space
               }}
             >
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -250,7 +250,7 @@ export function DonationChart() {
                 dataKey="date" 
                 tickLine={false} 
                 axisLine={false} 
-                tickMargin={8}
+                tickMargin={4} // Reduced from 8 to 4 to tighten spacing
               />
               <Tooltip 
                 content={<CustomTooltip />}
@@ -288,7 +288,7 @@ export function DonationChart() {
         </ChartContainer>
         
         {/* Chart legend positioned in bottom right, away from date axis */}
-        <div className="absolute bottom-5 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
+        <div className="absolute bottom-2 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-[#69ad4c] mr-1.5"></div>
             <span className="text-xs text-muted-foreground">Cash</span>
@@ -299,9 +299,9 @@ export function DonationChart() {
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="pt-2 pb-3">
         <div className="flex w-full items-start gap-2 text-sm">
-          <div className="grid gap-2">
+          <div className="grid gap-1">
             <div className="flex items-center gap-2 font-medium leading-none">
               {trending === "up" ? (
                 <>Trending up by {displayPercentage}% <TrendingUp className="h-4 w-4 text-primary" /></>
