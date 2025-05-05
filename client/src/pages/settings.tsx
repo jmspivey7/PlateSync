@@ -713,9 +713,20 @@ const Settings = () => {
         
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle>Email Notifications</CardTitle>
+            <CardTitle>Notifications</CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
+            {/* Email Templates Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-4">Email Templates</h3>
+              <EmailTemplates />
+            </div>
+            
+            <Separator className="my-6" />
+            
+            {/* Email Notifications Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-4">Email Notifications</h3>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="mb-2">
@@ -780,6 +791,127 @@ const Settings = () => {
                 </div>
               </form>
             </Form>
+            </div>
+            
+            <Separator className="my-6" />
+            
+            {/* Count Report Notifications Section */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Count Report Notifications</h3>
+              <div className="space-y-3">
+                {isLoadingReportRecipients ? (
+                  <div className="flex justify-center py-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <div className="text-sm text-gray-600">
+                        Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
+                          onClick={() => {
+                            fetch('/api/test-count-report')
+                              .then(response => response.json())
+                              .then(data => {
+                                if (data.success) {
+                                  toast({
+                                    title: "Test Email Sent",
+                                    description: data.message,
+                                    className: "bg-[#69ad4c] text-white",
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Test Failed",
+                                    description: data.message,
+                                    variant: "destructive",
+                                    className: "bg-white border-red-600",
+                                  });
+                                }
+                              })
+                              .catch(error => {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to send test email. Make sure you have report recipients configured.",
+                                  variant: "destructive",
+                                  className: "bg-white border-red-600",
+                                });
+                              });
+                          }}
+                          className="text-[#69ad4c] hover:underline font-medium focus:outline-none"
+                        >
+                          Count Report email
+                        </button>.
+                      </div>
+                    </div>
+                    
+                    {reportRecipients.length === 0 ? (
+                      <div>
+                        <div className="text-center p-4 border border-gray-200 rounded-md bg-gray-50">
+                          <p className="text-gray-600">No recipients configured</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Add recipients to receive count reports</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <Table className="border-b border-gray-200">
+                          <TableHeader className="border-b border-gray-400">
+                            <TableRow>
+                              <TableHead className="font-bold">Name</TableHead>
+                              <TableHead className="font-bold">Email</TableHead>
+                              <TableHead className="font-bold w-[100px]">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {reportRecipients.map((recipient) => (
+                              <TableRow key={recipient.id}>
+                                <TableCell className="py-3 text-sm">
+                                  {recipient.firstName} {recipient.lastName}
+                                </TableCell>
+                                <TableCell className="py-3 text-sm">{recipient.email}</TableCell>
+                                <TableCell className="py-3">
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      onClick={() => openEditRecipientDialog(recipient)}
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
+                                      disabled={deleteReportRecipientMutation.isPending}
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                    >
+                                      {deleteReportRecipientMutation.isPending && deleteReportRecipientMutation.variables === recipient.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  
+                    <div className="flex justify-center mt-4">
+                      <Button
+                        onClick={openAddRecipientDialog}
+                        className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Recipient
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
         
