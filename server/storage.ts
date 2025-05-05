@@ -118,8 +118,11 @@ export class DatabaseStorage implements IStorage {
     
     // If user is an ADMIN, they are the church
     if (user.role === "ADMIN") {
+      console.log(`User ${userId} is an ADMIN, using their ID as churchId`);
       return userId;
     }
+    
+    // For USHER users, we need to find the ADMIN they're associated with
     
     // For USHER users, check if they've participated in any batches
     const [batch] = await db
@@ -133,10 +136,23 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
       
     if (batch?.churchId) {
+      console.log(`Found churchId ${batch.churchId} from batch for USHER ${userId}`);
       return batch.churchId;
     }
     
-    // If we can't determine the church from batches, query users table to find 
+    // If we can't determine the church from batches, try to find a donation record
+    const [donation] = await db
+      .select()
+      .from(donations)
+      .where(eq(donations.createdBy, userId))
+      .limit(1);
+      
+    if (donation?.churchId) {
+      console.log(`Found churchId ${donation.churchId} from donation for USHER ${userId}`);
+      return donation.churchId;
+    }
+    
+    // If we can't determine the church from batches or donations, query users table to find 
     // ADMIN users and select one (there should only be one ADMIN per church)
     const [admin] = await db
       .select()
@@ -145,12 +161,13 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     
     if (admin) {
+      console.log(`Found admin user ${admin.id} as churchId for USHER ${userId}`);
       return admin.id;
     }
     
     // If we still can't determine the church, fall back to using the user's ID
     // This should rarely happen in practice
-    console.warn(`Could not determine church ID for user ${userId}, using user ID as fallback`);
+    console.log(`No churchId found for USHER ${userId}, using userId as fallback`);
     return userId;
   }
   
