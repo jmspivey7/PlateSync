@@ -66,8 +66,9 @@ export default function LoginLocal() {
               />
             </div>
             <CardTitle className="text-left mt-2">Sign In</CardTitle>
+            <p className="text-gray-600 mt-2">Welcome back. Please enter your credentials to access your account.</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               {loginStatus.error && (
                 <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm mb-4">
