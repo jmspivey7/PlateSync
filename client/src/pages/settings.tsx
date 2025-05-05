@@ -793,39 +793,7 @@ const Settings = () => {
             )}
             
             <div className="flex flex-col space-y-3">
-              <Button
-                onClick={() => {
-                  fetch('/api/test-count-report')
-                    .then(response => response.json())
-                    .then(data => {
-                      if (data.success) {
-                        toast({
-                          title: "Test Email Sent",
-                          description: data.message,
-                          className: "bg-[#69ad4c] text-white",
-                        });
-                      } else {
-                        toast({
-                          title: "Test Failed",
-                          description: data.message,
-                          variant: "destructive",
-                        });
-                      }
-                    })
-                    .catch(error => {
-                      toast({
-                        title: "Error",
-                        description: "Failed to send test email. Make sure you have report recipients configured.",
-                        variant: "destructive",
-                      });
-                    });
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                Test Count Report Email
-              </Button>
+              {/* Test Count Report Email button removed - now accessible in Count Report Notifications section */}
             </div>
           </CardContent>
         </Card>
@@ -1042,7 +1010,39 @@ const Settings = () => {
               ) : (
                 <>
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-sm font-medium">Recipients</div>
+                    <div className="text-sm">
+                      Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
+                        onClick={() => {
+                          fetch('/api/test-count-report')
+                            .then(response => response.json())
+                            .then(data => {
+                              if (data.success) {
+                                toast({
+                                  title: "Test Email Sent",
+                                  description: data.message,
+                                  className: "bg-[#69ad4c] text-white",
+                                });
+                              } else {
+                                toast({
+                                  title: "Test Failed",
+                                  description: data.message,
+                                  variant: "destructive",
+                                });
+                              }
+                            })
+                            .catch(error => {
+                              toast({
+                                title: "Error",
+                                description: "Failed to send test email. Make sure you have report recipients configured.",
+                                variant: "destructive",
+                              });
+                            });
+                        }}
+                        className="text-[#69ad4c] hover:underline font-medium focus:outline-none"
+                      >
+                        Count Report email
+                      </button>.
+                    </div>
                     <Button
                       type="button"
                       size="sm"
