@@ -721,11 +721,8 @@ const Settings = () => {
                 <div className="mb-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="text-lg font-medium">
-                        Enable or Disable Email Notifications
-                      </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        Email notifications are sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries. Click here to test the <button 
+                        Email notifications can be sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries. Click here to test the <button 
                           onClick={testSendGridConfiguration} 
                           disabled={sendgridTestStatus === 'loading'}
                           className="text-[#69ad4c] hover:underline font-medium focus:outline-none"
