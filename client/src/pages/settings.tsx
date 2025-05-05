@@ -505,17 +505,17 @@ const Settings = () => {
       
       <div className="grid grid-cols-1 gap-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Church Information</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="churchName"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="space-y-1.5">
                       <FormLabel><strong>Church Name:</strong></FormLabel>
                       <FormControl>
                         <Input 
@@ -541,19 +541,16 @@ const Settings = () => {
                   )}
                 />
                 
-                <div className="space-y-4 mt-6">
+                <div className="space-y-2 mt-2">
                   <div className="flex justify-between items-center">
                     <FormLabel><strong>Church Logo:</strong></FormLabel>
                   </div>
-                  <FormDescription className="mt-0">
-                    
-                  </FormDescription>
                   
                   {/* Logo Display Section */}
-                  <div className="border rounded-lg p-6 flex flex-col items-center">
+                  <div className="border rounded-lg p-4 flex flex-col items-center">
                     {user?.churchLogoUrl ? (
-                      <div className="mb-4 flex flex-col items-center">
-                        <div className="w-32 h-32 rounded-lg border overflow-hidden mb-2 flex items-center justify-center bg-gray-50">
+                      <div className="mb-3 flex flex-col items-center">
+                        <div className="w-28 h-28 rounded-lg border overflow-hidden mb-1 flex items-center justify-center bg-gray-50">
                           <img 
                             src={user.churchLogoUrl} 
                             alt={`${user.churchName || 'Church'} logo`} 
@@ -563,11 +560,11 @@ const Settings = () => {
                         <p className="text-sm text-gray-500">Current logo</p>
                       </div>
                     ) : (
-                      <div className="mb-4 flex flex-col items-center">
-                        <div className="w-32 h-32 rounded-lg border flex items-center justify-center bg-gray-50">
-                          <ImageIcon className="h-16 w-16 text-gray-300" />
+                      <div className="mb-3 flex flex-col items-center">
+                        <div className="w-28 h-28 rounded-lg border flex items-center justify-center bg-gray-50">
+                          <ImageIcon className="h-14 w-14 text-gray-300" />
                         </div>
-                        <p className="text-sm text-gray-500 mt-2">No logo uploaded</p>
+                        <p className="text-sm text-gray-500 mt-1">No logo uploaded</p>
                       </div>
                     )}
                     
@@ -623,7 +620,7 @@ const Settings = () => {
                     />
                     
                     {/* Logo Action Buttons */}
-                    <div className="flex space-x-2 mt-4">
+                    <div className="flex space-x-2 mt-2">
                       <Button
                         type="button"
                         variant="outline"
@@ -687,12 +684,12 @@ const Settings = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex justify-end mt-2">
+                  <div className="flex justify-end mt-1">
                     <span className="text-sm text-gray-600">Recommended Size: 400x200px</span>
                   </div>
                 </div>
                 
-                <div className="flex justify-center mt-6">
+                <div className="flex justify-center mt-4">
                   <Button 
                     type="submit" 
                     className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
@@ -712,16 +709,16 @@ const Settings = () => {
         </Card>
         
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Email Notifications</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="mb-4">
+                <div className="mb-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600">
                         Email notifications can be sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries. Click here to test the <button 
                           onClick={testSendGridConfiguration} 
                           disabled={sendgridTestStatus === 'loading'}
@@ -780,18 +777,16 @@ const Settings = () => {
                 </div>
               </form>
             </Form>
-            
-            {/* Removed extra padding and empty div */}
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Service Options</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-sm text-gray-600 mb-2">
+          <CardContent className="pt-2">
+            <div className="space-y-3">
+              <div className="text-sm text-gray-600">
                 <p>Service options are used when creating a new count. They represent different service types such as Sunday morning, Sunday evening, Wednesday night, etc.</p>
               </div>
               
@@ -964,28 +959,28 @@ const Settings = () => {
         </Card>
             
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Import Members</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <CsvImporter />
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Count Report Notifications</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="pt-2">
+            <div className="space-y-3">
               {isLoadingReportRecipients ? (
-                <div className="flex justify-center py-4">
+                <div className="flex justify-center py-3">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="text-sm text-gray-600">
                       Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
                         onClick={() => {
                           fetch('/api/test-count-report')
@@ -1032,10 +1027,10 @@ const Settings = () => {
                   </div>
                   
                   {reportRecipients.length === 0 ? (
-                    <div className="text-center py-6 border rounded-md bg-muted/10">
-                      <MailCheck className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <div className="text-center py-4 border rounded-md bg-muted/10">
+                      <MailCheck className="h-10 w-10 mx-auto text-gray-400 mb-1" />
                       <p className="text-sm text-gray-500">No recipients configured</p>
-                      <p className="text-xs text-gray-400 mt-1">Add recipients to receive count reports</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Add recipients to receive count reports</p>
                     </div>
                   ) : (
                     <div className="border rounded-md overflow-hidden">
@@ -1079,7 +1074,7 @@ const Settings = () => {
                     </div>
                   )}
                   
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 mt-1">
                     These recipients will receive an email notification when a count is closed
                   </p>
                 </>
