@@ -431,6 +431,12 @@ const BatchDetailPage = () => {
             </CardDescription>
           </div>
           <div className="flex space-x-2">
+            {(batch.status === "CLOSED" || batch.status === "FINALIZED") && (
+              <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
+                <Printer className="mr-2 h-4 w-4" />
+                Print
+              </Button>
+            )}
             <Button variant="outline" onClick={handleBackToCounts}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Counts
