@@ -66,9 +66,6 @@ export default function LoginLocal() {
         <Card className="w-full border border-gray-100">
           <CardHeader>
             <CardTitle className="text-center">Log In</CardTitle>
-            <CardDescription className="text-center">
-              Enter your credentials to access the system
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,7 +84,7 @@ export default function LoginLocal() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="church@example.com"
+                    placeholder=""
                     className="pl-10"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -97,15 +94,7 @@ export default function LoginLocal() {
               </div>
               
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <a 
-                    href="/forgot-password" 
-                    className="text-sm text-[#69ad4c] hover:underline"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <LockIcon className="h-5 w-5 text-gray-400" />
@@ -113,7 +102,7 @@ export default function LoginLocal() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder=""
                     className="pl-10 pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -141,6 +130,15 @@ export default function LoginLocal() {
               >
                 {loginStatus.isLoading ? "Logging in..." : "Log In"}
               </Button>
+              
+              <div className="text-center mt-4">
+                <a 
+                  href="/forgot-password" 
+                  className="text-sm text-[#69ad4c] hover:underline"
+                >
+                  Forgot password?
+                </a>
+              </div>
             </form>
           </CardContent>
         </Card>
