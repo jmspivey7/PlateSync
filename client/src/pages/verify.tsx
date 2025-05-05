@@ -25,7 +25,7 @@ export default function Verify() {
   const search = useSearch();
   const { toast } = useToast();
   
-  // Parse token from URL and automatically validate it
+  // Parse token from URL
   useEffect(() => {
     const params = new URLSearchParams(search);
     const tokenFromUrl = params.get("token");
@@ -35,7 +35,7 @@ export default function Verify() {
     }
   }, [search]);
   
-  // Validate token against the API
+  // Validate token
   const validateToken = async (tokenToCheck: string) => {
     if (!tokenToCheck) return;
     
@@ -63,11 +63,6 @@ export default function Verify() {
       const email = prompt("Please enter your email to generate a new verification token:");
       if (!email) return;
       
-      toast({
-        title: "Generating token...",
-        description: "Please wait while we generate a new verification token.",
-      });
-      
       const response = await fetch('/api/regenerate-verification-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,13 +72,9 @@ export default function Verify() {
       const data = await response.json();
       
       if (data.success) {
-        const newToken = data.verificationUrl.split("token=")[1];
-        setToken(newToken);
-        validateToken(newToken);
-        
         toast({
-          title: "Token generated",
-          description: "A new verification token has been generated and applied.",
+          title: "Success",
+          description: "A new verification token has been sent to your email.",
         });
       } else {
         toast({
@@ -166,16 +157,6 @@ export default function Verify() {
     }
   };
   
-  // Show token status message
-  const getStatusMessage = () => {
-    if (tokenValid === true) {
-      return "Your verification link is valid. Please set your password to complete account setup.";
-    } else if (tokenValid === false) {
-      return "This verification link is invalid or has expired. Please generate a new one or check your email for the correct link.";
-    }
-    return null;
-  };
-  
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-lg mx-auto">
@@ -186,29 +167,36 @@ export default function Verify() {
         
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {/* Status messages */}
+            {/* Error message */}
             {error && (
               <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
                 {error}
               </div>
             )}
             
+            {/* Success message */}
             {success && (
               <div className="p-3 rounded-md bg-green-100 text-green-800 text-sm">
                 Your email has been verified and password set successfully. You will be redirected to the login page.
               </div>
             )}
             
-            {/* Token status message */}
-            {getStatusMessage() && !success && !error && (
-              <div className={`p-3 rounded-md text-sm ${tokenValid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                {getStatusMessage()}
+            {/* When token is invalid, show regenerate button */}
+            {tokenValid === false ? (
+              <div className="pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="default"
+                  className="w-full"
+                  onClick={handleGenerateToken}
+                >
+                  Generate New Verification Token
+                </Button>
               </div>
-            )}
-            
-            {/* Password input - only show when token is valid */}
-            {tokenValid !== false && (
+            ) : (
               <>
+                {/* Password fields - only shown when token isn't invalid */}
                 <div className="space-y-2">
                   <Label htmlFor="password">New Password</Label>
                   <div className="relative">
@@ -251,44 +239,27 @@ export default function Verify() {
                     disabled={loading || success}
                   />
                 </div>
+                
+                <Button
+                  type="submit"
+                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
+                  disabled={loading || success}
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                      <span>Verifying...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <LockIcon className="h-4 w-4" />
+                      <span>Set Password & Verify</span>
+                    </div>
+                  )}
+                </Button>
               </>
             )}
-            
-            {/* Token regeneration - only show when token is invalid */}
-            {tokenValid === false && (
-              <div className="pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="default"
-                  className="w-full"
-                  onClick={handleGenerateToken}
-                >
-                  Generate New Verification Token
-                </Button>
-              </div>
-            )}
           </CardContent>
-          
-          <CardFooter>
-            <Button
-              type="submit"
-              className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
-              disabled={loading || success || tokenValid === false}
-            >
-              {loading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                  <span>Verifying...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <LockIcon className="h-4 w-4" />
-                  <span>Set Password & Verify</span>
-                </div>
-              )}
-            </Button>
-          </CardFooter>
         </form>
       </Card>
     </div>
