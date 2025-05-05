@@ -173,6 +173,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
+      
+      // If user exists and is an USHER, fetch church info from ADMIN
+      if (user && user.role === "USHER") {
+        try {
+          // Get the church ID this user belongs to
+          const churchId = await storage.getChurchIdForUser(userId);
+          
+          // If churchId is different from userId, get the church name from ADMIN
+          if (churchId !== userId) {
+            const adminUser = await storage.getUser(churchId);
+            if (adminUser && adminUser.churchName) {
+              // Merge the church name from ADMIN into the user's response
+              user.churchName = adminUser.churchName;
+              // Also include the logo if available
+              if (adminUser.churchLogoUrl) {
+                user.churchLogoUrl = adminUser.churchLogoUrl;
+              }
+            }
+          }
+        } catch (churchError) {
+          console.error("Error fetching church info:", churchError);
+          // Continue with the user's original data
+        }
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
