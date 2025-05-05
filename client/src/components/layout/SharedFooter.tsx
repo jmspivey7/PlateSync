@@ -2,7 +2,7 @@ import plateSyncLogo from "../../assets/platesync-logo.png";
 
 const SharedFooter = () => {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center mt-8 mb-4 gap-4">
+    <div className="flex flex-col sm:flex-row justify-between items-center mt-3 mb-4 gap-4">
       <div>
         <img 
           src={plateSyncLogo} 

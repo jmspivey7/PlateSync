@@ -12,7 +12,7 @@ interface PageLayoutProps {
 
 const PageLayout = ({ children, title, subtitle, icon, action }: PageLayoutProps) => {
   return (
-    <div className="max-w-4xl mx-auto px-4 mb-8">
+    <div className="max-w-4xl mx-auto px-4 mb-4">
       {/* Header/Navigation */}
       <SharedNavigation title={title} subtitle={subtitle} icon={icon} action={action} />
       
