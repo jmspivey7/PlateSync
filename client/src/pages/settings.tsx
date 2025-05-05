@@ -548,10 +548,10 @@ const Settings = () => {
                   </div>
                   
                   {/* Logo Display Section */}
-                  <div className="border rounded-lg p-4 flex flex-col items-center">
+                  <div className="border border-gray-400 rounded-lg p-4 flex flex-col items-center">
                     {user?.churchLogoUrl ? (
                       <div className="mb-3 flex flex-col items-center">
-                        <div className="w-28 h-28 rounded-lg border overflow-hidden mb-1 flex items-center justify-center bg-gray-50">
+                        <div className="w-28 h-28 rounded-lg border border-gray-400 overflow-hidden mb-1 flex items-center justify-center bg-gray-50">
                           <img 
                             src={user.churchLogoUrl} 
                             alt={`${user.churchName || 'Church'} logo`} 
@@ -562,7 +562,7 @@ const Settings = () => {
                       </div>
                     ) : (
                       <div className="mb-3 flex flex-col items-center">
-                        <div className="w-28 h-28 rounded-lg border flex items-center justify-center bg-gray-50">
+                        <div className="w-28 h-28 rounded-lg border border-gray-400 flex items-center justify-center bg-gray-50">
                           <ImageIcon className="h-14 w-14 text-gray-300" />
                         </div>
                         <p className="text-sm text-gray-500 mt-1">No logo uploaded</p>
