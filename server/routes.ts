@@ -1027,10 +1027,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Batch not found" });
       }
       
-      // Can only attest if the batch is CLOSED
-      if (batch.status !== 'CLOSED') {
+      // Can only attest if the batch is OPEN
+      if (batch.status !== 'OPEN') {
         return res.status(400).json({ 
-          message: "Batch must be closed before attestation can begin" 
+          message: "Batch must be open before attestation can begin" 
         });
       }
       
