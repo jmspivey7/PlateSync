@@ -34,6 +34,7 @@ export interface IStorage {
   // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   getUsers(churchId: string): Promise<User[]>;
+  getChurchIdForUser(userId: string): Promise<string>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
   updateUserRole(id: string, role: string): Promise<User>;
@@ -104,6 +105,53 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+  
+  // Get the church ID for a user - for ADMIN users, it's their own ID
+  // For USHER users, we need to find which church they belong to
+  async getChurchIdForUser(userId: string): Promise<string> {
+    const user = await this.getUser(userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // If user is an ADMIN, they are the church
+    if (user.role === "ADMIN") {
+      return userId;
+    }
+    
+    // For USHER users, check if they've participated in any batches
+    const [batch] = await db
+      .select()
+      .from(batches)
+      .where(sql`
+        ${batches.primaryAttestorId} = ${userId} OR 
+        ${batches.secondaryAttestorId} = ${userId} OR
+        ${batches.attestationConfirmedBy} = ${userId}
+      `)
+      .limit(1);
+      
+    if (batch?.churchId) {
+      return batch.churchId;
+    }
+    
+    // If we can't determine the church from batches, query users table to find 
+    // ADMIN users and select one (there should only be one ADMIN per church)
+    const [admin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'ADMIN'))
+      .limit(1);
+    
+    if (admin) {
+      return admin.id;
+    }
+    
+    // If we still can't determine the church, fall back to using the user's ID
+    // This should rarely happen in practice
+    console.warn(`Could not determine church ID for user ${userId}, using user ID as fallback`);
+    return userId;
   }
   
   async getUsers(churchId: string): Promise<User[]> {

@@ -31,20 +31,8 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
     <>
       {/* Header with Church Logo */}
       <div className="flex justify-between items-center py-4 mb-6">
-        {user?.churchLogoUrl ? (
-          // Display custom church logo if available
-          <div 
-            className="cursor-pointer flex items-center"
-            onClick={() => setLocation("/dashboard")}
-          >
-            <img 
-              src={user.churchLogoUrl} 
-              alt={user.churchName || "Church Logo"} 
-              className="h-[4.6rem] sm:h-[6.9rem] object-contain" 
-            />
-          </div>
-        ) : user?.churchName ? (
-          // Show church name if no logo but name is available
+        {/* Always show the church name with icon if available, otherwise default icon */}
+        {user?.churchName ? (
           <div 
             className="cursor-pointer flex items-center"
             onClick={() => setLocation("/dashboard")}
@@ -55,13 +43,15 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             </div>
           </div>
         ) : (
-          // Fallback to default logo
-          <img 
-            src={redeemerLogo} 
-            alt="Redeemer NOLA Presbyterian Church" 
-            className="h-[4.6rem] sm:h-[6.9rem] object-contain cursor-pointer" /* Increased by 15% from original h-16 (4rem) and sm:h-24 (6rem) */
+          <div 
+            className="cursor-pointer flex items-center"
             onClick={() => setLocation("/dashboard")}
-          />
+          >
+            <div className="flex items-center">
+              <Church className="h-8 w-8 mr-2 text-[#69ad4c]" />
+              <span className="text-xl font-bold">PlateSync</span>
+            </div>
+          </div>
         )}
         
         {isMobile ? (
