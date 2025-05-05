@@ -1081,10 +1081,6 @@ const Settings = () => {
                       </table>
                     </div>
                   )}
-                  
-                  <p className="text-xs text-gray-500 mt-1">
-                    These recipients will receive an email notification when a count is closed
-                  </p>
                 </>
               )}
             </div>
