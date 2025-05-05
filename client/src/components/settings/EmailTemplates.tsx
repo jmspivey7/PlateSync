@@ -94,12 +94,12 @@ export default function EmailTemplates() {
     },
   });
 
-  // Initialize templates if none exist on component mount
+  // Initialize templates on component mount to ensure all four exist
   useEffect(() => {
-    if (templates.length === 0 && !isLoading && !isError && !initialized) {
+    if ((templates.length < 4) && !isLoading && !isError && !initialized) {
       initializeTemplatesMutation.mutate();
     }
-  }, [templates, isLoading, isError, initialized]);
+  }, [templates.length, isLoading, isError, initialized]);
 
   // Check if template has been customized by comparing createdAt and updatedAt
   const isTemplateCustomized = (template: EmailTemplate): boolean => {
@@ -154,27 +154,9 @@ export default function EmailTemplates() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-gray-600">
-                Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
-              </p>
-              <Button
-                onClick={() => initializeTemplatesMutation.mutate()}
-                disabled={initializeTemplatesMutation.isPending}
-                variant="outline"
-                size="sm"
-                className="border-gray-400"
-              >
-                {initializeTemplatesMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Refreshing...
-                  </>
-                ) : (
-                  "Refresh Templates"
-                )}
-              </Button>
-            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
+            </p>
             
             <Table className="border border-gray-400 rounded-md overflow-hidden">
               <TableHeader>
