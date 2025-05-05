@@ -1959,13 +1959,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // For each template type, check if it exists and create if it doesn't
       for (const templateType of templateTypes) {
-        const existingTemplate = await storage.getEmailTemplateByType(templateType, userId);
+        const existingTemplate = await storage.getEmailTemplateByType(templateType, churchId);
         
         if (!existingTemplate) {
           // Create template with default content based on type
           let template = {
             templateType,
-            churchId: userId,
+            churchId: churchId,
             subject: '',
             bodyText: '',
             bodyHtml: ''
@@ -2285,7 +2285,10 @@ PlateSync Reporting System`;
   app.get('/api/email-templates', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const templates = await storage.getEmailTemplates(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const templates = await storage.getEmailTemplates(churchId);
       res.json(templates);
     } catch (error) {
       console.error("Error fetching email templates:", error);
@@ -2297,13 +2300,16 @@ PlateSync Reporting System`;
   app.get('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const templateId = parseInt(req.params.id);
       
       if (isNaN(templateId)) {
         return res.status(400).json({ message: "Invalid template ID" });
       }
       
-      const template = await storage.getEmailTemplate(templateId, userId);
+      const template = await storage.getEmailTemplate(templateId, churchId);
       
       if (!template) {
         return res.status(404).json({ message: "Email template not found" });
@@ -2320,9 +2326,12 @@ PlateSync Reporting System`;
   app.get('/api/email-templates/type/:type', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const templateType = req.params.type;
       
-      const template = await storage.getEmailTemplateByType(templateType, userId);
+      const template = await storage.getEmailTemplateByType(templateType, churchId);
       
       if (!template) {
         return res.status(404).json({ message: "Email template not found" });
@@ -2339,12 +2348,14 @@ PlateSync Reporting System`;
   app.post('/api/email-templates', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
       
       // Validate incoming data with zod schema
       const validatedData = insertEmailTemplateSchema.parse(req.body);
       
       // Check if template with this type already exists
-      const existingTemplate = await storage.getEmailTemplateByType(validatedData.templateType, userId);
+      const existingTemplate = await storage.getEmailTemplateByType(validatedData.templateType, churchId);
       
       if (existingTemplate) {
         return res.status(409).json({ message: "A template with this type already exists" });
@@ -2353,7 +2364,7 @@ PlateSync Reporting System`;
       // Create new template
       const newTemplate = await storage.createEmailTemplate({
         ...validatedData,
-        churchId: userId
+        churchId: churchId
       });
       
       res.status(201).json(newTemplate);
@@ -2370,6 +2381,9 @@ PlateSync Reporting System`;
   app.patch('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const templateId = parseInt(req.params.id);
       
       if (isNaN(templateId)) {
@@ -2377,7 +2391,7 @@ PlateSync Reporting System`;
       }
       
       // Fetch the existing template
-      const existingTemplate = await storage.getEmailTemplate(templateId, userId);
+      const existingTemplate = await storage.getEmailTemplate(templateId, churchId);
       
       if (!existingTemplate) {
         return res.status(404).json({ message: "Email template not found" });
@@ -2386,10 +2400,13 @@ PlateSync Reporting System`;
       // Validate incoming data with zod schema
       const validatedData = insertEmailTemplateSchema
         .partial()
-        .parse(req.body);
+        .parse({
+          ...req.body,
+          churchId: churchId // Ensure churchId is set correctly
+        });
       
       // Update template
-      const updatedTemplate = await storage.updateEmailTemplate(templateId, validatedData, userId);
+      const updatedTemplate = await storage.updateEmailTemplate(templateId, validatedData, churchId);
       
       if (!updatedTemplate) {
         return res.status(404).json({ message: "Email template not found" });
@@ -2409,6 +2426,9 @@ PlateSync Reporting System`;
   app.post('/api/email-templates/:id/reset', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const templateId = parseInt(req.params.id);
       
       if (isNaN(templateId)) {
@@ -2416,7 +2436,7 @@ PlateSync Reporting System`;
       }
       
       // Reset template to default
-      const resetTemplate = await storage.resetEmailTemplateToDefault(templateId, userId);
+      const resetTemplate = await storage.resetEmailTemplateToDefault(templateId, churchId);
       
       if (!resetTemplate) {
         return res.status(404).json({ message: "Email template not found" });
