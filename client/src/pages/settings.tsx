@@ -710,10 +710,10 @@ const Settings = () => {
                 <div className="mb-4">
                   <div className="space-y-1">
                     <div className="text-lg font-medium">
-                      Enable Email Notifications
+                      Enable or Disable Email Notifications
                     </div>
                     <div className="text-gray-600">
-                      Send email notifications to donors when donations are recorded
+                      Email notifications are sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries.
                     </div>
                   </div>
                   <div className="mt-8 flex justify-end">
