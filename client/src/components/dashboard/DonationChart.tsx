@@ -233,7 +233,7 @@ export function DonationChart() {
           View Historical Counts
         </Button>
       </CardHeader>
-      <CardContent className="relative pb-28">
+      <CardContent className="relative pb-14">
         <ChartContainer config={chartConfig} className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
