@@ -781,11 +781,7 @@ const Settings = () => {
               </form>
             </Form>
             
-            <Separator className="my-6" />
-            
-            <div className="flex flex-col space-y-3">
-              {/* Test Count Report Email button and SendGrid status alerts removed */}
-            </div>
+            {/* Removed extra padding and empty div */}
           </CardContent>
         </Card>
         
