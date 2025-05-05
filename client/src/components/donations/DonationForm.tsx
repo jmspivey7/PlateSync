@@ -653,7 +653,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
   };
   
   return (
-    <Card className={`${isInsideDialog ? 'mb-0' : 'mb-8'}`}>
+    <Card className={`${isInsideDialog ? 'mb-0' : 'mb-8'} max-w-[calc(100%-50px)] mx-auto`}>
       {!isInsideDialog && (
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
           <CardTitle className="text-xl font-bold text-[#2D3748]">
