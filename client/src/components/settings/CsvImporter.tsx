@@ -22,12 +22,23 @@ const CsvImporter = () => {
 
   const importMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await apiRequest('POST', '/api/members/import', formData);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to import members');
+      try {
+        const response = await fetch('/api/members/import', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to import members');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Import error:', error);
+        throw error;
       }
-      return response.json();
     },
     onSuccess: (data) => {
       setImportStatus('success');
@@ -162,14 +173,8 @@ const CsvImporter = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Import Members</CardTitle>
-        <CardDescription>
-          Upload a CSV file to import members into the system
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Card className="shadow-none border-0 pt-0">
+      <CardContent className="pt-0">
         <div 
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer mb-4 
             ${isDragging ? 'border-[#4299E1] bg-[#4299E1]/10' : 'border-gray-300'}`}
