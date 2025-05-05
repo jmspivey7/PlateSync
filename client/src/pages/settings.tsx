@@ -968,9 +968,7 @@ const Settings = () => {
                 )}
               </div>
               
-              <p className="text-xs text-gray-500 mt-2">
-                * The default service option will be pre-selected when creating a new count
-              </p>
+              {/* Removed explanatory text about default service option */}
             </div>
           </CardContent>
         </Card>
