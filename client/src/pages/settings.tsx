@@ -783,9 +783,7 @@ const Settings = () => {
           </CardContent>
         </Card>
         
-        {/* Email Templates Section */}
-        <EmailTemplates />
-        
+        {/* Service Options Section */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Service Options</CardTitle>
