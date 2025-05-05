@@ -144,10 +144,19 @@ const Settings = () => {
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      return await apiRequest("/api/settings", {
+      const response = await fetch("/api/settings", {
         method: "PATCH",
-        body: values
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values)
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update settings");
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
@@ -714,17 +723,34 @@ const Settings = () => {
                           form.setValue("emailNotificationsEnabled", checked);
                           
                           // Save the change immediately
-                          updateSettingsMutation.mutate({
-                            churchName: form.getValues("churchName"),
-                            emailNotificationsEnabled: checked
-                          }, {
-                            onSuccess: () => {
-                              toast({
-                                title: "Notification Setting Updated",
-                                description: `Email notifications have been turned ${checked ? 'ON' : 'OFF'}.`,
-                                className: "bg-[#69ad4c] text-white",
-                              });
-                            }
+                          fetch("/api/settings", {
+                            method: "PATCH",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              churchName: form.getValues("churchName"),
+                              emailNotificationsEnabled: checked
+                            })
+                          })
+                          .then(response => {
+                            if (!response.ok) throw new Error("Failed to update settings");
+                            return response.json();
+                          })
+                          .then(() => {
+                            queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                            toast({
+                              title: "Notification Setting Updated",
+                              description: `Email notifications have been turned ${checked ? 'ON' : 'OFF'}.`,
+                              className: "bg-[#69ad4c] text-white",
+                            });
+                          })
+                          .catch(error => {
+                            toast({
+                              title: "Error",
+                              description: `Failed to update setting: ${error.message}`,
+                              variant: "destructive",
+                            });
                           });
                         }}
                         className="enhanced-switch"
