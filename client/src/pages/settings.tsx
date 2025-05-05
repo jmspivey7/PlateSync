@@ -708,15 +708,15 @@ const Settings = () => {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="mb-4">
-                  <div className="space-y-1">
-                    <div className="text-lg font-medium">
-                      Enable or Disable Email Notifications
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-lg font-medium">
+                        Enable or Disable Email Notifications
+                      </div>
+                      <div className="text-gray-600 mt-1">
+                        Email notifications are sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries.
+                      </div>
                     </div>
-                    <div className="text-gray-600">
-                      Email notifications are sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries.
-                    </div>
-                  </div>
-                  <div className="mt-8 flex justify-end">
                     <div className="flex items-center">
                       <Switch
                         checked={form.watch("emailNotificationsEnabled")}
