@@ -707,7 +707,7 @@ const Settings = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="border rounded-lg p-6 mb-4">
+                <div className="mb-4">
                   <div className="space-y-1">
                     <div className="text-lg font-medium">
                       Enable Email Notifications
