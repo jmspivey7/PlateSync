@@ -29,46 +29,13 @@ const AttestBatchPage = () => {
     },
   });
 
-  // Mutation to close batch if needed
-  const closeBatchMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`/api/batches/${batchId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: "CLOSED" })
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId] });
-      
-      toast({
-        title: "Batch Closed",
-        description: "Count has been automatically closed for attestation.",
-      });
-      
-      // Refetch the batch to update status
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to close batch: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    }
-  });
+  // No need to close batch anymore as we're removing CLOSED status
+  // We'll just check if batch is OPEN (not FINALIZED) before showing the attestation form
 
-  // Automatically close the batch if it's not already closed or finalized
-  const ensureBatchIsClosed = () => {
-    if (batch && batch.status === "OPEN") {
-      closeBatchMutation.mutate();
-      return false;
-    }
-    return true;
+  // Check if attestation is allowed based on batch status
+  const canAttest = () => {
+    // Only OPEN batches can be attested
+    return batch && batch.status === "OPEN";
   };
 
   const handleBackToCount = () => {
@@ -112,18 +79,18 @@ const AttestBatchPage = () => {
     );
   }
 
-  // Check if we need to close the batch
-  if (batch.status === "OPEN") {
+  // Check if attestation is allowed
+  if (!canAttest()) {
     return (
       <PageLayout 
-        title={`Preparing Count for Attestation`} 
+        title={`Count Already Finalized`} 
         subtitle={`${batch.name}`}
       >
         <Card className="max-w-xl mx-auto">
           <CardHeader>
-            <CardTitle>Preparing for Attestation</CardTitle>
+            <CardTitle>Attestation Not Available</CardTitle>
             <CardDescription>
-              The count needs to be closed before attestation can begin
+              This count has already been finalized
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -131,7 +98,7 @@ const AttestBatchPage = () => {
               <Alert>
                 <AlertCircle className="h-4 w-4 text-amber-600 mr-2" />
                 <AlertDescription className="text-amber-700">
-                  This count is currently open. It needs to be closed before attestation.
+                  This count has already been attested and finalized. No further attestation is needed.
                 </AlertDescription>
               </Alert>
             </div>
@@ -144,15 +111,6 @@ const AttestBatchPage = () => {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Count
               </Button>
-              
-              <Button 
-                onClick={() => closeBatchMutation.mutate()}
-                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                disabled={closeBatchMutation.isPending}
-              >
-                {closeBatchMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Close Count and Continue
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -160,7 +118,7 @@ const AttestBatchPage = () => {
     );
   }
 
-  // If batch is already closed or finalized, show attestation form
+  // Show attestation form for OPEN batches
   return (
     <PageLayout 
       title={`Attest Count: ${batch.name}`} 

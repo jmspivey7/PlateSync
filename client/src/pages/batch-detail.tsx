@@ -94,34 +94,21 @@ const BatchDetailPage = () => {
   const checkTotal = batch?.donations?.filter(d => d.donationType === "CHECK")
     .reduce((sum, donation) => sum + parseFloat(donation.amount.toString()), 0) || 0;
 
-  // Mutation to close batch
-  const closeBatchMutation = useMutation({
+  // Mutation to prepare batch for attestation
+  const prepareAttestationMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/batches/${batchId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: "CLOSED" })
-      });
-      return response.json();
+      // No need to change status before attestation
+      // We'll now directly navigate to attestation page without changing status
+      return { success: true };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
-      
-      toast({
-        title: "Success",
-        description: "Count has been closed successfully. You can now proceed with attestation.",
-      });
-      
       // Navigate to attestation page
       setLocation(`/attest-batch/${batchId}`);
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to close count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to prepare count for attestation: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
@@ -201,7 +188,6 @@ const BatchDetailPage = () => {
   const getBadgeClass = (status: string) => {
     const statusColors = {
       OPEN: "bg-primary/20 text-primary hover:bg-primary/30",
-      CLOSED: "bg-secondary/20 text-secondary hover:bg-secondary/30",
       FINALIZED: "bg-accent/20 text-accent hover:bg-accent/30",
     };
     return statusColors[status as keyof typeof statusColors] || "bg-muted text-muted-foreground";
@@ -329,15 +315,14 @@ const BatchDetailPage = () => {
                   </Button>
                   <Button 
                     onClick={() => {
-                      console.log("Attest & Finalize button clicked, closing batch first");
-                      // First close the batch, then the mutation will navigate to attestation page
-                      closeBatchMutation.mutate();
+                      console.log("Attest & Finalize button clicked");
+                      prepareAttestationMutation.mutate();
                     }} 
                     className="bg-amber-500 hover:bg-amber-600 text-black"
-                    disabled={closeBatchMutation.isPending}
+                    disabled={prepareAttestationMutation.isPending}
                   >
                     <UserCheck className="mr-2 h-4 w-4" />
-                    {closeBatchMutation.isPending ? "Preparing..." : "Attest & Finalize"}
+                    {prepareAttestationMutation.isPending ? "Preparing..." : "Attest & Finalize"}
                   </Button>
                 </>
               )}
@@ -431,7 +416,7 @@ const BatchDetailPage = () => {
             </CardDescription>
           </div>
           <div className="flex space-x-2">
-            {(batch.status === "CLOSED" || batch.status === "FINALIZED") && (
+            {batch.status === "FINALIZED" && (
               <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
                 <Printer className="mr-2 h-4 w-4" />
                 Print
@@ -444,15 +429,14 @@ const BatchDetailPage = () => {
             {batch.donations && batch.donations.length > 0 && (
               <Button 
                 onClick={() => {
-                  console.log("Finalize Count button clicked, closing batch first");
-                  // First close the batch, then the mutation will navigate to attestation page
-                  closeBatchMutation.mutate();
+                  console.log("Finalize Count button clicked");
+                  prepareAttestationMutation.mutate();
                 }}
                 className="bg-amber-500 hover:bg-amber-600 text-black"
-                disabled={closeBatchMutation.isPending}
+                disabled={prepareAttestationMutation.isPending}
               >
                 <UserCheck className="mr-2 h-4 w-4" />
-                {closeBatchMutation.isPending ? "Preparing..." : "Finalize Count"}
+                {prepareAttestationMutation.isPending ? "Preparing..." : "Finalize Count"}
               </Button>
             )}
           </div>
