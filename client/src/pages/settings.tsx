@@ -794,25 +794,6 @@ const Settings = () => {
             
             <div className="flex flex-col space-y-3">
               <Button
-                onClick={testSendGridConfiguration}
-                disabled={sendgridTestStatus === 'loading'}
-                variant="outline"
-                className="w-full"
-              >
-                {sendgridTestStatus === 'loading' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Testing SendGrid Configuration...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Test SendGrid Configuration
-                  </>
-                )}
-              </Button>
-              
-              <Button
                 onClick={() => {
                   fetch('/api/test-count-report')
                     .then(response => response.json())
