@@ -500,7 +500,7 @@ const Settings = () => {
   return (
     <PageLayout 
       title="Settings" 
-      subtitle="Manage your church and notification settings"
+      subtitle="Manage church details and configurations"
       icon={<SettingsIcon className="h-6 w-6 text-[#69ad4c]" />}
     >
       
