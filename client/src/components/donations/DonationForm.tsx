@@ -682,7 +682,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   name="donorType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base">Donor</FormLabel>
+                      <FormLabel className="text-base font-bold">Donor Type:</FormLabel>
                       <RadioGroup
                         defaultValue={field.value}
                         onValueChange={field.onChange}
@@ -712,7 +712,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     name="memberId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Select Member</FormLabel>
+                        <FormLabel className="font-bold">Select Member:</FormLabel>
                         <FormControl>
                           {members && (
                             <ComboboxSearch
@@ -755,7 +755,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         name="firstName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>First Name</FormLabel>
+                            <FormLabel className="font-bold">First Name:</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -769,7 +769,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         name="lastName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Last Name</FormLabel>
+                            <FormLabel className="font-bold">Last Name:</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -784,7 +784,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email Address</FormLabel>
+                          <FormLabel className="font-bold">Email Address:</FormLabel>
                           <FormControl>
                             <Input {...field} type="email" />
                           </FormControl>
@@ -798,7 +798,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
+                          <FormLabel className="font-bold">Phone Number:</FormLabel>
                           <FormControl>
                             <Input {...field} type="tel" />
                           </FormControl>
@@ -829,7 +829,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     name="date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Date</FormLabel>
+                        <FormLabel className="font-bold">Date:</FormLabel>
                         <FormControl>
                           <Input {...field} type="date" />
                         </FormControl>
@@ -843,7 +843,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     name="donationType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Donation Type</FormLabel>
+                        <FormLabel className="font-bold">Donation Type:</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
@@ -868,7 +868,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     name="amount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Amount</FormLabel>
+                        <FormLabel className="font-bold">Amount:</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -892,7 +892,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       name="checkNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Check Number</FormLabel>
+                          <FormLabel className="font-bold">Check Number:</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
