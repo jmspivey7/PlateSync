@@ -163,19 +163,11 @@ const CsvImporter = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Import Members</CardTitle>
-          <CardDescription>
-            Upload a CSV file to import members into the system
-          </CardDescription>
-        </div>
-        <Link href="/members">
-          <Button className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
-            <Users className="mr-2 h-4 w-4" />
-            View Current Members
-          </Button>
-        </Link>
+      <CardHeader>
+        <CardTitle>Import Members</CardTitle>
+        <CardDescription>
+          Upload a CSV file to import members into the system
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div 
