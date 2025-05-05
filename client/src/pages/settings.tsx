@@ -716,13 +716,6 @@ const Settings = () => {
             <CardTitle>Notifications</CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
-            {/* Email Templates Section */}
-            <div className="mb-8">
-              <EmailTemplates />
-            </div>
-            
-            <Separator className="my-6" />
-            
             {/* Email Notifications Section */}
             <div className="mb-8">
               <h3 className="text-lg font-medium mb-2">Email Notifications</h3>
@@ -790,6 +783,13 @@ const Settings = () => {
                 </div>
               </form>
             </Form>
+            </div>
+            
+            <Separator className="my-6" />
+            
+            {/* Email Templates Section */}
+            <div className="mb-8">
+              <EmailTemplates />
             </div>
             
             <Separator className="my-6" />
