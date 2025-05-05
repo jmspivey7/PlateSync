@@ -1503,11 +1503,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
       
-      const todaysDonations = await storage.getTodaysDonations(userId);
-      const weeklyDonations = await storage.getWeeklyDonations(userId);
-      const monthlyDonations = await storage.getMonthlyDonations(userId);
-      const activeDonors = await storage.getActiveDonorCount(userId);
+      const todaysDonations = await storage.getTodaysDonations(churchId);
+      const weeklyDonations = await storage.getWeeklyDonations(churchId);
+      const monthlyDonations = await storage.getMonthlyDonations(churchId);
+      const activeDonors = await storage.getActiveDonorCount(churchId);
       
       res.json({
         todaysDonations,
@@ -1551,8 +1553,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/service-options/initialize', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      await storage.createDefaultServiceOptions(userId);
-      const options = await storage.getServiceOptions(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      await storage.createDefaultServiceOptions(churchId);
+      const options = await storage.getServiceOptions(churchId);
       res.json(options);
     } catch (error) {
       console.error("Error initializing service options:", error);
@@ -1564,7 +1569,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/service-options', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const options = await storage.getServiceOptions(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const options = await storage.getServiceOptions(churchId);
       res.json(options);
     } catch (error) {
       console.error("Error fetching service options:", error);
@@ -1578,6 +1586,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("POST /api/service-options - User:", req.user);
       
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
       
       // Ensure body is properly parsed
       let bodyData = req.body;
@@ -1594,7 +1604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = insertServiceOptionSchema.parse({
         ...bodyData,
-        churchId: userId
+        churchId: churchId
       });
       
       console.log("POST /api/service-options - Validated data:", validatedData);
@@ -1615,6 +1625,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/service-options/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const optionId = parseInt(req.params.id);
       
       if (isNaN(optionId)) {
@@ -1622,17 +1635,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Make sure the option exists and belongs to this church
-      const existingOption = await storage.getServiceOption(optionId, userId);
+      const existingOption = await storage.getServiceOption(optionId, churchId);
       if (!existingOption) {
         return res.status(404).json({ message: "Service option not found" });
       }
       
       const validatedData = insertServiceOptionSchema.partial().parse({
         ...req.body,
-        churchId: userId
+        churchId: churchId
       });
       
-      const updatedOption = await storage.updateServiceOption(optionId, validatedData, userId);
+      const updatedOption = await storage.updateServiceOption(optionId, validatedData, churchId);
       res.json(updatedOption);
     } catch (error) {
       console.error("Error updating service option:", error);
@@ -1646,6 +1659,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/service-options/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const optionId = parseInt(req.params.id);
       
       if (isNaN(optionId)) {
@@ -1653,12 +1669,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Make sure the option exists and belongs to this church
-      const existingOption = await storage.getServiceOption(optionId, userId);
+      const existingOption = await storage.getServiceOption(optionId, churchId);
       if (!existingOption) {
         return res.status(404).json({ message: "Service option not found" });
       }
       
-      await storage.deleteServiceOption(optionId, userId);
+      await storage.deleteServiceOption(optionId, churchId);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting service option:", error);
@@ -1790,7 +1806,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/report-recipients', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const recipients = await storage.getReportRecipients(userId);
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const recipients = await storage.getReportRecipients(churchId);
       res.json(recipients);
     } catch (error) {
       console.error("Error fetching report recipients:", error);
@@ -1802,13 +1821,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const recipientId = parseInt(req.params.id);
       
       if (isNaN(recipientId)) {
         return res.status(400).json({ message: "Invalid recipient ID" });
       }
       
-      const recipient = await storage.getReportRecipient(recipientId, userId);
+      const recipient = await storage.getReportRecipient(recipientId, churchId);
       
       if (!recipient) {
         return res.status(404).json({ message: "Recipient not found" });
@@ -1825,10 +1847,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/report-recipients', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
       
       const recipientData = {
         ...req.body,
-        churchId: userId
+        churchId: churchId
       };
       
       // Validate with zod schema
@@ -1849,6 +1873,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const recipientId = parseInt(req.params.id);
       
       if (isNaN(recipientId)) {
@@ -1863,8 +1890,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         churchId: z.string().optional()
       });
       
-      const validatedData = partialRecipientSchema.parse(req.body);
-      const updatedRecipient = await storage.updateReportRecipient(recipientId, validatedData, userId);
+      const validatedData = partialRecipientSchema.parse({
+        ...req.body,
+        churchId: churchId
+      });
+      
+      const updatedRecipient = await storage.updateReportRecipient(recipientId, validatedData, churchId);
       
       if (!updatedRecipient) {
         return res.status(404).json({ message: "Recipient not found" });
@@ -1884,13 +1915,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
       const recipientId = parseInt(req.params.id);
       
       if (isNaN(recipientId)) {
         return res.status(400).json({ message: "Invalid recipient ID" });
       }
       
-      await storage.deleteReportRecipient(recipientId, userId);
+      // Check if recipient exists before deletion
+      const recipient = await storage.getReportRecipient(recipientId, churchId);
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      await storage.deleteReportRecipient(recipientId, churchId);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting report recipient:", error);
@@ -1903,6 +1943,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/email-templates/initialize', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
       const churchName = req.user.churchName || 'Your Church';
       
       // Define default template types to check for
