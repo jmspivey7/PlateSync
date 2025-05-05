@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Package, Calendar, DollarSign } from "lucide-react";
+import { PlusCircle, Loader2, Package, Calendar, DollarSign, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,8 @@ import { Batch, BatchWithDonations } from "../../../shared/schema";
 import CountModal from "../components/counts/CountModal";
 import { apiRequest } from "@/lib/queryClient";
 import PageLayout from "@/components/layout/PageLayout";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 
 const statusColors = {
   OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -29,6 +31,8 @@ const CountsPage = () => {
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const { isAdmin } = useAuth();
+  const [_, setLocation] = useLocation();
   // Check if we have a filter in the URL query parameters
   const searchParams = new URLSearchParams(window.location.search);
   const filterParam = searchParams.get('filter');
@@ -83,6 +87,12 @@ const CountsPage = () => {
 
   const handleViewBatch = (batchId: number) => {
     setSelectedBatchId(batchId);
+  };
+  
+  // For USHER users viewing finalized counts - redirects directly to the detail page
+  const handleViewSummary = (batchId: number) => {
+    // Navigate to the batch detail page
+    setLocation(`/batch-detail/${batchId}`);
   };
 
   const handleModalClose = () => {
@@ -193,17 +203,32 @@ const CountsPage = () => {
                           <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
                         </td>
                         <td className="py-3 px-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditBatch(batch.id);
-                            }}
-                          >
-                            Edit
-                          </Button>
+                          {!isAdmin && batch.status === "FINALIZED" ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewSummary(batch.id);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Only
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditBatch(batch.id);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     );
