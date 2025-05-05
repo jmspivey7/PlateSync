@@ -514,6 +514,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // New endpoint for attestation users - accessible by both ADMIN and USHER roles
+  app.get('/api/attestation-users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const role = await storage.getUserRole(userId);
+      
+      // Get the church ID
+      let churchId: string | null = null;
+      
+      if (role === 'ADMIN') {
+        const church = await storage.getChurchByAdminId(userId);
+        if (church) {
+          churchId = church.id;
+        }
+      } else if (role === 'USHER') {
+        const user = await storage.getUser(userId);
+        if (user && user.churchId) {
+          churchId = user.churchId;
+        }
+      }
+      
+      if (!churchId) {
+        return res.status(404).json({ message: "Church not found" });
+      }
+      
+      // Get all users from the same church
+      const users = await storage.getUsersByChurchId(churchId);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching attestation users:", error);
+      res.status(500).json({ message: "Failed to fetch attestation users" });
+    }
+  });
+  
   app.patch('/api/users/:id/role', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;

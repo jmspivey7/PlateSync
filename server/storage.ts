@@ -225,11 +225,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUsers(churchId: string): Promise<User[]> {
-    // Currently, we only need to get users from the same church
-    // In a multi-tenant environment, this would be filtered by a tenant or church ID
+    // Filter by church ID to get only users from the same church
     return db
       .select()
       .from(users)
+      .where(eq(users.churchId, churchId))
       .orderBy(desc(users.username));
   }
 
