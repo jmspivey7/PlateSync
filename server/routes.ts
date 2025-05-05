@@ -18,6 +18,17 @@ async function scryptHash(password: string): Promise<string> {
     });
   });
 }
+
+// Password verification function
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const [key, salt] = hashedPassword.split(':');
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) reject(err);
+      resolve(key === derivedKey.toString('hex'));
+    });
+  });
+}
 import { isAdmin, hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
@@ -86,6 +97,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Auth middleware
   await setupAuth(app);
+
+  // Direct login with email/password
+  app.post('/api/login-local', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Find user by email
+      const users_result = await db.execute(
+        sql`SELECT * FROM users WHERE email = ${username} AND is_verified = true`
+      );
+      
+      const users = users_result.rows;
+      const user = users.length > 0 ? users[0] : null;
+      
+      if (!user || !user.password) {
+        return res.status(401).json({ message: "Invalid credentials or unverified account" });
+      }
+      
+      // Verify password
+      const passwordValid = await verifyPassword(password, user.password);
+      
+      if (!passwordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Create session for the user (mock Replit auth session structure)
+      req.login({
+        claims: {
+          sub: user.id,
+          email: user.email,
+          username: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName
+        }
+      }, (err: any) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        res.json(user);
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed due to server error" });
+    }
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

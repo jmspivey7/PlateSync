@@ -10,6 +10,7 @@ import Donations from "@/pages/donations";
 import Members from "@/pages/members";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
+import LoginLocal from "@/pages/login-local";
 import Verify from "@/pages/verify";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
@@ -27,7 +28,7 @@ import Reports from "@/pages/reports";
 import { useAuth } from "@/hooks/useAuth";
 
 // Public paths that don't require authentication
-const PUBLIC_PATHS = ["/login", "/verify", "/forgot-password", "/reset-password"];
+const PUBLIC_PATHS = ["/login", "/login-local", "/verify", "/forgot-password", "/reset-password"];
 
 function isPublicPath(path: string) {
   return PUBLIC_PATHS.some(publicPath => path.startsWith(publicPath));
@@ -46,7 +47,7 @@ function Router() {
     
     if (!user && !currentPathIsPublic) {
       setRedirectInProgress(true);
-      setLocation("/login");
+      setLocation("/login-local");
     } else if (user && currentPathIsPublic && location !== "/verify") {
       // If user is logged in and on a public page (except verify), redirect to dashboard
       setRedirectInProgress(true);
@@ -69,6 +70,7 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/login" component={Login} />
+      <Route path="/login-local" component={LoginLocal} />
       <Route path="/verify" component={Verify} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
