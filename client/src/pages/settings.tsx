@@ -799,7 +799,7 @@ const Settings = () => {
                   value={newServiceOption}
                   onChange={(e) => setNewServiceOption(e.target.value)}
                   placeholder="Add a new service option..."
-                  className="flex-1"
+                  className="flex-1 border-gray-400"
                 />
                 <Button
                   onClick={() => createServiceOptionMutation.mutate(newServiceOption)}
