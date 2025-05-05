@@ -487,9 +487,6 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <CardTitle>Church Information</CardTitle>
-            <CardDescription>
-              Update your church's information and logo displayed throughout the system
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -680,9 +677,6 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <CardTitle>Email Notifications</CardTitle>
-            <CardDescription>
-              Configure how PlateSync sends email notifications to donors
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -811,9 +805,6 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <CardTitle>Service Options</CardTitle>
-            <CardDescription>
-              Manage service options for donation counts
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -1004,9 +995,6 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <CardTitle>Import Members</CardTitle>
-            <CardDescription>
-              Import member data from CSV files
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <CsvImporter />
@@ -1016,9 +1004,6 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <CardTitle>Count Report Notifications</CardTitle>
-            <CardDescription>
-              Configure recipients for count report notifications
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
