@@ -420,9 +420,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Open: Still collecting donations<br />
-                        Closed: No more donations accepted<br />
-                        Finalized: Count verified and ready for accounting
+                        Select the current status of this count.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
