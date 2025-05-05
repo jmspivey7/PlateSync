@@ -257,10 +257,7 @@ const Settings = () => {
   // Delete service option
   const deleteServiceOptionMutation = useMutation<boolean, Error, number>({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/service-options/${id}`, {
-        method: "DELETE",
-        returnRaw: true
-      });
+      await apiRequest(`/api/service-options/${id}`, "DELETE");
       return true;
     },
     onSuccess: () => {
@@ -276,6 +273,7 @@ const Settings = () => {
         title: "Error",
         description: `Failed to delete service option: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
+        className: "bg-white border-red-600",
       });
     }
   });
@@ -393,10 +391,7 @@ const Settings = () => {
   // Delete report recipient
   const deleteReportRecipientMutation = useMutation<boolean, Error, number>({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/report-recipients/${id}`, {
-        method: "DELETE",
-        returnRaw: true
-      });
+      await apiRequest(`/api/report-recipients/${id}`, "DELETE");
       return true;
     },
     onSuccess: () => {
