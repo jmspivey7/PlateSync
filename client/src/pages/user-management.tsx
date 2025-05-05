@@ -237,11 +237,17 @@ const UserManagement = () => {
   // Delete user mutation
   const { mutate: deleteUser, isPending: isDeleting } = useMutation({
     mutationFn: async (userId: string) => {
-      return await apiRequest<void>(`/api/users/${userId}`, {
-        method: "DELETE"
-      });
+      try {
+        return await apiRequest<void>(`/api/users/${userId}`, {
+          method: "DELETE"
+        });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log("User deleted successfully");
       toast({
         title: "User deleted",
         description: "User has been deleted successfully",
@@ -250,10 +256,11 @@ const UserManagement = () => {
       setDeleteDialogOpen(false);
       setSelectedUserId(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Delete user error:", error);
       toast({
         title: "Deletion failed",
-        description: "Failed to delete user",
+        description: error.message || "Failed to delete user",
         variant: "destructive",
       });
     },

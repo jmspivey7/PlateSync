@@ -54,6 +54,11 @@ export async function apiRequest<T = any>(
     return res as unknown as T;
   }
   
+  // For 204 No Content responses, return an empty object
+  if (res.status === 204) {
+    return {} as T;
+  }
+  
   // Otherwise parse and return JSON
   return await res.json();
 }
@@ -73,6 +78,12 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
+    
+    // For 204 No Content responses, return an empty object
+    if (res.status === 204) {
+      return {} as any;
+    }
+    
     return await res.json();
   };
 
