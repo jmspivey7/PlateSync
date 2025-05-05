@@ -384,6 +384,7 @@ const Settings = () => {
         title: "Error",
         description: `Failed to update recipient: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
+        className: "bg-white border-red-600",
       });
     }
   });
@@ -407,6 +408,7 @@ const Settings = () => {
         title: "Error",
         description: `Failed to delete recipient: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
+        className: "bg-white border-red-600",
       });
     }
   });
@@ -433,6 +435,7 @@ const Settings = () => {
         title: "Validation Error",
         description: "Please fill in all recipient fields.",
         variant: "destructive",
+        className: "bg-white border-red-600",
       });
       return;
     }
@@ -450,6 +453,7 @@ const Settings = () => {
         title: "Validation Error",
         description: "Please fill in all recipient fields.",
         variant: "destructive",
+        className: "bg-white border-red-600",
       });
       return;
     }

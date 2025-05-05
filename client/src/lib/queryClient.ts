@@ -23,11 +23,37 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Define request config type
+type RequestConfig = {
+  method?: string;
+  body?: any;
+  returnRaw?: boolean;
+};
+
+// Function overloads for better type checking
+export async function apiRequest<T = any>(url: string): Promise<T>;
+export async function apiRequest<T = any>(url: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"): Promise<T>;
+export async function apiRequest<T = any>(url: string, config: RequestConfig): Promise<T>;
+export async function apiRequest<T = any>(url: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", body: any): Promise<T>;
+
+// Implementation
 export async function apiRequest<T = any>(
   url: string,
-  method: string = "GET",
-  body?: any
+  methodOrConfig?: string | RequestConfig,
+  bodyParam?: any
 ): Promise<T> {
+  let method = "GET";
+  let body = undefined;
+  
+  // Parse parameters based on type
+  if (typeof methodOrConfig === 'string') {
+    method = methodOrConfig;
+    body = bodyParam;
+  } else if (typeof methodOrConfig === 'object' && methodOrConfig !== null) {
+    method = methodOrConfig.method || "GET";
+    body = methodOrConfig.body;
+  }
+  
   const isFormData = body instanceof FormData;
   
   const res = await fetch(url, {
