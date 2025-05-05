@@ -352,9 +352,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                       <FormControl>
                         <Input {...field} type="date" />
                       </FormControl>
-                      <FormDescription>
-                        The date when this count of donations was collected.
-                      </FormDescription>
+
                       <FormMessage />
                     </FormItem>
                   )}
@@ -390,9 +388,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           )}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        The type of service this count is for.
-                      </FormDescription>
+
                       <FormMessage />
                     </FormItem>
                   )}
@@ -419,9 +415,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           <SelectItem value="FINALIZED">Finalized</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        Select the current status of this count.
-                      </FormDescription>
+
                       <FormMessage />
                     </FormItem>
                   )}
@@ -444,9 +438,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           ref={field.ref}
                         />
                       </FormControl>
-                      <FormDescription>
-                        Any additional information about this count.
-                      </FormDescription>
+
                       <FormMessage />
                     </FormItem>
                   )}
