@@ -233,7 +233,7 @@ export function DonationChart() {
           View Historical Counts
         </Button>
       </CardHeader>
-      <CardContent className="relative">
+      <CardContent className="relative pb-28">
         <ChartContainer config={chartConfig} className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -287,8 +287,8 @@ export function DonationChart() {
           </ResponsiveContainer>
         </ChartContainer>
         
-        {/* Chart legend positioned lower in bottom right */}
-        <div className="absolute bottom-1 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
+        {/* Chart legend positioned in bottom right, away from date axis */}
+        <div className="absolute bottom-5 right-4 bg-white/80 rounded px-2 py-1 shadow-sm border flex items-center gap-4">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-[#69ad4c] mr-1.5"></div>
             <span className="text-xs text-muted-foreground">Cash</span>
