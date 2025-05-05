@@ -168,7 +168,20 @@ export default function EmailTemplates() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {templates.map((template) => (
+                {[...templates]
+                  .sort((a, b) => {
+                    // Define the order of template types
+                    const templateOrder = {
+                      'WELCOME_EMAIL': 1,
+                      'PASSWORD_RESET': 2,
+                      'DONATION_CONFIRMATION': 3,
+                      'COUNT_REPORT': 4
+                    };
+                    
+                    // Sort based on the defined order
+                    return templateOrder[a.templateType as TemplateType] - templateOrder[b.templateType as TemplateType];
+                  })
+                  .map((template) => (
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">
                       {templateTypeInfo[template.templateType]?.name || template.templateType}
