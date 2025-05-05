@@ -303,18 +303,18 @@ const Profile = () => {
             
             {/* Tabs for Profile and Password Change */}
             <Tabs defaultValue="profile" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 border-2 border-gray-200 p-1.5 rounded-lg shadow-sm">
+              <TabsList className="grid w-full grid-cols-2 mb-6 p-1.5 shadow-sm border border-gray-200 rounded-md">
                 <TabsTrigger 
                   value="profile" 
                   onClick={() => setActiveTab("profile")}
-                  className={`font-bold text-sm py-2.5 border-r border-gray-200 ${activeTab === "profile" ? "bg-[#69ad4c] text-white shadow-md" : ""}`}
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200 font-bold text-sm py-2.5"
                 >
                   Profile Information
                 </TabsTrigger>
                 <TabsTrigger 
                   value="password" 
                   onClick={() => setActiveTab("password")}
-                  className={`font-bold text-sm py-2.5 ${activeTab === "password" ? "bg-[#69ad4c] text-white shadow-md" : ""}`}
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200 font-bold text-sm py-2.5"
                 >
                   Change Password
                 </TabsTrigger>
