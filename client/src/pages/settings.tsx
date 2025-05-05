@@ -93,7 +93,9 @@ interface ReportRecipient {
 
 // Create a schema for settings form
 const formSchema = z.object({
-  churchName: z.string().min(1, "Church name is required"),
+  churchName: z.string()
+    .min(1, "Church name is required")
+    .max(35, "Church name cannot exceed 35 characters"),
   emailNotificationsEnabled: z.boolean().default(true),
 });
 
@@ -498,10 +500,23 @@ const Settings = () => {
                     <FormItem>
                       <FormLabel><strong>Church Name:</strong></FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="First Baptist Church" />
+                        <Input 
+                          {...field} 
+                          placeholder="First Baptist Church" 
+                          maxLength={35} 
+                          onChange={(e) => {
+                            // Limit to 35 characters
+                            if (e.target.value.length <= 35) {
+                              field.onChange(e);
+                            }
+                          }}
+                        />
                       </FormControl>
-                      <FormDescription>
-                        This will be displayed on receipts and throughout the application
+                      <FormDescription className="flex justify-between">
+                        <span>This will be displayed on receipts and throughout the application</span>
+                        <span className="text-muted-foreground">
+                          {form.watch("churchName")?.length || 0} of 35 Characters Allowed
+                        </span>
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
