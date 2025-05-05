@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/logos', express.static(path.join('public', 'logos')));
   // Root path handler to redirect to login-local
   app.get('/', (req, res) => {
-    res.redirect('/redirect.html');
+    res.redirect('/login-local');
   });
 
   // Set up multer for file uploads

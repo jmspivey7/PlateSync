@@ -59,9 +59,8 @@ export default function LoginLocal() {
           <img 
             src={plateSyncLogo} 
             alt="PlateSync Logo" 
-            className="mx-auto mb-4 h-28"
+            className="mx-auto h-28"
           />
-          <p className="text-lg text-gray-600 font-medium">Plate Counts Made Easy!</p>
         </div>
         
         <Card className="w-full shadow-lg">
