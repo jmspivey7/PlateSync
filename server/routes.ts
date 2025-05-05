@@ -708,9 +708,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/members', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log(`[MEMBER DEBUG] Getting members for user ${userId}, role: ${req?.user?.claims?.role || 'unknown'}`);
+      
       // Get the church ID for the current user - this works for both ADMIN and USHER roles
       const churchId = await storage.getChurchIdForUser(userId);
+      console.log(`[MEMBER DEBUG] Determined churchId ${churchId} for user ${userId}`);
+      
       const members = await storage.getMembers(churchId);
+      console.log(`[MEMBER DEBUG] Found ${members.length} members for churchId ${churchId}`);
+      
       res.json(members);
     } catch (error) {
       console.error("Error fetching members:", error);

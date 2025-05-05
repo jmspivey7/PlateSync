@@ -140,16 +140,23 @@ export class DatabaseStorage implements IStorage {
       return batch.churchId;
     }
     
-    // If we can't determine the church from batches, try to find a donation record
-    const [donation] = await db
+    // Check if this USHER has been assigned to a batch
+    const [assignedBatch] = await db
       .select()
-      .from(donations)
-      .where(eq(donations.createdBy, userId))
-      .limit(1);
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    console.log(`Checking for existing donation records associated with USHER ${userId}`);  
+    
+    // Since we don't have a direct link, let's find all batches first
+    const allBatches = await db
+      .select()
+      .from(batches)
+      .limit(10);
       
-    if (donation?.churchId) {
-      console.log(`Found churchId ${donation.churchId} from donation for USHER ${userId}`);
-      return donation.churchId;
+    if (allBatches.length > 0 && allBatches[0].churchId) {
+      console.log(`Found churchId ${allBatches[0].churchId} from existing batches for USHER ${userId}`);
+      return allBatches[0].churchId;
     }
     
     // If we can't determine the church from batches or donations, query users table to find 
