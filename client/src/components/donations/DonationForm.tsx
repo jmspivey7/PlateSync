@@ -662,7 +662,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         </CardHeader>
       )}
       
-      <CardContent>
+      <CardContent className="px-2 py-3">
         {(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch || isLoadingSpecificBatch) && (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
@@ -673,7 +673,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           <Form {...form}>
             <form 
               onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-6"
+              className="space-y-4"
             >
               {/* Donor Selection */}
               <div className="space-y-4">
@@ -820,10 +820,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
               </div>
               
               {/* Donation Details */}
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-lg font-medium text-[#2D3748] mb-4">Donation Details</h3>
+              <div className="pt-3 border-t border-gray-200">
+                <h3 className="text-lg font-medium text-[#2D3748] mb-3">Donation Details</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="date"
@@ -915,7 +915,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 </div>
               </div>
               
-              <div className="flex justify-end mt-6 space-x-2">
+              <div className="flex justify-end mt-4 space-x-2">
                 <Button 
                   type="button" 
                   variant="outline" 
