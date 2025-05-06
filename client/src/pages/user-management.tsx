@@ -365,7 +365,6 @@ const UserManagement = () => {
   return (
     <PageLayout 
       title="Users" 
-      subtitle="Manage users and their roles in the system"
       icon={<Users className="h-6 w-6 text-[#69ad4c]" />}
     >
       <Card>
@@ -373,9 +372,6 @@ const UserManagement = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle>Users</CardTitle>
-              <CardDescription>
-                View and manage user accounts and permissions
-              </CardDescription>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-3">
