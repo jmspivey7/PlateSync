@@ -317,8 +317,18 @@ export default function EmailTemplateEditor() {
         <CardContent className="pt-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
-              <TabsTrigger value="edit">Edit Content</TabsTrigger>
-              <TabsTrigger value="preview">Preview HTML</TabsTrigger>
+              <TabsTrigger 
+                value="edit" 
+                className="hover:bg-[#e6f5e6] data-[state=active]:border-b-[#69ad4c] data-[state=active]:border-b-2"
+              >
+                Edit Content
+              </TabsTrigger>
+              <TabsTrigger 
+                value="preview" 
+                className="hover:bg-[#e6f5e6] data-[state=active]:border-b-[#69ad4c] data-[state=active]:border-b-2"
+              >
+                Preview HTML
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="edit" className="space-y-6">
