@@ -1,7 +1,19 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Menu, X, Church } from "lucide-react";
+import { 
+  Menu, 
+  X, 
+  Church, 
+  User, 
+  HelpCircle, 
+  Settings, 
+  Users, 
+  LogOut,
+  FileBarChart,
+  ChevronDown 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AccountDropdown from "@/components/layout/AccountDropdown";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,145 +105,122 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
         )}
       </div>
       
-      {/* Mobile Menu - Full Screen Overlay */}
+      {/* Mobile Menu - Full Screen Overlay EXACTLY MATCHING DROPDOWN */}
       {isMobile && mobileMenuOpen && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
-          {/* Header with Logo and Close Button */}
+          {/* Header with user profile and close button */}
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-            {user?.churchLogoUrl ? (
-              <div className="h-16 w-auto overflow-hidden">
-                <img 
-                  src={user.churchLogoUrl} 
-                  alt={`${user.churchName || 'Church'} logo`} 
-                  className="h-full w-auto max-h-16 object-contain"
-                />
+            <div className="flex items-center">
+              <Avatar className="h-16 w-16 bg-[#69ad4c] mr-4">
+                {user?.profileImageUrl ? (
+                  <AvatarImage src={user.profileImageUrl} alt={user?.firstName || "User"} />
+                ) : (
+                  <AvatarFallback>{isAdmin ? "A" : "U"}</AvatarFallback>
+                )}
+              </Avatar>
+              <div>
+                <div className="text-xl font-medium">{user?.firstName} {user?.lastName}</div>
+                <ChevronDown className="h-4 w-4 opacity-50" />
               </div>
-            ) : user?.churchName ? (
-              <div className="flex items-center">
-                <span className="text-xl font-bold">{user.churchName}</span>
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <span className="text-xl font-bold">PlateSync</span>
-              </div>
-            )}
+            </div>
             
             <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
               <X className="h-6 w-6" />
             </Button>
           </div>
           
-          {/* Navigation Links - MATCHED TO DESKTOP EXACTLY */}
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <div className="flex flex-col space-y-8 w-full">
-              {/* Main Navigation */}
+          <div className="flex-1 flex flex-col p-0">
+            {/* Administrator Label */}
+            <div className="py-4 px-6 font-semibold text-xl">
+              {isAdmin ? "Administrator" : "Usher"}
+            </div>
+            
+            <div className="flex flex-col">
+              {/* Profile */}
               <Button 
                 variant="ghost" 
-                className="text-2xl font-medium py-6" 
-                onClick={() => {
-                  setLocation("/dashboard");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Dashboard
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="text-2xl font-medium py-6" 
-                onClick={() => {
-                  setLocation("/counts");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Counts
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="text-2xl font-medium py-6" 
-                onClick={() => {
-                  setLocation("/settings");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Settings
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="text-2xl font-medium py-6" 
-                onClick={() => {
-                  setLocation("/members");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Members
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="text-2xl font-medium py-6" 
-                onClick={() => {
-                  setLocation("/service-options");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Service Options
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="text-2xl font-medium py-6" 
-                onClick={() => {
-                  setLocation("/reports");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Reports
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="text-2xl font-medium py-6" 
-                onClick={() => {
-                  setLocation("/user-management");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                Users
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="text-2xl font-medium py-6" 
+                className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
                 onClick={() => {
                   setLocation("/profile");
                   setMobileMenuOpen(false);
                 }}
               >
-                Profile
+                <User className="mr-4 h-5 w-5" />
+                <span>Profile</span>
               </Button>
               
+              {/* Help */}
               <Button 
                 variant="ghost" 
-                className="text-2xl font-medium py-6" 
+                className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
                 onClick={() => {
-                  setLocation("/email-settings");
+                  setLocation("/help");
                   setMobileMenuOpen(false);
                 }}
               >
-                Email Settings
+                <HelpCircle className="mr-4 h-5 w-5" />
+                <span>Help</span>
               </Button>
               
+              {/* Separator */}
+              <div className="border-t border-gray-200 my-2"></div>
+              
+              {isAdmin && (
+                <>
+                  {/* Users */}
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                    onClick={() => {
+                      setLocation("/user-management");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Users className="mr-4 h-5 w-5" />
+                    <span>Users</span>
+                  </Button>
+                  
+                  {/* Reports */}
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                    onClick={() => {
+                      setLocation("/reports");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <FileBarChart className="mr-4 h-5 w-5" />
+                    <span>Reports</span>
+                  </Button>
+                  
+                  {/* Settings */}
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                    onClick={() => {
+                      setLocation("/settings");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Settings className="mr-4 h-5 w-5" />
+                    <span>Settings</span>
+                  </Button>
+                  
+                  {/* Separator */}
+                  <div className="border-t border-gray-200 my-2"></div>
+                </>
+              )}
+              
+              {/* Logout */}
               <Button 
                 variant="ghost" 
-                className="text-2xl font-medium py-6 text-red-600" 
+                className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg text-red-600"
                 onClick={() => {
                   window.location.href = "/api/logout";
                 }}
               >
-                Logout
+                <LogOut className="mr-4 h-5 w-5" />
+                <span>Logout</span>
               </Button>
             </div>
           </div>
