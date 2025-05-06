@@ -183,12 +183,8 @@ const CountsPage = () => {
                           selectedBatchId === batch.id ? 'bg-blue-50' : ''
                         }`}
                         onClick={() => {
-                          // For USHER users with finalized counts, navigate directly to detail page
-                          if (!isAdmin && batch.status === "FINALIZED") {
-                            handleViewSummary(batch.id);
-                          } else {
-                            handleViewBatch(batch.id);
-                          }
+                          // Navigate directly to the batch detail page for all counts
+                          handleViewSummary(batch.id);
                         }}
                       >
                         <td className="py-3 px-3">
@@ -201,8 +197,7 @@ const CountsPage = () => {
                           {formatCurrency(batch.totalAmount || 0)}
                         </td>
                         <td className="py-3 px-3 text-right">
-                          {!isAdmin && batch.status === "FINALIZED" ? (
-                            <Button
+                          <Button
                               variant="ghost"
                               size="sm"
                               className="h-8 px-2"
@@ -212,21 +207,8 @@ const CountsPage = () => {
                               }}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              View Only
+                              View
                             </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditBatch(batch.id);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                          )}
                         </td>
                       </tr>
                     );
