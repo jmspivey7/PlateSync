@@ -102,7 +102,7 @@ const Profile = () => {
       formData.append('avatar', file);
       
       try {
-        await apiRequest('POST', '/api/profile/avatar', formData);
+        await apiRequest('/api/profile/avatar', 'POST', formData);
         
         // Invalidate user query to refresh the avatar
         queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
@@ -196,7 +196,7 @@ const Profile = () => {
   // Show loading state if auth is still loading
   if (isAuthLoading) {
     return (
-      <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
+      <PageLayout title="Profile" subtitle="View and manage your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardContent className="pt-6">
@@ -211,7 +211,7 @@ const Profile = () => {
   }
   
   return (
-    <PageLayout title="Profile" subtitle="Your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
+    <PageLayout title="Profile" subtitle="View and manage your account information" icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardContent className="pt-6">
