@@ -187,6 +187,12 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         },
         body: JSON.stringify(data),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to complete attestation");
+      }
+      
       return await response.json();
     },
     onSuccess: () => {
@@ -216,6 +222,12 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         },
         body: JSON.stringify({}),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to finalize count");
+      }
+      
       return await response.json();
     },
     onSuccess: () => {
@@ -382,13 +394,21 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {users && users.map((u: User) => (
-                              <SelectItem key={u.id} value={u.id}>
-                                {u.lastName && u.firstName 
-                                  ? `${u.lastName}, ${u.firstName}` 
-                                  : u.username || u.email || 'Unknown user'}
-                              </SelectItem>
-                            ))}
+                            {users && users
+                              .filter((u: User) => u.id !== batch.primaryAttestorId) // Filter out primary attestor
+                              .map((u: User) => (
+                                <SelectItem key={u.id} value={u.id}>
+                                  {u.lastName && u.firstName 
+                                    ? `${u.lastName}, ${u.firstName}` 
+                                    : u.username || u.email || 'Unknown user'}
+                                </SelectItem>
+                              ))
+                            }
+                            {users && users.filter((u: User) => u.id !== batch.primaryAttestorId).length === 0 && (
+                              <div className="px-2 py-1 text-sm text-red-500">
+                                No eligible attestors available. Please add another user to the system.
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
