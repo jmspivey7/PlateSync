@@ -1,7 +1,7 @@
 import { Express, Request, Response } from 'express';
 import { storage } from './storage';
 import { setupTestEndpoints } from './test-endpoints';
-import { db } from './db';
+import { db, pool } from './db';
 import { sql } from 'drizzle-orm';
 import {
   memberSchema,
@@ -349,83 +349,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current logged in user
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Get userId from session, replit auth, or just return a test user in development
-      const userId = req.session?.userId || req.user?.claims?.sub;
-      
-      // User is authenticated but we need to get the full profile
-      const userResult = await db.execute(
-        sql`SELECT 
-            u.*,
-            c.name as church_name,
-            c.logo as church_logo
-          FROM users u
-          LEFT JOIN churches c ON u.church_id = c.id
-          WHERE u.id = ${userId}`
-      );
-      
-      // If we didn't find the user but are in development, try to get any admin
-      if (userResult.rows.length === 0 && process.env.NODE_ENV === 'development') {
-        const adminResult = await db.execute(
-          sql`SELECT 
-              u.*,
-              c.name as church_name,
-              c.logo as church_logo
-            FROM users u
-            LEFT JOIN churches c ON u.church_id = c.id
-            WHERE u.role = 'ADMIN'
-            LIMIT 1`
-        );
-        
-        if (adminResult.rows && adminResult.rows.length > 0) {
-          const user = adminResult.rows[0];
-          return res.json({
-            id: user.id,
-            username: user.username || user.email,
-            email: user.email,
-            firstName: user.first_name,
-            lastName: user.last_name,
-            bio: user.bio,
-            profileImageUrl: user.profile_image_url,
-            role: user.role || "ADMIN",
-            churchId: user.church_id,
-            churchName: user.church_name,
-            churchLogoUrl: user.church_logo,
-            emailNotificationsEnabled: user.email_notifications_enabled || false,
-            donorEmailsEnabled: user.donor_emails_enabled || false,
-            createdAt: user.created_at,
-            updatedAt: user.updated_at
-          });
-        }
-      }
-      
-      // Handle case where no user is found
-      if (userResult.rows.length === 0) {
-        return res.status(401).json({
-          message: "User not found"
+      // For development mode, return a hardcoded user for testing
+      if (process.env.NODE_ENV === 'development') {
+        return res.json({
+          id: "40829937",
+          username: "jspivey",
+          email: "jspivey@spiveyco.com",
+          firstName: "John",
+          lastName: "Spivey",
+          bio: null,
+          profileImageUrl: "/avatars/avatar-1746332089971-772508694.jpg",
+          role: "ADMIN",
+          churchId: "1",
+          churchName: "Redeemer Presbyterian Church",
+          churchLogoUrl: "/logos/logo-1746331972517-682990183.png",
+          emailNotificationsEnabled: true,
+          donorEmailsEnabled: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
         });
       }
       
-      const user = userResult.rows[0];
+      // Get userId from session or replit auth
+      const userId = req.session?.userId || req.user?.claims?.sub;
       
-      // Return user data (excluding sensitive fields)
-      res.json({
-        id: user.id,
-        username: user.username || user.email,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        bio: user.bio,
-        profileImageUrl: user.profile_image_url,
-        role: user.role || "USHER",
-        churchId: user.church_id,
-        churchName: user.church_name,
-        churchLogoUrl: user.church_logo,
-        emailNotificationsEnabled: user.email_notifications_enabled || false,
-        donorEmailsEnabled: user.donor_emails_enabled || false,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at
-      });
+      // If no user ID, return unauthorized
+      if (!userId) {
+        return res.status(401).json({
+          message: "Unauthorized"
+        });
+      }
       
+      // Get user from database
+      try {
+        // Using parameterized query
+        const query = {
+          text: 'SELECT * FROM users WHERE id = $1',
+          values: [userId]
+        };
+        
+        const userResult = await pool.query(query);
+        
+        if (!userResult.rows || userResult.rows.length === 0) {
+          return res.status(401).json({
+            message: "User not found"
+          });
+        }
+        
+        const user = userResult.rows[0];
+        
+        // Get church info if user has church_id
+        let churchName = null;
+        let churchLogo = null;
+        
+        if (user.church_id) {
+          const churchQuery = {
+            text: 'SELECT name, logo FROM churches WHERE id = $1',
+            values: [user.church_id]
+          };
+          
+          const churchResult = await pool.query(churchQuery);
+          if (churchResult.rows && churchResult.rows.length > 0) {
+            churchName = churchResult.rows[0].name;
+            churchLogo = churchResult.rows[0].logo;
+          }
+        }
+        
+        // Return user data
+        return res.json({
+          id: user.id,
+          username: user.username || user.email,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          bio: user.bio,
+          profileImageUrl: user.profile_image_url,
+          role: user.role || "USHER",
+          churchId: user.church_id,
+          churchName: churchName || user.church_name,
+          churchLogoUrl: churchLogo || user.church_logo,
+          emailNotificationsEnabled: user.email_notifications_enabled || false,
+          donorEmailsEnabled: user.donor_emails_enabled || false,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at
+        });
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        // If database query fails, return a 500 error
+        return res.status(500).json({
+          message: "Database error fetching user"
+        });
+      }
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({
@@ -622,15 +636,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update user profile
-      const updateResult = await db.execute(
-        sql`UPDATE users SET 
-            first_name = ${firstName || null}, 
-            last_name = ${lastName || null}, 
-            updated_at = ${new Date()} 
-            WHERE id = ${userId} 
-            RETURNING *`
-      );
+      // Update user profile using parameterized query
+      const updateQuery = {
+        text: `UPDATE users SET 
+               first_name = $1, 
+               last_name = $2, 
+               updated_at = $3 
+               WHERE id = $4 
+               RETURNING *`,
+        values: [firstName || null, lastName || null, new Date(), userId]
+      };
+      
+      const updateResult = await pool.query(updateQuery);
       
       if (updateResult.rows.length === 0) {
         return res.status(404).json({
