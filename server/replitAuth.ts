@@ -143,13 +143,20 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   // This is a temporary development aid
   if (process.env.NODE_ENV === 'development' && req.headers['x-development-auth']) {
     console.log("Using development auth bypass");
-    // Pass a default test user ID in development env
+    // Use actual John Spivey data for development testing
     req.user = {
       claims: { 
-        sub: '40829937',  // Use a known valid user ID
-        username: 'testuser',
-        email: 'test@example.com'
-      }
+        sub: '40829937',  // John Spivey's actual user ID
+        username: 'jspivey',
+        email: 'jmspivey@icloud.com',
+        first_name: 'John',
+        last_name: 'Spivey',
+        profile_image_url: 'https://s.gravatar.com/avatar/5d35d97ace9b404da6070d26cdbe4b5c?s=480&r=pg&d=https%3A%2F%2Fcdn.auth0.com%2Favatars%2Fjs.png'
+      },
+      // These properties are used for session management with Replit Auth
+      access_token: 'dev_access_token',
+      refresh_token: 'dev_refresh_token',
+      expires_at: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
     };
     return next();
   }
