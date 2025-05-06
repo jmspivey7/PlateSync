@@ -208,33 +208,9 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
               <Button 
                 variant="ghost" 
                 className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full text-red-600"
-                onClick={async () => {
-                  try {
-                    // Make a POST request to the logout endpoint WITHOUT the development auth header
-                    const response = await fetch('/api/logout', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      },
-                      credentials: 'include'
-                    });
-                    
-                    if (response.ok) {
-                      // For development environment, clear any cached data
-                      localStorage.clear();
-                      sessionStorage.clear();
-                      
-                      // Hard reload to restart everything fresh
-                      window.location.href = '/login-local';
-                      
-                      // Force a complete reload of the application
-                      window.location.reload();
-                    } else {
-                      console.error('Logout failed');
-                    }
-                  } catch (error) {
-                    console.error('Error during logout:', error);
-                  }
+                onClick={() => {
+                  // Use simple window location navigation for GET logout
+                  window.location.href = '/api/logout';
                 }}
               >
                 <LogOut className="mr-4 h-5 w-5" />

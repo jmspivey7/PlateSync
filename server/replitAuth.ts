@@ -139,11 +139,9 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // Skip development bypass for the logout endpoint
-  const isLogoutPath = req.path === '/api/logout';
-  
-  // Development mode passthrough authentication for all other routes
-  if (!isLogoutPath && process.env.NODE_ENV === 'development' && req.headers['x-development-auth']) {
+  // Always check for development mode passthrough authentication
+  // This is a temporary development aid
+  if (process.env.NODE_ENV === 'development' && req.headers['x-development-auth']) {
     console.log("Using development auth bypass");
     // Use actual John Spivey data for development testing
     req.user = {

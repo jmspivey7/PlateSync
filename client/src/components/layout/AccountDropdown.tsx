@@ -101,33 +101,9 @@ const AccountDropdown = () => {
         
         <DropdownMenuItem 
           className="text-red-600 text-[1.1rem] py-2"
-          onClick={async () => {
-            try {
-              // Make a POST request to the logout endpoint WITHOUT the development auth header
-              const response = await fetch('/api/logout', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-              });
-              
-              if (response.ok) {
-                // For development environment, clear any cached data
-                localStorage.clear();
-                sessionStorage.clear();
-                
-                // Hard reload to restart everything fresh
-                window.location.href = '/login-local';
-                
-                // Force a complete reload of the application
-                window.location.reload();
-              } else {
-                console.error('Logout failed');
-              }
-            } catch (error) {
-              console.error('Error during logout:', error);
-            }
+          onClick={() => {
+            // Use simple window location navigation for GET logout
+            window.location.href = '/api/logout';
           }}
         >
           <LogOut className="mr-2 h-4 w-4" />
