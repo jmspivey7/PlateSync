@@ -396,10 +396,12 @@ export default function EmailTemplateEditor() {
                       <div className="p-4">
                         {templateData.templateType === 'DONATION_CONFIRMATION' ? (
                           <div dangerouslySetInnerHTML={{ 
-                            __html: templateData.bodyHtml.replace(
-                              '{{churchLogoUrl}}', 
-                              'https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png'
-                            ) 
+                            __html: templateData.bodyHtml
+                              .replace(/{{churchLogoUrl}}/g, 
+                                'https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png'
+                              )
+                              .replace(/max-width: \d+px/g, 'max-width: 375px')
+                              .replace(/max-height: \d+px/g, 'max-height: 150px')
                           }} />
                         ) : (
                           <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
