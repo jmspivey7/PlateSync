@@ -20,7 +20,8 @@ import {
   Edit,
   AlertTriangle,
   X,
-  UserCheck
+  UserCheck,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
@@ -32,6 +33,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import PageLayout from "@/components/layout/PageLayout";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const BatchDetailPage = () => {
   const { toast } = useToast();
@@ -39,6 +42,7 @@ const BatchDetailPage = () => {
   const [_, setLocation] = useLocation();
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
+  const { isAdmin } = useAuth();
   
   const [isAddingDonation, setIsAddingDonation] = useState(false);
   const [editingDonationId, setEditingDonationId] = useState<number | null>(null);
@@ -46,6 +50,7 @@ const BatchDetailPage = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [isPrintView, setIsPrintView] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Debug state management - this will help us see what's happening
   useEffect(() => {
@@ -147,6 +152,40 @@ const BatchDetailPage = () => {
       });
     }
   });
+  
+  // Mutation to delete batch
+  const deleteBatchMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/batches/${batchId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete count");
+      }
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      
+      toast({
+        title: "Success",
+        description: "Count has been deleted successfully.",
+      });
+      
+      // Navigate back to the counts page
+      handleBackToCounts();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
 
   const handleAddDonation = () => {
     setIsAddingDonation(true);
@@ -216,6 +255,14 @@ const BatchDetailPage = () => {
 
   const handleBackToCounts = () => {
     setLocation("/counts");
+  };
+  
+  const handleShowDeleteConfirm = () => {
+    setShowDeleteConfirm(true);
+  };
+  
+  const handleDeleteBatch = () => {
+    deleteBatchMutation.mutate();
   };
 
   // Print-specific styles
@@ -503,8 +550,8 @@ const BatchDetailPage = () => {
             </div>
           </div>
 
-          {/* Record new donation button */}
-          <div className="mb-8">
+          {/* Action buttons */}
+          <div className="flex justify-between mb-8">
             <Button 
               onClick={handleAddDonation}
               className="bg-green-600 hover:bg-green-700 text-white h-12 px-6"
@@ -512,6 +559,18 @@ const BatchDetailPage = () => {
               <PlusCircle className="mr-2 h-4 w-4" />
               Record New Donation
             </Button>
+            
+            {/* Only show Delete button for OPEN counts and for admins */}
+            {batch.status === "OPEN" && isAdmin && (
+              <Button 
+                onClick={handleShowDeleteConfirm}
+                variant="destructive"
+                className="h-12 px-6"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Count
+              </Button>
+            )}
           </div>
 
           {/* Donations section */}
@@ -620,6 +679,37 @@ const BatchDetailPage = () => {
             )}
           </div>
         </div>
+        
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && (
+          <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Delete Count</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-muted-foreground mb-2">
+                  Are you sure you want to delete this count?
+                </p>
+                <p className="text-sm text-destructive">
+                  This action cannot be undone. All donations in this count will be permanently deleted.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDeleteBatch}
+                  disabled={deleteBatchMutation.isPending}
+                >
+                  {deleteBatchMutation.isPending ? "Deleting..." : "Delete Count"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </Card>
     </PageLayout>
   );
