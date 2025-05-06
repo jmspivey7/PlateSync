@@ -394,7 +394,7 @@ export default function EmailTemplateEditor() {
                   <div className="border rounded-md bg-white overflow-hidden">
                     <ScrollArea className="h-[500px]">
                       <div className="p-4">
-                        {templateData.templateType === 'DONATION_CONFIRMATION' ? (
+                        {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
                           <div dangerouslySetInnerHTML={{ 
                             __html: templateData.bodyHtml
                               .replace(/{{churchLogoUrl}}/g, 
@@ -402,7 +402,6 @@ export default function EmailTemplateEditor() {
                               )
                               .replace(/max-width: \d+px/g, 'max-width: 375px')
                               .replace(/max-height: \d+px/g, 'max-height: 150px')
-                              .replace(/Donation Receipt/g, '<strong>Donation Receipt</strong>')
                           }} />
                         ) : (
                           <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
