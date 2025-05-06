@@ -341,8 +341,11 @@ const UserManagement = () => {
   
   // Filter users based on search query and ensure profile images
   const filteredUsers = users?.map(user => {
+    console.log(`User ${user.id} (${user.role}) original profileImageUrl:`, user.profileImageUrl);
+    
     // If this is the admin user and currentUser has a profile image, use that
     if (user.role === "ADMIN" && user.id === currentUser?.id && currentUser?.profileImageUrl) {
+      console.log(`Using currentUser profile image for admin ${user.id}:`, currentUser.profileImageUrl);
       return {
         ...user,
         profileImageUrl: currentUser.profileImageUrl

@@ -23,6 +23,11 @@ export function useAuth() {
     refetchInterval: false,
     refetchOnWindowFocus: false,
     queryFn: getQueryFn({ on401: "returnNull" }),
+    onSuccess: (data) => {
+      if (data) {
+        console.log("useAuth - Current user data:", data);
+      }
+    },
   });
 
   // Login mutation
