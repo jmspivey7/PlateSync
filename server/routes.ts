@@ -824,10 +824,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (await sendDonationNotification({
         to: email,
-        amount: "$100.00",
+        amount: "100.00",
         date: new Date().toLocaleDateString(),
         donorName: "Test User",
-        churchName: fromName
+        churchName: fromName,
+        churchId: userId,
+        churchLogoUrl: user?.churchLogoUrl || undefined,
+        donationId: "TEST123456"
       })) {
         res.json({ success: true, message: "Test email sent successfully" });
       } else {

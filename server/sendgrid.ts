@@ -202,6 +202,24 @@ export async function sendDonationNotification(params: DonationNotificationParam
         '{{donationId}}': donationId,
       };
       
+      // Special handling for churchLogoUrl
+      if (params.churchLogoUrl) {
+        // Include the church logo if available
+        html = html.replace('{{churchLogoUrl}}', params.churchLogoUrl);
+      } else {
+        // If no logo, replace with a generic transparent 1px image to avoid broken image
+        const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        html = html.replace('{{churchLogoUrl}}', fallbackImgSrc);
+        
+        // Add CSS to hide the image when using the fallback
+        html = html.replace('<img src="{{churchLogoUrl}}"', '<img src="{{churchLogoUrl}}" style="display:none;"');
+        
+        // Add the church name as text for cases with no logo
+        html = html.replace('<p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>', 
+          `<h1 style="margin: 0; font-size: 28px; color: #2D3748;">${params.churchName}</h1>
+           <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>`);
+      }
+      
       Object.entries(replacements).forEach(([key, value]) => {
         subject = subject.replace(new RegExp(key, 'g'), value);
         text = text.replace(new RegExp(key, 'g'), value);
