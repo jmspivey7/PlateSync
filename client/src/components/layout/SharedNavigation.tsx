@@ -93,70 +93,159 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
         )}
       </div>
       
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Full Screen Overlay */}
       {isMobile && mobileMenuOpen && (
-        <div className="bg-white rounded-md shadow-lg p-4 mb-6">
-          <div className="flex flex-col space-y-2">
-            <Button variant="link" className="text-gray-500" onClick={() => {
-              setLocation("/dashboard");
-              setMobileMenuOpen(false);
-            }}>Dashboard</Button>
+        <div className="fixed inset-0 bg-white z-50 flex flex-col" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
+          {/* Header with Logo and Close Button */}
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            {user?.churchLogoUrl ? (
+              <div className="h-16 w-auto overflow-hidden">
+                <img 
+                  src={user.churchLogoUrl} 
+                  alt={`${user.churchName || 'Church'} logo`} 
+                  className="h-full w-auto max-h-16 object-contain"
+                />
+              </div>
+            ) : user?.churchName ? (
+              <div className="flex items-center">
+                <span className="text-xl font-bold">{user.churchName}</span>
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <span className="text-xl font-bold">PlateSync</span>
+              </div>
+            )}
             
-            <Button variant="ghost" onClick={() => {
-              setLocation("/counts");
-              setMobileMenuOpen(false);
-            }}>Counts</Button>
-            
-            <div className="border-t border-gray-200 my-2 pt-2">
-              <p className="text-sm text-gray-500 px-2 mb-2">Account</p>
-              
-              <Button variant="ghost" onClick={() => {
-                setLocation("/profile");
-                setMobileMenuOpen(false);
-              }}>Profile</Button>
-              
-              {isAdmin ? (
-                <>
-                  <Button variant="ghost" onClick={() => {
-                    setLocation("/user-management");
-                    setMobileMenuOpen(false);
-                  }}>Users</Button>
-                  
-                  <Button variant="ghost" onClick={() => {
-                    setLocation("/reports");
-                    setMobileMenuOpen(false);
-                  }}>Reports</Button>
-                  
-                  <Button variant="ghost" onClick={() => {
-                    setLocation("/settings");
-                    setMobileMenuOpen(false);
-                  }}>Settings</Button>
-                  
-                  <Button variant="ghost" onClick={() => {
-                    setLocation("/members");
-                    setMobileMenuOpen(false);
-                  }}>Members</Button>
-                  
-                  <Button variant="ghost" onClick={() => {
-                    setLocation("/service-options");
-                    setMobileMenuOpen(false);
-                  }}>Service Options</Button>
-                  
-                  <Button variant="ghost" onClick={() => {
-                    setLocation("/email-settings");
-                    setMobileMenuOpen(false);
-                  }}>Email Settings</Button>
-                </>
-              ) : (
-                <Button variant="ghost" onClick={() => {
-                  setLocation("/help");
+            <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+          
+          {/* Navigation Links */}
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className="flex flex-col space-y-8 w-full">
+              {/* Main Navigation */}
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/dashboard");
                   setMobileMenuOpen(false);
-                }}>Help</Button>
+                }}
+              >
+                Dashboard
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/counts");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Counts
+              </Button>
+              
+              {/* Admin Navigation */}
+              {isAdmin && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    className="text-2xl font-medium py-6" 
+                    onClick={() => {
+                      setLocation("/settings");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Settings
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="text-2xl font-medium py-6" 
+                    onClick={() => {
+                      setLocation("/members");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Members
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="text-2xl font-medium py-6" 
+                    onClick={() => {
+                      setLocation("/service-options");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Service Options
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="text-2xl font-medium py-6" 
+                    onClick={() => {
+                      setLocation("/reports");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Reports
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="text-2xl font-medium py-6" 
+                    onClick={() => {
+                      setLocation("/user-management");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Users
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="text-2xl font-medium py-6" 
+                    onClick={() => {
+                      setLocation("/profile");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Profile
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="text-2xl font-medium py-6" 
+                    onClick={() => {
+                      setLocation("/email-settings");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Email Settings
+                  </Button>
+                </>
+              )}
+              
+              {/* Common Navigation for all users */}
+              {!isAdmin && (
+                <Button 
+                  variant="ghost" 
+                  className="text-2xl font-medium py-6" 
+                  onClick={() => {
+                    setLocation("/profile");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Profile
+                </Button>
               )}
               
               <Button 
                 variant="ghost" 
-                className="text-red-600 mt-2"
+                className="text-2xl font-medium py-6 text-red-600" 
                 onClick={() => {
                   window.location.href = "/api/logout";
                 }}
