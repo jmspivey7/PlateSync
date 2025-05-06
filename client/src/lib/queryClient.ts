@@ -79,26 +79,33 @@ export async function apiRequest<T = any>(
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 
-export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior }): QueryFunction<T> => {
+export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401: "throw" }): QueryFunction<T> => {
   return async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(queryKey[0] as string, {
+        credentials: "include",
+      });
 
-    if (res.status === 401) {
-      if (options.on401 === "returnNull") {
-        return null as any;
+      if (res.status === 401) {
+        if (options.on401 === "returnNull") {
+          return null as any;
+        } else {
+          throw new Error("Unauthorized: Please sign in to continue");
+        }
       }
-    }
 
-    await throwIfResNotOk(res);
-    
-    // For 204 No Content responses, return an empty object
-    if (res.status === 204) {
-      return {} as T;
+      await throwIfResNotOk(res);
+      
+      // For 204 No Content responses, return an empty object
+      if (res.status === 204) {
+        return {} as T;
+      }
+      
+      return await res.json();
+    } catch (error) {
+      console.error(`Error fetching ${queryKey[0]}:`, error);
+      throw error;
     }
-    
-    return await res.json();
   };
 };
 

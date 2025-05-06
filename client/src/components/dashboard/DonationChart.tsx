@@ -87,7 +87,7 @@ export function DonationChart() {
   const [, navigate] = useLocation();
   
   // Fetch all batches
-  const { data: batches, isLoading } = useQuery<Batch[]>({
+  const { data: batches, isLoading, error: batchError } = useQuery<Batch[]>({
     queryKey: ['/api/batches'],
     select: (data) => {
       console.log("Chart received batch data:", data);
@@ -96,38 +96,53 @@ export function DonationChart() {
   });
   
   // For each batch, fetch its donations
-  const { data: batchDonations, isLoading: isDonationsLoading } = useQuery<Record<number, Donation[]>>({
+  const { data: batchDonations, isLoading: isDonationsLoading, error: donationsError } = useQuery<Record<number, Donation[]>>({
     queryKey: ['/api/batches/donations'],
     queryFn: async () => {
-      if (!batches || batches.length === 0) return {};
-      
-      // Fetch donations for all batches that have a totalAmount > 0
-      const relevantBatches = batches.filter(batch => 
-        parseFloat(batch.totalAmount?.toString() || '0') > 0
-      );
-      
-      // Create a map of batchId to donations
-      const donationsMap: Record<number, Donation[]> = {};
-      
-      // Fetch donations for each batch in parallel
-      await Promise.all(relevantBatches.map(async (batch) => {
-        try {
-          const response = await fetch(`/api/batches/${batch.id}/donations`);
-          if (response.ok) {
-            const donations = await response.json();
-            donationsMap[batch.id] = donations;
+      try {
+        if (!batches || !Array.isArray(batches) || batches.length === 0) return {};
+        
+        // Fetch donations for all batches that have a totalAmount > 0
+        const relevantBatches = batches.filter((batch: Batch) => 
+          parseFloat(batch.totalAmount?.toString() || '0') > 0
+        );
+        
+        // Create a map of batchId to donations
+        const donationsMap: Record<number, Donation[]> = {};
+        
+        // Fetch donations for each batch in parallel
+        await Promise.all(relevantBatches.map(async (batch: Batch) => {
+          try {
+            const response = await fetch(`/api/batches/${batch.id}/donations`, {
+              credentials: "include" // Ensure cookies are sent with the request
+            });
+            
+            if (response.ok) {
+              const donations = await response.json();
+              donationsMap[batch.id] = donations;
+            } else if (response.status === 401) {
+              console.warn("Authentication required for batch donations");
+              // Don't throw, just continue with empty donations for this batch
+            } else {
+              console.error(`Error response for batch ${batch.id}:`, response.status);
+            }
+          } catch (error) {
+            console.error(`Network error fetching donations for batch ${batch.id}:`, error);
+            // Don't throw, just continue with other batches
           }
-        } catch (error) {
-          console.error(`Error fetching donations for batch ${batch.id}:`, error);
-        }
-      }));
-      
-      console.log("Fetched donations for batches:", donationsMap);
-      return donationsMap;
+        }));
+        
+        console.log("Fetched donations for batches:", donationsMap);
+        return donationsMap;
+      } catch (error) {
+        console.error("Error in batch donations query:", error);
+        return {}; // Return empty object on error
+      }
     },
-    enabled: !!batches && batches.length > 0
+    enabled: !!batches && Array.isArray(batches) && batches.length > 0
   });
 
+  // Handle loading and error states
   if (isLoading || isDonationsLoading || !batches) {
     return (
       <Card>
@@ -152,13 +167,41 @@ export function DonationChart() {
       </Card>
     );
   }
+  
+  // Handle error states - show empty chart with view history option
+  if (batchError || donationsError) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row justify-between items-start">
+          <div>
+            <CardTitle>Count Trends</CardTitle>
+            <CardDescription>
+              Cash vs. Check donations over time
+            </CardDescription>
+          </div>
+          <Button 
+            className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
+            onClick={() => navigate("/counts")}
+          >
+            View History
+          </Button>
+        </CardHeader>
+        <CardContent className="h-[300px] flex flex-col items-center justify-center">
+          <p className="text-muted-foreground mb-4">No donation data available to display</p>
+          <p className="text-sm text-muted-foreground">Click "View History" to see your counts</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Get the most recent batches (up to 6)
-  const recentBatches = [...batches]
-    .filter(batch => parseFloat(batch.totalAmount?.toString() || '0') > 0)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 6)
-    .reverse();
+  const recentBatches = Array.isArray(batches) ? 
+    [...batches]
+      .filter((batch: Batch) => parseFloat(batch.totalAmount?.toString() || '0') > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 6)
+      .reverse()
+    : [];
 
   console.log("Recent batches for chart:", recentBatches.map(b => b.id));
 
