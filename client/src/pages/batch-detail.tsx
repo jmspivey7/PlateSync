@@ -41,6 +41,7 @@ const BatchDetailPage = () => {
   const batchId = params.id ? parseInt(params.id) : 0;
   
   const [isAddingDonation, setIsAddingDonation] = useState(false);
+  const [editingDonationId, setEditingDonationId] = useState<number | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [isFinalized, setIsFinalized] = useState(false);
   const [isPrintView, setIsPrintView] = useState(false);
@@ -153,7 +154,15 @@ const BatchDetailPage = () => {
 
   const handleDonationAdded = () => {
     setIsAddingDonation(false);
+    setEditingDonationId(null);
     queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+  };
+  
+  const handleEditDonation = (donationId: number) => {
+    // Only allow editing if batch is not finalized
+    if (!isFinalized) {
+      setEditingDonationId(donationId);
+    }
   };
 
   const handleShowSummary = () => {
@@ -486,7 +495,14 @@ const BatchDetailPage = () => {
             {batch.donations && batch.donations.length > 0 ? (
               <div className="border rounded-lg divide-y max-h-[350px] overflow-y-auto">
                 {batch.donations.map((donation) => (
-                  <div key={donation.id} className="p-3 flex justify-between hover:bg-muted">
+                  <div 
+                    key={donation.id} 
+                    className={`p-3 flex justify-between ${!isFinalized ? "hover:bg-muted cursor-pointer" : ""}`}
+                    onClick={() => !isFinalized && handleEditDonation(donation.id)}
+                    role={!isFinalized ? "button" : undefined}
+                    tabIndex={!isFinalized ? 0 : undefined}
+                    title={!isFinalized ? "Click to edit donation" : undefined}
+                  >
                     <div>
                       <div className="font-medium">
                         {donation.memberId && (donation as DonationWithMember).member ? 
