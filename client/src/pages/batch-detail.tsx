@@ -153,9 +153,21 @@ const BatchDetailPage = () => {
   };
 
   const handleDonationAdded = () => {
+    // Close the dialogs
     setIsAddingDonation(false);
     setEditingDonationId(null);
+    
+    // Invalidate all necessary queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId.toString()] });
+    queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId.toString(), "donations"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+    
+    // Show success toast for better UX
+    toast({
+      title: "Success",
+      description: "Donation data has been updated.",
+    });
   };
   
   const handleEditDonation = (donationId: number) => {
@@ -497,7 +509,7 @@ const BatchDetailPage = () => {
                 {batch.donations.map((donation) => (
                   <div 
                     key={donation.id} 
-                    className={`p-3 flex justify-between ${!isFinalized ? "hover:bg-muted cursor-pointer" : ""}`}
+                    className={`p-3 flex justify-between ${!isFinalized ? "hover:bg-green-100 cursor-pointer transition-colors duration-200" : ""}`}
                     onClick={() => !isFinalized && handleEditDonation(donation.id)}
                     role={!isFinalized ? "button" : undefined}
                     tabIndex={!isFinalized ? 0 : undefined}
@@ -514,8 +526,11 @@ const BatchDetailPage = () => {
                         {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                       </div>
                     </div>
-                    <div className="font-medium text-secondary-foreground">
+                    <div className="font-medium text-secondary-foreground flex items-center">
                       {formatCurrency(donation.amount)}
+                      {!isFinalized && (
+                        <Edit className="ml-2 h-4 w-4 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      )}
                     </div>
                   </div>
                 ))}

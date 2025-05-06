@@ -566,8 +566,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           className: "bg-[#48BB78] text-white",
         });
         
-        // For edit mode, navigate back to donations list
-        setLocation("/donations");
+        // First check if we should close the dialog instead of navigating
+        if (onClose && isInsideDialog) {
+          onClose();
+        } else {
+          // Otherwise navigate back to donations list for standalone form
+          setLocation("/donations");
+        }
       } 
       // For "Record & Next" flow, show targeted message and reset form
       else {
