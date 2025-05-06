@@ -109,7 +109,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
       {isMobile && mobileMenuOpen && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
           {/* Header with user profile and close button */}
-          <div className="pt-10 p-6 border-b border-gray-100 flex justify-between items-center">
+          <div className="pt-16 p-6 border-b border-gray-100 flex justify-between items-center">
             <div className="flex items-center">
               <Avatar className="h-16 w-16 bg-[#69ad4c] mr-4">
                 {user?.profileImageUrl ? (
@@ -131,11 +131,11 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
           
           <div className="flex-1 flex flex-col p-0">
             {/* Administrator Label */}
-            <div className="py-4 px-6 font-semibold text-xl text-center">
+            <div className="py-2 px-6 font-semibold text-xl text-center">
               {isAdmin ? "Administrator" : "Usher"}
             </div>
             
-            <div className="flex flex-col items-center justify-center flex-1">
+            <div className="flex flex-col items-center justify-start">
               {/* Profile */}
               <Button 
                 variant="ghost" 
