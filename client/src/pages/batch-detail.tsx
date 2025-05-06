@@ -448,47 +448,42 @@ const BatchDetailPage = () => {
       subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
     >
       <Card>
-        <CardHeader className="flex flex-col items-end">
-          {/* Right-justified header */}
-          <div className="w-full text-right mb-4">
+        <CardHeader className="px-6 pt-6 pb-2">
+          {/* Left-aligned header with Status Badge */}
+          <div className="w-full mb-4">
             <CardTitle>Count Details</CardTitle>
             <CardDescription>
               Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
             </CardDescription>
           </div>
           
-          {/* Action buttons in a row */}
-          <div className="w-full flex justify-between items-center">
-            {/* Left side - Navigation buttons and Finalize button */}
-            <div className="flex space-x-2 items-center">
-              <Button variant="outline" onClick={handleBackToCounts}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Counts
-              </Button>
-              
-              {batch.donations && batch.donations.length > 0 && batch.status !== "FINALIZED" && (
-                <Button 
-                  onClick={() => {
-                    console.log("Finalize Count button clicked");
-                    prepareAttestationMutation.mutate();
-                  }}
-                  className="bg-amber-500 hover:bg-amber-600 text-black ml-2"
-                  disabled={prepareAttestationMutation.isPending}
-                >
-                  <UserCheck className="mr-2 h-4 w-4" />
-                  {prepareAttestationMutation.isPending ? "Preparing..." : "Finalize Count"}
-                </Button>
-              )}
-            </div>
+          {/* Buttons row - all aligned to the left */}
+          <div className="w-full flex space-x-2 items-center">
+            <Button variant="outline" onClick={handleBackToCounts}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Counts
+            </Button>
             
-            <div className="flex space-x-2">
-              {batch.status === "FINALIZED" && (
-                <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print
-                </Button>
-              )}
-            </div>
+            {batch.donations && batch.donations.length > 0 && batch.status !== "FINALIZED" && (
+              <Button 
+                onClick={() => {
+                  console.log("Finalize Count button clicked");
+                  prepareAttestationMutation.mutate();
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-black"
+                disabled={prepareAttestationMutation.isPending}
+              >
+                <UserCheck className="mr-2 h-4 w-4" />
+                {prepareAttestationMutation.isPending ? "Preparing..." : "Finalize Count"}
+              </Button>
+            )}
+            
+            {batch.status === "FINALIZED" && (
+              <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
+                <Printer className="mr-2 h-4 w-4" />
+                Print
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
