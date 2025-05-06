@@ -256,7 +256,9 @@ const Profile = () => {
                     ? `${user.firstName} ${user.lastName}`
                     : user?.username || "User"}
                 </h3>
-                <p className="text-muted-foreground">{user?.role === "ADMIN" ? "Administrator" : "Usher"}</p>
+                <p className="text-muted-foreground">
+                  {user?.isMasterAdmin ? "Master Admin" : user?.role === "ADMIN" ? "Administrator" : "Usher"}
+                </p>
                 
                 <div className="mt-2">
                   <Button 
@@ -336,7 +338,7 @@ const Profile = () => {
                       <Label htmlFor="role" className="font-bold">Role:</Label>
                       <Input 
                         id="role" 
-                        value={user?.role === "ADMIN" ? "Administrator" : "Usher"} 
+                        value={user?.isMasterAdmin ? "Master Admin" : user?.role === "ADMIN" ? "Administrator" : "Usher"} 
                         disabled
                       />
                     </div>

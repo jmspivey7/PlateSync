@@ -75,7 +75,7 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["ADMIN", "USHER"]),
+  role: z.enum(["MASTER_ADMIN", "ADMIN", "USHER"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -162,12 +162,13 @@ const CreateUserForm = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
                   <SelectItem value="ADMIN">Administrator</SelectItem>
                   <SelectItem value="USHER">Usher</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
-                Administrators can manage all aspects of the system. Ushers can only record donations.
+                Master Admins have full control over church settings shared with all users. Administrators can manage most aspects of the system. Ushers can only record donations.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -452,7 +453,7 @@ const UserManagement = () => {
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback className="bg-gray-100 text-gray-800">
-                              {user.role === "ADMIN" ? "A" : "U"}
+                              {user.isMasterAdmin ? "M" : user.role === "ADMIN" ? "A" : "U"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -503,7 +504,7 @@ const UserManagement = () => {
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                         <AvatarFallback className="bg-gray-100 text-gray-800 text-lg">
-                          {user.role === "ADMIN" ? "A" : "U"}
+                          {user.isMasterAdmin ? "M" : user.role === "ADMIN" ? "A" : "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -553,6 +554,7 @@ const UserManagement = () => {
                             <SelectValue placeholder="Change Role" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
                             <SelectItem value="ADMIN">Administrator</SelectItem>
                             <SelectItem value="USHER">Usher</SelectItem>
                           </SelectContent>
