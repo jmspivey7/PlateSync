@@ -76,6 +76,11 @@ const BatchDetailPage = () => {
       document.body.style.overflow = "auto"; // Allow scrolling when modal is closed
     }
   }, [isAttesting]);
+  
+  // Debug delete confirmation dialog state
+  useEffect(() => {
+    console.log("showDeleteConfirm state changed to:", showDeleteConfirm);
+  }, [showDeleteConfirm]);
 
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
@@ -269,7 +274,9 @@ const BatchDetailPage = () => {
   };
   
   const handleShowDeleteConfirm = () => {
+    console.log("Delete button clicked, setting showDeleteConfirm to true");
     setShowDeleteConfirm(true);
+    console.log("Current showDeleteConfirm value:", showDeleteConfirm);
   };
   
   const handleDeleteBatch = () => {
@@ -702,7 +709,14 @@ const BatchDetailPage = () => {
         </div>
         
         {/* Delete Confirmation Dialog */}
-        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        {console.log("Rendering AlertDialog, showDeleteConfirm=", showDeleteConfirm)}
+        <AlertDialog 
+          open={showDeleteConfirm} 
+          onOpenChange={(open) => {
+            console.log("AlertDialog onOpenChange called with:", open);
+            setShowDeleteConfirm(open);
+          }}
+        >
           <AlertDialogContent className="bg-white">
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Count</AlertDialogTitle>
@@ -714,9 +728,12 @@ const BatchDetailPage = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleDeleteBatch}
+                onClick={() => {
+                  console.log("Delete action clicked");
+                  handleDeleteBatch();
+                }}
                 className="bg-red-600 hover:bg-red-700 text-white"
                 disabled={deleteBatchMutation.isPending}
               >
