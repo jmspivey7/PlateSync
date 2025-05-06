@@ -126,40 +126,36 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+  // Function to handle logout logic
+  const handleLogout = (req, res) => {
+    // Completely destroy the session
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destruction error:", err);
+      }
+      
+      // Clear all cookies
+      res.clearCookie('connect.sid');
+      
+      // For GET requests or if 'redirect' is true in the POST body, redirect to login
+      const isGetRequest = req.method === 'GET';
+      const wantsRedirect = isGetRequest || (req.body && req.body.redirect);
+      
+      if (wantsRedirect) {
+        res.redirect('/login-local');
+      } else {
+        // For API calls that don't want redirect, just send a success response
+        res.status(200).json({ success: true, message: "Logged out successfully" });
+      }
     });
-  });
+  };
+  
+  // Support both GET and POST for logout
+  app.get("/api/logout", handleLogout);
+  app.post("/api/logout", handleLogout);
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // Always check for development mode passthrough authentication
-  // This is a temporary development aid
-  if (process.env.NODE_ENV === 'development' && req.headers['x-development-auth']) {
-    console.log("Using development auth bypass");
-    // Use actual John Spivey data for development testing
-    req.user = {
-      claims: { 
-        sub: '40829937',  // John Spivey's actual user ID
-        username: 'jspivey',
-        email: 'jmspivey@icloud.com',
-        first_name: 'John',
-        last_name: 'Spivey',
-        profile_image_url: 'https://s.gravatar.com/avatar/5d35d97ace9b404da6070d26cdbe4b5c?s=480&r=pg&d=https%3A%2F%2Fcdn.auth0.com%2Favatars%2Fjs.png'
-      },
-      // These properties are used for session management with Replit Auth
-      access_token: 'dev_access_token',
-      refresh_token: 'dev_refresh_token',
-      expires_at: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
-    };
-    return next();
-  }
 
   const user = req.user as any;
 
