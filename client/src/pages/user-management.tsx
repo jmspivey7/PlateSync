@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Table, 
@@ -59,8 +59,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, Trash2, UserPlus, Users } from "lucide-react";
+import { Loader2, Plus, Save, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -204,6 +205,8 @@ const UserManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   
   // Fetch all users - using test endpoint for guaranteed results
   const { data: users, isLoading } = useQuery<User[]>({
@@ -316,19 +319,41 @@ const UserManagement = () => {
   // Update user role mutation
   const { mutate, isPending } = useMutation({
     mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
-      return await apiRequest<User>(`/api/users/${userId}/role`, "PATCH", { role });
+      return await apiRequest<User>(`/api/users/${userId}/role`, "PUT", { role });
     },
     onSuccess: () => {
       toast({
         title: "User updated",
         description: "User role has been updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
     },
     onError: () => {
       toast({
         title: "Update failed",
         description: "Failed to update user role",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Update user profile mutation
+  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
+    mutationFn: async ({ userId, firstName, lastName }: { userId: string, firstName: string, lastName: string }) => {
+      return await apiRequest<User>(`/api/users/${userId}`, "PUT", { firstName, lastName });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile updated",
+        description: "User profile has been updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
+      setUserDetailsOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update user profile",
         variant: "destructive",
       });
     },
@@ -497,6 +522,15 @@ const UserManagement = () => {
               
               {(() => {
                 const user = filteredUsers.find(u => u.id === selectedUserId)!;
+                
+                // Initialize edit fields when dialog opens
+                useEffect(() => {
+                  if (user) {
+                    setEditFirstName(user.firstName || "");
+                    setEditLastName(user.lastName || "");
+                  }
+                }, [user, userDetailsOpen]);
+                
                 return (
                   <div className="space-y-4 py-2">
                     <div className="flex items-center gap-3">
@@ -507,18 +541,39 @@ const UserManagement = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-lg font-semibold">
-                          {user.firstName} {user.lastName}
-                        </p>
                         <p className="text-sm text-gray-500">
                           {user.email || "—"}
                         </p>
                       </div>
                     </div>
                     
+                    <div className="space-y-4 pt-2">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName" className="font-bold">First Name:</Label>
+                          <Input 
+                            id="firstName"
+                            value={editFirstName}
+                            onChange={(e) => setEditFirstName(e.target.value)}
+                            placeholder="Enter first name"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName" className="font-bold">Last Name:</Label>
+                          <Input 
+                            id="lastName"
+                            value={editLastName}
+                            onChange={(e) => setEditLastName(e.target.value)}
+                            placeholder="Enter last name"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Role</p>
+                        <p className="text-sm font-bold text-gray-800">Role:</p>
                         <Badge 
                           className={
                             user.role === "ADMIN" 
@@ -531,15 +586,41 @@ const UserManagement = () => {
                       </div>
                       
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Created</p>
+                        <p className="text-sm font-bold text-gray-800">Created:</p>
                         <p>
                           {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
                         </p>
                       </div>
                     </div>
                     
+                    <div className="pt-4">
+                      <Button
+                        className="w-full bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+                        onClick={() => {
+                          updateProfile({
+                            userId: user.id,
+                            firstName: editFirstName,
+                            lastName: editLastName
+                          });
+                        }}
+                        disabled={isUpdatingProfile}
+                      >
+                        {isUpdatingProfile ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
                     <div className="border-t pt-4">
-                      <p className="text-sm font-medium text-gray-500 mb-2">Actions</p>
+                      <p className="text-sm font-bold text-gray-800 mb-2">Actions:</p>
                       <div className="flex items-center gap-2">
                         <Select 
                           defaultValue={user.role || "USHER"}
