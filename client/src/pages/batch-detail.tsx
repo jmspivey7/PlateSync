@@ -447,77 +447,74 @@ const BatchDetailPage = () => {
       title={batch.name} 
       subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
     >
-      <Card>
-        <CardHeader className="px-6 pt-6 pb-2">
-          {/* Left-aligned header with Status Badge */}
-          <div className="w-full mb-4">
-            <CardTitle>Count Details</CardTitle>
-            <CardDescription>
-              Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
-            </CardDescription>
+      <Card className="p-6">
+          {/* Top section - Right-aligned header and Left-aligned buttons */}
+          <div className="w-full flex justify-between items-start mb-8">
+            {/* Left side - Action buttons */}
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={handleBackToCounts} className="h-12 px-6">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Counts
+              </Button>
+              
+              {batch.donations && batch.donations.length > 0 && batch.status !== "FINALIZED" && (
+                <Button 
+                  onClick={() => {
+                    console.log("Finalize Count button clicked");
+                    prepareAttestationMutation.mutate();
+                  }}
+                  className="bg-amber-500 hover:bg-amber-600 text-black h-12 px-6"
+                  disabled={prepareAttestationMutation.isPending}
+                >
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  {prepareAttestationMutation.isPending ? "Preparing..." : "Finalize Count"}
+                </Button>
+              )}
+            </div>
+            
+            {/* Right side - Title and Status */}
+            <div className="text-right">
+              <CardTitle className="text-2xl">Count Details</CardTitle>
+              <CardDescription className="mt-1">
+                Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+              </CardDescription>
+            </div>
           </div>
           
-          {/* Buttons row - all aligned to the left */}
-          <div className="w-full flex space-x-2 items-center">
-            <Button variant="outline" onClick={handleBackToCounts}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Counts
-            </Button>
-            
-            {batch.donations && batch.donations.length > 0 && batch.status !== "FINALIZED" && (
-              <Button 
-                onClick={() => {
-                  console.log("Finalize Count button clicked");
-                  prepareAttestationMutation.mutate();
-                }}
-                className="bg-amber-500 hover:bg-amber-600 text-black"
-                disabled={prepareAttestationMutation.isPending}
-              >
-                <UserCheck className="mr-2 h-4 w-4" />
-                {prepareAttestationMutation.isPending ? "Preparing..." : "Finalize Count"}
-              </Button>
-            )}
-            
-            {batch.status === "FINALIZED" && (
-              <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
-                <Printer className="mr-2 h-4 w-4" />
-                Print
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-muted p-4 rounded-lg">
+          {/* Amount summary section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div>
               <div className="text-sm text-muted-foreground">Total Amount</div>
-              <div className="text-xl font-bold text-secondary-foreground">
+              <div className="text-2xl font-bold text-secondary-foreground">
                 {formatCurrency(batch.totalAmount || 0)}
               </div>
             </div>
-            <div className="bg-muted p-4 rounded-lg">
+            <div>
               <div className="text-sm text-muted-foreground">Cash Total</div>
-              <div className="text-xl font-bold text-secondary-foreground">
+              <div className="text-2xl font-bold text-secondary-foreground">
                 {formatCurrency(cashTotal)}
               </div>
             </div>
-            <div className="bg-muted p-4 rounded-lg">
+            <div>
               <div className="text-sm text-muted-foreground">Check Total</div>
-              <div className="text-xl font-bold text-secondary-foreground">
+              <div className="text-2xl font-bold text-secondary-foreground">
                 {formatCurrency(checkTotal)}
               </div>
             </div>
           </div>
 
-          <div className="mb-6">
+          {/* Record new donation button */}
+          <div className="mb-8">
             <Button 
               onClick={handleAddDonation}
-              className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto"
+              className="bg-green-600 hover:bg-green-700 text-white h-12 px-6"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               Record New Donation
             </Button>
           </div>
 
+          {/* Donations section */}
           <div>
             <h3 className="font-medium mb-3">Donations in this Count</h3>
             {batch.donations && batch.donations.length > 0 ? (
@@ -557,7 +554,6 @@ const BatchDetailPage = () => {
               </div>
             )}
           </div>
-        </CardContent>
 
         {/* Modal for adding a donation */}
         <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
