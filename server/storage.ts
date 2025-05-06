@@ -108,32 +108,15 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     try {
-      // Use a simpler query that doesn't reference the isActive column
+      // Simple query without isActive column
       const [user] = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          bio: users.bio,
-          profileImageUrl: users.profileImageUrl,
-          role: users.role,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          churchName: users.churchName,
-          emailNotificationsEnabled: users.emailNotificationsEnabled,
-          passwordResetToken: users.passwordResetToken,
-          passwordResetExpires: users.passwordResetExpires,
-          password: users.password,
-          isVerified: users.isVerified
-        })
+        .select()
         .from(users)
         .where(eq(users.id, id));
       
-      // For our temporary implementation, add isActive property
-      // and consider users with INACTIVE_ prefix as inactive
       if (user) {
+        // Virtual isActive field based on email prefix
+        // Use email prefixing as a temporary soft deletion mechanism
         user.isActive = !user.email?.startsWith('INACTIVE_');
       }
       
@@ -277,22 +260,30 @@ export class DatabaseStorage implements IStorage {
         .map(u => u.userId)
         .filter(id => id !== null && id !== undefined) as string[];
       
+      let userList: User[] = [];
+      
       if (userIds.length === 0) {
         // If no users found from batches, get all users
-        // Note: isActive filter is temporarily disabled until migration is run
-        return db
+        userList = await db
           .select()
           .from(users)
           .orderBy(desc(users.username));
+      } else {
+        // Get user details
+        userList = await db
+          .select()
+          .from(users)
+          .where(sql`${users.id} IN (${userIds.join(',')})`)
+          .orderBy(desc(users.username));
       }
       
-      // Get user details
-      // Note: isActive filter is temporarily disabled until migration is run
-      return db
-        .select()
-        .from(users)
-        .where(sql`${users.id} IN (${userIds.join(',')})`)
-        .orderBy(desc(users.username));
+      // Apply our temporary soft deletion filter based on email prefix
+      // This replaces the isActive column until migration is run
+      return userList.map(user => ({
+        ...user,
+        isActive: !user.email?.startsWith('INACTIVE_')
+      })).filter(user => !user.email?.startsWith('INACTIVE_'));
+      
     } catch (error) {
       console.error("Error in getUsers:", error);
       return [];
@@ -353,24 +344,30 @@ export class DatabaseStorage implements IStorage {
         userIds.push(adminId);
       }
       
+      let userList: User[] = [];
+      
       if (userIds.length === 0) {
         // If no users found, find all ADMIN users as a fallback
-        // Note: isActive filter is temporarily disabled until migration is run
-        const admins = await db
+        userList = await db
           .select()
           .from(users)
           .where(eq(users.role, 'ADMIN'));
-        
-        return admins;
+      } else {
+        // Get user details
+        userList = await db
+          .select()
+          .from(users)
+          .where(sql`${users.id} IN (${userIds.join(',')})`)
+          .orderBy(desc(users.username));
       }
       
-      // Get user details
-      // Note: isActive filter is temporarily disabled until migration is run
-      return db
-        .select()
-        .from(users)
-        .where(sql`${users.id} IN (${userIds.join(',')})`)
-        .orderBy(desc(users.username));
+      // Apply our temporary soft deletion filter based on email prefix
+      // This replaces the isActive column until migration is run
+      return userList.map(user => ({
+        ...user,
+        isActive: !user.email?.startsWith('INACTIVE_')
+      })).filter(user => !user.email?.startsWith('INACTIVE_'));
+      
     } catch (error) {
       console.error("Error in getUsersByChurchId:", error);
       return [];

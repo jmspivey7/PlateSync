@@ -52,7 +52,8 @@ export const users = pgTable("users", {
   churchLogoUrl: varchar("church_logo_url"),
   emailNotificationsEnabled: boolean("email_notifications_enabled").default(true),
   churchId: varchar("church_id"),
-  isActive: boolean("is_active").default(true).notNull(),
+  // Temporarily commented out until migration can be run
+  // isActive: boolean("is_active").default(true).notNull(),
 });
 
 // Church members table
@@ -226,7 +227,10 @@ export const insertServiceOptionSchema = createInsertSchema(serviceOptions).pick
 
 // Types for InsertUser from Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
-export type User = typeof users.$inferSelect;
+export type User = typeof users.$inferSelect & {
+  // Add isActive as a runtime property (not in database schema)
+  isActive?: boolean;
+};
 
 // Types for our application
 export type InsertMember = z.infer<typeof insertMemberSchema>;
