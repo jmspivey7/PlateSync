@@ -210,7 +210,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                 className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full text-red-600"
                 onClick={async () => {
                   try {
-                    // Use fetch to make a POST request to the logout endpoint
+                    // Make a POST request to the logout endpoint WITHOUT the development auth header
                     const response = await fetch('/api/logout', {
                       method: 'POST',
                       headers: {
@@ -220,8 +220,15 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                     });
                     
                     if (response.ok) {
-                      // Redirect to the login page after successful logout
+                      // For development environment, clear any cached data
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      
+                      // Hard reload to restart everything fresh
                       window.location.href = '/login-local';
+                      
+                      // Force a complete reload of the application
+                      window.location.reload();
                     } else {
                       console.error('Logout failed');
                     }
