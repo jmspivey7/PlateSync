@@ -224,7 +224,7 @@ const ServiceOptions = () => {
     return (
       <PageLayout 
         title="Access Denied" 
-        subtitle="You do not have permission to access this page"
+        subtitle="You do not have permission to access this page."
       >
         <Card>
           <CardContent className="p-8 text-center">
@@ -241,7 +241,7 @@ const ServiceOptions = () => {
   return (
     <PageLayout 
       title="Service Options" 
-      subtitle="Manage service options for creating new counts"
+      subtitle="Manage service options for creating new counts."
       icon={<ListChecks className="h-6 w-6 text-[#69ad4c]" />}
     >
       <Card>
@@ -250,7 +250,7 @@ const ServiceOptions = () => {
             <div>
               <CardTitle>Service Options</CardTitle>
               <CardDescription>
-                Configure the available service options for new counts
+                Configure the available service options for new counts.
               </CardDescription>
             </div>
             
@@ -269,7 +269,7 @@ const ServiceOptions = () => {
                   <DialogHeader>
                     <DialogTitle>Create Service Option</DialogTitle>
                     <DialogDescription>
-                      Add a new service option that will be available when creating a new count
+                      Add a new service option that will be available when creating a new count.
                     </DialogDescription>
                   </DialogHeader>
                   
@@ -432,7 +432,7 @@ const ServiceOptions = () => {
             <DialogHeader>
               <DialogTitle>Edit Service Option</DialogTitle>
               <DialogDescription>
-                Update the service option details
+                Update the service option details.
               </DialogDescription>
             </DialogHeader>
             
