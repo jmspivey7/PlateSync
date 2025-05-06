@@ -158,7 +158,7 @@ export function DonationChart() {
             onClick={() => navigate("/counts")}
             disabled={true}
           >
-            View History
+            All Counts
           </Button>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
@@ -183,12 +183,12 @@ export function DonationChart() {
             className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
             onClick={() => navigate("/counts")}
           >
-            View History
+            All Counts
           </Button>
         </CardHeader>
         <CardContent className="h-[300px] flex flex-col items-center justify-center">
           <p className="text-muted-foreground mb-4">No donation data available to display</p>
-          <p className="text-sm text-muted-foreground">Click "View History" to see your counts</p>
+          <p className="text-sm text-muted-foreground">Click "All Counts" to see your counts</p>
         </CardContent>
       </Card>
     );
@@ -273,7 +273,7 @@ export function DonationChart() {
           className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
           onClick={() => navigate("/counts")}
         >
-          View History
+          All Counts
         </Button>
       </CardHeader>
       <CardContent className="relative pb-6">
