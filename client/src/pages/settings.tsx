@@ -550,21 +550,19 @@ const Settings = () => {
                   </div>
                   
                   {/* Logo Display Section */}
-                  <div className="border border-gray-400 rounded-lg p-4 flex flex-col items-center">
+                  <div className="border border-gray-400 rounded-lg p-8 flex flex-col items-center">
                     {user?.churchLogoUrl ? (
-                      <div className="mb-3 flex flex-col items-center">
-                        <div className="w-28 h-28 rounded-lg border border-gray-400 overflow-hidden mb-1 flex items-center justify-center bg-gray-50">
-                          <img 
-                            src={user.churchLogoUrl} 
-                            alt={`${user.churchName || 'Church'} logo`} 
-                            className="max-w-full max-h-full object-contain"
-                          />
-                        </div>
-                        <p className="text-sm text-gray-500">Current logo</p>
+                      <div className="mb-6 flex flex-col items-center">
+                        <img 
+                          src={user.churchLogoUrl} 
+                          alt={`${user.churchName || 'Church'} logo`} 
+                          className="max-width-[400px] max-h-[200px] object-contain"
+                          style={{ maxWidth: "400px", height: "auto" }}
+                        />
                       </div>
                     ) : (
-                      <div className="mb-3 flex flex-col items-center">
-                        <div className="w-28 h-28 rounded-lg border border-gray-400 flex items-center justify-center bg-gray-50">
+                      <div className="mb-6 flex flex-col items-center">
+                        <div className="w-[400px] h-[100px] flex items-center justify-center">
                           <ImageIcon className="h-14 w-14 text-gray-300" />
                         </div>
                         <p className="text-sm text-gray-500 mt-1">No logo uploaded</p>
