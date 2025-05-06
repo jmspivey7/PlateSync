@@ -305,7 +305,7 @@ const Profile = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
+                      <Label htmlFor="firstName" className="font-bold">First Name:</Label>
                       <Input 
                         id="firstName" 
                         value={user?.firstName || ""} 
@@ -314,7 +314,7 @@ const Profile = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
+                      <Label htmlFor="lastName" className="font-bold">Last Name:</Label>
                       <Input 
                         id="lastName" 
                         value={user?.lastName || ""} 
@@ -323,7 +323,7 @@ const Profile = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email" className="font-bold">Email:</Label>
                       <Input 
                         id="email" 
                         type="email" 
@@ -333,7 +333,7 @@ const Profile = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="role">Role</Label>
+                      <Label htmlFor="role" className="font-bold">Role:</Label>
                       <Input 
                         id="role" 
                         value={user?.role === "ADMIN" ? "Administrator" : "Usher"} 
