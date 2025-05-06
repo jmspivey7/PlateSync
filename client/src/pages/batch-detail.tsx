@@ -396,7 +396,7 @@ const BatchDetailPage = () => {
                     Print
                   </Button>
                 )}
-                {isFinalized && isMasterAdmin && (
+                {isFinalized && isMasterAdmin && !showDeleteConfirm && (
                   <Button 
                     variant="outline" 
                     onClick={handleShowDeleteConfirm} 
@@ -405,6 +405,36 @@ const BatchDetailPage = () => {
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Count
                   </Button>
+                )}
+                
+                {/* Inline confirmation buttons that replace the Delete button when clicked */}
+                {isFinalized && isMasterAdmin && showDeleteConfirm && (
+                  <div className="ml-2 flex gap-2 items-center border border-gray-200 rounded-md p-1.5">
+                    <span className="text-sm font-medium text-gray-700 mr-1">Confirm deletion?</span>
+                    <Button 
+                      size="sm"
+                      variant="outline" 
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="border-gray-300 text-gray-600"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleDeleteBatch}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={deleteBatchMutation.isPending}
+                    >
+                      {deleteBatchMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Confirm Delete"
+                      )}
+                    </Button>
+                  </div>
                 )}
                 {!isFinalized && (
                   <Button variant="outline" onClick={handleEditFromSummary}>
