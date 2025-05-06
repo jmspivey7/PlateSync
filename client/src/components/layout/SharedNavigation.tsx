@@ -109,7 +109,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
       {isMobile && mobileMenuOpen && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
           {/* Header with user profile and close button */}
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div className="pt-10 p-6 border-b border-gray-100 flex justify-between items-center">
             <div className="flex items-center">
               <Avatar className="h-16 w-16 bg-[#69ad4c] mr-4">
                 {user?.profileImageUrl ? (
@@ -131,15 +131,15 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
           
           <div className="flex-1 flex flex-col p-0">
             {/* Administrator Label */}
-            <div className="py-4 px-6 font-semibold text-xl">
+            <div className="py-4 px-6 font-semibold text-xl text-center">
               {isAdmin ? "Administrator" : "Usher"}
             </div>
             
-            <div className="flex flex-col">
+            <div className="flex flex-col items-center justify-center flex-1">
               {/* Profile */}
               <Button 
                 variant="ghost" 
-                className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
                 onClick={() => {
                   setLocation("/profile");
                   setMobileMenuOpen(false);
@@ -152,7 +152,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
               {/* Help */}
               <Button 
                 variant="ghost" 
-                className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
                 onClick={() => {
                   setLocation("/help");
                   setMobileMenuOpen(false);
@@ -163,14 +163,14 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
               </Button>
               
               {/* Separator */}
-              <div className="border-t border-gray-200 my-2"></div>
+              <div className="border-t border-gray-200 my-2 w-3/4"></div>
               
               {isAdmin && (
                 <>
                   {/* Users */}
                   <Button 
                     variant="ghost" 
-                    className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                    className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
                     onClick={() => {
                       setLocation("/user-management");
                       setMobileMenuOpen(false);
@@ -183,7 +183,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                   {/* Reports */}
                   <Button 
                     variant="ghost" 
-                    className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                    className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
                     onClick={() => {
                       setLocation("/reports");
                       setMobileMenuOpen(false);
@@ -196,7 +196,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                   {/* Settings */}
                   <Button 
                     variant="ghost" 
-                    className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg"
+                    className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
                     onClick={() => {
                       setLocation("/settings");
                       setMobileMenuOpen(false);
@@ -207,14 +207,14 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                   </Button>
                   
                   {/* Separator */}
-                  <div className="border-t border-gray-200 my-2"></div>
+                  <div className="border-t border-gray-200 my-2 w-3/4"></div>
                 </>
               )}
               
               {/* Logout */}
               <Button 
                 variant="ghost" 
-                className="flex items-center text-left py-5 px-6 rounded-none justify-start text-lg text-red-600"
+                className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full text-red-600"
                 onClick={() => {
                   window.location.href = "/api/logout";
                 }}
