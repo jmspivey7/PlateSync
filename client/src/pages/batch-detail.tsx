@@ -19,6 +19,7 @@ import {
   Printer,
   Edit,
   AlertTriangle,
+  Loader2,
   X,
   UserCheck,
   Trash2
@@ -681,32 +682,33 @@ const BatchDetailPage = () => {
         </div>
         
         {/* Delete Confirmation Dialog */}
-        {showDeleteConfirm && (
-          <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Delete Count</DialogTitle>
-              </DialogHeader>
-              <div className="py-4">
-                <p>
-                  Are you sure you want to delete this count? This action cannot be undone.
-                </p>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={handleDeleteBatch}
-                  disabled={deleteBatchMutation.isPending}
-                >
-                  {deleteBatchMutation.isPending ? "Deleting..." : "Delete"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Count</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this count? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteBatch}
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={deleteBatchMutation.isPending}
+              >
+                {deleteBatchMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
     </PageLayout>
   );
