@@ -208,45 +208,31 @@ const UserManagement = () => {
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   
-  // Fetch all users - using test endpoint for guaranteed results
+  // Fetch all users from the database
   const { data: users, isLoading } = useQuery<User[]>({
-    queryKey: ['/api/test-users'],
+    queryKey: ['/api/users'],
     queryFn: async () => {
       console.log("User Management: Fetching users...");
       try {
-        // Try the test endpoint first
-        const response = await fetch('/api/test-users');
-        if (response.ok) {
+        const response = await fetch('/api/users', {
+          credentials: 'include' // Important for authentication
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch users: ${response.status}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
           const data = await response.json();
-          console.log("User Management: Test endpoint returned users:", data);
+          console.log("User Management: API returned users:", data);
           return data;
         } else {
-          throw new Error("Test endpoint failed");
+          throw new Error(`Unexpected content type: ${contentType}`);
         }
       } catch (error) {
-        console.error("User Management: Error fetching from test endpoint:", error);
-        console.log("Falling back to hardcoded users");
-        
-        // Return hardcoded fallback data
-        return [
-          {
-            id: "40829937",
-            username: "jspivey",
-            email: "jspivey@spiveyco.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "ADMIN",
-            profileImageUrl: "/logos/admin-profile.jpg"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER"
-          }
-        ];
+        console.error("User Management: Error fetching users:", error);
+        throw error; // Don't suppress the error
       }
     },
   });
@@ -326,7 +312,7 @@ const UserManagement = () => {
         title: "User updated",
         description: "User role has been updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
     },
     onError: () => {
       toast({
