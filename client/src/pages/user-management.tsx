@@ -467,11 +467,11 @@ const UserManagement = () => {
                         <Badge 
                           className={
                             user.role === "ADMIN" 
-                              ? "bg-blue-100 text-blue-800" 
+                              ? user.isMasterAdmin ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800" 
                               : "bg-green-100 text-green-800"
                           }
                         >
-                          {user.role || "USHER"}
+                          {user.isMasterAdmin ? "MASTER ADMIN" : user.role || "USHER"}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -522,11 +522,11 @@ const UserManagement = () => {
                         <Badge 
                           className={
                             user.role === "ADMIN" 
-                              ? "bg-blue-100 text-blue-800 mt-1" 
+                              ? user.isMasterAdmin ? "bg-purple-100 text-purple-800 mt-1" : "bg-blue-100 text-blue-800 mt-1" 
                               : "bg-green-100 text-green-800 mt-1"
                           }
                         >
-                          {user.role || "USHER"}
+                          {user.isMasterAdmin ? "MASTER ADMIN" : user.role || "USHER"}
                         </Badge>
                       </div>
                       

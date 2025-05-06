@@ -23,13 +23,14 @@ import { useAuth } from "@/hooks/useAuth";
 
 const AccountDropdown = () => {
   const [_, setLocation] = useLocation();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isMasterAdmin } = useAuth();
   
   // Get initials or use default fallback
   const getInitials = () => {
     if (!user) return "U";
     
-    // If admin, show "A", otherwise "U" for usher
+    // If master admin, show "M", if admin show "A", otherwise "U" for usher
+    if (isMasterAdmin) return "M";
     return isAdmin ? "A" : "U";
   };
   
@@ -64,7 +65,7 @@ const AccountDropdown = () => {
       
       <DropdownMenuContent className="bg-white w-56" align="end">
         <DropdownMenuLabel className="text-[1.1rem] font-semibold">
-          {isAdmin ? "Administrator" : "Usher"}
+          {isMasterAdmin ? "Master Admin" : isAdmin ? "Administrator" : "Usher"}
         </DropdownMenuLabel>
         
         <DropdownMenuGroup>
