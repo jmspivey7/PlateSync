@@ -314,23 +314,21 @@ const BatchDetailPage = () => {
         subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
       >
         <Card>
-          <CardHeader className="flex flex-col items-end">
-            {/* Right-justified header */}
-            <div className="w-full text-right mb-4">
-              <CardTitle>Count Summary</CardTitle>
-              <CardDescription>
-                Review and finalize your count
-              </CardDescription>
-            </div>
-            
-            {/* Action buttons in a row */}
-            <div className="w-full flex justify-between items-center">
-              {/* Left side - Navigation buttons */}
+          <CardHeader>
+            {/* Header with buttons in a row */}
+            <div className="w-full flex justify-between items-center mb-4">
+              {/* Left side - Back button */}
               <div className="flex space-x-2">
                 {isFinalized && (
                   <Button variant="outline" onClick={handleBackToCounts}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Counts
+                  </Button>
+                )}
+                {isFinalized && (
+                  <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white ml-2">
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print
                   </Button>
                 )}
                 {!isFinalized && (
@@ -341,14 +339,24 @@ const BatchDetailPage = () => {
                 )}
               </div>
               
+              {/* Right side - Title and description */}
+              <div className="text-right">
+                <CardTitle>Count Summary</CardTitle>
+                <CardDescription>
+                  Review and finalize your count
+                </CardDescription>
+              </div>
+            </div>
+            
+            {/* Action buttons container (keeping the structure) */}
+            <div className="w-full flex justify-between items-center" style={{display: 'none'}}>
+              {/* Left side - Navigation buttons (now empty) */}
+              <div className="flex space-x-2">
+              </div>
+              
               {/* Right side - Action buttons */}
               <div className="flex space-x-2">
-                {isFinalized && (
-                  <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white">
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print
-                  </Button>
-                )}
+                {/* Print button moved to header */}
                 
                 {!isFinalized && (
                   <Button 
