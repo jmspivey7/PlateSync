@@ -232,7 +232,8 @@ const UserManagement = () => {
             email: "jspivey@spiveyco.com",
             firstName: "John",
             lastName: "Spivey",
-            role: "ADMIN"
+            role: "ADMIN",
+            profileImageUrl: "/logos/admin-profile.jpg"
           },
           {
             id: "922299005",
