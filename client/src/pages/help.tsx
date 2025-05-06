@@ -75,6 +75,27 @@ const Help = () => {
                 </AccordionContent>
               </AccordionItem>
               
+              <AccordionItem value="item-3.5">
+                <AccordionTrigger>How do I complete the attestation process?</AccordionTrigger>
+                <AccordionContent>
+                  <p className="mb-2">
+                    The attestation process requires two people to verify the count's accuracy:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 pl-4">
+                    <li>After clicking "Finalize Count", you'll be taken to the attestation page</li>
+                    <li>The first person (Primary Attestor) enters their name and selects "Continue"</li>
+                    <li>Once the Primary Attestor is entered, a second dropdown appears</li>
+                    <li>A different person (Secondary Attestor) must be selected</li>
+                    <li>Review the count total one final time</li>
+                    <li>Click "Confirm and Finalize Count" to complete the process</li>
+                  </ol>
+                  <p className="mt-2 text-gray-600">
+                    <AlertCircle className="inline h-4 w-4 mr-1 text-amber-500" />
+                    Note: Two different people must attest to each count to maintain proper financial controls.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+              
               <AccordionItem value="item-4">
                 <AccordionTrigger>How to handle check donations?</AccordionTrigger>
                 <AccordionContent>
