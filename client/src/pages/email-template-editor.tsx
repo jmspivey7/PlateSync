@@ -394,7 +394,16 @@ export default function EmailTemplateEditor() {
                   <div className="border rounded-md bg-white overflow-hidden">
                     <ScrollArea className="h-[500px]">
                       <div className="p-4">
-                        <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
+                        {templateData.templateType === 'DONATION_CONFIRMATION' ? (
+                          <div dangerouslySetInnerHTML={{ 
+                            __html: templateData.bodyHtml.replace(
+                              '{{churchLogoUrl}}', 
+                              'https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png'
+                            ) 
+                          }} />
+                        ) : (
+                          <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
+                        )}
                       </div>
                     </ScrollArea>
                   </div>
