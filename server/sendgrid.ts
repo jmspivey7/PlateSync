@@ -200,6 +200,7 @@ export async function sendDonationNotification(params: DonationNotificationParam
         '{{date}}': params.date,
         '{{churchName}}': params.churchName,
         '{{donationId}}': donationId,
+        '{{churchLogoUrl}}': 'https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png',
       };
       
       // Special handling for churchLogoUrl
