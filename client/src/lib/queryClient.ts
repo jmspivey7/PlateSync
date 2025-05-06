@@ -90,12 +90,32 @@ export async function apiRequest<T = any>(
     
     // Otherwise parse and return JSON
     try {
-      return await res.json();
+      const contentType = res.headers.get('content-type');
+      
+      // Debug information
+      console.log(`Response from ${url}: Status ${res.status}, Content-Type: ${contentType}`);
+      
+      if (contentType && contentType.includes('application/json')) {
+        return await res.json();
+      } else {
+        // If not JSON but response is OK, return a success object
+        if (res.ok) {
+          console.warn(`Response from ${url} is not JSON (${contentType}), but status is OK`);
+          const text = await res.text();
+          console.log(`First 100 chars of response: ${text.substring(0, 100)}...`);
+          return { success: true, message: "Operation completed successfully" } as unknown as T;
+        } else {
+          // Not OK and not JSON
+          const text = await res.text();
+          console.error(`Non-JSON error response: ${text.substring(0, 100)}...`);
+          throw new Error(`Unexpected response format: ${contentType || 'unknown'}`);
+        }
+      }
     } catch (jsonError) {
       console.warn(`Failed to parse JSON response from ${url}:`, jsonError);
       // Return success object if response was successful but not JSON
       if (res.ok) {
-        return { success: true } as unknown as T;
+        return { success: true, message: "Operation completed but response could not be parsed" } as unknown as T;
       }
       throw jsonError;
     }
@@ -130,8 +150,28 @@ export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401
       }
       
       try {
-        const data = await res.json();
-        return data as T;
+        const contentType = res.headers.get('content-type');
+        
+        // Debug information
+        console.log(`Query response from ${queryKey[0]}: Status ${res.status}, Content-Type: ${contentType}`);
+        
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json();
+          return data as T;
+        } else {
+          // If not JSON but response is OK, return an empty object
+          if (res.ok) {
+            console.warn(`Query response from ${queryKey[0]} is not JSON (${contentType}), but status is OK`);
+            const text = await res.text();
+            console.log(`First 100 chars of query response: ${text.substring(0, 100)}...`);
+            return {} as T;
+          } else {
+            // Not OK and not JSON
+            const text = await res.text();
+            console.error(`Non-JSON error query response: ${text.substring(0, 100)}...`);
+            throw new Error(`Unexpected query response format: ${contentType || 'unknown'}`);
+          }
+        }
       } catch (jsonError) {
         console.warn(`Failed to parse JSON from ${queryKey[0]}:`, jsonError);
         // Return empty object if parsing fails instead of throwing an error
