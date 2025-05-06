@@ -164,9 +164,9 @@ const CountsPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/4">Status</th>
                     <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/4">Date</th>
                     <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/4">Amount</th>
-                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/4">Status</th>
                     <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/4">Action</th>
                   </tr>
                 </thead>
@@ -191,14 +191,14 @@ const CountsPage = () => {
                           }
                         }}
                       >
+                        <td className="py-3 px-3">
+                          <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                        </td>
                         <td className="py-3 px-3 text-gray-700 font-medium">
                           {format(new Date(batch.date), 'MMMM d, yyyy')}
                         </td>
                         <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
                           {formatCurrency(batch.totalAmount || 0)}
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
                         </td>
                         <td className="py-3 px-3 text-right">
                           {!isAdmin && batch.status === "FINALIZED" ? (
