@@ -164,10 +164,9 @@ const CountsPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/4">Status</th>
-                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/4">Date</th>
-                    <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/4">Amount</th>
-                    <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/4">Action</th>
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Status</th>
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Date</th>
+                    <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/3">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -195,20 +194,6 @@ const CountsPage = () => {
                         </td>
                         <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
                           {formatCurrency(batch.totalAmount || 0)}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewSummary(batch.id);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
                         </td>
                       </tr>
                     );
