@@ -121,7 +121,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             </Button>
           </div>
           
-          {/* Navigation Links */}
+          {/* Navigation Links - MATCHED TO DESKTOP EXACTLY */}
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="flex flex-col space-y-8 w-full">
               {/* Main Navigation */}
@@ -147,101 +147,82 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                 Counts
               </Button>
               
-              {/* Admin Navigation */}
-              {isAdmin && (
-                <>
-                  <Button 
-                    variant="ghost" 
-                    className="text-2xl font-medium py-6" 
-                    onClick={() => {
-                      setLocation("/settings");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    Settings
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="text-2xl font-medium py-6" 
-                    onClick={() => {
-                      setLocation("/members");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    Members
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="text-2xl font-medium py-6" 
-                    onClick={() => {
-                      setLocation("/service-options");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    Service Options
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="text-2xl font-medium py-6" 
-                    onClick={() => {
-                      setLocation("/reports");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    Reports
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="text-2xl font-medium py-6" 
-                    onClick={() => {
-                      setLocation("/user-management");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    Users
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="text-2xl font-medium py-6" 
-                    onClick={() => {
-                      setLocation("/profile");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    Profile
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="text-2xl font-medium py-6" 
-                    onClick={() => {
-                      setLocation("/email-settings");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    Email Settings
-                  </Button>
-                </>
-              )}
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/settings");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Settings
+              </Button>
               
-              {/* Common Navigation for all users */}
-              {!isAdmin && (
-                <Button 
-                  variant="ghost" 
-                  className="text-2xl font-medium py-6" 
-                  onClick={() => {
-                    setLocation("/profile");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Profile
-                </Button>
-              )}
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/members");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Members
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/service-options");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Service Options
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/reports");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Reports
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/user-management");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Users
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/profile");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Profile
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="text-2xl font-medium py-6" 
+                onClick={() => {
+                  setLocation("/email-settings");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Email Settings
+              </Button>
               
               <Button 
                 variant="ghost" 
