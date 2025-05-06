@@ -709,29 +709,25 @@ const BatchDetailPage = () => {
         </div>
         
         {/* Delete Confirmation Dialog */}
-        {console.log("Rendering AlertDialog, showDeleteConfirm=", showDeleteConfirm)}
-        <AlertDialog 
-          open={showDeleteConfirm} 
-          onOpenChange={(open) => {
-            console.log("AlertDialog onOpenChange called with:", open);
-            setShowDeleteConfirm(open);
-          }}
-        >
-          <AlertDialogContent className="bg-white">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Count</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this count?
-              </AlertDialogDescription>
-              <AlertDialogDescription className="text-muted-foreground">
-                This action cannot be undone, and all donation data will be permanently lost.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete Count</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col space-y-4">
+              <p>Are you sure you want to delete this count?</p>
+              <p className="text-muted-foreground">This action cannot be undone, and all donation data will be permanently lost.</p>
+            </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </Button>
+              <Button
                 onClick={() => {
-                  console.log("Delete action clicked");
+                  console.log("Delete button in dialog clicked");
                   handleDeleteBatch();
                 }}
                 className="bg-red-600 hover:bg-red-700 text-white"
@@ -745,10 +741,10 @@ const BatchDetailPage = () => {
                 ) : (
                   "Delete Count"
                 )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </Card>
     </PageLayout>
   );
