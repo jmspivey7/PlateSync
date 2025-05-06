@@ -205,8 +205,6 @@ const UserManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
-  const [editFirstName, setEditFirstName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
   
   // Fetch all users from the database
   const { data: users, isLoading } = useQuery<User[]>({
@@ -323,27 +321,7 @@ const UserManagement = () => {
     },
   });
   
-  // Update user profile mutation
-  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
-    mutationFn: async ({ userId, firstName, lastName }: { userId: string, firstName: string, lastName: string }) => {
-      return await apiRequest<User>(`/api/users/${userId}`, "PUT", { firstName, lastName });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Profile updated",
-        description: "User profile has been updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      setUserDetailsOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Update failed",
-        description: error.message || "Failed to update user profile",
-        variant: "destructive",
-      });
-    },
-  });
+  // Note: User profile editing has been removed per request
   
   // Handle role change
   const handleRoleChange = (userId: string, role: string) => {
@@ -502,20 +480,12 @@ const UserManagement = () => {
               <DialogHeader>
                 <DialogTitle>User Details</DialogTitle>
                 <DialogDescription>
-                  View and edit detailed information about this user
+                  View detailed information about this user
                 </DialogDescription>
               </DialogHeader>
               
               {(() => {
                 const user = filteredUsers.find(u => u.id === selectedUserId)!;
-                
-                // Initialize edit fields when dialog opens
-                useEffect(() => {
-                  if (user) {
-                    setEditFirstName(user.firstName || "");
-                    setEditLastName(user.lastName || "");
-                  }
-                }, [user, userDetailsOpen]);
                 
                 return (
                   <div className="space-y-4 py-2">
@@ -536,23 +506,13 @@ const UserManagement = () => {
                     <div className="space-y-4 pt-2">
                       <div className="grid grid-cols-1 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="firstName" className="font-bold">First Name:</Label>
-                          <Input 
-                            id="firstName"
-                            value={editFirstName}
-                            onChange={(e) => setEditFirstName(e.target.value)}
-                            placeholder="Enter first name"
-                          />
+                          <p className="text-sm font-bold text-gray-800">First Name:</p>
+                          <p className="text-md">{user.firstName || "—"}</p>
                         </div>
                         
                         <div className="space-y-2">
-                          <Label htmlFor="lastName" className="font-bold">Last Name:</Label>
-                          <Input 
-                            id="lastName"
-                            value={editLastName}
-                            onChange={(e) => setEditLastName(e.target.value)}
-                            placeholder="Enter last name"
-                          />
+                          <p className="text-sm font-bold text-gray-800">Last Name:</p>
+                          <p className="text-md">{user.lastName || "—"}</p>
                         </div>
                       </div>
                     </div>
@@ -577,32 +537,6 @@ const UserManagement = () => {
                           {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
                         </p>
                       </div>
-                    </div>
-                    
-                    <div className="pt-4">
-                      <Button
-                        className="w-full bg-[#69ad4c] hover:bg-[#5a9641] text-white"
-                        onClick={() => {
-                          updateProfile({
-                            userId: user.id,
-                            firstName: editFirstName,
-                            lastName: editLastName
-                          });
-                        }}
-                        disabled={isUpdatingProfile}
-                      >
-                        {isUpdatingProfile ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save Changes
-                          </>
-                        )}
-                      </Button>
                     </div>
 
                     <div className="border-t pt-4">
