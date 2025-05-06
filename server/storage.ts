@@ -107,6 +107,8 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
+    // We don't filter by isActive here to ensure we can retrieve inactive users
+    // when needed for historical records (like attestations)
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
@@ -423,8 +425,13 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteUser(id: string): Promise<void> {
+    // Implement soft deletion by setting isActive to false instead of deleting
     await db
-      .delete(users)
+      .update(users)
+      .set({ 
+        isActive: false,
+        updatedAt: new Date()
+      })
       .where(eq(users.id, id));
   }
 
