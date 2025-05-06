@@ -533,7 +533,7 @@ const UserManagement = () => {
                       <div>
                         <p className="text-sm font-medium text-gray-500">Created</p>
                         <p>
-                          {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
+                          {user.createdAt ? format(new Date(user.createdAt), "MM/dd/yyyy - hh:mm a") : "—"}
                         </p>
                       </div>
                     </div>

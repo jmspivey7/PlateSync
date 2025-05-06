@@ -640,7 +640,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: user.first_name,
             lastName: user.last_name,
             role: user.role,
-            profileImageUrl: user.profile_image_url
+            profileImageUrl: user.profile_image_url,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at
           }));
         console.log(`Found ${usersList.length} active users via test endpoint`);
       }
