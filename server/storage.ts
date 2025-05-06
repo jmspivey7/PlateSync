@@ -44,6 +44,10 @@ export interface IStorage {
   updateUserRole(id: string, role: string): Promise<User>;
   createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  // New Master Admin functions
+  getMasterAdminForChurch(churchId: string): Promise<User | undefined>;
+  setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined>;
+  transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>;
   
   // Member operations
   getMembers(churchId: string): Promise<Member[]>;

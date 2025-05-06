@@ -52,6 +52,7 @@ export const users = pgTable("users", {
   churchLogoUrl: varchar("church_logo_url"),
   emailNotificationsEnabled: boolean("email_notifications_enabled").default(true),
   churchId: varchar("church_id"),
+  isMasterAdmin: boolean("is_master_admin").default(false),
   // Temporarily commented out until migration can be run
   // isActive: boolean("is_active").default(true).notNull(),
 });
