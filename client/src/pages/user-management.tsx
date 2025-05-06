@@ -372,7 +372,7 @@ const UserManagement = () => {
   return (
     <PageLayout 
       title="Users" 
-      subtitle="Manage users and their roles in the system"
+      subtitle="Manage users and their roles in the system."
       icon={<Users className="h-6 w-6 text-[#69ad4c]" />}
     >
       <Card>
