@@ -31,28 +31,47 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
     <>
       {/* Header with Church Logo */}
       <div className="flex justify-between items-center py-4 mb-6">
-        {/* Always show the church name with icon if available, otherwise default icon */}
-        {user?.churchName ? (
-          <div 
-            className="cursor-pointer flex items-center"
-            onClick={() => setLocation("/dashboard")}
-          >
+        {/* Show church logo if available, otherwise show church name with icon, or default app name */}
+        <div 
+          className="cursor-pointer flex items-center"
+          onClick={() => setLocation("/dashboard")}
+        >
+          {user?.churchLogoUrl ? (
+            <div className="flex items-center">
+              <div className="h-10 w-auto mr-2 overflow-hidden">
+                <img 
+                  src={user.churchLogoUrl} 
+                  alt={`${user.churchName || 'Church'} logo`} 
+                  className="h-full object-contain"
+                  onError={(e) => {
+                    console.error("Error loading logo:", e);
+                    // Fallback to icon if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    // Create and display fallback icon
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const icon = document.createElement('div');
+                      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>';
+                      icon.className = "h-8 w-8 mr-2 text-[#69ad4c]";
+                      parent.appendChild(icon);
+                    }
+                  }}
+                />
+              </div>
+              <span className="text-xl font-bold">{user.churchName || 'Church'}</span>
+            </div>
+          ) : user?.churchName ? (
             <div className="flex items-center">
               <Church className="h-8 w-8 mr-2 text-[#69ad4c]" />
               <span className="text-xl font-bold">{user.churchName}</span>
             </div>
-          </div>
-        ) : (
-          <div 
-            className="cursor-pointer flex items-center"
-            onClick={() => setLocation("/dashboard")}
-          >
+          ) : (
             <div className="flex items-center">
               <Church className="h-8 w-8 mr-2 text-[#69ad4c]" />
               <span className="text-xl font-bold">PlateSync</span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
         
         {isMobile ? (
           <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
