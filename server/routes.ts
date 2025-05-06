@@ -707,6 +707,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate user data
       const userData = createUserSchema.parse(req.body);
       
+      // Check if user with this email already exists (including soft-deleted ones)
+      const existingUserWithEmail = await db
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users.email}) = LOWER(${userData.email})`)
+        .limit(1);
+        
+      if (existingUserWithEmail.length > 0) {
+        const existingEmail = existingUserWithEmail[0].email;
+        
+        // Check if this is a soft-deleted user that we can reactivate
+        if (existingEmail.startsWith('INACTIVE_')) {
+          // Reactivate the user by removing the INACTIVE_ prefix
+          const [reactivatedUser] = await db
+            .update(users)
+            .set({ 
+              email: existingEmail.replace('INACTIVE_', ''),
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              role: userData.role,
+              updatedAt: new Date()
+            })
+            .where(eq(users.id, existingUserWithEmail[0].id))
+            .returning();
+            
+          return res.status(201).json({
+            ...reactivatedUser,
+            message: "User has been reactivated with updated information."
+          });
+        } else {
+          return res.status(400).json({ message: "A user with this email already exists." });
+        }
+      }
+      
       // Create the user
       const newUser = await storage.createUser({
         ...userData,
@@ -724,7 +758,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.status(500).json({ message: "Failed to create user" });
+      // Check for specific database error messages
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      
+      if (errorMsg.includes("duplicate key") && errorMsg.includes("users_username_unique")) {
+        return res.status(400).json({ 
+          message: "Username already exists. The system will automatically generate a unique username.",
+          details: "Please try again - the system will handle this automatically."
+        });
+      }
+      
+      if (errorMsg.includes("duplicate key") && errorMsg.includes("users_email_unique")) {
+        return res.status(400).json({ 
+          message: "A user with this email already exists." 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to create user. Please try again." });
     }
   });
   

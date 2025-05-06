@@ -416,44 +416,68 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User> {
-    // Generate a unique ID for the user if not provided
-    const userId = userData.id || Math.floor(Math.random() * 1000000000).toString();
-    
-    // Generate a password reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    
-    // Create data object without churchId
-    const { churchId, ...userDataToInsert } = userData;
-    
-    // Token will expire in 48 hours
-    const resetExpires = new Date();
-    resetExpires.setHours(resetExpires.getHours() + 48);
-    
-    // Generate a random username if not provided (this is for backward compatibility)
-    const username = userData.username || userData.email?.split('@')[0] || `user_${userId}`;
-    
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        id: userId,
-        username,
-        email: userData.email!,
-        firstName: userData.firstName || null,
-        lastName: userData.lastName || null,
-        bio: userData.bio || null,
-        profileImageUrl: userData.profileImageUrl || null,
-        role: userData.role || 'USHER',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        churchName: userData.churchName || null,
-        emailNotificationsEnabled: userData.emailNotificationsEnabled !== undefined ? userData.emailNotificationsEnabled : true,
-        passwordResetToken: resetToken,
-        passwordResetExpires: resetExpires,
-        isVerified: false,
-      })
-      .returning();
-    
-    return newUser;
+    try {
+      // Generate a unique ID for the user if not provided
+      const userId = userData.id || Math.floor(Math.random() * 1000000000).toString();
+      
+      // Generate a password reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      
+      // Create data object without churchId
+      const { churchId, ...userDataToInsert } = userData;
+      
+      // Token will expire in 48 hours
+      const resetExpires = new Date();
+      resetExpires.setHours(resetExpires.getHours() + 48);
+      
+      // Generate base username from email if not provided
+      let baseUsername = userData.username || userData.email?.split('@')[0] || `user_${userId}`;
+      let username = baseUsername;
+      
+      // Check if this username already exists (including soft-deleted users)
+      // This includes INACTIVE_ prefixed emails, as those users still have the same username
+      const usernameExists = async (name: string) => {
+        const result = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, name))
+          .limit(1);
+        return result.length > 0;
+      };
+      
+      // If username exists, add a random suffix until we find a unique one
+      let suffix = 1;
+      while (await usernameExists(username)) {
+        username = `${baseUsername}_${suffix}`;
+        suffix++;
+      }
+      
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          id: userId,
+          username,
+          email: userData.email!,
+          firstName: userData.firstName || null,
+          lastName: userData.lastName || null,
+          bio: userData.bio || null,
+          profileImageUrl: userData.profileImageUrl || null,
+          role: userData.role || 'USHER',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          churchName: userData.churchName || null,
+          emailNotificationsEnabled: userData.emailNotificationsEnabled !== undefined ? userData.emailNotificationsEnabled : true,
+          passwordResetToken: resetToken,
+          passwordResetExpires: resetExpires,
+          isVerified: false,
+        })
+        .returning();
+      
+      return newUser;
+    } catch (error) {
+      console.error("Error in createUser:", error);
+      throw error;
+    }
   }
   
   async deleteUser(id: string): Promise<void> {
