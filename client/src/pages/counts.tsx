@@ -127,7 +127,7 @@ const CountsPage = () => {
     <PageLayout
       title="Historical Counts"
       subtitle="View and manage past donation counts"
-      icon={<Calendar className="h-6 w-6 text-gray-700" />}
+      icon={<Calendar className="h-6 w-6 text-[#69ad4c]" />}
       action={
         <Button 
           onClick={handleCreateBatch}
