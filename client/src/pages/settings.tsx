@@ -556,13 +556,13 @@ const Settings = () => {
                         <img 
                           src={user.churchLogoUrl} 
                           alt={`${user.churchName || 'Church'} logo`} 
-                          className="max-width-[400px] max-h-[200px] object-contain"
-                          style={{ maxWidth: "400px", height: "auto" }}
+                          className="max-width-[380px] max-h-[80px] object-contain"
+                          style={{ maxWidth: "380px", height: "auto" }}
                         />
                       </div>
                     ) : (
                       <div className="mb-6 flex flex-col items-center">
-                        <div className="w-[400px] h-[100px] flex items-center justify-center">
+                        <div className="w-[380px] h-[80px] flex items-center justify-center">
                           <ImageIcon className="h-14 w-14 text-gray-300" />
                         </div>
                         <p className="text-sm text-gray-500 mt-1">No logo uploaded</p>
@@ -700,7 +700,7 @@ const Settings = () => {
                     </div>
                   </div>
                   <div className="flex justify-end mt-1">
-                    <span className="text-xs text-gray-600">Recommended Size: 400x200px</span>
+                    <span className="text-xs text-gray-600">Recommended Size: 380x80px</span>
                   </div>
                 </div>
                 
