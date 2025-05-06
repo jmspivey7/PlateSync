@@ -837,8 +837,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all users
+  // Get all users - Test endpoint (deprecated)
   app.get('/api/test-users', isAuthenticated, async (req: any, res) => {
+    try {
+      // Redirect to the real endpoint
+      console.log("Test users endpoint called - redirecting to real endpoint");
+      res.redirect(307, '/api/users');
+    } catch (error) {
+      console.error("Error in test-users endpoint:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error fetching test users"
+      });
+    }
+  });
+  
+  // Get all users - REAL endpoint
+  app.get('/api/users', isAuthenticated, async (req: any, res) => {
     try {
       // Get current user
       const userId = req.user?.claims?.sub || req.session.userId;
@@ -850,70 +865,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Get the current user's church ID
       const userResult = await db.execute(
         sql`SELECT * FROM users WHERE id = ${userId}`
       );
       
-      const currentUser = userResult.rows[0] || {};
+      if (!userResult.rows || userResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      const currentUser = userResult.rows[0];
       const churchId = currentUser.church_id;
+      
+      console.log(`Fetching users for church ID: ${churchId}`);
       
       // Only get users for the same church
       const usersResult = await db.execute(
         sql`SELECT * FROM users WHERE church_id = ${churchId}`
       );
       
-      const usersResult2 = await db.execute(
-        sql`SELECT * FROM users`
-      );
-      
-      const usersResult3 = await db.execute(
-        sql`SELECT * FROM users WHERE id = ${userId}`
-      );
-      
-      // Map DB results to user objects
-      const usersResult4 = usersResult2 || usersResult || usersResult3;
-      
-      const usersResult5 = await db.execute(
-        sql`SELECT * FROM users`
-      );
-      
+      // Map DB results to user objects with proper camelCase naming
       let usersList = [];
       
-      if (usersResult5 && usersResult5.rows) {
-        usersList = usersResult5.rows.map(user => ({
+      if (usersResult && usersResult.rows) {
+        usersList = usersResult.rows.map(user => ({
           id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role,
-          profileImageUrl: user.profile_image_url
+          username: user.username || '',
+          email: user.email || '',
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          role: user.role || 'USHER',
+          churchId: user.church_id,
+          churchName: user.church_name,
+          churchLogoUrl: user.church_logo_url,
+          profileImageUrl: user.profile_image_url,
+          emailNotificationsEnabled: user.email_notifications_enabled || false,
+          donorEmailsEnabled: user.donor_emails_enabled || false,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at
         }));
-        console.log(`Found ${usersList.length} users via test endpoint`);
-      }
-      
-      if (usersList.length === 0) {
-        usersList = [
-          {
-            id: "40829937",
-            username: "jspivey",
-            email: "jspivey@spiveyco.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "ADMIN",
-            profileImageUrl: "/avatars/avatar-1746332089971-772508694.jpg"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER",
-            profileImageUrl: null
-          }
-        ];
-        console.log("Sending hardcoded user data from test endpoint");
+        console.log(`Found ${usersList.length} users for church ID ${churchId}`);
       }
       
       res.json(usersList);
