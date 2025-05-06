@@ -509,7 +509,7 @@ const BatchDetailPage = () => {
                 {batch.donations.map((donation) => (
                   <div 
                     key={donation.id} 
-                    className={`p-3 flex justify-between ${!isFinalized ? "hover:bg-green-100 cursor-pointer transition-colors duration-200" : ""}`}
+                    className={`p-3 flex justify-between group ${!isFinalized ? "hover:bg-green-100 cursor-pointer transition-colors duration-200" : ""}`}
                     onClick={() => !isFinalized && handleEditDonation(donation.id)}
                     role={!isFinalized ? "button" : undefined}
                     tabIndex={!isFinalized ? 0 : undefined}
