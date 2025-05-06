@@ -9,23 +9,7 @@ type LoginCredentials = {
   password: string;
 };
 
-// Fallback user for development mode
-const fallbackUser = {
-  id: "40829937",
-  username: "jspivey",
-  email: "jspivey@spiveyco.com",
-  firstName: "John",
-  lastName: "Spivey",
-  role: "ADMIN",
-  churchId: "1",
-  churchName: "Redeemer Presbyterian Church",
-  churchLogoUrl: "/logos/logo-1746331972517-682990183.png",
-  profileImageUrl: "/avatars/avatar-1746332089971-772508694.jpg",
-  emailNotificationsEnabled: true,
-  donorEmailsEnabled: true,
-  createdAt: new Date(),
-  updatedAt: new Date()
-};
+// No fallback user - we'll rely on the actual database data
 
 export function useAuth() {
   const { toast } = useToast();
@@ -105,20 +89,14 @@ export function useAuth() {
     },
   });
 
-  // Use fallback user in development mode if API fails
-  let effectiveUser = user;
-  if (process.env.NODE_ENV === 'development' && !user) {
-    console.warn("Using fallback user data in development mode");
-    effectiveUser = fallbackUser as unknown as User;
-  }
-
+  // No fallback user - we'll use the actual user data from the API
   return {
-    user: effectiveUser,
+    user,
     isLoading,
     refetch,
-    isAuthenticated: !!effectiveUser,
-    isAdmin: effectiveUser?.role === "ADMIN",
-    isUsher: effectiveUser?.role === "USHER" || !effectiveUser?.role,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === "ADMIN",
+    isUsher: user?.role === "USHER" || !user?.role,
     login: loginMutation.mutate,
     logout: logoutMutation.mutate,
     loginStatus: {

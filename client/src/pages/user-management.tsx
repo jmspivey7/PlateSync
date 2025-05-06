@@ -333,7 +333,7 @@ const UserManagement = () => {
         title: "Profile updated",
         description: "User profile has been updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setUserDetailsOpen(false);
     },
     onError: (error) => {
