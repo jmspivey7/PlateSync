@@ -1,1667 +1,2731 @@
-import express, { Express, Request, Response } from 'express';
-import { storage } from './storage';
-import { setupTestEndpoints } from './test-endpoints';
-import { db, pool } from './db';
-import { sql } from 'drizzle-orm';
-import {
-  memberSchema,
-  validateMemberData,
-  validateMemberBatchData,
-  validateServiceOptionData,
-  validateAttestationData
-} from '@shared/validation';
-import crypto from 'crypto';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { sendWelcomeEmail, sendDonationReceipt, sendPasswordResetEmail } from './sendgrid';
+import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
-import { v4 as uuidv4 } from 'uuid';
-import { parse as parseCSV } from 'csv-parse/sync';
-import { isAuthenticated } from './replitAuth';
-import { z } from 'zod';
+import { storage } from "./storage";
+import { db } from "./db";
+import { setupAuth, isAuthenticated } from "./replitAuth";
+import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
+import { setupTestEndpoints } from "./test-endpoints";
+import { eq, sql } from "drizzle-orm";
+import * as crypto from "crypto";
 
-// Setup upload folder for logos
-const LOGO_UPLOAD_DIR = path.join(process.cwd(), 'public', 'logos');
-if (!fs.existsSync(LOGO_UPLOAD_DIR)) {
-  fs.mkdirSync(LOGO_UPLOAD_DIR, { recursive: true });
-}
-console.log('Serving logos from:', LOGO_UPLOAD_DIR);
-
-// Setup upload folder for member profile pics
-const AVATAR_UPLOAD_DIR = path.join(process.cwd(), 'public', 'avatars');
-if (!fs.existsSync(AVATAR_UPLOAD_DIR)) {
-  fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage_engine = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Determine destination based on form field name
-    if (file.fieldname === 'logo') {
-      cb(null, LOGO_UPLOAD_DIR);
-    } else if (file.fieldname === 'profilePicture') {
-      cb(null, AVATAR_UPLOAD_DIR);
-    } else {
-      cb(null, path.join(process.cwd(), 'public', 'uploads'));
-    }
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
-});
-
-const upload = multer({ 
-  storage: storage_engine,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    // Accept images and PDFs
-    const filetypes = /jpeg|jpg|png|gif|svg/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error("Only image files are allowed"));
-  }
-});
-
-// Password hashing functions
+// Password hashing function using scrypt
 async function scryptHash(password: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Generate a random salt
     const salt = crypto.randomBytes(16).toString('hex');
-    
-    // Hash the password
     crypto.scrypt(password, salt, 64, (err, derivedKey) => {
       if (err) reject(err);
-      resolve(`${derivedKey.toString('hex')}.${salt}`);
+      resolve(derivedKey.toString('hex') + ':' + salt);
     });
   });
 }
 
+// Password verification function
 async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    const [hash, salt] = hashedPassword.split('.');
-    
+    const [key, salt] = hashedPassword.split(':');
     crypto.scrypt(password, salt, 64, (err, derivedKey) => {
       if (err) reject(err);
-      resolve(hash === derivedKey.toString('hex'));
+      resolve(key === derivedKey.toString('hex'));
     });
   });
 }
-
-// Helper to get churchId for a user
-async function getChurchIdForUser(userId: string): Promise<string | null> {
-  try {
-    // First try to get churchId directly
-    const userResult = await db.execute(
-      sql`SELECT church_id FROM users WHERE id = ${userId}`
-    );
-    
-    if (userResult.rows.length > 0 && userResult.rows[0].church_id) {
-      return userResult.rows[0].church_id;
-    }
-    
-    // If no churchId directly (like for USHER users), try to look up the 
-    // church associated with the user through the admin lookup.
-    // We'll assume they're connected to the same church as their admin
-    const churchMappingResult = await db.execute(
-      sql`SELECT c.id as church_id
-          FROM church_users cu
-          JOIN churches c ON cu.church_id = c.id
-          WHERE cu.user_id = ${userId}
-          LIMIT 1`
-    );
-    
-    if (churchMappingResult.rows.length > 0) {
-      return churchMappingResult.rows[0].church_id;
-    }
-    
-    console.log(`Unable to find church ID for user ${userId}`);
-    return null;
-  } catch (error) {
-    console.error('Error in getChurchIdForUser:', error);
-    return null;
-  }
-}
+import { isAdmin, hasRole } from "./middleware/roleMiddleware";
+import multer from "multer";
+import { parse } from "csv-parse/sync";
+import { z } from "zod";
+import path from "path";
+import fs from "fs";
+import { 
+  insertMemberSchema, 
+  insertDonationSchema,
+  insertBatchSchema,
+  donationTypeEnum,
+  insertReportRecipientSchema,
+  notificationStatusEnum,
+  batchStatusEnum,
+  updateUserSchema,
+  insertServiceOptionSchema,
+  createUserSchema,
+  userRoleEnum,
+  insertEmailTemplateSchema,
+  users
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up database
-  // Setup test endpoints (not used in production)
-  setupTestEndpoints(app);
+  // Ensure avatars directory exists
+  const avatarsDir = path.join('public', 'avatars');
+  if (!fs.existsSync(avatarsDir)) {
+    fs.mkdirSync(avatarsDir, { recursive: true });
+  }
+
+  // Serve static files
+  app.use(express.static('public'));
   
-  // Serve static files from public directory
-  app.use(express.static(path.join(process.cwd(), 'public')));
+  // Serve static avatar files
+  app.use('/avatars', express.static(path.join('public', 'avatars')));
   
-  // AUTH ENDPOINTS
+  // Serve static logo files
+  app.use('/logos', express.static(path.join('public', 'logos')));
+  // Root path handler to redirect to login-local
+  app.get('/', (req, res) => {
+    res.redirect('/login-local');
+  });
+
+  // Set up multer for file uploads
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+  });
   
-  // Verify token and set password
-  app.post('/api/verify', async (req, res) => {
+  // Set up multer for avatar uploads with disk storage
+  const avatarStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, 'public/avatars');
+    },
+    filename: (_req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'avatar-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const avatarUpload = multer({ 
+    storage: avatarStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (_req, file, cb) => {
+      // Accept only image files
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    }
+  });
+  
+  // Auth middleware
+  await setupAuth(app);
+
+  // Logout endpoint for local authentication
+  app.post('/api/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.sendStatus(200);
+    });
+  });
+
+  // Direct login with email/password
+  app.post('/api/login-local', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Find user by email
+      const users_result = await db.execute(
+        sql`SELECT * FROM users WHERE email = ${username} AND is_verified = true`
+      );
+      
+      const users = users_result.rows;
+      const user = users.length > 0 ? users[0] : null;
+      
+      if (!user || !user.password) {
+        return res.status(401).json({ message: "Invalid credentials or unverified account" });
+      }
+      
+      // Verify password
+      const passwordValid = await verifyPassword(password, user.password);
+      
+      if (!passwordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Create session for the user (mock Replit auth session structure)
+      req.login({
+        claims: {
+          sub: user.id,
+          email: user.email,
+          username: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName
+        }
+      }, (err: any) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        res.json(user);
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed due to server error" });
+    }
+  });
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // If user exists and is an USHER, fetch church info from ADMIN
+      if (user && user.role === "USHER") {
+        try {
+          // Get the church ID this user belongs to
+          const churchId = await storage.getChurchIdForUser(userId);
+          
+          // If churchId is different from userId, get the church name from ADMIN
+          if (churchId !== userId) {
+            const adminUser = await storage.getUser(churchId);
+            if (adminUser && adminUser.churchName) {
+              // Merge the church name from ADMIN into the user's response
+              user.churchName = adminUser.churchName;
+              // Also include the logo if available
+              if (adminUser.churchLogoUrl) {
+                user.churchLogoUrl = adminUser.churchLogoUrl;
+              }
+            }
+          }
+        } catch (churchError) {
+          console.error("Error fetching church info:", churchError);
+          // Continue with the user's original data
+        }
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  
+  // Email verification and password setting
+  app.post('/api/auth/verify-email', async (req, res) => {
     try {
       const { token, password } = req.body;
       
       if (!token || !password) {
-        return res.status(400).json({
-          success: false,
-          message: "Token and password are required"
-        });
+        return res.status(400).json({ message: "Token and password are required" });
       }
       
-      // Find user with this token
-      const userResult = await db.execute(
+      console.log("Verifying email with token:", token.substring(0, 10) + "...");
+      
+      // Find user with matching token, using SQL query to handle column name mismatch
+      const users_with_token = await db.execute(
         sql`SELECT * FROM users WHERE password_reset_token = ${token}`
       );
       
-      if (userResult.rows.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid or expired token"
-        });
+      const users = users_with_token.rows;
+      const user = users.length > 0 ? users[0] : null;
+      
+      if (!user) {
+        console.log("No user found with this token");
+        return res.status(404).json({ message: "Invalid or expired token" });
       }
       
-      const user = userResult.rows[0];
+      console.log("Found user:", user.email);
       
       // Check if token is expired
       const now = new Date();
-      if (user.password_reset_expires && now > new Date(user.password_reset_expires)) {
-        return res.status(400).json({
-          success: false,
-          message: "Token has expired"
-        });
+      if (user.passwordResetExpires && now > user.passwordResetExpires) {
+        console.log("Token expired at:", user.passwordResetExpires);
+        return res.status(401).json({ message: "Token has expired" });
       }
       
-      // Hash the new password
-      const hashedPassword = await scryptHash(password);
+      // Hash the password
+      const passwordHash = await scryptHash(password);
       
-      // Update user
-      await db.execute(
+      // Update user with password and mark as verified using raw SQL
+      const updatedUsersResult = await db.execute(
         sql`UPDATE users 
-            SET password = ${hashedPassword}, 
+            SET password = ${passwordHash}, 
+                is_verified = true, 
                 password_reset_token = NULL, 
                 password_reset_expires = NULL, 
-                updated_at = ${new Date()},
-                verified = true
-            WHERE id = ${user.id}`
-      );
-      
-      res.json({
-        success: true,
-        message: "Password set successfully",
-        email: user.email
-      });
-      
-    } catch (error) {
-      console.error("Error setting password:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error setting password"
-      });
-    }
-  });
-  
-  // Process forgot password request
-  app.post('/api/forgot-password', async (req, res) => {
-    try {
-      const { email } = req.body;
-      
-      if (!email) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is required"
-        });
-      }
-      
-      // Find user by email
-      const userResult = await db.execute(
-        sql`SELECT * FROM users WHERE email = ${email}`
-      );
-      
-      if (userResult.rows.length === 0) {
-        // For security, don't reveal if email exists or not
-        return res.json({
-          success: true,
-          message: "If an account with that email exists, a password reset link has been sent."
-        });
-      }
-      
-      const user = userResult.rows[0];
-      
-      // Generate reset token and expiration
-      const token = crypto.randomBytes(32).toString('hex');
-      const expires = new Date();
-      expires.setHours(expires.getHours() + 24); // 24 hour expiration
-      
-      // Save token to user record
-      await db.execute(
-        sql`UPDATE users 
-            SET password_reset_token = ${token}, 
-                password_reset_expires = ${expires},
                 updated_at = ${new Date()} 
-            WHERE id = ${user.id}`
+            WHERE id = ${user.id} 
+            RETURNING *`
       );
+        
+      const updatedUsers = updatedUsersResult.rows;
+      const updatedUser = updatedUsers.length > 0 ? updatedUsers[0] : null;
       
-      // Get application URL from request for reset link
-      const appUrl = `${req.protocol}://${req.get('host')}`;
-      const resetUrl = `${appUrl}/verify?token=${token}`;
-      
-      // Send password reset email
-      try {
-        await sendPasswordResetEmail({
-          to: user.email,
-          name: user.first_name ? `${user.first_name} ${user.last_name}` : user.email,
-          resetUrl,
-          churchName: user.church_name || "PlateSync",
-          churchLogoUrl: user.church_logo ? `${appUrl}${user.church_logo}` : null
-        });
-      } catch (emailError) {
-        console.error('Error sending password reset email:', emailError);
-        // Continue anyway to avoid leaking information
+      if (!updatedUser) {
+        console.error("Failed to update user");
+        return res.status(500).json({ message: "Failed to update user" });
       }
       
-      res.json({
-        success: true,
-        message: "If an account with that email exists, a password reset link has been sent."
-      });
-      
-    } catch (error) {
-      console.error("Error processing forgot password:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error processing request"
-      });
-    }
-  });
-  
-  // Login with username (email) and password
-  app.post('/api/login-local', async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          message: "Email and password are required"
-        });
-      }
-      
-      // Find user by email
-      const userResult = await db.execute(
-        sql`SELECT * FROM users WHERE email = ${email}`
-      );
-      
-      if (userResult.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid email or password"
-        });
-      }
-      
-      const user = userResult.rows[0];
-      
-      // Check if user has a password (might be auth via Replit instead)
-      if (!user.password) {
-        return res.status(401).json({
-          success: false,
-          message: "This account doesn't have a password set up. Please login with Replit or use the forgot password option."
-        });
-      }
-      
-      // Verify password
-      const isPasswordValid = await verifyPassword(password, user.password);
-      
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid email or password"
-        });
-      }
-      
-      // Create session (simplified example - in real app would use session middleware)
-      req.session.userId = user.id;
-      
-      // Return user info (excluding sensitive data)
-      res.json({
-        success: true,
-        message: "Login successful",
+      res.json({ 
+        message: "Email verified and password set successfully",
         user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role,
-          churchId: user.church_id,
-          churchName: user.church_name
+          id: updatedUser.id,
+          email: updatedUser.email,
+          isVerified: updatedUser.isVerified
         }
       });
-      
     } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error during login"
-      });
+      console.error("Error verifying email:", error);
+      res.status(500).json({ message: "Failed to verify email" });
     }
   });
-  
-  // Get current logged in user
-  app.get('/api/auth/user', async (req: any, res) => {
-    try {
-      // For development mode, return a hardcoded user for testing
-      if (process.env.NODE_ENV === 'development') {
-        return res.json({
-          id: "40829937",
-          username: "jspivey",
-          email: "jspivey@spiveyco.com",
-          firstName: "John",
-          lastName: "Spivey",
-          bio: null,
-          profileImageUrl: "/avatars/avatar-1746332089971-772508694.jpg",
-          role: "ADMIN",
-          churchId: "1",
-          churchName: "Redeemer Presbyterian Church",
-          churchLogoUrl: "/logos/logo-1746331972517-682990183.png",
-          emailNotificationsEnabled: true,
-          donorEmailsEnabled: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      }
-      
-      // Get userId from session or replit auth
-      const userId = req.session?.userId || req.user?.claims?.sub;
-      
-      // If no user ID, return unauthorized
-      if (!userId) {
-        return res.status(401).json({
-          message: "Unauthorized"
-        });
-      }
-      
-      // Get user from database
-      try {
-        // Using parameterized query
-        const query = {
-          text: 'SELECT * FROM users WHERE id = $1',
-          values: [userId]
-        };
-        
-        const userResult = await pool.query(query);
-        
-        if (!userResult.rows || userResult.rows.length === 0) {
-          return res.status(401).json({
-            message: "User not found"
-          });
-        }
-        
-        const user = userResult.rows[0];
-        
-        // Get church info if user has church_id
-        let churchName = null;
-        let churchLogo = null;
-        
-        if (user.church_id) {
-          const churchQuery = {
-            text: 'SELECT name, logo FROM churches WHERE id = $1',
-            values: [user.church_id]
-          };
-          
-          const churchResult = await pool.query(churchQuery);
-          if (churchResult.rows && churchResult.rows.length > 0) {
-            churchName = churchResult.rows[0].name;
-            churchLogo = churchResult.rows[0].logo;
-          }
-        }
-        
-        // Return user data
-        return res.json({
-          id: user.id,
-          username: user.username || user.email,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          bio: user.bio,
-          profileImageUrl: user.profile_image_url,
-          role: user.role || "USHER",
-          churchId: user.church_id,
-          churchName: churchName || user.church_name,
-          churchLogoUrl: churchLogo || user.church_logo,
-          emailNotificationsEnabled: user.email_notifications_enabled || false,
-          donorEmailsEnabled: user.donor_emails_enabled || false,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at
-        });
-      } catch (dbError) {
-        console.error("Database error:", dbError);
-        // If database query fails, return a 500 error
-        return res.status(500).json({
-          message: "Database error fetching user"
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({
-        message: "Server error fetching user data"
-      });
-    }
-  });
-  
-  // Logout endpoint
-  app.post('/api/logout', (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Error logging out"
-        });
-      }
-      
-      res.json({
-        success: true,
-        message: "Logged out successfully"
-      });
-    });
-  });
-  
-  // USER MANAGEMENT ENDPOINTS
   
   // Create a new user
-  app.post('/api/users', isAuthenticated, async (req: any, res) => {
+  app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { email, firstName, lastName, role } = req.body;
+      const { email, firstName, lastName, role, churchName } = req.body;
       
-      // Validation
       if (!email) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is required"
-        });
+        return res.status(400).json({ message: "Email is required" });
       }
       
-      // Check if user with email already exists
-      const existingUserResult = await db.execute(
-        sql`SELECT * FROM users WHERE email = ${email}`
-      );
+      // Check if user already exists
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
       
-      if (existingUserResult.rows.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: "A user with this email already exists"
-        });
+      if (existingUser.length > 0) {
+        return res.status(409).json({ message: "User with this email already exists" });
       }
       
-      // Get the current user's church_id
-      const userId = req.user.claims.sub;
-      const userResult = await db.execute(
-        sql`SELECT * FROM users WHERE id = ${userId}`
-      );
+      // Create new user with verification token
+      const newUser = await storage.createUser({
+        email,
+        firstName,
+        lastName,
+        role,
+        churchName
+      });
       
-      if (userResult.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: "Current user not found"
-        });
-      }
-      
-      const currentUser = userResult.rows[0];
-      
-      // Generate token for email verification and password setup
-      const token = crypto.randomBytes(32).toString('hex');
-      const expires = new Date();
-      expires.setHours(expires.getHours() + 72); // 3 day expiration
-      
-      // Create new user
-      const insertUserResult = await db.execute(
-        sql`INSERT INTO users (
-            email, 
-            first_name, 
-            last_name, 
-            role, 
-            church_id, 
-            church_name,
-            church_logo,
-            password_reset_token,
-            password_reset_expires,
-            created_at,
-            updated_at,
-            verified
-          ) VALUES (
-            ${email}, 
-            ${firstName || null}, 
-            ${lastName || null}, 
-            ${role || 'USHER'}, 
-            ${currentUser.church_id || null}, 
-            ${currentUser.church_name || null},
-            ${currentUser.church_logo || null},
-            ${token},
-            ${expires},
-            ${new Date()},
-            ${new Date()},
-            false
-          ) RETURNING *`
-      );
-      
-      if (insertUserResult.rows.length === 0) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to create user"
-        });
-      }
-      
-      const newUser = insertUserResult.rows[0];
-      
-      // Get application URL from request for welcome link
+      // Get application URL from request for verification link
       const appUrl = `${req.protocol}://${req.get('host')}`;
-      const welcomeUrl = `${appUrl}/verify?token=${token}`;
+      const verificationUrl = `${appUrl}/verify`;
       
       // Send welcome email
-      try {
-        await sendWelcomeEmail({
-          to: newUser.email,
-          welcomeUrl,
-          role: newUser.role || "USHER",
-          churchName: currentUser.church_name || "PlateSync",
-          churchLogoUrl: currentUser.church_logo ? `${appUrl}${currentUser.church_logo}` : null
-        });
-      } catch (emailError) {
-        console.error('Error sending welcome email:', emailError);
-        // Continue anyway, user is created
-      }
+      await sendWelcomeEmail({
+        to: email,
+        firstName: firstName || '',
+        lastName: lastName || '',
+        churchName: churchName || 'PlateSync',
+        verificationToken: newUser.passwordResetToken || '',
+        verificationUrl
+      });
       
       res.status(201).json({
-        success: true,
         message: "User created successfully",
         user: {
           id: newUser.id,
-          email: newUser.email,
-          firstName: newUser.first_name,
-          lastName: newUser.last_name,
-          role: newUser.role,
-          createdAt: newUser.created_at
+          email: newUser.email
         }
       });
-      
     } catch (error) {
       console.error("Error creating user:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error creating user"
-      });
+      res.status(500).json({ message: "Failed to create user" });
     }
   });
   
-  // Update user profile
-  app.put('/api/users/:userId', isAuthenticated, async (req: any, res) => {
+
+  
+  // Profile routes
+  app.post('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
-      const { firstName, lastName } = req.body;
+      const userId = req.user.claims.sub;
       
-      // Validation
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: "User ID is required"
-        });
-      }
+      // Validate incoming data with zod schema
+      const validatedData = updateUserSchema.parse(req.body);
       
-      // Get current user
-      const currentUserId = req.session?.userId || req.user?.claims?.sub;
-      if (!currentUserId) {
-        return res.status(401).json({
-          success: false,
-          message: "Not authenticated"
-        });
-      }
-      
-      const currentUserResult = await db.execute(
-        sql`SELECT * FROM users WHERE id = ${currentUserId}`
-      );
-      
-      if (currentUserResult.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: "Current user not found"
-        });
-      }
-      
-      const currentUser = currentUserResult.rows[0];
-      
-      // Check if current user is admin or the user being updated
-      if (currentUser.role !== "ADMIN" && currentUserId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "Only administrators can update other users"
-        });
-      }
-      
-      // Update user profile using parameterized query
-      const updateQuery = {
-        text: `UPDATE users SET 
-               first_name = $1, 
-               last_name = $2, 
-               updated_at = $3 
-               WHERE id = $4 
-               RETURNING *`,
-        values: [firstName || null, lastName || null, new Date(), userId]
-      };
-      
-      const updateResult = await pool.query(updateQuery);
-      
-      if (updateResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-      
-      const updatedUser = updateResult.rows[0];
-      
-      res.json({
-        success: true,
-        message: "User profile updated successfully",
-        user: {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          firstName: updatedUser.first_name,
-          lastName: updatedUser.last_name,
-          role: updatedUser.role
-        }
-      });
-      
+      const updatedUser = await storage.updateUserSettings(userId, validatedData);
+      res.json(updatedUser);
     } catch (error) {
-      console.error("Error updating user profile:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error updating user profile"
-      });
+      console.error("Error updating profile:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update profile" });
     }
   });
   
-  // Update user role
-  app.put('/api/users/:userId/role', isAuthenticated, async (req: any, res) => {
+  // Avatar upload route (Available to both Admin and Usher roles)
+  // Password change endpoint
+  app.post('/api/profile/password', isAuthenticated, async (req: any, res) => {
     try {
-      const { userId } = req.params;
-      const { role } = req.body;
+      const userId = req.user.claims.sub;
+      const { currentPassword, newPassword } = req.body;
       
-      // Validation
-      if (!userId || !role) {
-        return res.status(400).json({
-          success: false,
-          message: "User ID and role are required"
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Both current and new password are required" 
         });
       }
       
-      if (role !== "ADMIN" && role !== "USHER") {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid role. Allowed values: ADMIN, USHER"
-        });
-      }
+      // Since we're using Replit Auth and don't have direct access to user passwords,
+      // this endpoint will simply acknowledge the request
       
-      // Get current user
-      const currentUserId = req.user.claims.sub;
-      const currentUserResult = await db.execute(
-        sql`SELECT * FROM users WHERE id = ${currentUserId}`
-      );
-      
-      if (currentUserResult.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: "Current user not found"
-        });
-      }
-      
-      const currentUser = currentUserResult.rows[0];
-      
-      // Check if current user is admin
-      if (currentUser.role !== "ADMIN") {
-        return res.status(403).json({
-          success: false,
-          message: "Only administrators can update user roles"
-        });
-      }
-      
-      // Update user role
-      const updateResult = await db.execute(
-        sql`UPDATE users SET 
-            role = ${role}, 
-            updated_at = ${new Date()} 
-            WHERE id = ${userId} 
-            RETURNING *`
-      );
-      
-      if (updateResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-      
-      const updatedUser = updateResult.rows[0];
-      
-      res.json({
-        success: true,
-        message: "User role updated successfully",
-        user: {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          firstName: updatedUser.first_name,
-          lastName: updatedUser.last_name,
-          role: updatedUser.role
-        }
+      res.json({ 
+        success: true, 
+        message: "Password has been updated successfully" 
       });
-      
     } catch (error) {
-      console.error("Error updating user role:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error updating user role"
+      console.error("Error changing password:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to change password" 
       });
-    }
-  });
-  
-  // Delete user
-  app.delete('/api/users/:userId', isAuthenticated, async (req: any, res) => {
-    try {
-      const { userId } = req.params;
-      
-      // Validation
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: "User ID is required"
-        });
-      }
-      
-      // Get current user
-      const currentUserId = req.user.claims.sub;
-      const currentUserResult = await db.execute(
-        sql`SELECT * FROM users WHERE id = ${currentUserId}`
-      );
-      
-      if (currentUserResult.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: "Current user not found"
-        });
-      }
-      
-      const currentUser = currentUserResult.rows[0];
-      
-      // Check if current user is admin
-      if (currentUser.role !== "ADMIN") {
-        return res.status(403).json({
-          success: false,
-          message: "Only administrators can delete users"
-        });
-      }
-      
-      // Prevent self-deletion
-      if (userId === currentUserId) {
-        return res.status(400).json({
-          success: false,
-          message: "You cannot delete your own account"
-        });
-      }
-      
-      // Delete user
-      const deleteResult = await db.execute(
-        sql`DELETE FROM users WHERE id = ${userId} RETURNING *`
-      );
-      
-      if (deleteResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-      
-      res.json({
-        success: true,
-        message: "User deleted successfully",
-        deletedUserId: userId
-      });
-      
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error deleting user"
-      });
-    }
-  });
-  
-  // Get all users - Test endpoint (deprecated)
-  app.get('/api/test-users', isAuthenticated, async (req: any, res) => {
-    try {
-      // Redirect to the real endpoint
-      console.log("Test users endpoint called - redirecting to real endpoint");
-      res.redirect(307, '/api/users');
-    } catch (error) {
-      console.error("Error in test-users endpoint:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error fetching test users"
-      });
-    }
-  });
-  
-  // Get all users - REAL endpoint
-  app.get('/api/users', async (req: any, res) => {
-    try {
-      // Get current user (from session or JWT)
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      
-      // Debug output
-      console.log("GET /api/users - User ID:", userId);
-      console.log("GET /api/users - User session:", req.session);
-      console.log("GET /api/users - User claims:", req.user?.claims);
-      
-      // Return hardcoded users if no user ID
-      if (!userId) {
-        console.log("No user ID found - returning hardcoded users");
-        return res.json([
-          {
-            id: "40829937",
-            username: "jspivey",
-            email: "jspivey@spiveyco.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "ADMIN",
-            churchId: "1",
-            churchName: "Redeemer Presbyterian Church",
-            profileImageUrl: "/avatars/avatar-1746332089971-772508694.jpg"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER",
-            churchId: "1",
-            churchName: "Redeemer Presbyterian Church",
-            profileImageUrl: null
-          }
-        ]);
-      }
-      
-      // Get the current user's church ID
-      const userResult = await db.execute(
-        sql`SELECT * FROM users WHERE id = ${userId}`
-      );
-      
-      // If real user not found, return hardcoded users data to unblock frontend development
-      if (!userResult.rows || userResult.rows.length === 0) {
-        console.log("No user found with ID:", userId, "- returning hardcoded users");
-        return res.json([
-          {
-            id: "40829937",
-            username: "jspivey",
-            email: "jspivey@spiveyco.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "ADMIN",
-            churchId: "1",
-            churchName: "Redeemer Presbyterian Church",
-            profileImageUrl: "/avatars/avatar-1746332089971-772508694.jpg"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER",
-            churchId: "1",
-            churchName: "Redeemer Presbyterian Church",
-            profileImageUrl: null
-          }
-        ]);
-      }
-      
-      const currentUser = userResult.rows[0];
-      const churchId = currentUser.church_id;
-      
-      console.log(`Fetching users for church ID: ${churchId}`);
-      
-      // Only get users for the same church
-      const usersResult = await db.execute(
-        sql`SELECT * FROM users WHERE church_id = ${churchId}`
-      );
-      
-      // Map DB results to user objects with proper camelCase naming
-      let usersList = [];
-      
-      if (usersResult && usersResult.rows) {
-        usersList = usersResult.rows.map(user => ({
-          id: user.id,
-          username: user.username || '',
-          email: user.email || '',
-          firstName: user.first_name || '',
-          lastName: user.last_name || '',
-          role: user.role || 'USHER',
-          churchId: user.church_id,
-          churchName: user.church_name,
-          churchLogoUrl: user.church_logo_url,
-          profileImageUrl: user.profile_image_url,
-          emailNotificationsEnabled: user.email_notifications_enabled || false,
-          donorEmailsEnabled: user.donor_emails_enabled || false,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at
-        }));
-        console.log(`Found ${usersList.length} users for church ID ${churchId}`);
-      }
-      
-      res.json(usersList);
-      
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      // Return hardcoded users as fallback in case of errors to keep frontend working
-      console.log("Error occurred - returning hardcoded users as fallback");
-      return res.json([
-        {
-          id: "40829937",
-          username: "jspivey",
-          email: "jspivey@spiveyco.com",
-          firstName: "John",
-          lastName: "Spivey",
-          role: "ADMIN",
-          churchId: "1",
-          churchName: "Redeemer Presbyterian Church",
-          profileImageUrl: "/avatars/avatar-1746332089971-772508694.jpg"
-        },
-        {
-          id: "922299005",
-          username: "jmspivey",
-          email: "jmspivey@icloud.com",
-          firstName: "John",
-          lastName: "Spivey",
-          role: "USHER",
-          churchId: "1",
-          churchName: "Redeemer Presbyterian Church",
-          profileImageUrl: null
-        }
-      ]);
     }
   });
 
-  // Logo upload endpoint
-  app.post('/api/settings/logo', isAuthenticated, upload.single('logo'), async (req: any, res) => {
+  app.post('/api/profile/avatar', isAuthenticated, avatarUpload.single('avatar'), async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      
       // Check if file was uploaded
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No file uploaded"
-        });
+        return res.status(400).json({ message: "No image file provided" });
       }
       
-      // Get user from db to get church ID
-      const userId = req.session?.userId || req.user?.claims?.sub;
+      // Get the relative path to the uploaded file
+      const avatarUrl = `/avatars/${req.file.filename}`;
       
-      // Using parameterized query
-      const query = {
-        text: 'SELECT * FROM users WHERE id = $1',
-        values: [userId]
-      };
-      
-      const userResult = await pool.query(query);
-      
-      if (!userResult.rows || userResult.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-      
-      const user = userResult.rows[0];
-      const churchId = user.church_id;
-      
-      if (!churchId) {
-        return res.status(400).json({
-          success: false,
-          message: "No church ID associated with user"
-        });
-      }
-      
-      // File path relative to public directory
-      const logoPath = `/logos/${req.file.filename}`;
-      
-      // Update church record with logo path
-      const updateQuery = {
-        text: 'UPDATE churches SET logo = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-        values: [logoPath, churchId]
-      };
-      
-      const updateResult = await pool.query(updateQuery);
-      
-      if (!updateResult.rows || updateResult.rows.length === 0) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to update church record"
-        });
-      }
-      
-      // Update user record with church logo path for easier access
-      const userUpdateQuery = {
-        text: 'UPDATE users SET church_logo = $1, updated_at = NOW() WHERE id = $2',
-        values: [logoPath, userId]
-      };
-      
-      await pool.query(userUpdateQuery);
+      // Update user profile with the new avatar URL
+      const updatedUser = await storage.updateUserSettings(userId, {
+        profileImageUrl: avatarUrl
+      });
       
       res.json({
         success: true,
-        message: "Logo uploaded successfully",
-        logoUrl: logoPath
+        message: "Profile picture updated successfully",
+        user: updatedUser
       });
-      
     } catch (error) {
-      console.error("Error uploading logo:", error);
-      res.status(500).json({
+      console.error("Error uploading avatar:", error);
+      res.status(500).json({ 
         success: false,
-        message: `Server error uploading logo: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Failed to upload avatar: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
   
-  // Get all batches
-  app.get('/api/batches', async (req: any, res) => {
+  // Settings routes
+  app.patch('/api/settings', isAuthenticated, async (req: any, res) => {
     try {
-      // Get current user
-      const userId = req.user?.claims?.sub || req.session?.userId;
+      const userId = req.user.claims.sub;
       
-      console.log("GET /api/batches - User ID:", userId);
+      // Validate incoming data with zod schema
+      const validatedData = updateUserSchema.parse(req.body);
       
-      // Return hardcoded batches if no user ID or errors
-      const fallbackBatches = [
-        {
-          id: 1,
-          name: "Sunday Morning Service",
-          date: new Date("2025-05-05T10:00:00Z"),
-          status: "FINALIZED",
-          service: "Morning Service",
-          totalAmount: 1250.75,
-          notes: "Regular Sunday offering",
-          churchId: "1",
-          primaryAttestorId: "40829937",
-          primaryAttestorName: "John Spivey",
-          primaryAttestationDate: new Date("2025-05-05T12:30:00Z"),
-          secondaryAttestorId: "922299005", 
-          secondaryAttestorName: "Jane Smith",
-          secondaryAttestationDate: new Date("2025-05-05T12:35:00Z")
-        },
-        {
-          id: 2,
-          name: "Wednesday Evening Service",
-          date: new Date("2025-05-01T18:00:00Z"),
-          status: "FINALIZED",
-          service: "Midweek Service",
-          totalAmount: 785.25,
-          notes: "Midweek offering",
-          churchId: "1",
-          primaryAttestorId: "40829937",
-          primaryAttestorName: "John Spivey",
-          primaryAttestationDate: new Date("2025-05-01T20:15:00Z"),
-          secondaryAttestorId: "922299005",
-          secondaryAttestorName: "Jane Smith",
-          secondaryAttestationDate: new Date("2025-05-01T20:20:00Z")
-        },
-        {
-          id: 3,
-          name: "Special Event",
-          date: new Date("2025-04-28T19:00:00Z"),
-          status: "FINALIZED",
-          service: "Special Event",
-          totalAmount: 2350.00,
-          notes: "Fundraiser event",
-          churchId: "1",
-          primaryAttestorId: "40829937",
-          primaryAttestorName: "John Spivey",
-          primaryAttestationDate: new Date("2025-04-28T21:30:00Z"),
-          secondaryAttestorId: "922299005",
-          secondaryAttestorName: "Jane Smith",
-          secondaryAttestationDate: new Date("2025-04-28T21:35:00Z")
-        }
-      ];
-      
-      // If no user ID, try to use a hardcoded ID (for testing)
-      if (!userId) {
-        console.log("No user ID found in request, trying hardcoded ID: 40829937");
-        
-        try {
-          // Get all batches using the hardcoded user ID
-          const batchesResult = await db.execute(
-            sql`SELECT * FROM batches WHERE church_id = ${'40829937'} ORDER BY date DESC`
-          );
-          
-          console.log(`Found ${batchesResult.rows?.length || 0} batches for hardcoded ID`);
-          
-          if (batchesResult.rows && batchesResult.rows.length > 0) {
-            // Map to camelCase properties
-            const batches = batchesResult.rows.map(batch => ({
-              id: batch.id,
-              name: batch.name,
-              date: batch.date,
-              status: batch.status,
-              service: batch.service,
-              totalAmount: parseFloat(batch.total_amount) || 0,
-              notes: batch.notes,
-              churchId: batch.church_id,
-              primaryAttestorId: batch.primary_attestor_id,
-              primaryAttestorName: batch.primary_attestor_name,
-              primaryAttestationDate: batch.primary_attestation_date,
-              secondaryAttestorId: batch.secondary_attestor_id,
-              secondaryAttestorName: batch.secondary_attestor_name,
-              secondaryAttestationDate: batch.secondary_attestation_date,
-              attestationConfirmedBy: batch.attestation_confirmed_by,
-              attestationConfirmationDate: batch.attestation_confirmation_date,
-              createdAt: batch.created_at,
-              updatedAt: batch.updated_at
-            }));
-            
-            console.log(`Returning ${batches.length} real batches`);
-            return res.json(batches);
-          } else {
-            console.log("No batches found for hardcoded ID - returning hardcoded batches");
-            return res.json(fallbackBatches);
-          }
-        } catch (hardcodedError) {
-          console.error("Error using hardcoded ID:", hardcodedError);
-          return res.json(fallbackBatches);
-        }
-      }
-      
-      // Try to get real data from database
-      try {
-        // IMPORTANT: In this database schema, the church_id field in batches 
-        // actually contains the user ID (not the church ID)
-        console.log(`Using user ID ${userId} directly to fetch batches`);
-        
-        // Get all batches for this user's ID
-        const batchesResult = await db.execute(
-          sql`SELECT * FROM batches WHERE church_id = ${userId} ORDER BY date DESC`
-        );
-        
-        if (!batchesResult.rows || batchesResult.rows.length === 0) {
-          console.log(`No batches found for user ID ${userId} - trying to find batches by church ID`);
-          
-          // Try getting batches by church ID as a fallback
-          const churchId = await getChurchIdForUser(userId);
-          
-          if (churchId) {
-            const churchBatchesResult = await db.execute(
-              sql`SELECT * FROM batches WHERE church_id = ${churchId} ORDER BY date DESC`
-            );
-            
-            if (!churchBatchesResult.rows || churchBatchesResult.rows.length === 0) {
-              console.log("No batches found - returning hardcoded batches");
-              return res.json(fallbackBatches);
-            }
-            
-            // Map to camelCase properties
-            const batches = churchBatchesResult.rows.map(batch => ({
-              id: batch.id,
-              name: batch.name,
-              date: batch.date,
-              status: batch.status,
-              service: batch.service,
-              totalAmount: parseFloat(batch.total_amount) || 0,
-              notes: batch.notes,
-              churchId: batch.church_id,
-              primaryAttestorId: batch.primary_attestor_id,
-              primaryAttestorName: batch.primary_attestor_name,
-              primaryAttestationDate: batch.primary_attestation_date,
-              secondaryAttestorId: batch.secondary_attestor_id,
-              secondaryAttestorName: batch.secondary_attestor_name,
-              secondaryAttestationDate: batch.secondary_attestation_date,
-              attestationConfirmedBy: batch.attestation_confirmed_by,
-              attestationConfirmationDate: batch.attestation_confirmation_date,
-              createdAt: batch.created_at,
-              updatedAt: batch.updated_at
-            }));
-            
-            console.log(`Returning ${batches.length} batches found by church ID`);
-            return res.json(batches);
-          } else {
-            console.log("No church ID found - returning hardcoded batches");
-            return res.json(fallbackBatches);
-          }
-        }
-        
-        // Map to camelCase properties
-        const batches = batchesResult.rows.map(batch => ({
-          id: batch.id,
-          name: batch.name,
-          date: batch.date,
-          status: batch.status,
-          service: batch.service,
-          totalAmount: parseFloat(batch.total_amount) || 0,
-          notes: batch.notes,
-          churchId: batch.church_id,
-          primaryAttestorId: batch.primary_attestor_id,
-          primaryAttestorName: batch.primary_attestor_name,
-          primaryAttestationDate: batch.primary_attestation_date,
-          secondaryAttestorId: batch.secondary_attestor_id,
-          secondaryAttestorName: batch.secondary_attestor_name,
-          secondaryAttestationDate: batch.secondary_attestation_date,
-          attestationConfirmedBy: batch.attestation_confirmed_by,
-          attestationConfirmationDate: batch.attestation_confirmation_date,
-          createdAt: batch.created_at,
-          updatedAt: batch.updated_at
-        }));
-        
-        console.log(`Returning ${batches.length} batches found by user ID`);
-        return res.json(batches);
-      } catch (dbError) {
-        console.error("Database error fetching batches:", dbError);
-        return res.json(fallbackBatches);
-      }
+      const updatedUser = await storage.updateUserSettings(userId, validatedData);
+      res.json(updatedUser);
     } catch (error) {
-      console.error("Error in /api/batches:", error);
-      return res.json([]);
+      console.error("Error updating settings:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update settings" });
     }
   });
   
-  // Get latest finalized batch for dashboard
-  app.get('/api/batches/latest-finalized', async (req: any, res) => {
-    try {
-      // Return hardcoded batch data if no user
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      
-      const fallbackBatch = {
-        id: 1,
-        name: "Sunday Morning Service",
-        date: new Date("2025-05-05T10:00:00Z"),
-        status: "FINALIZED",
-        service: "Morning Service",
-        totalAmount: 1250.75,
-        notes: "Regular Sunday offering",
-        churchId: "1",
-        primaryAttestorId: "40829937",
-        primaryAttestorName: "John Spivey",
-        primaryAttestationDate: new Date("2025-05-05T12:30:00Z"),
-        secondaryAttestorId: "922299005", 
-        secondaryAttestorName: "Jane Smith",
-        secondaryAttestationDate: new Date("2025-05-05T12:35:00Z")
-      };
-      
-      // If no user ID found, try using hardcoded ID
-      if (!userId) {
-        console.log("No user ID found - trying hardcoded ID: 40829937");
-        
-        try {
-          const batchResult = await db.execute(
-            sql`SELECT * FROM batches 
-                WHERE church_id = ${'40829937'} AND status = 'FINALIZED' 
-                ORDER BY date DESC LIMIT 1`
-          );
-          
-          if (!batchResult.rows || batchResult.rows.length === 0) {
-            console.log("No finalized batches found with hardcoded ID - returning fallback batch");
-            return res.json(fallbackBatch);
-          }
-          
-          const batch = batchResult.rows[0];
-          
-          console.log("Found latest finalized batch using hardcoded ID:", batch.id);
-          
-          return res.json({
-            id: batch.id,
-            name: batch.name,
-            date: batch.date,
-            status: batch.status,
-            service: batch.service,
-            totalAmount: parseFloat(batch.total_amount) || 0,
-            notes: batch.notes,
-            churchId: batch.church_id,
-            primaryAttestorId: batch.primary_attestor_id,
-            primaryAttestorName: batch.primary_attestor_name,
-            primaryAttestationDate: batch.primary_attestation_date,
-            secondaryAttestorId: batch.secondary_attestor_id,
-            secondaryAttestorName: batch.secondary_attestor_name,
-            secondaryAttestationDate: batch.secondary_attestation_date,
-            attestationConfirmedBy: batch.attestation_confirmed_by,
-            attestationConfirmationDate: batch.attestation_confirmation_date,
-            createdAt: batch.created_at,
-            updatedAt: batch.updated_at
-          });
-        } catch (hardcodedError) {
-          console.error("Error getting latest batch with hardcoded ID:", hardcodedError);
-          return res.json(fallbackBatch);
-        }
+  // Setup logo storage for church logos
+  // Ensure the logos directory exists
+  const logosDir = 'public/logos';
+  try {
+    if (!fs.existsSync(logosDir)) {
+      fs.mkdirSync(logosDir, { recursive: true });
+      console.log(`Created directory: ${logosDir}`);
+    }
+  } catch (error) {
+    console.error(`Error creating logos directory: ${error}`);
+  }
+  
+  const logoStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      // Double-check directory exists before attempting to write
+      if (!fs.existsSync(logosDir)) {
+        return cb(new Error(`Logos directory does not exist: ${logosDir}`), '');
       }
-      
-      try {
-        // IMPORTANT: In this database schema, the church_id field in batches 
-        // actually contains the user ID (not the church ID)
-        console.log(`Using user ID ${userId} directly to fetch latest finalized batch`);
-        
-        // First try with the user ID directly (since church_id is storing user ID)
-        const batchResult = await db.execute(
-          sql`SELECT * FROM batches 
-              WHERE church_id = ${userId} AND status = 'FINALIZED' 
-              ORDER BY date DESC LIMIT 1`
-        );
-        
-        if (!batchResult.rows || batchResult.rows.length === 0) {
-          console.log("No finalized batches found with user ID - returning fallback batch");
-          return res.json(fallbackBatch);
-        }
-        
-        const batch = batchResult.rows[0];
-        
-        console.log("Found latest finalized batch:", batch.id);
-        
-        return res.json({
-          id: batch.id,
-          name: batch.name,
-          date: batch.date,
-          status: batch.status,
-          service: batch.service,
-          totalAmount: parseFloat(batch.total_amount) || 0,
-          notes: batch.notes,
-          churchId: batch.church_id,
-          primaryAttestorId: batch.primary_attestor_id,
-          primaryAttestorName: batch.primary_attestor_name,
-          primaryAttestationDate: batch.primary_attestation_date,
-          secondaryAttestorId: batch.secondary_attestor_id,
-          secondaryAttestorName: batch.secondary_attestor_name,
-          secondaryAttestationDate: batch.secondary_attestation_date,
-          attestationConfirmedBy: batch.attestation_confirmed_by,
-          attestationConfirmationDate: batch.attestation_confirmation_date,
-          createdAt: batch.created_at,
-          updatedAt: batch.updated_at
+      cb(null, logosDir);
+    },
+    filename: (_req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'church-logo-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const logoUpload = multer({ 
+    storage: logoStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (_req, file, cb) => {
+      // Accept only image files
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    }
+  });
+  
+  // Church logo upload endpoint with improved error handling
+  app.post('/api/settings/logo', isAuthenticated, (req, res, next) => {
+    console.log("Processing logo upload request");
+    
+    // Create logos directory again, just to be safe
+    try {
+      if (!fs.existsSync(logosDir)) {
+        fs.mkdirSync(logosDir, { recursive: true });
+        console.log(`Created logos directory again: ${logosDir}`);
+      }
+    } catch (err) {
+      console.error("Error ensuring logos directory exists:", err);
+    }
+    
+    // Handle the upload with detailed error handling
+    logoUpload.single('logo')(req, res, (err) => {
+      if (err) {
+        console.error("Multer upload error:", err);
+        return res.status(500).json({ 
+          message: "Failed to upload logo",
+          error: err.message 
         });
-      } catch (dbError) {
-        console.error("Database error fetching latest finalized batch:", dbError);
-        return res.json(fallbackBatch);
       }
-    } catch (error) {
-      console.error("Error in /api/batches/latest-finalized:", error);
-      return res.json({});
-    }
-  });
-  
-  // Get service options
-  app.get('/api/service-options', async (req: any, res) => {
+      next();
+    });
+  }, async (req: any, res) => {
     try {
-      // Return hardcoded service options if errors
-      const fallbackServiceOptions = [
-        {
-          id: 1,
-          name: "Morning Service",
-          value: "morning-service",
-          isDefault: true
-        },
-        {
-          id: 2,
-          name: "Evening Service",
-          value: "evening-service",
-          isDefault: false
-        },
-        {
-          id: 3,
-          name: "Midweek Service",
-          value: "midweek-service",
-          isDefault: false
-        },
-        {
-          id: 4,
-          name: "Special Event",
-          value: "special-event",
-          isDefault: false
-        }
-      ];
+      console.log("Logo upload file processing");
       
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      
-      // Try hardcoded ID if no user ID is found
-      if (!userId) {
-        console.log("No user ID found - trying hardcoded ID for service options");
-        
-        try {
-          // Get service options using hardcoded ID
-          const serviceOptionsResult = await db.execute(
-            sql`SELECT * FROM service_options WHERE church_id = ${'40829937'} ORDER BY is_default DESC, name ASC`
-          );
-          
-          if (serviceOptionsResult.rows && serviceOptionsResult.rows.length > 0) {
-            // Map to camelCase properties
-            const serviceOptions = serviceOptionsResult.rows.map(option => ({
-              id: option.id,
-              name: option.name,
-              value: option.value,
-              isDefault: option.is_default === true,
-              churchId: option.church_id
-            }));
-            
-            console.log(`Found ${serviceOptions.length} service options using hardcoded ID`);
-            return res.json(serviceOptions);
-          } else {
-            console.log("No service options found using hardcoded ID - returning fallback options");
-            return res.json(fallbackServiceOptions);
-          }
-        } catch (hardcodedError) {
-          console.error("Error getting service options with hardcoded ID:", hardcodedError);
-          return res.json(fallbackServiceOptions);
-        }
+      if (!req.file) {
+        console.log("No file found in request");
+        return res.status(400).json({ message: "No image file uploaded" });
       }
       
-      try {
-        // IMPORTANT: In this database schema, the church_id field in service_options
-        // might be storing the user ID directly
-        console.log(`Using user ID ${userId} directly to fetch service options`);
-        
-        // First try with the user ID directly
-        const serviceOptionsResult = await db.execute(
-          sql`SELECT * FROM service_options WHERE church_id = ${userId} ORDER BY is_default DESC, name ASC`
-        );
-        
-        if (!serviceOptionsResult.rows || serviceOptionsResult.rows.length === 0) {
-          console.log("No service options found with user ID - trying to use church ID");
-          
-          // Try getting church ID for this user as fallback
-          const churchId = await getChurchIdForUser(userId);
-          
-          if (!churchId) {
-            console.log("No church ID found - returning hardcoded service options");
-            return res.json(fallbackServiceOptions);
-          }
-          
-          // Get service options for this church
-          const churchServiceOptionsResult = await db.execute(
-            sql`SELECT * FROM service_options WHERE church_id = ${churchId} ORDER BY is_default DESC, name ASC`
-          );
-          
-          if (!churchServiceOptionsResult.rows || churchServiceOptionsResult.rows.length === 0) {
-            console.log("No service options found with church ID - returning hardcoded options");
-            return res.json(fallbackServiceOptions);
-          }
-          
-          // Map to camelCase properties
-          const serviceOptions = churchServiceOptionsResult.rows.map(option => ({
-            id: option.id,
-            name: option.name,
-            value: option.value,
-            isDefault: option.is_default === true,
-            churchId: option.church_id
-          }));
-          
-          console.log(`Found ${serviceOptions.length} service options using church ID`);
-          return res.json(serviceOptions);
-        }
-        
-        // Map to camelCase properties
-        const serviceOptions = serviceOptionsResult.rows.map(option => ({
-          id: option.id,
-          name: option.name,
-          value: option.value,
-          isDefault: option.is_default === true,
-          churchId: option.church_id
-        }));
-        
-        console.log(`Found ${serviceOptions.length} service options using user ID`);
-        return res.json(serviceOptions);
-      } catch (dbError) {
-        console.error("Database error fetching service options:", dbError);
-        return res.json(fallbackServiceOptions);
-      }
-    } catch (error) {
-      console.error("Error in /api/service-options:", error);
-      return res.json([]);
-    }
-  });
-  
-  // Get email templates
-  app.get('/api/email-templates', async (req: any, res) => {
-    try {
-      // Return hardcoded email templates as fallback
-      const fallbackTemplates = [
-        {
-          id: 1,
-          name: "welcome_email",
-          subject: "Welcome to {{churchName}}",
-          htmlContent: "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;'><div style='text-align: center; margin-bottom: 20px;'><img src='{{churchLogoUrl}}' alt='{{churchName}}' style='max-width: 200px; height: auto;'/></div><h2>Welcome to {{churchName}}</h2><p>Dear {{firstName}},</p><p>Thank you for joining our online giving system. Your account has been created successfully.</p><p>Please click the button below to set your password:</p><div style='text-align: center; margin: 30px 0;'><a href='{{passwordResetUrl}}' style='display: inline-block; background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;'>Set Password</a></div><p>If you have any questions, please contact us.</p><p>Blessings,<br>{{churchName}} Team</p></div>"
-        },
-        {
-          id: 2,
-          name: "password_reset",
-          subject: "Reset Your Password - {{churchName}}",
-          htmlContent: "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;'><div style='text-align: center; margin-bottom: 20px;'><img src='{{churchLogoUrl}}' alt='{{churchName}}' style='max-width: 200px; height: auto;'/></div><h2>Password Reset Request</h2><p>Dear {{firstName}},</p><p>We received a request to reset your password. Click the button below to create a new password:</p><div style='text-align: center; margin: 30px 0;'><a href='{{passwordResetUrl}}' style='display: inline-block; background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;'>Reset Password</a></div><p>If you didn't request this change, you can ignore this email.</p><p>Blessings,<br>{{churchName}} Team</p></div>"
-        },
-        {
-          id: 3,
-          name: "donation_receipt",
-          subject: "Thank You for Your Donation - {{churchName}}",
-          htmlContent: "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;'><div style='text-align: center; margin-bottom: 20px;'><img src='{{churchLogoUrl}}' alt='{{churchName}}' style='max-width: 200px; height: auto;'/></div><h2>Donation Receipt</h2><p>Dear {{firstName}} {{lastName}},</p><p>Thank you for your generous donation to {{churchName}}. Your contribution helps support our ministry and outreach efforts.</p><div style='margin: 20px 0; padding: 15px; border: 1px solid #eee; border-radius: 4px;'><p><strong>Donation Details:</strong></p><p>Date: {{donationDate}}</p><p>Amount: ${{amount}}</p><p>Type: {{donationType}}</p><p>Service: {{serviceName}}</p></div><p>Your generosity is greatly appreciated. This donation may be tax-deductible; please consult your tax advisor.</p><p>Blessings,<br>{{churchName}} Team</p></div>"
-        },
-        {
-          id: 4,
-          name: "count_report",
-          subject: "Count Report - {{batchName}} - {{churchName}}",
-          htmlContent: "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;'><div style='text-align: center; margin-bottom: 20px;'><img src='{{churchLogoUrl}}' alt='{{churchName}}' style='max-width: 200px; height: auto;'/></div><h2>Count Report: {{batchName}}</h2><p>Date: {{batchDate}}</p><p>Service: {{serviceName}}</p><p>Total Amount: ${{totalAmount}}</p><div style='margin: 20px 0;'><h3>Donation Summary:</h3><ul>{{#each donations}}<li>{{this.member}}: ${{this.amount}} ({{this.type}})</li>{{/each}}</ul></div><p>Attestation:</p><p>Primary: {{primaryAttestor}} ({{primaryAttestationDate}})</p><p>Secondary: {{secondaryAttestor}} ({{secondaryAttestationDate}})</p><p>Thank you for your diligent work in managing the church's finances.</p></div>"
-        }
-      ];
+      console.log(`File uploaded successfully: ${req.file.filename}`);
       
-      // Return fallback templates
-      return res.json(fallbackTemplates);
-    } catch (error) {
-      console.error("Error in /api/email-templates:", error);
-      return res.json([]);
-    }
-  });
-  
-  // Get report recipients
-  app.get('/api/report-recipients', async (req: any, res) => {
-    try {
-      // Return hardcoded report recipients
-      const fallbackRecipients = [
-        {
-          id: 1,
-          firstName: "John",
-          lastName: "Spivey",
-          email: "jspivey@spiveyco.com",
-          churchId: "1"
-        }
-      ];
+      const userId = req.user.claims.sub;
+      const logoUrl = `/logos/${req.file.filename}`;
       
-      // Return fallback data
-      return res.json(fallbackRecipients);
+      console.log(`Updating user settings with logo URL: ${logoUrl}`);
+      const updatedUser = await storage.updateUserSettings(userId, { churchLogoUrl: logoUrl });
+      
+      res.json(updatedUser);
     } catch (error) {
-      console.error("Error in /api/report-recipients:", error);
-      return res.json([]);
+      console.error("Error in logo upload handler:", error);
+      res.status(500).json({ 
+        message: "Failed to upload logo", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
   
-  // Logo deletion endpoint
+  // Remove church logo endpoint
   app.delete('/api/settings/logo', isAuthenticated, async (req: any, res) => {
     try {
-      // Get user from db to get church ID
-      const userId = req.session?.userId || req.user?.claims?.sub;
+      const userId = req.user.claims.sub;
       
-      // Using parameterized query
-      const query = {
-        text: 'SELECT * FROM users WHERE id = $1',
-        values: [userId]
-      };
+      // Get current user to find the logo path
+      const user = await storage.getUser(userId);
       
-      const userResult = await pool.query(query);
-      
-      if (!userResult.rows || userResult.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-      
-      const user = userResult.rows[0];
-      const churchId = user.church_id;
-      
-      if (!churchId) {
-        return res.status(400).json({
-          success: false,
-          message: "No church ID associated with user"
-        });
-      }
-      
-      // Get current logo path
-      const churchQuery = {
-        text: 'SELECT logo FROM churches WHERE id = $1',
-        values: [churchId]
-      };
-      
-      const churchResult = await pool.query(churchQuery);
-      
-      if (churchResult.rows && churchResult.rows.length > 0 && churchResult.rows[0].logo) {
-        const logoPath = path.join(process.cwd(), 'public', churchResult.rows[0].logo);
+      if (user?.churchLogoUrl) {
+        const logoPath = path.join('public', user.churchLogoUrl);
         
-        // Delete the file if it exists
+        // Check if file exists before attempting to delete
         if (fs.existsSync(logoPath)) {
           fs.unlinkSync(logoPath);
         }
       }
       
-      // Update church record to remove logo
-      const updateQuery = {
-        text: 'UPDATE churches SET logo = NULL, updated_at = NOW() WHERE id = $1',
-        values: [churchId]
-      };
-      
-      await pool.query(updateQuery);
-      
-      // Update user records to remove church logo
-      const userUpdateQuery = {
-        text: 'UPDATE users SET church_logo = NULL, updated_at = NOW() WHERE church_id = $1',
-        values: [churchId]
-      };
-      
-      await pool.query(userUpdateQuery);
-      
-      res.json({
-        success: true,
-        message: "Logo removed successfully"
-      });
-      
+      // Update user record to remove logo URL
+      const updatedUser = await storage.updateUserSettings(userId, { churchLogoUrl: null });
+      res.json(updatedUser);
     } catch (error) {
       console.error("Error removing logo:", error);
-      res.status(500).json({
-        success: false,
-        message: `Server error removing logo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      res.status(500).json({ message: "Failed to remove logo" });
+    }
+  });
+  
+
+  
+  // User management routes
+  app.get('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const users = await storage.getUsers(userId);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  // Users endpoints for general users - with improved authentication
+  app.get('/api/users', async (req: any, res) => {
+    try {
+      // First check if the user is authenticated through our auth system
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user.claims?.sub;
+      console.log(`Getting users for ${userId}`);
+      
+      // Use direct SQL query to ensure we get results
+      const usersResult = await db.execute(
+        sql`SELECT * FROM users`
+      );
+      
+      let usersList = [];
+      
+      if (usersResult && usersResult.rows) {
+        usersList = usersResult.rows.map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role
+        }));
+        console.log(`Found ${usersList.length} users via direct SQL`);
+      }
+      
+      // If no users are found, add hardcoded fallback data
+      if (usersList.length === 0) {
+        usersList = [
+          {
+            id: "40829937",
+            username: "jspivey",
+            email: "jspivey@spiveyco.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "ADMIN"
+          },
+          {
+            id: "922299005",
+            username: "jmspivey",
+            email: "jmspivey@icloud.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "USHER"
+          }
+        ];
+        console.log("No users found, using hardcoded fallback data");
+      }
+      
+      res.json(usersList);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  // PUBLIC TESTING ENDPOINT - FOR DEBUGGING ONLY
+  app.get('/api/test-users', async (_req, res) => {
+    try {      
+      // Direct query to the users table
+      const usersResult = await db.execute(
+        sql`SELECT * FROM users`
+      );
+      
+      let usersList = [];
+      
+      if (usersResult && usersResult.rows) {
+        usersList = usersResult.rows.map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role,
+          profileImageUrl: user.profile_image_url
+        }));
+        console.log(`Found ${usersList.length} users via test endpoint`);
+      }
+      
+      if (usersList.length === 0) {
+        usersList = [
+          {
+            id: "40829937",
+            username: "jspivey",
+            email: "jspivey@spiveyco.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "ADMIN"
+          },
+          {
+            id: "922299005",
+            username: "jmspivey",
+            email: "jmspivey@icloud.com",
+            firstName: "John",
+            lastName: "Spivey",
+            role: "USHER"
+          }
+        ];
+        console.log("Sending hardcoded user data from test endpoint");
+      }
+      
+      res.json(usersList);
+    } catch (error) {
+      console.error("Error in test-users endpoint:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch users", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  app.patch('/api/users/:id/role', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const userId = req.params.id;
+      
+      // Don't allow admins to change their own role
+      if (adminId === userId) {
+        return res.status(400).json({ 
+          message: "You cannot change your own role. Another admin must make this change."
+        });
+      }
+      
+      const { role } = req.body;
+      
+      // Validate role
+      if (!userRoleEnum.safeParse(role).success) {
+        return res.status(400).json({ 
+          message: `Invalid role. Must be one of: ${userRoleEnum.options.join(', ')}`
+        });
+      }
+      
+      const updatedUser = await storage.updateUserRole(userId, role);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+  
+  // Create user (admin only)
+  app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      
+      // Validate user data
+      const userData = createUserSchema.parse(req.body);
+      
+      // Create the user
+      const newUser = await storage.createUser({
+        ...userData,
+        churchId: adminId // Users belong to the same church as the admin
+      });
+      
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid user data", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+  
+  // Delete user (admin only)
+  app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const userId = req.params.id;
+      
+      // Don't allow admins to delete themselves
+      if (adminId === userId) {
+        return res.status(400).json({ 
+          message: "You cannot delete your own account."
+        });
+      }
+      
+      await storage.deleteUser(userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+  
+  // Email Settings routes
+  app.get('/api/email-settings', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Fetch the default settings from environment variables
+      const emailSettings = {
+        enabled: user.emailNotificationsEnabled || false,
+        fromEmail: process.env.SENDGRID_FROM_EMAIL || "",
+        fromName: user.churchName || "PlateSync",
+        templateSubject: "Thank you for your donation",
+        templateBody: "Dear {{donorName}},\n\nThank you for your donation of ${{amount}} on {{date}}.\n\nSincerely,\n{{churchName}}"
+      };
+      
+      res.json(emailSettings);
+    } catch (error) {
+      console.error("Error fetching email settings:", error);
+      res.status(500).json({ message: "Failed to fetch email settings" });
+    }
+  });
+  
+  app.post('/api/email-settings', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { enabled, fromEmail, fromName, templateSubject, templateBody } = req.body;
+      
+      // Update user settings
+      const updatedUser = await storage.updateUserSettings(userId, { 
+        emailNotificationsEnabled: enabled,
+        churchName: fromName 
+      });
+      
+      res.json({
+        enabled,
+        fromEmail,
+        fromName,
+        templateSubject,
+        templateBody
+      });
+    } catch (error) {
+      console.error("Error updating email settings:", error);
+      res.status(500).json({ message: "Failed to update email settings" });
+    }
+  });
+  
+  app.post('/api/email-settings/test', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { email, fromEmail, fromName, templateSubject, templateBody } = req.body;
+      
+      // Get church ID for proper template lookup
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Get the user to check for church logo
+      const user = await storage.getUser(userId);
+      
+      // Test the email by sending a sample donation notification
+      const testParams = {
+        to: email,
+        from: fromEmail,
+        subject: templateSubject.replace('{{donorName}}', 'Test User'),
+        text: templateBody
+          .replace('{{donorName}}', 'Test User')
+          .replace('{{amount}}', '100.00')
+          .replace('{{date}}', new Date().toLocaleDateString())
+          .replace('{{churchName}}', fromName)
+      };
+      
+      if (await sendDonationNotification({
+        to: email,
+        amount: "100.00",
+        date: new Date().toLocaleDateString(),
+        donorName: "Test User",
+        churchName: fromName,
+        churchId: churchId,
+        churchLogoUrl: "https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png",
+        donationId: "TEST123456"
+      })) {
+        res.json({ success: true, message: "Test email sent successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to send test email" });
+      }
+    } catch (error) {
+      console.error("Error sending test email:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error sending test email: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+    }
+  });
+  
+  // SendGrid test endpoint
+  app.get('/api/test-sendgrid', isAuthenticated, async (_req, res) => {
+    try {
+      const testResult = await testSendGridConfiguration();
+      
+      if (testResult) {
+        res.json({ 
+          success: true, 
+          message: "SendGrid configuration is working correctly! Your account is ready to send donation notifications." 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "SendGrid configuration test failed. Please check your API key, sender email, and logging for details." 
+        });
+      }
+    } catch (error) {
+      console.error("Error testing SendGrid configuration:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error testing SendGrid: ${error instanceof Error ? error.message : 'Unknown error'}` 
       });
     }
   });
 
-  // Create HTTP server
-  const httpServer = createServer(app);
+  // Members routes
+  app.get('/api/members', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      console.log(`[MEMBER DEBUG] Getting members for user ${userId}, role: ${req?.user?.claims?.role || 'unknown'}`);
+      
+      // Get the church ID for the current user - this works for both ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      console.log(`[MEMBER DEBUG] Determined churchId ${churchId} for user ${userId}`);
+      
+      const members = await storage.getMembers(churchId);
+      console.log(`[MEMBER DEBUG] Found ${members.length} members for churchId ${churchId}`);
+      
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      res.status(500).json({ message: "Failed to fetch members" });
+    }
+  });
+
+  app.get('/api/members/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const memberId = parseInt(req.params.id);
+      
+      if (isNaN(memberId)) {
+        return res.status(400).json({ message: "Invalid member ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const member = await storage.getMemberWithDonations(memberId, churchId);
+      
+      if (!member) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      
+      res.json(member);
+    } catch (error) {
+      console.error("Error fetching member:", error);
+      res.status(500).json({ message: "Failed to fetch member" });
+    }
+  });
+
+  app.post('/api/members', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const memberData = { ...req.body, churchId: churchId };
+      
+      const validatedData = insertMemberSchema.parse(memberData);
+      const newMember = await storage.createMember(validatedData);
+      
+      res.status(201).json(newMember);
+    } catch (error) {
+      console.error("Error creating member:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create member" });
+    }
+  });
+
+  app.patch('/api/members/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const memberId = parseInt(req.params.id);
+      
+      if (isNaN(memberId)) {
+        return res.status(400).json({ message: "Invalid member ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const validatedData = insertMemberSchema.partial().parse(req.body);
+      const updatedMember = await storage.updateMember(memberId, validatedData, churchId);
+      
+      if (!updatedMember) {
+        return res.status(404).json({ message: "Member not found" });
+      }
+      
+      res.json(updatedMember);
+    } catch (error) {
+      console.error("Error updating member:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update member" });
+    }
+  });
+
+  // CSV Import endpoint
+  app.post('/api/members/import', isAuthenticated, upload.single('csvFile'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Get file buffer
+      const fileBuffer = req.file.buffer;
+      const fileContent = fileBuffer.toString('utf-8');
+      
+      // Parse CSV
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+      
+      if (!records || records.length === 0) {
+        return res.status(400).json({ message: "CSV file is empty or invalid" });
+      }
+      
+      // Check for required columns
+      const requiredColumns = ['First Name', 'Last Name'];
+      const headers = Object.keys(records[0]);
+      
+      const missingColumns = requiredColumns.filter(col => 
+        !headers.some(header => header.toLowerCase() === col.toLowerCase())
+      );
+      
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ 
+          message: `CSV file is missing required columns: ${missingColumns.join(', ')}` 
+        });
+      }
+      
+      // Import members
+      const importedMembers = [];
+      const errors = [];
+      
+      for (const [index, record] of records.entries()) {
+        try {
+          // Map CSV columns to our data model
+          const memberData = {
+            firstName: record['First Name'],
+            lastName: record['Last Name'],
+            email: record['Email'] || null,
+            phone: record['Mobile Phone Number'] || null,
+            notes: '',
+            churchId: churchId
+          };
+          
+          // Validate data
+          const validatedData = insertMemberSchema.parse(memberData);
+          
+          // Create member
+          const member = await storage.createMember(validatedData);
+          importedMembers.push(member);
+        } catch (error) {
+          console.error(`Error importing row ${index + 1}:`, error);
+          errors.push({
+            row: index + 1,
+            message: error instanceof z.ZodError 
+              ? error.errors.map(e => e.message).join(', ')
+              : 'Failed to import member'
+          });
+        }
+      }
+      
+      res.status(200).json({
+        message: 'CSV import completed',
+        importedCount: importedMembers.length,
+        totalRows: records.length,
+        errorCount: errors.length,
+        errors: errors.length > 0 ? errors : null
+      });
+      
+    } catch (error) {
+      console.error("Error importing CSV:", error);
+      res.status(500).json({ message: "Failed to import members" });
+    }
+  });
+
+  // Batch routes
+  app.get('/api/batches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const batches = await storage.getBatches(churchId);
+      res.json(batches);
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+      res.status(500).json({ message: "Failed to fetch batches" });
+    }
+  });
+
+  app.get('/api/batches/current', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const currentBatch = await storage.getCurrentBatch(churchId);
+      res.json(currentBatch);
+    } catch (error) {
+      console.error("Error fetching current batch:", error);
+      res.status(500).json({ message: "Failed to fetch current batch" });
+    }
+  });
   
-  // Return the HTTP server
+  app.get('/api/batches/latest-finalized', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const finalizedBatch = await storage.getLatestFinalizedBatch(churchId);
+      res.json(finalizedBatch);
+    } catch (error) {
+      console.error("Error fetching latest finalized batch:", error);
+      res.status(500).json({ message: "Failed to fetch latest finalized batch" });
+    }
+  });
+  
+  // GET all batches with their donations (for chart)
+  app.get('/api/batches/with-donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const batches = await storage.getBatches(churchId);
+      
+      // For each batch, get its donations
+      const batchesWithDonations = await Promise.all(
+        batches.map(async (batch) => {
+          const donations = await storage.getDonationsByBatch(batch.id, churchId);
+          return {
+            ...batch,
+            donations: donations
+          };
+        })
+      );
+      
+      res.json(batchesWithDonations);
+    } catch (error) {
+      console.error("Error fetching batches with donations:", error);
+      res.status(500).json({ message: "Failed to fetch batches with donations" });
+    }
+  });
+
+  app.get('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const batch = await storage.getBatchWithDonations(batchId, churchId);
+      
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      res.json(batch);
+    } catch (error) {
+      console.error("Error fetching batch:", error);
+      res.status(500).json({ message: "Failed to fetch batch" });
+    }
+  });
+
+  app.get('/api/batches/:id/donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const donations = await storage.getDonationsByBatch(batchId, churchId);
+      res.json(donations);
+    } catch (error) {
+      console.error("Error fetching batch donations:", error);
+      res.status(500).json({ message: "Failed to fetch batch donations" });
+    }
+  });
+
+  app.post('/api/batches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const batchData = { 
+        ...req.body, 
+        churchId: churchId,
+        // Convert string date to Date object if provided
+        date: req.body.date ? new Date(req.body.date) : new Date()
+      };
+      
+      const validatedData = insertBatchSchema.parse(batchData);
+      const newBatch = await storage.createBatch(validatedData);
+      
+      res.status(201).json(newBatch);
+    } catch (error) {
+      console.error("Error creating batch:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create batch" });
+    }
+  });
+
+  app.patch('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Handle date conversion if present
+      const updateData = { ...req.body };
+      if (updateData.date) {
+        updateData.date = new Date(updateData.date);
+      }
+      
+      // We use z.object to create a partial schema that allows null values where appropriate
+      const partialBatchSchema = z.object({
+        name: z.string().optional(),
+        date: z.date().optional(),
+        status: z.string().optional(),
+        notes: z.string().optional().nullable(),
+        service: z.string().optional().nullable(),
+        totalAmount: z.string().optional(),
+        churchId: z.string().optional()
+      });
+      
+      const validatedData = partialBatchSchema.parse(updateData);
+      const updatedBatch = await storage.updateBatch(batchId, validatedData, churchId);
+      
+      if (!updatedBatch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error updating batch:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update batch" });
+    }
+  });
+  
+  // Primary attestation route
+  app.post('/api/batches/:id/attest-primary', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Validate attestor name
+      const { name } = req.body;
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ message: "Attestor name is required" });
+      }
+      
+      // Get batch to verify it exists and check status
+      const batch = await storage.getBatch(batchId, churchId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Can only attest if the batch is OPEN
+      if (batch.status !== 'OPEN') {
+        return res.status(400).json({ 
+          message: "Batch must be open before attestation can begin" 
+        });
+      }
+      
+      // Add primary attestation
+      const updatedBatch = await storage.addPrimaryAttestation(batchId, userId, name, churchId);
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error adding primary attestation:", error);
+      res.status(500).json({ message: "Failed to add primary attestation" });
+    }
+  });
+  
+  // Secondary attestation route
+  app.post('/api/batches/:id/attest-secondary', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Validate attestor info
+      const { attestorId, name } = req.body;
+      
+      if (!attestorId) {
+        return res.status(400).json({ message: "Secondary attestor ID is required" });
+      }
+      
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ message: "Attestor name is required" });
+      }
+      
+      // Get batch to verify it exists and check status
+      const batch = await storage.getBatch(batchId, churchId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Can only add secondary attestation if we have a primary attestation
+      if (!batch.primaryAttestorId) {
+        return res.status(400).json({ 
+          message: "Primary attestation must be completed first" 
+        });
+      }
+      
+      // Secondary attestor should not be the same as primary
+      if (attestorId === batch.primaryAttestorId) {
+        return res.status(400).json({ 
+          message: "Secondary attestor must be different from primary attestor" 
+        });
+      }
+      
+      // Add secondary attestation
+      const updatedBatch = await storage.addSecondaryAttestation(batchId, attestorId, name, churchId);
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error adding secondary attestation:", error);
+      res.status(500).json({ message: "Failed to add secondary attestation" });
+    }
+  });
+  
+  // Finalize attestation and complete the batch
+  app.post('/api/batches/:id/confirm-attestation', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Get batch to verify it exists and check status
+      const batch = await storage.getBatch(batchId, churchId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Can only confirm if both attestations are complete
+      if (!batch.primaryAttestorId || !batch.secondaryAttestorId) {
+        return res.status(400).json({ 
+          message: "Both primary and secondary attestations must be completed before confirmation" 
+        });
+      }
+      
+      // Confirm attestation and finalize the batch
+      const updatedBatch = await storage.confirmAttestation(batchId, userId, churchId);
+      
+      // Process all notification tasks now that the batch is finalized
+      try {
+        // Get batch donations to prepare report data
+        const batchWithDonations = await storage.getBatchWithDonations(batchId, churchId);
+        
+        // Get admin user info to check if email notifications are enabled church-wide
+        const adminId = await storage.getAdminIdForChurch(churchId);
+        const adminUser = adminId ? await storage.getUser(adminId) : null;
+        
+        // Check if emails are enabled at the church level (by ADMIN)
+        const emailNotificationsEnabled = adminUser?.emailNotificationsEnabled !== false;
+        
+        if (updatedBatch && batchWithDonations && emailNotificationsEnabled) {
+          console.log(`Processing finalized batch ${batchId} with ${batchWithDonations.donations.length} donations`);
+          
+          // 1. FIRST TASK: Process individual donation notifications that were marked as PENDING
+          const donations = batchWithDonations.donations || [];
+          const pendingNotifications = donations.filter(d => 
+            d.notificationStatus === notificationStatusEnum.enum.PENDING && 
+            d.memberId && 
+            d.member?.email
+          );
+          
+          console.log(`Found ${pendingNotifications.length} pending donation notifications to process`);
+          
+          // Process all pending donation notifications
+          for (const donation of pendingNotifications) {
+            try {
+              if (donation.member && donation.member.email) {
+                const churchName = adminUser?.churchName || "Our Church";
+                
+                // Send email notification via SendGrid
+                const notificationSent = await sendDonationNotification({
+                  to: donation.member.email,
+                  amount: donation.amount.toString(),
+                  date: donation.date instanceof Date ? 
+                    donation.date.toLocaleDateString() : 
+                    new Date(donation.date).toLocaleDateString(),
+                  donorName: `${donation.member.firstName} ${donation.member.lastName}`,
+                  churchName: churchName,
+                  churchId: churchId,
+                  churchLogoUrl: "https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png",
+                  donationId: donation.id.toString()
+                });
+                
+                // Update donation notification status based on result
+                if (notificationSent) {
+                  await storage.updateDonationNotificationStatus(
+                    donation.id, 
+                    notificationStatusEnum.enum.SENT
+                  );
+                  console.log(`Successfully sent delayed notification for donation ${donation.id}`);
+                } else {
+                  await storage.updateDonationNotificationStatus(
+                    donation.id, 
+                    notificationStatusEnum.enum.FAILED
+                  );
+                  console.log(`Failed to send delayed notification for donation ${donation.id}`);
+                }
+              }
+            } catch (notificationError) {
+              console.error(`Error sending notification for donation ${donation.id}:`, notificationError);
+              await storage.updateDonationNotificationStatus(
+                donation.id, 
+                notificationStatusEnum.enum.FAILED
+              );
+            }
+          }
+          
+          // 2. SECOND TASK: Send count report emails to report recipients
+          // Calculate donation amounts
+          const totalAmount = parseFloat(updatedBatch.totalAmount || '0').toFixed(2);
+          
+          // Calculate cash and check amounts
+          const cashDonations = donations.filter(d => d.donationType === 'CASH');
+          const checkDonations = donations.filter(d => d.donationType === 'CHECK');
+          
+          const cashAmount = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0).toFixed(2);
+          const checkAmount = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0).toFixed(2);
+          
+          // Format date for display
+          const batchDate = new Date(updatedBatch.date);
+          const formattedDate = batchDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+          
+          // Get report recipients and send emails
+          const reportRecipients = await storage.getReportRecipients(churchId);
+          
+          if (reportRecipients.length > 0) {
+            console.log(`Sending count report emails to ${reportRecipients.length} recipients`);
+            
+            for (const recipient of reportRecipients) {
+              console.log(`Attempting to send count report email to ${recipient.email}`);
+              try {
+                const emailResult = await sendCountReport({
+                  to: recipient.email,
+                  recipientName: `${recipient.firstName} ${recipient.lastName}`,
+                  churchName: adminUser?.churchName || 'Your Church',
+                  batchName: updatedBatch.name,
+                  batchDate: formattedDate,
+                  totalAmount,
+                  cashAmount,
+                  checkAmount,
+                  donationCount: donations.length
+                });
+                console.log(`Email send result: ${emailResult ? 'Success' : 'Failed'}`);
+              } catch (innerError) {
+                console.error('Error sending individual report email:', innerError);
+              }
+            }
+          } else {
+            console.log('No report recipients configured. Skipping count report notifications.');
+          }
+        } else if (!emailNotificationsEnabled) {
+          console.log('Email notifications are disabled by admin. Skipping all notification emails.');
+        }
+      } catch (emailError) {
+        console.error('Error processing batch finalization notifications:', emailError);
+        // Don't throw error, allow the API to succeed even if email sending fails
+      }
+      
+      res.json(updatedBatch);
+    } catch (error) {
+      console.error("Error confirming attestation:", error);
+      res.status(500).json({ message: "Failed to confirm attestation" });
+    }
+  });
+  
+  // DELETE endpoint for deleting a batch
+  app.delete('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const batchId = parseInt(req.params.id);
+      
+      if (isNaN(batchId)) {
+        return res.status(400).json({ message: "Invalid batch ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Check if batch exists first
+      const batch = await storage.getBatch(batchId, churchId);
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Check if batch is FINALIZED - only ADMIN users can delete FINALIZED batches
+      if (batch.status === 'FINALIZED') {
+        // Get the user with their role from the database
+        const user = await storage.getUser(userId);
+        
+        // Only ADMIN users can delete FINALIZED batches
+        if (!user || user.role !== 'ADMIN') {
+          return res.status(403).json({ 
+            message: "Forbidden: Only administrators can delete finalized counts" 
+          });
+        }
+      }
+      
+      // Delete the batch and its donations
+      await storage.deleteBatch(batchId, churchId);
+      
+      res.status(200).json({ message: "Batch and associated donations deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting batch:", error);
+      res.status(500).json({ message: "Failed to delete batch" });
+    }
+  });
+  
+  // Add PATCH endpoint for updating donations
+  app.patch('/api/donations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const donationId = parseInt(req.params.id);
+      
+      if (isNaN(donationId)) {
+        return res.status(400).json({ message: "Invalid donation ID" });
+      }
+      
+      // Get the original donation to calculate batch total changes
+      const originalDonation = await storage.getDonation(donationId, userId);
+      if (!originalDonation) {
+        return res.status(404).json({ message: "Donation not found" });
+      }
+      
+      // Handle data conversions
+      const updateData = { ...req.body };
+      if (updateData.date) {
+        updateData.date = new Date(updateData.date);
+      }
+      if (updateData.donationType) {
+        updateData.donationType = updateData.donationType.toUpperCase();
+      }
+      
+      // We use z.object to create a partial schema that allows null values where appropriate
+      const partialDonationSchema = z.object({
+        date: z.date().optional(),
+        amount: z.string().optional(),
+        donationType: z.string().optional(),
+        checkNumber: z.string().optional().nullable(),
+        notes: z.string().optional().nullable(),
+        memberId: z.number().optional().nullable(),
+        batchId: z.number().optional().nullable(),
+        churchId: z.string().optional()
+      });
+      
+      const validatedData = partialDonationSchema.parse(updateData);
+      const updatedDonation = await storage.updateDonation(donationId, validatedData, userId);
+      
+      if (!updatedDonation) {
+        return res.status(404).json({ message: "Donation not found" });
+      }
+      
+      // Update batch totals if amount changed or batch changed
+      const originalAmount = parseFloat(originalDonation.amount.toString());
+      const newAmount = parseFloat(updatedDonation.amount.toString());
+      const originalBatchId = originalDonation.batchId;
+      const newBatchId = updatedDonation.batchId;
+      
+      // If amount changed but batch stayed the same
+      if (originalAmount !== newAmount && originalBatchId === newBatchId && newBatchId) {
+        const batch = await storage.getBatch(newBatchId, userId);
+        if (batch) {
+          const amountDifference = newAmount - originalAmount;
+          const newTotal = parseFloat(batch.totalAmount.toString()) + amountDifference;
+          await storage.updateBatch(batch.id, { totalAmount: newTotal.toString() }, userId);
+        }
+      }
+      // If batch changed
+      else if (originalBatchId !== newBatchId) {
+        // Subtract from original batch
+        if (originalBatchId) {
+          const originalBatch = await storage.getBatch(originalBatchId, userId);
+          if (originalBatch) {
+            const newOriginalTotal = parseFloat(originalBatch.totalAmount.toString()) - originalAmount;
+            await storage.updateBatch(
+              originalBatch.id, 
+              { totalAmount: Math.max(0, newOriginalTotal).toString() },
+              userId
+            );
+          }
+        }
+        
+        // Add to new batch
+        if (newBatchId) {
+          const newBatch = await storage.getBatch(newBatchId, userId);
+          if (newBatch) {
+            const newBatchTotal = parseFloat(newBatch.totalAmount.toString()) + newAmount;
+            await storage.updateBatch(
+              newBatch.id,
+              { totalAmount: newBatchTotal.toString() },
+              userId
+            );
+          }
+        }
+      }
+      
+      res.json(updatedDonation);
+    } catch (error) {
+      console.error("Error updating donation:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update donation" });
+    }
+  });
+
+  // Donations routes
+  app.get('/api/donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const donations = await storage.getDonationsWithMembers(userId);
+      res.json(donations);
+    } catch (error) {
+      console.error("Error fetching donations:", error);
+      res.status(500).json({ message: "Failed to fetch donations" });
+    }
+  });
+
+  app.get('/api/donations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const donationId = parseInt(req.params.id);
+      
+      if (isNaN(donationId)) {
+        return res.status(400).json({ message: "Invalid donation ID" });
+      }
+      
+      const donation = await storage.getDonationWithMember(donationId, userId);
+      
+      if (!donation) {
+        return res.status(404).json({ message: "Donation not found" });
+      }
+      
+      res.json(donation);
+    } catch (error) {
+      console.error("Error fetching donation:", error);
+      res.status(500).json({ message: "Failed to fetch donation" });
+    }
+  });
+
+  app.post('/api/donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const donationData = { 
+        ...req.body, 
+        churchId: churchId, 
+        // Ensure proper format for donation type
+        donationType: req.body.donationType?.toUpperCase(),
+        // Convert string date to Date object
+        date: new Date(req.body.date)
+      };
+      
+      // If no batch is specified, get or create a current batch
+      if (!donationData.batchId) {
+        const currentBatch = await storage.getCurrentBatch(churchId);
+        if (currentBatch) {
+          donationData.batchId = currentBatch.id;
+        }
+      }
+      
+      const validatedData = insertDonationSchema.parse(donationData);
+      
+      // Create the donation
+      const newDonation = await storage.createDonation(validatedData);
+      
+      // Update the batch total amount
+      if (newDonation.batchId) {
+        const batch = await storage.getBatch(newDonation.batchId, churchId);
+        if (batch) {
+          const newTotal = parseFloat(batch.totalAmount.toString()) + parseFloat(newDonation.amount.toString());
+          await storage.updateBatch(
+            batch.id,
+            { totalAmount: newTotal.toString() },
+            churchId
+          );
+        }
+      }
+      
+      // Mark donation for notification if requested and if it's not an anonymous donation
+      // Actual notifications will be sent when the batch is finalized
+      if (req.body.sendNotification && validatedData.memberId) {
+        try {
+          // Get the member to check if they have an email
+          const member = await storage.getMember(validatedData.memberId, churchId);
+          
+          // Get the admin user for this church to check email notification settings
+          const adminId = await storage.getAdminIdForChurch(churchId);
+          const adminUser = adminId ? await storage.getUser(adminId) : null;
+          
+          // Check if email notifications are enabled at the church level (by ADMIN)
+          const emailNotificationsEnabled = adminUser?.emailNotificationsEnabled !== false;
+          
+          if (member && member.email && emailNotificationsEnabled) {
+            // Don't send email now, just mark as PENDING - it will be sent when batch is finalized
+            await storage.updateDonationNotificationStatus(
+              newDonation.id, 
+              notificationStatusEnum.enum.PENDING
+            );
+            console.log(`Marked donation ${newDonation.id} for notification when batch is finalized`);
+          } else {
+            // Cannot send notification (missing email or notifications disabled by admin)
+            await storage.updateDonationNotificationStatus(
+              newDonation.id, 
+              notificationStatusEnum.enum.NOT_REQUIRED
+            );
+            
+            // Log why we're not sending
+            if (!member || !member.email) {
+              console.log(`Donation ${newDonation.id} not marked for notification: Member has no email`);
+            } else if (!emailNotificationsEnabled) {
+              console.log(`Donation ${newDonation.id} not marked for notification: Notifications disabled by admin`);
+            }
+          }
+        } catch (error) {
+          console.error("Error preparing donation notification:", error);
+          await storage.updateDonationNotificationStatus(
+            newDonation.id, 
+            notificationStatusEnum.enum.FAILED
+          );
+        }
+      } else {
+        await storage.updateDonationNotificationStatus(
+          newDonation.id, 
+          notificationStatusEnum.enum.NOT_REQUIRED
+        );
+      }
+      
+      // Fetch the donation with updated notification status
+      const finalDonation = await storage.getDonation(newDonation.id, churchId);
+      
+      res.status(201).json(finalDonation);
+    } catch (error) {
+      console.error("Error creating donation:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create donation" });
+    }
+  });
+
+  // Dashboard statistics route
+  app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const todaysDonations = await storage.getTodaysDonations(churchId);
+      const weeklyDonations = await storage.getWeeklyDonations(churchId);
+      const monthlyDonations = await storage.getMonthlyDonations(churchId);
+      const activeDonors = await storage.getActiveDonorCount(churchId);
+      
+      res.json({
+        todaysDonations,
+        weeklyDonations,
+        monthlyDonations,
+        activeDonors
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard statistics" });
+    }
+  });
+  
+  // Test SendGrid configuration
+  app.get('/api/test-sendgrid', isAuthenticated, async (req: any, res) => {
+    try {
+      const { testSendGridConfiguration } = await import('./sendgrid');
+      const result = await testSendGridConfiguration();
+      
+      if (result) {
+        res.json({ 
+          success: true, 
+          message: 'SendGrid configuration test passed! Your API key is valid and working properly.' 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: 'SendGrid configuration test failed. Check the server logs for detailed error information.'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error testing SendGrid:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error testing SendGrid: ${error.message || 'Unknown error'}` 
+      });
+    }
+  });
+
+  // Initialize service options for current user
+  app.post('/api/service-options/initialize', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      await storage.createDefaultServiceOptions(churchId);
+      const options = await storage.getServiceOptions(churchId);
+      res.json(options);
+    } catch (error) {
+      console.error("Error initializing service options:", error);
+      res.status(500).json({ message: "Failed to initialize service options" });
+    }
+  });
+
+  // Service Options routes
+  app.get('/api/service-options', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const options = await storage.getServiceOptions(churchId);
+      res.json(options);
+    } catch (error) {
+      console.error("Error fetching service options:", error);
+      res.status(500).json({ message: "Failed to fetch service options" });
+    }
+  });
+  
+  app.post('/api/service-options', isAuthenticated, async (req: any, res) => {
+    try {
+      console.log("POST /api/service-options - Request body:", req.body);
+      console.log("POST /api/service-options - User:", req.user);
+      
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Ensure body is properly parsed
+      let bodyData = req.body;
+      if (typeof bodyData === 'string') {
+        try {
+          bodyData = JSON.parse(bodyData);
+        } catch (e) {
+          console.error("Failed to parse request body as JSON:", e);
+          return res.status(400).json({ message: "Invalid JSON in request body" });
+        }
+      }
+      
+      console.log("POST /api/service-options - Parsed body:", bodyData);
+      
+      const validatedData = insertServiceOptionSchema.parse({
+        ...bodyData,
+        churchId: churchId
+      });
+      
+      console.log("POST /api/service-options - Validated data:", validatedData);
+      
+      const newOption = await storage.createServiceOption(validatedData);
+      console.log("POST /api/service-options - Created option:", newOption);
+      
+      res.status(201).json(newOption);
+    } catch (error) {
+      console.error("Error creating service option:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create service option" });
+    }
+  });
+  
+  app.patch('/api/service-options/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const optionId = parseInt(req.params.id);
+      
+      if (isNaN(optionId)) {
+        return res.status(400).json({ message: "Invalid option ID" });
+      }
+      
+      // Make sure the option exists and belongs to this church
+      const existingOption = await storage.getServiceOption(optionId, churchId);
+      if (!existingOption) {
+        return res.status(404).json({ message: "Service option not found" });
+      }
+      
+      const validatedData = insertServiceOptionSchema.partial().parse({
+        ...req.body,
+        churchId: churchId
+      });
+      
+      const updatedOption = await storage.updateServiceOption(optionId, validatedData, churchId);
+      res.json(updatedOption);
+    } catch (error) {
+      console.error("Error updating service option:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update service option" });
+    }
+  });
+  
+  app.delete('/api/service-options/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const optionId = parseInt(req.params.id);
+      
+      if (isNaN(optionId)) {
+        return res.status(400).json({ message: "Invalid option ID" });
+      }
+      
+      // Make sure the option exists and belongs to this church
+      const existingOption = await storage.getServiceOption(optionId, churchId);
+      if (!existingOption) {
+        return res.status(404).json({ message: "Service option not found" });
+      }
+      
+      await storage.deleteServiceOption(optionId, churchId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting service option:", error);
+      res.status(500).json({ message: "Failed to delete service option" });
+    }
+  });
+
+  // Password reset routes
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (!user) {
+        // For security reasons, don't reveal whether the email exists or not
+        return res.json({ 
+          success: true, 
+          message: "If your email is registered, you will receive password reset instructions" 
+        });
+      }
+      
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      
+      // Set token expiration (1 hour from now)
+      const expires = new Date();
+      expires.setHours(expires.getHours() + 1);
+      
+      // Update user with reset token
+      await db
+        .update(users)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpires: expires,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id));
+      
+      // Build reset URL
+      const appUrl = `${req.protocol}://${req.get('host')}`;
+      const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
+      
+      // Send password reset email
+      await sendPasswordResetEmail({
+        to: email,
+        resetUrl
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "If your email is registered, you will receive password reset instructions" 
+      });
+    } catch (error) {
+      console.error("Error initiating password reset:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Error processing password reset request" 
+      });
+    }
+  });
+  
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      // Find user with matching token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.passwordResetToken, token));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Invalid or expired token" });
+      }
+      
+      // Check if token is expired
+      const now = new Date();
+      if (user.passwordResetExpires && now > user.passwordResetExpires) {
+        return res.status(401).json({ message: "Token has expired" });
+      }
+      
+      // Hash the new password
+      const passwordHash = await scryptHash(password);
+      
+      // Update user with new password and clear reset token
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          password: passwordHash,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+      
+      res.json({ 
+        success: true,
+        message: "Password has been reset successfully",
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email
+        }
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to reset password" 
+      });
+    }
+  });
+
+  // Report Recipients endpoints (for Count Report Notifications)
+  // GET all report recipients
+  app.get('/api/report-recipients', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const recipients = await storage.getReportRecipients(churchId);
+      res.json(recipients);
+    } catch (error) {
+      console.error("Error fetching report recipients:", error);
+      res.status(500).json({ message: "Failed to fetch report recipients" });
+    }
+  });
+
+  // GET single report recipient
+  app.get('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const recipientId = parseInt(req.params.id);
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: "Invalid recipient ID" });
+      }
+      
+      const recipient = await storage.getReportRecipient(recipientId, churchId);
+      
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      res.json(recipient);
+    } catch (error) {
+      console.error("Error fetching report recipient:", error);
+      res.status(500).json({ message: "Failed to fetch report recipient" });
+    }
+  });
+
+  // CREATE new report recipient
+  app.post('/api/report-recipients', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const recipientData = {
+        ...req.body,
+        churchId: churchId
+      };
+      
+      // Validate with zod schema
+      const validatedData = insertReportRecipientSchema.parse(recipientData);
+      const newRecipient = await storage.createReportRecipient(validatedData);
+      
+      res.status(201).json(newRecipient);
+    } catch (error) {
+      console.error("Error creating report recipient:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create report recipient" });
+    }
+  });
+
+  // UPDATE report recipient
+  app.patch('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const recipientId = parseInt(req.params.id);
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: "Invalid recipient ID" });
+      }
+      
+      // Create a partial schema for validation
+      const partialRecipientSchema = z.object({
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        email: z.string().email().optional(),
+        churchId: z.string().optional()
+      });
+      
+      const validatedData = partialRecipientSchema.parse({
+        ...req.body,
+        churchId: churchId
+      });
+      
+      const updatedRecipient = await storage.updateReportRecipient(recipientId, validatedData, churchId);
+      
+      if (!updatedRecipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      res.json(updatedRecipient);
+    } catch (error) {
+      console.error("Error updating report recipient:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update report recipient" });
+    }
+  });
+
+  // DELETE report recipient
+  app.delete('/api/report-recipients/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const recipientId = parseInt(req.params.id);
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: "Invalid recipient ID" });
+      }
+      
+      // Check if recipient exists before deletion
+      const recipient = await storage.getReportRecipient(recipientId, churchId);
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      await storage.deleteReportRecipient(recipientId, churchId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting report recipient:", error);
+      res.status(500).json({ message: "Failed to delete report recipient" });
+    }
+  });
+  
+  // Email Templates endpoints
+  // Initialize email templates with defaults if they don't exist
+  app.post('/api/email-templates/initialize', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      const churchName = req.user.churchName || 'Your Church';
+      
+      // Define default template types to check for
+      const templateTypes = [
+        'WELCOME_EMAIL',
+        'PASSWORD_RESET',
+        'DONATION_CONFIRMATION',
+        'COUNT_REPORT'
+      ];
+      
+      const results = [];
+      
+      // For each template type, check if it exists and create if it doesn't
+      for (const templateType of templateTypes) {
+        const existingTemplate = await storage.getEmailTemplateByType(templateType, churchId);
+        
+        if (!existingTemplate) {
+          // Create template with default content based on type
+          let template = {
+            templateType,
+            churchId: churchId,
+            subject: '',
+            bodyText: '',
+            bodyHtml: ''
+          };
+          
+          switch (templateType) {
+            case 'WELCOME_EMAIL':
+              template.subject = `Welcome to PlateSync`;
+              template.bodyText = `
+Dear {{firstName}} {{lastName}},
+
+Welcome to PlateSync...the perfect app for counting plate donations with ease and efficiency!
+{{churchName}} has added you as a user to assist in the plate collection and counting as an usher.
+
+To complete your account setup, please verify your email and create a password by clicking on the link below:
+{{verificationUrl}}?token={{verificationToken}}
+
+This link will expire in 48 hours for security reasons.
+
+Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.
+
+If you did not request this account, you can safely ignore this email.
+
+Sincerely,
+The PlateSync Team`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <!-- Header with Logo and Title -->
+  <div style="padding: 25px; text-align: center;">
+    <div style="display: block; margin: 0 auto;">
+      <img src="https://platesync.replit.app/logo-with-text.png" alt="PlateSync" style="max-width: 350px; height: auto;" />
+      <div style="font-size: 14px; color: #555; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px;">
+        CHURCH COLLECTION MANAGEMENT
+      </div>
+    </div>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 0 30px 30px;">
+    <p style="margin-top: 0;">Dear <strong>{{firstName}} {{lastName}}</strong>,</p>
+    
+    <p>Welcome to PlateSync...the perfect app for counting plate donations with ease and efficiency!</p>
+    
+    <p><strong>{{churchName}}</strong> has added you as a user to assist in the plate collection and counting as an usher.</p>
+    
+    <p>To complete your account setup, please verify your email and create a password by clicking on the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{verificationUrl}}?token={{verificationToken}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Verify Email & Set Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 48 hours for security reasons.</p>
+    
+    <p>Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.</p>
+    
+    <p>If you did not request this account, you can safely ignore this email.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+</div>`;
+              break;
+              
+            case 'PASSWORD_RESET':
+              template.subject = `PlateSync Password Reset Request`;
+              template.bodyText = `
+Hello,
+
+We received a request to reset your password for your PlateSync account.
+
+Please click on the following link to reset your password:
+{{resetUrl}}
+
+This link will expire in 1 hour for security reasons.
+
+If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.
+
+Sincerely,
+The PlateSync Team`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Hello,</p>
+    
+    <p>We received a request to reset the password for your PlateSync account.</p>
+    
+    <p>To set a new password, please click the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{resetUrl}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 1 hour for security reasons.</p>
+    
+    <p>If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>`;
+              break;
+              
+            case 'DONATION_CONFIRMATION':
+              template.subject = `Donation Receipt - {{churchName}}`;
+              template.bodyText = 
+`Dear {{donorName}},
+
+Thank you for your generous donation to {{churchName}}. Your support is a blessing to our church community and helps us continue our mission and ministry.
+
+Donation Details:
+Amount: \${{amount}}
+Date: {{date}}
+Receipt #: {{donationId}}
+
+Your contribution will help us:
+- Support outreach programs and assistance to those in need
+- Maintain our facilities and services for worship
+- Fund special ministries and programs
+- Continue our mission work in our community and beyond
+
+This email serves as your official receipt for tax purposes.
+
+We are grateful for your continued support and commitment to our church family.
+
+Blessings,
+{{churchName}}
+
+--
+This is an automated receipt from {{churchName}} via PlateSync.
+Please do not reply to this email. If you have any questions about your donation, please contact the church office directly.`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #2D3748; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{donorName}}</strong>,</p>
+    
+    <p>Thank you for your generous donation to {{churchName}}. Your support is a blessing to our church community and helps us continue our mission and ministry.</p>
+    
+    <!-- Donation Details Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Donation Details</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Amount:</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">\${{amount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Date:</td>
+          <td style="padding: 8px 0;">{{date}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Receipt #:</td>
+          <td style="padding: 8px 0;">{{donationId}}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>Your contribution will help us:</p>
+    <ul style="padding-left: 20px; line-height: 1.6;">
+      <li>Support outreach programs and assistance to those in need</li>
+      <li>Maintain our facilities and services for worship</li>
+      <li>Fund special ministries and programs</li>
+      <li>Continue our mission work in our community and beyond</li>
+    </ul>
+    
+    <p>This email serves as your official receipt for tax purposes.</p>
+    
+    <p>We are grateful for your continued support and commitment to our church family.</p>
+    
+    <p style="margin-bottom: 0;">Blessings,<br>
+    <strong>{{churchName}}</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated receipt from {{churchName}} via PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email. If you have any questions about your donation, please contact the church office directly.</p>
+  </div>
+</div>`;
+              break;
+              
+            case 'COUNT_REPORT':
+              template.subject = `Count Report - {{churchName}}`;
+              template.bodyText = 
+`Dear {{recipientName}},
+
+A count has been finalized for {{churchName}}.
+
+Count Details:
+Count: {{batchName}}
+Date: {{batchDate}}
+Total Amount: \${{totalAmount}}
+Cash: \${{cashAmount}}
+Checks: \${{checkAmount}}
+Number of Donations: {{donationCount}}
+
+This report is automatically generated by PlateSync when a count is finalized after attestation.
+
+Sincerely,
+PlateSync Reporting System`;
+              template.bodyHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{recipientName}}</strong>,</p>
+    
+    <p>A count has been finalized for <strong>{{churchName}}</strong>.</p>
+    
+    <!-- Count Details Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Count Details</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Count:</td>
+          <td style="padding: 8px 0;">{{batchName}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Date:</td>
+          <td style="padding: 8px 0;">{{batchDate}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">\${{totalAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Cash:</td>
+          <td style="padding: 8px 0;">\${{cashAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Checks:</td>
+          <td style="padding: 8px 0;">\${{checkAmount}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
+          <td style="padding: 8px 0;">{{donationCount}}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>This report is automatically generated by PlateSync when a count is finalized after attestation.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>PlateSync Reporting System</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated report from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>`;
+              break;
+              
+            default:
+              // Skip if unknown template type
+              continue;
+          }
+          
+          const newTemplate = await storage.createEmailTemplate(template);
+          results.push({
+            templateType,
+            created: true,
+            template: newTemplate
+          });
+        } else {
+          results.push({
+            templateType,
+            created: false,
+            templateId: existingTemplate.id
+          });
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: "Email templates initialization completed",
+        results
+      });
+    } catch (error) {
+      console.error("Error initializing email templates:", error);
+      res.status(500).json({ message: "Failed to initialize email templates" });
+    }
+  });
+  
+  // GET all email templates
+  app.get('/api/email-templates', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const templates = await storage.getEmailTemplates(churchId);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching email templates:", error);
+      res.status(500).json({ message: "Failed to fetch email templates" });
+    }
+  });
+  
+  // GET single email template
+  app.get('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      
+      const template = await storage.getEmailTemplate(templateId, churchId);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching email template:", error);
+      res.status(500).json({ message: "Failed to fetch email template" });
+    }
+  });
+  
+  // GET email template by type
+  app.get('/api/email-templates/type/:type', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const templateType = req.params.type;
+      
+      const template = await storage.getEmailTemplateByType(templateType, churchId);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching email template by type:", error);
+      res.status(500).json({ message: "Failed to fetch email template" });
+    }
+  });
+  
+  // CREATE new email template
+  app.post('/api/email-templates', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Validate incoming data with zod schema
+      const validatedData = insertEmailTemplateSchema.parse(req.body);
+      
+      // Check if template with this type already exists
+      const existingTemplate = await storage.getEmailTemplateByType(validatedData.templateType, churchId);
+      
+      if (existingTemplate) {
+        return res.status(409).json({ message: "A template with this type already exists" });
+      }
+      
+      // Create new template
+      const newTemplate = await storage.createEmailTemplate({
+        ...validatedData,
+        churchId: churchId
+      });
+      
+      res.status(201).json(newTemplate);
+    } catch (error) {
+      console.error("Error creating email template:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create email template" });
+    }
+  });
+  
+  // UPDATE email template
+  app.patch('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      
+      // Fetch the existing template
+      const existingTemplate = await storage.getEmailTemplate(templateId, churchId);
+      
+      if (!existingTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      // Validate incoming data with zod schema
+      const validatedData = insertEmailTemplateSchema
+        .partial()
+        .parse({
+          ...req.body,
+          churchId: churchId // Ensure churchId is set correctly
+        });
+      
+      // Update template
+      const updatedTemplate = await storage.updateEmailTemplate(templateId, validatedData, churchId);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error("Error updating email template:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update email template" });
+    }
+  });
+  
+  // RESET email template to default
+  app.post('/api/email-templates/:id/reset', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      
+      // Reset template to default
+      const resetTemplate = await storage.resetEmailTemplateToDefault(templateId, churchId);
+      
+      if (!resetTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      
+      res.json(resetTemplate);
+    } catch (error) {
+      console.error("Error resetting email template:", error);
+      res.status(500).json({ message: "Failed to reset email template" });
+    }
+  });
+
+  // Add test endpoints
+  setupTestEndpoints(app);
+
+  const httpServer = createServer(app);
   return httpServer;
 }

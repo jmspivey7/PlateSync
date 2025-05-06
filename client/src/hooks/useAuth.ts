@@ -2,14 +2,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
 import type { User } from "../../../shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
 type LoginCredentials = {
   username: string;
   password: string;
 };
-
-// No fallback user - we'll rely on the actual database data
 
 export function useAuth() {
   const { toast } = useToast();
@@ -18,24 +15,15 @@ export function useAuth() {
   const { 
     data: user, 
     isLoading,
-    refetch,
-    error
+    refetch 
   } = useQuery<User>({
     queryKey: ["/api/auth/user"],
-    retry: 1,
+    retry: false,
     staleTime: 30000, // 30 seconds
     refetchInterval: false,
     refetchOnWindowFocus: false,
-    queryFn: getQueryFn({ on401: "returnNull" })
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
-
-  // Handle authentication errors silently
-  useEffect(() => {
-    if (error) {
-      console.warn("Authentication error:", error);
-      // Don't show error toasts for auth issues to avoid spamming the user
-    }
-  }, [error]);
 
   // Login mutation
   const loginMutation = useMutation({
@@ -89,7 +77,6 @@ export function useAuth() {
     },
   });
 
-  // No fallback user - we'll use the actual user data from the API
   return {
     user,
     isLoading,

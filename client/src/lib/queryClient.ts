@@ -43,7 +43,6 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   let method = "GET";
   let body = undefined;
-  let returnRaw = false;
   
   // Parse parameters based on type
   if (typeof methodOrConfig === 'string') {
@@ -52,77 +51,30 @@ export async function apiRequest<T = any>(
   } else if (typeof methodOrConfig === 'object' && methodOrConfig !== null) {
     method = methodOrConfig.method || "GET";
     body = methodOrConfig.body;
-    returnRaw = methodOrConfig.returnRaw || false;
   }
   
   const isFormData = body instanceof FormData;
   
-  try {
-    const res = await fetch(url, {
-      method,
-      // Don't set Content-Type when using FormData - the browser will set it automatically with the correct boundary
-      headers: {
-        ...(body && !isFormData ? { "Content-Type": "application/json" } : {}),
-      },
-      // Don't stringify FormData objects
-      body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
-      credentials: "include",
-    });
+  const res = await fetch(url, {
+    method,
+    // Don't set Content-Type when using FormData - the browser will set it automatically with the correct boundary
+    headers: {
+      ...(body && !isFormData ? { "Content-Type": "application/json" } : {}),
+    },
+    // Don't stringify FormData objects
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
+    credentials: "include",
+  });
 
-    // For file uploads like logo, we might get a 200 OK but with empty response
-    // In that case, we should just return an empty object without trying to parse JSON
-    if (url.includes('/logo') && res.ok) {
-      console.log('Logo upload successful');
-      return { success: true } as unknown as T;
-    }
-
-    await throwIfResNotOk(res);
-    
-    // For 204 No Content responses, return an empty object
-    if (res.status === 204) {
-      return {} as T;
-    }
-    
-    // If returnRaw is true, return the response object
-    if (returnRaw) {
-      return res as unknown as T;
-    }
-    
-    // Otherwise parse and return JSON
-    try {
-      const contentType = res.headers.get('content-type');
-      
-      // Debug information
-      console.log(`Response from ${url}: Status ${res.status}, Content-Type: ${contentType}`);
-      
-      if (contentType && contentType.includes('application/json')) {
-        return await res.json();
-      } else {
-        // If not JSON but response is OK, return a success object
-        if (res.ok) {
-          console.warn(`Response from ${url} is not JSON (${contentType}), but status is OK`);
-          const text = await res.text();
-          console.log(`First 100 chars of response: ${text.substring(0, 100)}...`);
-          return { success: true, message: "Operation completed successfully" } as unknown as T;
-        } else {
-          // Not OK and not JSON
-          const text = await res.text();
-          console.error(`Non-JSON error response: ${text.substring(0, 100)}...`);
-          throw new Error(`Unexpected response format: ${contentType || 'unknown'}`);
-        }
-      }
-    } catch (jsonError) {
-      console.warn(`Failed to parse JSON response from ${url}:`, jsonError);
-      // Return success object if response was successful but not JSON
-      if (res.ok) {
-        return { success: true, message: "Operation completed but response could not be parsed" } as unknown as T;
-      }
-      throw jsonError;
-    }
-  } catch (error) {
-    console.error(`API request error for ${url}:`, error);
-    throw error;
+  await throwIfResNotOk(res);
+  
+  // For 204 No Content responses, return an empty object
+  if (res.status === 204) {
+    return {} as T;
   }
+  
+  // Otherwise parse and return JSON
+  return await res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -149,41 +101,9 @@ export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401
         return {} as T;
       }
       
-      try {
-        const contentType = res.headers.get('content-type');
-        
-        // Debug information
-        console.log(`Query response from ${queryKey[0]}: Status ${res.status}, Content-Type: ${contentType}`);
-        
-        if (contentType && contentType.includes('application/json')) {
-          const data = await res.json();
-          return data as T;
-        } else {
-          // If not JSON but response is OK, return an empty object
-          if (res.ok) {
-            console.warn(`Query response from ${queryKey[0]} is not JSON (${contentType}), but status is OK`);
-            const text = await res.text();
-            console.log(`First 100 chars of query response: ${text.substring(0, 100)}...`);
-            return {} as T;
-          } else {
-            // Not OK and not JSON
-            const text = await res.text();
-            console.error(`Non-JSON error query response: ${text.substring(0, 100)}...`);
-            throw new Error(`Unexpected query response format: ${contentType || 'unknown'}`);
-          }
-        }
-      } catch (jsonError) {
-        console.warn(`Failed to parse JSON from ${queryKey[0]}:`, jsonError);
-        // Return empty object if parsing fails instead of throwing an error
-        return {} as T;
-      }
+      return await res.json();
     } catch (error) {
       console.error(`Error fetching ${queryKey[0]}:`, error);
-      // Special error handling for authentication - don't break the dashboard if auth fails
-      if (queryKey[0] === '/api/auth/user') {
-        console.warn('Auth error - returning null user to prevent UI crash');
-        return null as any;
-      }
       throw error;
     }
   };

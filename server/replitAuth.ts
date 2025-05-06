@@ -139,40 +139,42 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // Check if there's a user in the request
-  if (req.user) {
-    const user = req.user as any;
-    
-    // Local auth doesn't have expiry logic, so if we have a user without expires_at,
-    // they're using local auth and should be considered authenticated
-    if (!user.expires_at) {
-      return next();
+  const user = req.user as any;
+
+  if (!req.isAuthenticated()) {
+    // For API calls, return 401 instead of redirecting
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
     
-    // For Replit auth, check expiration
-    const now = Math.floor(Date.now() / 1000);
-    if (now <= user.expires_at) {
-      return next();
-    }
-    
-    const refreshToken = user.refresh_token;
-    if (refreshToken) {
-      try {
-        const config = await getOidcConfig();
-        const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-        updateUserSession(user, tokenResponse);
-        return next();
-      } catch (error) {
-        console.error("Token refresh error:", error);
-      }
-    }
+    // For UI pages, send 401 so client can handle the redirect
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  
-  // Check for session-based authentication
-  if (req.session && req.session.userId) {
+
+  // Local auth doesn't have expiry logic, so if we have a user without expires_at,
+  // they're using local auth and should be considered authenticated
+  if (!user.expires_at) {
     return next();
   }
-  
-  // If no authentication method worked, return unauthorized
-  return res.status(401).json({ message: "Unauthorized" });
+
+  // For Replit auth, check expiration
+  const now = Math.floor(Date.now() / 1000);
+  if (now <= user.expires_at) {
+    return next();
+  }
+
+  const refreshToken = user.refresh_token;
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Session expired" });
+  }
+
+  try {
+    const config = await getOidcConfig();
+    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    updateUserSession(user, tokenResponse);
+    return next();
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    return res.status(401).json({ message: "Session refresh failed" });
+  }
 };
