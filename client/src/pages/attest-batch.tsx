@@ -87,7 +87,7 @@ const AttestBatchPage = () => {
         subtitle={`${batch.name}`}
       >
         <Card className="max-w-xl mx-auto">
-          <div className="p-6 flex items-center justify-between border-b">
+          <div className="p-6 flex items-center justify-between">
             <Button 
               variant="outline"
               onClick={handleBackToCount}
@@ -122,7 +122,7 @@ const AttestBatchPage = () => {
       subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
     >
       <Card className="max-w-xl mx-auto">
-        <div className="p-6 flex items-center justify-between border-b">
+        <div className="p-6 flex items-center justify-between">
           <Button 
             variant="outline"
             onClick={handleBackToCount}

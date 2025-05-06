@@ -358,7 +358,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="attestorId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Second Attestor</FormLabel>
+                        <FormLabel className="font-bold">Second Attestor:</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -391,7 +391,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Your Name / Signature</FormLabel>
+                        <FormLabel className="font-bold">Your Name / Signature:</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="Type your full name as signature" />
                         </FormControl>
