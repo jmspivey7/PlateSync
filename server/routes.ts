@@ -582,15 +582,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let usersList = [];
       
       if (usersResult && usersResult.rows) {
-        usersList = usersResult.rows.map(user => ({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role
-        }));
-        console.log(`Found ${usersList.length} users via direct SQL`);
+        usersList = usersResult.rows
+          // Filter out inactive users that have the INACTIVE_ prefix in their email
+          .filter(user => !user.email?.startsWith('INACTIVE_'))
+          .map(user => ({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            role: user.role
+          }));
+        console.log(`Found ${usersList.length} active users via direct SQL`);
       }
       
       // If no users are found, add hardcoded fallback data
@@ -603,15 +606,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: "John",
             lastName: "Spivey",
             role: "ADMIN"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER"
           }
+          // Removed hardcoded USHER user
         ];
         console.log("No users found, using hardcoded fallback data");
       }
@@ -634,16 +630,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let usersList = [];
       
       if (usersResult && usersResult.rows) {
-        usersList = usersResult.rows.map(user => ({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role,
-          profileImageUrl: user.profile_image_url
-        }));
-        console.log(`Found ${usersList.length} users via test endpoint`);
+        usersList = usersResult.rows
+          // Filter out inactive users that have the INACTIVE_ prefix in their email
+          .filter(user => !user.email?.startsWith('INACTIVE_'))
+          .map(user => ({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            role: user.role,
+            profileImageUrl: user.profile_image_url
+          }));
+        console.log(`Found ${usersList.length} active users via test endpoint`);
       }
       
       if (usersList.length === 0) {
@@ -655,15 +654,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: "John",
             lastName: "Spivey",
             role: "ADMIN"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER"
           }
+          // Removed hardcoded USHER user since we want to show how deletion works
         ];
         console.log("Sending hardcoded user data from test endpoint");
       }
