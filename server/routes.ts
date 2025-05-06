@@ -734,7 +734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: "jspivey@spiveyco.com",
             firstName: "John",
             lastName: "Spivey",
-            role: "ADMIN"
+            role: "ADMIN",
+            isMasterAdmin: true
           }
           // Removed hardcoded USHER user
         ];
