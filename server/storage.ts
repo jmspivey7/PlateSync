@@ -112,56 +112,89 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     try {
-      // SELECT all columns explicitly to avoid issues with schema changes
-      const [userResult] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id));
+      // Use a raw SQL query with basic columns to avoid schema issues
+      const userResult = await db.execute(
+        sql`SELECT 
+            id, username, email, first_name, last_name, bio, profile_image_url, 
+            role, password, is_verified, password_reset_token, 
+            password_reset_expires, created_at, updated_at, 
+            church_name, church_logo_url, email_notifications_enabled, church_id
+          FROM users 
+          WHERE id = ${id}
+          LIMIT 1`
+      );
       
-      if (!userResult) {
+      if (!userResult.rows.length) {
         return undefined;
       }
       
-      // Convert to our User type with virtual properties
-      const user: User = {
-        ...userResult,
-        // Virtual isActive field based on email prefix
-        isActive: !userResult.email?.startsWith('INACTIVE_'),
-        // Default isMasterAdmin to false - we'll update it below if needed
-        isMasterAdmin: false
+      // Convert from snake_case to camelCase
+      const row = userResult.rows[0];
+      const userBaseData = {
+        id: row.id,
+        username: row.username,
+        email: row.email,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        bio: row.bio,
+        profileImageUrl: row.profile_image_url,
+        role: row.role,
+        password: row.password,
+        isVerified: row.is_verified,
+        passwordResetToken: row.password_reset_token,
+        passwordResetExpires: row.password_reset_expires,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        churchName: row.church_name,
+        churchLogoUrl: row.church_logo_url,
+        emailNotificationsEnabled: row.email_notifications_enabled,
+        churchId: row.church_id
       };
       
-      // Calculate virtual isMasterAdmin property separately
-      if (user.role === 'ADMIN') {
+      // Virtual properties
+      const isActive = !row.email?.startsWith('INACTIVE_');
+      let isMasterAdmin = false;
+      
+      // Calculate virtual isMasterAdmin if this is an admin user
+      if (row.role === 'ADMIN') {
         try {
           // Check if this is the first/original admin of the church
           // If their ID is used as the churchId for other users, they're the Master Admin
-          const otherUsers = await db
-            .select({ count: sql<number>`count(*)` })
-            .from(users)
-            .where(sql`${users.churchId} = ${id} AND ${users.id} != ${id}`);
+          const otherUsers = await db.execute(
+            sql`SELECT count(*) as count 
+                FROM users 
+                WHERE church_id = ${id} AND id != ${id}`
+          );
             
-          if (otherUsers.length > 0 && otherUsers[0].count > 0) {
-            user.isMasterAdmin = true;
+          if (otherUsers.rows.length > 0 && parseInt(otherUsers.rows[0].count) > 0) {
+            isMasterAdmin = true;
           } else {
             // If no other users point to this user's ID, check if this is the first admin
-            const firstAdmin = await db
-              .select()
-              .from(users)
-              .where(eq(users.role, 'ADMIN'))
-              .orderBy(asc(users.createdAt))
-              .limit(1);
+            const firstAdmin = await db.execute(
+              sql`SELECT id 
+                  FROM users 
+                  WHERE role = 'ADMIN' 
+                  ORDER BY created_at ASC 
+                  LIMIT 1`
+            );
               
-            if (firstAdmin.length > 0 && firstAdmin[0].id === id) {
-              user.isMasterAdmin = true;
+            if (firstAdmin.rows.length > 0 && firstAdmin.rows[0].id === id) {
+              isMasterAdmin = true;
             }
           }
         } catch (innerError) {
           console.error("Error determining Master Admin status:", innerError);
           // Default to false for safety
-          user.isMasterAdmin = false;
+          isMasterAdmin = false;
         }
       }
+      
+      // Create the full user object with virtual properties
+      const user: User = {
+        ...userBaseData,
+        isActive,
+        isMasterAdmin
+      };
       
       return user;
     } catch (error) {

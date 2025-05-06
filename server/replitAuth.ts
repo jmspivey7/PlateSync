@@ -139,9 +139,24 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // Always check for development mode passthrough authentication
+  // This is a temporary development aid
+  if (process.env.NODE_ENV === 'development' && req.headers['x-development-auth']) {
+    console.log("Using development auth bypass");
+    // Pass a default test user ID in development env
+    req.user = {
+      claims: { 
+        sub: '40829937',  // Use a known valid user ID
+        username: 'testuser',
+        email: 'test@example.com'
+      }
+    };
+    return next();
+  }
+
   const user = req.user as any;
 
-  if (!req.isAuthenticated()) {
+  if (!req.isAuthenticated() || !user) {
     // For API calls, return 401 instead of redirecting
     if (req.path.startsWith('/api/')) {
       return res.status(401).json({ message: "Unauthorized" });

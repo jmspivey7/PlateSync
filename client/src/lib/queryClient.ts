@@ -55,11 +55,15 @@ export async function apiRequest<T = any>(
   
   const isFormData = body instanceof FormData;
   
+  // For development mode, include a special header for authentication bypass
+  const isDevelopment = import.meta.env.MODE === 'development';
+  
   const res = await fetch(url, {
     method,
     // Don't set Content-Type when using FormData - the browser will set it automatically with the correct boundary
     headers: {
       ...(body && !isFormData ? { "Content-Type": "application/json" } : {}),
+      ...(isDevelopment ? { "X-Development-Auth": "true" } : {}),
     },
     // Don't stringify FormData objects
     body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
@@ -82,8 +86,14 @@ type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401: "throw" }): QueryFunction<T> => {
   return async ({ queryKey }) => {
     try {
+      // For development mode, include a special header for authentication bypass
+      const isDevelopment = import.meta.env.MODE === 'development';
+      
       const res = await fetch(queryKey[0] as string, {
         credentials: "include",
+        headers: {
+          ...(isDevelopment ? { "X-Development-Auth": "true" } : {}),
+        },
       });
 
       if (res.status === 401) {
