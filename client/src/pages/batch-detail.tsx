@@ -542,6 +542,27 @@ const BatchDetailPage = () => {
           </DialogContent>
         </Dialog>
         
+        {/* Modal for editing a donation */}
+        <Dialog 
+          open={editingDonationId !== null} 
+          onOpenChange={(open) => !open && setEditingDonationId(null)}
+        >
+          <DialogContent className="sm:max-w-[800px] p-0">
+            <DialogHeader className="px-6 pt-6 pb-0">
+              <DialogTitle className="text-xl font-bold">Edit Donation</DialogTitle>
+            </DialogHeader>
+            {editingDonationId && (
+              <DonationForm 
+                donationId={editingDonationId.toString()} 
+                isEdit={true}
+                defaultBatchId={batchId}
+                isInsideDialog={true} 
+                onClose={handleDonationAdded} 
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+        
         {/* Modal for attestation process - fixed version */}
         <div 
           className={`fixed inset-0 bg-black/50 z-50 items-center justify-center ${isAttesting ? 'flex' : 'hidden'}`}
