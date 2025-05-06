@@ -640,7 +640,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: user.email,
           firstName: user.first_name,
           lastName: user.last_name,
-          role: user.role
+          role: user.role,
+          profileImageUrl: user.profile_image_url
         }));
         console.log(`Found ${usersList.length} users via test endpoint`);
       }
