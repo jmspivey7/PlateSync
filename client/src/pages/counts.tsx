@@ -128,8 +128,7 @@ const CountsPage = () => {
       title="Historical Counts"
       subtitle="View and manage past donation counts"
       icon={<Calendar className="h-6 w-6 text-gray-700" />}
-    >
-      <div className="mb-6 flex justify-end">
+      action={
         <Button 
           onClick={handleCreateBatch}
           className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
@@ -137,16 +136,12 @@ const CountsPage = () => {
           <PlusCircle className="mr-2 h-4 w-4" />
           New Count
         </Button>
-      </div>
-
+      }
+    >
       {/* Historical Count List as Table with Rows and Columns */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-lg">Historical Count List</CardTitle>
-          <CardDescription>
-            View past donation counts by worship service or collection date
-          </CardDescription>
-          <Tabs value={activeTab} defaultValue="open" className="mt-3" onValueChange={handleTabChange}>
+          <Tabs value={activeTab} defaultValue="open" className="mt-1" onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-2 p-1 shadow-sm border border-gray-200 rounded-md">
               <TabsTrigger 
                 value="open"
