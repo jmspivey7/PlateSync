@@ -402,6 +402,7 @@ export default function EmailTemplateEditor() {
                               )
                               .replace(/max-width: \d+px/g, 'max-width: 375px')
                               .replace(/max-height: \d+px/g, 'max-height: 150px')
+                              .replace(/Donation Receipt/g, '<strong>Donation Receipt</strong>')
                           }} />
                         ) : (
                           <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
