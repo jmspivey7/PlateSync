@@ -315,18 +315,19 @@ const BatchDetailPage = () => {
       >
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Count Summary</CardTitle>
-              <CardDescription>
-                Review and finalize your count
-              </CardDescription>
-            </div>
+            {/* Left side - Navigation buttons */}
             <div className="flex space-x-2">
               {isFinalized && (
-                <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white">
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print
-                </Button>
+                <>
+                  <Button variant="outline" onClick={handleBackToCounts}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Counts
+                  </Button>
+                  <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white">
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print
+                  </Button>
+                </>
               )}
               {!isFinalized && (
                 <>
@@ -347,12 +348,14 @@ const BatchDetailPage = () => {
                   </Button>
                 </>
               )}
-              {isFinalized && (
-                <Button variant="outline" onClick={handleBackToCounts}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Counts
-                </Button>
-              )}
+            </div>
+            
+            {/* Right side - Header text */}
+            <div className="text-right">
+              <CardTitle>Count Summary</CardTitle>
+              <CardDescription>
+                Review and finalize your count
+              </CardDescription>
             </div>
           </CardHeader>
           <CardContent>
