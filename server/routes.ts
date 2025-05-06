@@ -808,7 +808,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/email-settings/test', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { email, fromEmail, fromName, templateSubject, templateBody } = req.body;
+      
+      // Get church ID for proper template lookup
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Get the user to check for church logo
+      const user = await storage.getUser(userId);
       
       // Test the email by sending a sample donation notification
       const testParams = {
@@ -828,8 +835,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: new Date().toLocaleDateString(),
         donorName: "Test User",
         churchName: fromName,
-        churchId: userId,
-        churchLogoUrl: user?.churchLogoUrl || undefined,
+        churchId: churchId,
+        churchLogoUrl: "https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png",
         donationId: "TEST123456"
       })) {
         res.json({ success: true, message: "Test email sent successfully" });
@@ -1398,7 +1405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   donorName: `${donation.member.firstName} ${donation.member.lastName}`,
                   churchName: churchName,
                   churchId: churchId,
-                  churchLogoUrl: adminUser?.churchLogoUrl || undefined,
+                  churchLogoUrl: "https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png",
                   donationId: donation.id.toString()
                 });
                 
