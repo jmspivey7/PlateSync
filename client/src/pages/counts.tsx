@@ -195,7 +195,7 @@ const CountsPage = () => {
                           <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
                         </td>
                         <td className="py-3 px-3 text-gray-700 font-medium">
-                          {format(new Date(batch.date), 'MMMM d, yyyy')}
+                          {format(new Date(batch.date), 'MM/dd/yyyy')}
                         </td>
                         <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
                           {formatCurrency(batch.totalAmount || 0)}
@@ -258,7 +258,7 @@ const CountsPage = () => {
                 const serviceName = batchNameParts.length > 1 ? batchNameParts[0] : 'Regular Service';
                 return (
                   <>
-                    <CardTitle>{format(new Date(selectedBatch.date), 'MMMM d, yyyy')}</CardTitle>
+                    <CardTitle>{format(new Date(selectedBatch.date), 'MM/dd/yyyy')}</CardTitle>
                     <CardDescription>
                       Service: {serviceName}
                     </CardDescription>
@@ -341,7 +341,7 @@ const CountsPage = () => {
                             "Anonymous Donation"}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {format(new Date(donation.date), 'MMM d, yyyy')} • 
+                          {format(new Date(donation.date), 'MM/dd/yyyy')} • 
                           {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                         </div>
                       </div>
