@@ -101,8 +101,26 @@ const AccountDropdown = () => {
         
         <DropdownMenuItem 
           className="text-red-600 text-[1.1rem] py-2"
-          onClick={() => {
-            window.location.href = "/api/logout";
+          onClick={async () => {
+            try {
+              // Use fetch to make a POST request to the logout endpoint
+              const response = await fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+              });
+              
+              if (response.ok) {
+                // Redirect to the login page after successful logout
+                window.location.href = '/login-local';
+              } else {
+                console.error('Logout failed');
+              }
+            } catch (error) {
+              console.error('Error during logout:', error);
+            }
           }}
         >
           <LogOut className="mr-2 h-4 w-4" />
