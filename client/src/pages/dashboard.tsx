@@ -227,7 +227,7 @@ const Dashboard = () => {
                     )}
                   </div>
                   <div className="text-sm font-bold">
-                    {format(new Date(lastFinalizedBatch.date), 'EEEE, MMMM d, yyyy')}
+                    {lastFinalizedBatch.date ? format(new Date(lastFinalizedBatch.date), 'EEEE, MMMM d, yyyy') : 'No date available'}
                   </div>
                 </div>
               </CardContent>

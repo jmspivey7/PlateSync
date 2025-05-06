@@ -1,4 +1,4 @@
-import { Express, Request, Response } from 'express';
+import express, { Express, Request, Response } from 'express';
 import { storage } from './storage';
 import { setupTestEndpoints } from './test-endpoints';
 import { db, pool } from './db';
@@ -26,6 +26,7 @@ const LOGO_UPLOAD_DIR = path.join(process.cwd(), 'public', 'logos');
 if (!fs.existsSync(LOGO_UPLOAD_DIR)) {
   fs.mkdirSync(LOGO_UPLOAD_DIR, { recursive: true });
 }
+console.log('Serving logos from:', LOGO_UPLOAD_DIR);
 
 // Setup upload folder for member profile pics
 const AVATAR_UPLOAD_DIR = path.join(process.cwd(), 'public', 'avatars');
@@ -135,6 +136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up database
   // Setup test endpoints (not used in production)
   setupTestEndpoints(app);
+  
+  // Serve static files from public directory
+  app.use(express.static(path.join(process.cwd(), 'public')));
   
   // AUTH ENDPOINTS
   
@@ -919,6 +923,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Server error fetching users"
+      });
+    }
+  });
+
+  // Logo upload endpoint
+  app.post('/api/settings/logo', isAuthenticated, upload.single('logo'), async (req: any, res) => {
+    try {
+      // Check if file was uploaded
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded"
+        });
+      }
+      
+      // Get user from db to get church ID
+      const userId = req.session?.userId || req.user?.claims?.sub;
+      
+      // Using parameterized query
+      const query = {
+        text: 'SELECT * FROM users WHERE id = $1',
+        values: [userId]
+      };
+      
+      const userResult = await pool.query(query);
+      
+      if (!userResult.rows || userResult.rows.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      const user = userResult.rows[0];
+      const churchId = user.church_id;
+      
+      if (!churchId) {
+        return res.status(400).json({
+          success: false,
+          message: "No church ID associated with user"
+        });
+      }
+      
+      // File path relative to public directory
+      const logoPath = `/logos/${req.file.filename}`;
+      
+      // Update church record with logo path
+      const updateQuery = {
+        text: 'UPDATE churches SET logo = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+        values: [logoPath, churchId]
+      };
+      
+      const updateResult = await pool.query(updateQuery);
+      
+      if (!updateResult.rows || updateResult.rows.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update church record"
+        });
+      }
+      
+      // Update user record with church logo path for easier access
+      const userUpdateQuery = {
+        text: 'UPDATE users SET church_logo = $1, updated_at = NOW() WHERE id = $2',
+        values: [logoPath, userId]
+      };
+      
+      await pool.query(userUpdateQuery);
+      
+      res.json({
+        success: true,
+        message: "Logo uploaded successfully",
+        logoUrl: logoPath
+      });
+      
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      res.status(500).json({
+        success: false,
+        message: `Server error uploading logo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+  
+  // Logo deletion endpoint
+  app.delete('/api/settings/logo', isAuthenticated, async (req: any, res) => {
+    try {
+      // Get user from db to get church ID
+      const userId = req.session?.userId || req.user?.claims?.sub;
+      
+      // Using parameterized query
+      const query = {
+        text: 'SELECT * FROM users WHERE id = $1',
+        values: [userId]
+      };
+      
+      const userResult = await pool.query(query);
+      
+      if (!userResult.rows || userResult.rows.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      const user = userResult.rows[0];
+      const churchId = user.church_id;
+      
+      if (!churchId) {
+        return res.status(400).json({
+          success: false,
+          message: "No church ID associated with user"
+        });
+      }
+      
+      // Get current logo path
+      const churchQuery = {
+        text: 'SELECT logo FROM churches WHERE id = $1',
+        values: [churchId]
+      };
+      
+      const churchResult = await pool.query(churchQuery);
+      
+      if (churchResult.rows && churchResult.rows.length > 0 && churchResult.rows[0].logo) {
+        const logoPath = path.join(process.cwd(), 'public', churchResult.rows[0].logo);
+        
+        // Delete the file if it exists
+        if (fs.existsSync(logoPath)) {
+          fs.unlinkSync(logoPath);
+        }
+      }
+      
+      // Update church record to remove logo
+      const updateQuery = {
+        text: 'UPDATE churches SET logo = NULL, updated_at = NOW() WHERE id = $1',
+        values: [churchId]
+      };
+      
+      await pool.query(updateQuery);
+      
+      // Update user records to remove church logo
+      const userUpdateQuery = {
+        text: 'UPDATE users SET church_logo = NULL, updated_at = NOW() WHERE church_id = $1',
+        values: [churchId]
+      };
+      
+      await pool.query(userUpdateQuery);
+      
+      res.json({
+        success: true,
+        message: "Logo removed successfully"
+      });
+      
+    } catch (error) {
+      console.error("Error removing logo:", error);
+      res.status(500).json({
+        success: false,
+        message: `Server error removing logo: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
