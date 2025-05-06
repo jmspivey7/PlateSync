@@ -151,15 +151,13 @@ export class DatabaseStorage implements IStorage {
         if (user.role === 'ADMIN') {
           // Check if this is the first/original admin of the church
           // If their ID is used as the churchId for other users, they're the Master Admin
+          // Using SQL rather than Drizzle's 'ne' operator to avoid missing import issues
           const [masterAdminCheck] = await db
             .select({
               count: sql<number>`count(*)`
             })
             .from(users)
-            .where(and(
-              eq(users.churchId, id),
-              ne(users.id, id) // Exclude the user themselves
-            ));
+            .where(sql`${users.churchId} = ${id} AND ${users.id} <> ${id}`);
             
           user.isMasterAdmin = (masterAdminCheck?.count || 0) > 0;
           
@@ -546,13 +544,33 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
-      // For now, we'll set the churchId field on the target user
       
-      // Update the target user with the church relationship
+      // Get all users who have the old Master Admin as their churchId
+      const usersToUpdate = await db
+        .select()
+        .from(users)
+        .where(eq(users.churchId, fromUserId));
+        
+      console.log(`Found ${usersToUpdate.length} users to update from old Master Admin ${fromUserId} to new Master Admin ${toUserId}`);
+      
+      // Update all these users to point to the new Master Admin
+      for (const userToUpdate of usersToUpdate) {
+        if (userToUpdate.id !== toUserId) {  // Don't update the new Master Admin yet
+          await db
+            .update(users)
+            .set({ 
+              churchId: toUserId,
+              updatedAt: new Date()
+            })
+            .where(eq(users.id, userToUpdate.id));
+        }
+      }
+      
+      // Make sure the new Master Admin points to themselves
       await db
         .update(users)
         .set({
-          churchId: churchId,
+          churchId: toUserId,
           updatedAt: new Date()
         })
         .where(eq(users.id, toUserId));

@@ -229,8 +229,9 @@ export const insertServiceOptionSchema = createInsertSchema(serviceOptions).pick
 // Types for InsertUser from Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect & {
-  // Add isActive as a runtime property (not in database schema)
+  // Add runtime properties (not in database schema)
   isActive?: boolean;
+  isMasterAdmin?: boolean;
 };
 
 // Types for our application
