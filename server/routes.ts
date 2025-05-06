@@ -1483,62 +1483,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid batch ID" });
       }
       
-      let churchId: string;
+      // Get church ID from the user object or from database
+      // This ensures proper data sharing between ADMIN and USHER roles
+      let churchId = req.user.claims.churchId;
       
-      try {
-        // Get church ID to ensure proper data sharing between ADMIN and USHER roles
-        churchId = await storage.getChurchIdForUser(userId);
-      } catch (churchIdError) {
-        console.error("Error getting churchId for batch donations:", churchIdError);
-        // If we can't get the church ID, use the user's ID as a fallback
-        churchId = userId;
+      if (!churchId) {
+        try {
+          // Use a direct database query to get the user's church ID
+          const userQuery = await db.execute(
+            sql`SELECT church_id FROM users WHERE id = ${userId} LIMIT 1`
+          );
+          
+          if (userQuery.rows.length > 0 && userQuery.rows[0].church_id) {
+            churchId = userQuery.rows[0].church_id;
+          } else {
+            // Fall back to using the storage function
+            churchId = await storage.getChurchIdForUser(userId);
+          }
+        } catch (churchIdError) {
+          console.error("Error getting churchId for batch donations:", churchIdError);
+          // If we can't get the church ID, use the user's ID as a fallback
+          churchId = userId;
+        }
       }
       
       try {
+        console.log(`Fetching donations for batch ${batchId} with churchId ${churchId}`);
         const donations = await storage.getDonationsByBatch(batchId, churchId);
+        
+        // Log donation count for debugging
+        console.log(`Found ${donations.length} donations for batch ${batchId}`);
+        
         res.json(donations);
       } catch (donationsError) {
         console.error(`Error fetching donations for batch ${batchId}:`, donationsError);
         
-        // Return sample donation data to keep the UI functional
-        const today = new Date();
-        const donorNames = ["John Smith", "Jane Doe", "Robert Johnson", "Mary Williams"];
-        
-        // Generate varied test donations
-        const testDonations = Array.from({ length: 5 }, (_, i) => ({
-          id: 9000 + i,
-          date: today,
-          amount: ((i + 1) * 50).toString(),
-          donationType: i % 2 === 0 ? "CASH" : "CHECK",
-          checkNumber: i % 2 === 0 ? null : `10${i + 1}`,
-          notes: i === 2 ? "Special offering" : null,
-          memberId: 800 + i,
-          batchId: batchId,
-          churchId: churchId,
-          notificationStatus: "PENDING",
-          createdAt: today,
-          updatedAt: today,
-          // Include member data for display
-          member: {
-            id: 800 + i,
-            firstName: donorNames[i % donorNames.length].split(' ')[0],
-            lastName: donorNames[i % donorNames.length].split(' ')[1],
-            email: `${donorNames[i % donorNames.length].toLowerCase().replace(' ', '.')}@example.com`,
-            phoneNumber: `555-000-${1000 + i}`,
-            address: "123 Main St",
-            city: "Anytown",
-            state: "ST",
-            zipCode: "12345",
-            notes: null,
-            churchId: churchId,
-            isKnownVisitor: i === 3,
-            isAnonymous: i === 4,
-            createdAt: today,
-            updatedAt: today
-          }
-        }));
-        
-        res.json(testDonations);
+        // Return an empty array rather than fake data to comply with data integrity policy
+        res.json([]);
       }
     } catch (error) {
       console.error("Error fetching batch donations:", error);
@@ -2018,7 +1999,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/donations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const donations = await storage.getDonationsWithMembers(userId);
+      
+      // Get the church ID to ensure proper data sharing between roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // With new church structure, we fetch donations based on churchId
+      const donations = await storage.getDonationsWithMembers(churchId);
       res.json(donations);
     } catch (error) {
       console.error("Error fetching donations:", error);
@@ -2035,7 +2021,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid donation ID" });
       }
       
-      const donation = await storage.getDonationWithMember(donationId, userId);
+      // Get the church ID to ensure proper data sharing between roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // Fetch the donation using churchId
+      const donation = await storage.getDonationWithMember(donationId, churchId);
       
       if (!donation) {
         return res.status(404).json({ message: "Donation not found" });
