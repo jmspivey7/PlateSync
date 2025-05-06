@@ -107,10 +107,41 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
-    // We don't filter by isActive here to ensure we can retrieve inactive users
-    // when needed for historical records (like attestations)
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      // Use a simpler query that doesn't reference the isActive column
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          churchName: users.churchName,
+          emailNotificationsEnabled: users.emailNotificationsEnabled,
+          passwordResetToken: users.passwordResetToken,
+          passwordResetExpires: users.passwordResetExpires,
+          password: users.password,
+          isVerified: users.isVerified
+        })
+        .from(users)
+        .where(eq(users.id, id));
+      
+      // For our temporary implementation, add isActive property
+      // and consider users with INACTIVE_ prefix as inactive
+      if (user) {
+        user.isActive = !user.email?.startsWith('INACTIVE_');
+      }
+      
+      return user;
+    } catch (error) {
+      console.error("Error in getUser:", error);
+      return undefined;
+    }
   }
   
   // Get the church ID for a user - for ADMIN users, it's their own ID
@@ -248,6 +279,7 @@ export class DatabaseStorage implements IStorage {
       
       if (userIds.length === 0) {
         // If no users found from batches, get all users
+        // Note: isActive filter is temporarily disabled until migration is run
         return db
           .select()
           .from(users)
@@ -255,6 +287,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Get user details
+      // Note: isActive filter is temporarily disabled until migration is run
       return db
         .select()
         .from(users)
@@ -322,6 +355,7 @@ export class DatabaseStorage implements IStorage {
       
       if (userIds.length === 0) {
         // If no users found, find all ADMIN users as a fallback
+        // Note: isActive filter is temporarily disabled until migration is run
         const admins = await db
           .select()
           .from(users)
@@ -331,6 +365,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Get user details
+      // Note: isActive filter is temporarily disabled until migration is run
       return db
         .select()
         .from(users)
@@ -425,14 +460,19 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteUser(id: string): Promise<void> {
-    // Implement soft deletion by setting isActive to false instead of deleting
-    await db
-      .update(users)
-      .set({ 
-        isActive: false,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, id));
+    // Note: This is a temporary implementation until we can run the migration
+    // to add the isActive column. For now, we'll mark the user as inactive
+    // by prefixing their email with "INACTIVE_" which is better than deleting.
+    const user = await this.getUser(id);
+    if (user) {
+      await db
+        .update(users)
+        .set({
+          email: `INACTIVE_${user.email}`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, id));
+    }
   }
 
   // Member operations
