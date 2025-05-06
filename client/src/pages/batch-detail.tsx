@@ -708,43 +708,43 @@ const BatchDetailPage = () => {
           </div>
         </div>
         
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Delete Count</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col space-y-4">
-              <p>Are you sure you want to delete this count?</p>
-              <p className="text-muted-foreground">This action cannot be undone, and all donation data will be permanently lost.</p>
+        {/* Delete Confirmation Dialog - Inline Version */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-medium mb-4">Delete Count</h3>
+              <div className="mb-6">
+                <p className="mb-2">Are you sure you want to delete this count?</p>
+                <p className="text-muted-foreground text-sm">This action cannot be undone, and all donation data will be permanently lost.</p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    console.log("Delete button in dialog clicked");
+                    handleDeleteBatch();
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  disabled={deleteBatchMutation.isPending}
+                >
+                  {deleteBatchMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Count"
+                  )}
+                </Button>
+              </div>
             </div>
-            <div className="flex justify-end space-x-2 mt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  console.log("Delete button in dialog clicked");
-                  handleDeleteBatch();
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white"
-                disabled={deleteBatchMutation.isPending}
-              >
-                {deleteBatchMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete Count"
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
       </Card>
     </PageLayout>
   );
