@@ -432,9 +432,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Setup logo storage for church logos
+  // Ensure the logos directory exists
+  const logosDir = 'public/logos';
+  try {
+    if (!fs.existsSync(logosDir)) {
+      fs.mkdirSync(logosDir, { recursive: true });
+      console.log(`Created directory: ${logosDir}`);
+    }
+  } catch (error) {
+    console.error(`Error creating logos directory: ${error}`);
+  }
+  
   const logoStorage = multer.diskStorage({
     destination: (_req, _file, cb) => {
-      cb(null, 'public/logos');
+      // Double-check directory exists before attempting to write
+      if (!fs.existsSync(logosDir)) {
+        return cb(new Error(`Logos directory does not exist: ${logosDir}`), '');
+      }
+      cb(null, logosDir);
     },
     filename: (_req, file, cb) => {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -456,21 +471,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Church logo upload endpoint
-  app.post('/api/settings/logo', isAuthenticated, logoUpload.single('logo'), async (req: any, res) => {
+  // Church logo upload endpoint with improved error handling
+  app.post('/api/settings/logo', isAuthenticated, (req, res, next) => {
+    console.log("Processing logo upload request");
+    
+    // Create logos directory again, just to be safe
     try {
+      if (!fs.existsSync(logosDir)) {
+        fs.mkdirSync(logosDir, { recursive: true });
+        console.log(`Created logos directory again: ${logosDir}`);
+      }
+    } catch (err) {
+      console.error("Error ensuring logos directory exists:", err);
+    }
+    
+    // Handle the upload with detailed error handling
+    logoUpload.single('logo')(req, res, (err) => {
+      if (err) {
+        console.error("Multer upload error:", err);
+        return res.status(500).json({ 
+          message: "Failed to upload logo",
+          error: err.message 
+        });
+      }
+      next();
+    });
+  }, async (req: any, res) => {
+    try {
+      console.log("Logo upload file processing");
+      
       if (!req.file) {
+        console.log("No file found in request");
         return res.status(400).json({ message: "No image file uploaded" });
       }
+      
+      console.log(`File uploaded successfully: ${req.file.filename}`);
       
       const userId = req.user.claims.sub;
       const logoUrl = `/logos/${req.file.filename}`;
       
+      console.log(`Updating user settings with logo URL: ${logoUrl}`);
       const updatedUser = await storage.updateUserSettings(userId, { churchLogoUrl: logoUrl });
+      
       res.json(updatedUser);
     } catch (error) {
-      console.error("Error uploading logo:", error);
-      res.status(500).json({ message: "Failed to upload logo" });
+      console.error("Error in logo upload handler:", error);
+      res.status(500).json({ 
+        message: "Failed to upload logo", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
   

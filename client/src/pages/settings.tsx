@@ -587,15 +587,28 @@ const Settings = () => {
                         
                         try {
                           setLogoUploading(true);
+                          console.log("Uploading logo...");
                           
                           const response = await fetch('/api/settings/logo', {
                             method: 'POST',
                             body: formData,
                           });
                           
+                          let errorMessage = 'Failed to upload logo';
+                          
                           if (!response.ok) {
-                            throw new Error('Failed to upload logo');
+                            // Try to get detailed error message from response
+                            try {
+                              const errorData = await response.json();
+                              errorMessage = errorData.message || errorData.error || 'Failed to upload logo';
+                              console.error("Logo upload error:", errorData);
+                            } catch (jsonError) {
+                              console.error("Error parsing error response:", jsonError);
+                            }
+                            throw new Error(errorMessage);
                           }
+                          
+                          console.log("Logo upload successful");
                           
                           // Refresh user data to get updated logo URL
                           queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
@@ -606,6 +619,7 @@ const Settings = () => {
                             className: "bg-[#48BB78] text-white",
                           });
                         } catch (error) {
+                          console.error("Logo upload error:", error);
                           toast({
                             title: "Upload failed",
                             description: `Failed to upload logo: ${error instanceof Error ? error.message : 'Unknown error'}`,
