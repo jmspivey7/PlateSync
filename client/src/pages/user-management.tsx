@@ -543,7 +543,7 @@ const UserManagement = () => {
                       <p className="text-sm font-medium text-gray-500 mb-2">Actions</p>
                       <div className="flex items-center gap-2">
                         <Select 
-                          defaultValue={user.role || "USHER"}
+                          defaultValue={user.isMasterAdmin ? "MASTER_ADMIN" : (user.role || "USHER")}
                           onValueChange={(value) => {
                             handleRoleChange(user.id, value);
                             setUserDetailsOpen(false);
