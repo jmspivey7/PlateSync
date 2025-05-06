@@ -52,10 +52,7 @@ const AccountDropdown = () => {
         <Button variant="ghost" className="flex items-center gap-2">
           <Avatar className="h-[2.76rem] w-[2.76rem] bg-[#69ad4c]">
             {user?.profileImageUrl ? (
-              <>
-                <AvatarImage src={user.profileImageUrl} alt={getDisplayName()} />
-                {console.log("Account Dropdown - Using profile image:", user.profileImageUrl)}
-              </>
+              <AvatarImage src={user.profileImageUrl} alt={getDisplayName()} />
             ) : (
               <AvatarFallback>{getInitials()}</AvatarFallback>
             )}

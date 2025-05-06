@@ -22,12 +22,7 @@ export function useAuth() {
     staleTime: 30000, // 30 seconds
     refetchInterval: false,
     refetchOnWindowFocus: false,
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    onSuccess: (data) => {
-      if (data) {
-        console.log("useAuth - Current user data:", data);
-      }
-    },
+    queryFn: getQueryFn({ on401: "returnNull" })
   });
 
   // Login mutation
