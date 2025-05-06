@@ -688,11 +688,8 @@ const BatchDetailPage = () => {
                 <DialogTitle>Delete Count</DialogTitle>
               </DialogHeader>
               <div className="py-4">
-                <p className="text-muted-foreground mb-2">
-                  Are you sure you want to delete this count?
-                </p>
-                <p className="text-sm text-destructive">
-                  This action cannot be undone. All donations in this count will be permanently deleted.
+                <p>
+                  Are you sure you want to delete this count? This action cannot be undone.
                 </p>
               </div>
               <div className="flex justify-end space-x-2">
@@ -704,7 +701,7 @@ const BatchDetailPage = () => {
                   onClick={handleDeleteBatch}
                   disabled={deleteBatchMutation.isPending}
                 >
-                  {deleteBatchMutation.isPending ? "Deleting..." : "Delete Count"}
+                  {deleteBatchMutation.isPending ? "Deleting..." : "Delete"}
                 </Button>
               </div>
             </DialogContent>
