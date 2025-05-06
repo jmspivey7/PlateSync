@@ -459,21 +459,12 @@ const BatchDetailPage = () => {
           
           {/* Action buttons in a row */}
           <div className="w-full flex justify-between items-center">
-            {/* Left side - Navigation buttons */}
+            {/* Left side - Navigation buttons and Finalize button */}
             <div className="flex space-x-2 items-center">
               <Button variant="outline" onClick={handleBackToCounts}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Counts
               </Button>
-            </div>
-            
-            <div className="flex space-x-2">
-              {batch.status === "FINALIZED" && (
-                <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print
-                </Button>
-              )}
               
               {batch.donations && batch.donations.length > 0 && batch.status !== "FINALIZED" && (
                 <Button 
@@ -481,11 +472,20 @@ const BatchDetailPage = () => {
                     console.log("Finalize Count button clicked");
                     prepareAttestationMutation.mutate();
                   }}
-                  className="bg-amber-500 hover:bg-amber-600 text-black"
+                  className="bg-amber-500 hover:bg-amber-600 text-black ml-2"
                   disabled={prepareAttestationMutation.isPending}
                 >
                   <UserCheck className="mr-2 h-4 w-4" />
                   {prepareAttestationMutation.isPending ? "Preparing..." : "Finalize Count"}
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex space-x-2">
+              {batch.status === "FINALIZED" && (
+                <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print
                 </Button>
               )}
             </div>
