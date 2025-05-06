@@ -175,40 +175,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       
       try {
-        // First try to get user data from database
-        const userQuery = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
+        // First try to get user data from database with all fields including is_master_admin
+        const userQuery = await db.execute(
+          sql`SELECT * FROM users WHERE id = ${userId} LIMIT 1`
+        );
+        
+        if (userQuery.rows.length > 0) {
+          // Transform snake_case database column names to camelCase for the API
+          const dbUser = userQuery.rows[0];
+          const user = {
+            id: dbUser.id,
+            username: dbUser.username,
+            email: dbUser.email,
+            firstName: dbUser.first_name,
+            lastName: dbUser.last_name,
+            bio: dbUser.bio,
+            profileImageUrl: dbUser.profile_image_url,
+            role: dbUser.role,
+            password: dbUser.password,
+            isVerified: dbUser.is_verified,
+            passwordResetToken: dbUser.password_reset_token,
+            passwordResetExpires: dbUser.password_reset_expires,
+            createdAt: dbUser.created_at,
+            updatedAt: dbUser.updated_at,
+            churchName: dbUser.church_name,
+            churchLogoUrl: dbUser.church_logo_url,
+            emailNotificationsEnabled: dbUser.email_notifications_enabled,
+            churchId: dbUser.church_id,
+            isMasterAdmin: dbUser.is_master_admin,
+            // Add virtual properties
+            isActive: !dbUser.email?.startsWith('INACTIVE_')
+          };
           
-        if (userQuery.length > 0) {
-          const user = userQuery[0];
-          
-          // Add virtual properties
-          user.isActive = !user.email?.startsWith('INACTIVE_');
-          user.isMasterAdmin = user.role === 'ADMIN'; // Simplified for now
-          
-          // If user is an USHER, fetch church info from ADMIN
-          if (user.role === "USHER") {
+          // If this is an USHER, we need to fetch church settings from their ADMIN
+          if (user.role === "USHER" && user.churchId && user.churchId !== user.id) {
             try {
-              // Get the church ID this user belongs to
-              const churchId = await storage.getChurchIdForUser(userId);
+              // Use the explicitly assigned churchId if available
+              const churchId = user.churchId;
               
-              // Get admin info
-              if (churchId && churchId !== userId) {
-                const [adminUser] = await db
-                  .select()
-                  .from(users)
-                  .where(eq(users.id, churchId))
-                  .limit(1);
-                  
-                if (adminUser && adminUser.churchName) {
-                  // Copy church name and logo
-                  user.churchName = adminUser.churchName;
-                  if (adminUser.churchLogoUrl) {
-                    user.churchLogoUrl = adminUser.churchLogoUrl;
-                  }
+              // Get the Master Admin or any Admin for this church to inherit settings from
+              const masterAdminQuery = await db.execute(
+                sql`SELECT * FROM users 
+                    WHERE id = ${churchId}
+                    OR (role = 'ADMIN' AND is_master_admin = true AND id IN (
+                      SELECT DISTINCT church_id FROM users WHERE church_id IS NOT NULL
+                    ))
+                    LIMIT 1`
+              );
+              
+              if (masterAdminQuery.rows.length > 0) {
+                const adminUser = masterAdminQuery.rows[0];
+                
+                // Copy church settings from the admin
+                if (adminUser.church_name) {
+                  user.churchName = adminUser.church_name;
+                }
+                
+                if (adminUser.church_logo_url) {
+                  user.churchLogoUrl = adminUser.church_logo_url;
+                }
+                
+                // Update this USHER's church ID if it's not set correctly
+                if (!user.churchId) {
+                  await db.execute(
+                    sql`UPDATE users 
+                        SET church_id = ${adminUser.id}
+                        WHERE id = ${userId}`
+                  );
+                  user.churchId = adminUser.id;
                 }
               }
             } catch (churchError) {

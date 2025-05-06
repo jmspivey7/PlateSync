@@ -206,72 +206,116 @@ export class DatabaseStorage implements IStorage {
   // Get the church ID for a user - for ADMIN users, it's their own ID
   // For USHER users, we need to find which church they belong to
   async getChurchIdForUser(userId: string): Promise<string> {
-    const user = await this.getUser(userId);
-    
-    if (!user) {
-      throw new Error("User not found");
-    }
-    
-    // If user is an ADMIN, they are the church
-    if (user.role === "ADMIN") {
-      console.log(`User ${userId} is an ADMIN, using their ID as churchId`);
+    try {
+      // Get user details from the database
+      const userQuery = await db
+        .select({
+          id: users.id,
+          role: users.role,
+          churchId: users.churchId
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      
+      if (userQuery.length === 0) {
+        throw new Error("User not found");
+      }
+      
+      const user = userQuery[0];
+      
+      // If user has a churchId explicitly set, use that (should be true for all users now)
+      if (user.churchId) {
+        console.log(`User ${userId} has churchId ${user.churchId} directly assigned`);
+        return user.churchId;
+      }
+      
+      // If user is an ADMIN and doesn't have a churchId, they are their own church
+      if (user.role === "ADMIN") {
+        console.log(`User ${userId} is an ADMIN, using their ID as churchId`);
+        
+        // Set this ADMIN's churchId to be themselves if not already set
+        await db
+          .update(users)
+          .set({ churchId: userId })
+          .where(eq(users.id, userId));
+        
+        return userId;
+      }
+      
+      // For USHER users without a churchId, we need to find the ADMIN they're associated with
+      
+      // First check if they've participated in any batches
+      const [batch] = await db
+        .select()
+        .from(batches)
+        .where(sql`
+          ${batches.primaryAttestorId} = ${userId} OR 
+          ${batches.secondaryAttestorId} = ${userId} OR
+          ${batches.attestationConfirmedBy} = ${userId}
+        `)
+        .limit(1);
+        
+      if (batch?.churchId) {
+        console.log(`Found churchId ${batch.churchId} from batch for USHER ${userId}`);
+        
+        // Update the user with this churchId for future reference
+        await db
+          .update(users)
+          .set({ churchId: batch.churchId })
+          .where(eq(users.id, userId));
+          
+        return batch.churchId;
+      }
+      
+      // If we can't determine the church from batches, find the Master Admin
+      const [masterAdmin] = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.role, 'ADMIN'),
+          eq(users.isMasterAdmin, true)
+        ))
+        .limit(1);
+      
+      if (masterAdmin) {
+        console.log(`Found Master Admin ${masterAdmin.id} as churchId for USHER ${userId}`);
+        
+        // Update the user with this churchId for future reference
+        await db
+          .update(users)
+          .set({ churchId: masterAdmin.id })
+          .where(eq(users.id, userId));
+          
+        return masterAdmin.id;
+      }
+      
+      // If no Master Admin is found, find any ADMIN user
+      const [anyAdmin] = await db
+        .select()
+        .from(users)
+        .where(eq(users.role, 'ADMIN'))
+        .limit(1);
+      
+      if (anyAdmin) {
+        console.log(`Found admin user ${anyAdmin.id} as churchId for USHER ${userId}`);
+        
+        // Update the user with this churchId for future reference
+        await db
+          .update(users)
+          .set({ churchId: anyAdmin.id })
+          .where(eq(users.id, userId));
+          
+        return anyAdmin.id;
+      }
+      
+      // If all else fails, use the user's own ID
+      console.log(`No churchId found for USHER ${userId}, using userId as fallback`);
       return userId;
+    } catch (error) {
+      console.error(`Error in getChurchIdForUser: ${error}`);
+      return userId; // Return the userId as a fallback
     }
-    
-    // For USHER users, we need to find the ADMIN they're associated with
-    
-    // For USHER users, check if they've participated in any batches
-    const [batch] = await db
-      .select()
-      .from(batches)
-      .where(sql`
-        ${batches.primaryAttestorId} = ${userId} OR 
-        ${batches.secondaryAttestorId} = ${userId} OR
-        ${batches.attestationConfirmedBy} = ${userId}
-      `)
-      .limit(1);
-      
-    if (batch?.churchId) {
-      console.log(`Found churchId ${batch.churchId} from batch for USHER ${userId}`);
-      return batch.churchId;
-    }
-    
-    // Check if this USHER has been assigned to a batch
-    const [assignedBatch] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId));
-    
-    console.log(`Checking for existing donation records associated with USHER ${userId}`);  
-    
-    // Since we don't have a direct link, let's find all batches first
-    const allBatches = await db
-      .select()
-      .from(batches)
-      .limit(10);
-      
-    if (allBatches.length > 0 && allBatches[0].churchId) {
-      console.log(`Found churchId ${allBatches[0].churchId} from existing batches for USHER ${userId}`);
-      return allBatches[0].churchId;
-    }
-    
-    // If we can't determine the church from batches or donations, query users table to find 
-    // ADMIN users and select one (there should only be one ADMIN per church)
-    const [admin] = await db
-      .select()
-      .from(users)
-      .where(eq(users.role, 'ADMIN'))
-      .limit(1);
-    
-    if (admin) {
-      console.log(`Found admin user ${admin.id} as churchId for USHER ${userId}`);
-      return admin.id;
-    }
-    
-    // If we still can't determine the church, fall back to using the user's ID
-    // This should rarely happen in practice
-    console.log(`No churchId found for USHER ${userId}, using userId as fallback`);
-    return userId;
   }
   
   async getAdminIdForChurch(churchId: string): Promise<string | null> {
