@@ -203,6 +203,7 @@ const UserManagement = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetailsOpen, setUserDetailsOpen] = useState(false);
   
   // Fetch all users - using test endpoint for guaranteed results
   const { data: users, isLoading } = useQuery<User[]>({
@@ -431,16 +432,20 @@ const UserManagement = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 
                 <TableBody>
                   {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow 
+                      key={user.id}
+                      className="cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)]"
+                      onClick={() => {
+                        setSelectedUserId(user.id);
+                        setUserDetailsOpen(true);
+                      }}
+                    >
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -457,8 +462,6 @@ const UserManagement = () => {
                         </div>
                       </TableCell>
                       
-                      <TableCell>{user.email || "—"}</TableCell>
-                      
                       <TableCell>
                         <Badge 
                           className={
@@ -470,73 +473,6 @@ const UserManagement = () => {
                           {user.role || "USHER"}
                         </Badge>
                       </TableCell>
-                      
-                      <TableCell>
-                        {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
-                      </TableCell>
-                      
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Select 
-                            defaultValue={user.role || "USHER"}
-                            onValueChange={(value) => handleRoleChange(user.id, value)}
-                            disabled={isPending}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue placeholder="Role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ADMIN">Admin</SelectItem>
-                              <SelectItem value="USHER">Usher</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          
-                          {/* Don't allow deleting self */}
-                          {user.id !== currentUser?.id && (
-                          <AlertDialog open={deleteDialogOpen && selectedUserId === user.id} onOpenChange={(open) => {
-                            setDeleteDialogOpen(open);
-                            if (!open) setSelectedUserId(null);
-                          }}>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => setSelectedUserId(user.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white rounded-lg border-gray-200 shadow-lg">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the user
-                                  account and all associated data.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={handleDeleteUser}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
-                                  disabled={isDeleting}
-                                >
-                                  {isDeleting ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Deleting...
-                                    </>
-                                  ) : (
-                                    "Delete User"
-                                  )}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -545,6 +481,131 @@ const UserManagement = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* User Details Dialog */}
+      <Dialog open={userDetailsOpen} onOpenChange={setUserDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          {selectedUserId && filteredUsers.find(u => u.id === selectedUserId) && (
+            <>
+              <DialogHeader>
+                <DialogTitle>User Details</DialogTitle>
+                <DialogDescription>
+                  View and edit detailed information about this user
+                </DialogDescription>
+              </DialogHeader>
+              
+              {(() => {
+                const user = filteredUsers.find(u => u.id === selectedUserId)!;
+                return (
+                  <div className="space-y-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={user.profileImageUrl || ""} />
+                        <AvatarFallback className="bg-gray-100 text-gray-800 text-lg">
+                          {user.role === "ADMIN" ? "A" : "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-lg font-semibold">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {user.email || "—"}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Role</p>
+                        <Badge 
+                          className={
+                            user.role === "ADMIN" 
+                              ? "bg-blue-100 text-blue-800 mt-1" 
+                              : "bg-green-100 text-green-800 mt-1"
+                          }
+                        >
+                          {user.role || "USHER"}
+                        </Badge>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Created</p>
+                        <p>
+                          {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <p className="text-sm font-medium text-gray-500 mb-2">Actions</p>
+                      <div className="flex items-center gap-2">
+                        <Select 
+                          defaultValue={user.role || "USHER"}
+                          onValueChange={(value) => {
+                            handleRoleChange(user.id, value);
+                            setUserDetailsOpen(false);
+                          }}
+                          disabled={isPending}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Change Role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ADMIN">Administrator</SelectItem>
+                            <SelectItem value="USHER">Usher</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        {user.id !== currentUser?.id && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this user? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    deleteUser(user.id);
+                                    setUserDetailsOpen(false);
+                                  }}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  {isDeleting ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    "Delete"
+                                  )}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 };
