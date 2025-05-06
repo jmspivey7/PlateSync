@@ -372,6 +372,9 @@ const UserManagement = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle>Users</CardTitle>
+              <CardDescription>
+                View and manage user accounts and permissions
+              </CardDescription>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-3">
