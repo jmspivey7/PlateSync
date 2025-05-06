@@ -53,7 +53,7 @@ const BatchDetailPage = () => {
   const [_, setLocation] = useLocation();
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
-  const { isAdmin } = useAuth();
+  const { isAdmin, isMasterAdmin } = useAuth();
   
   const [isAddingDonation, setIsAddingDonation] = useState(false);
   const [editingDonationId, setEditingDonationId] = useState<number | null>(null);
@@ -389,6 +389,16 @@ const BatchDetailPage = () => {
                     Print
                   </Button>
                 )}
+                {isFinalized && isMasterAdmin && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleShowDeleteConfirm} 
+                    className="ml-2 border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Count
+                  </Button>
+                )}
                 {!isFinalized && (
                   <Button variant="outline" onClick={handleEditFromSummary}>
                     <Edit className="mr-2 h-4 w-4" />
@@ -697,7 +707,10 @@ const BatchDetailPage = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Count</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this count? This action cannot be undone.
+                Are you sure you want to delete this count?
+              </AlertDialogDescription>
+              <AlertDialogDescription className="text-muted-foreground">
+                This action cannot be undone, and all donation data will be permanently lost.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -713,7 +726,7 @@ const BatchDetailPage = () => {
                     Deleting...
                   </>
                 ) : (
-                  "Delete"
+                  "Delete Count"
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>
