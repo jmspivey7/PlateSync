@@ -112,16 +112,75 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     try {
-      // Simple query without isActive column
+      // Use a more explicit select to avoid issues with schema changes
       const [user] = await db
-        .select()
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+          password: users.password,
+          isVerified: users.isVerified,
+          passwordResetToken: users.passwordResetToken,
+          passwordResetExpires: users.passwordResetExpires,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          churchName: users.churchName,
+          churchLogoUrl: users.churchLogoUrl,
+          emailNotificationsEnabled: users.emailNotificationsEnabled,
+          churchId: users.churchId
+          // isMasterAdmin column is not included here to avoid errors
+        })
         .from(users)
         .where(eq(users.id, id));
       
       if (user) {
+        // Virtual fields based on runtime conditions
+        
         // Virtual isActive field based on email prefix
-        // Use email prefixing as a temporary soft deletion mechanism
         user.isActive = !user.email?.startsWith('INACTIVE_');
+        
+        // Virtual isMasterAdmin field for now, until we migrate the database
+        // For first implementation, consider the user a Master Admin if:
+        // 1. They are an ADMIN user
+        // 2. Their ID matches the churchId, indicating they're the original admin
+        if (user.role === 'ADMIN') {
+          // Check if this is the first/original admin of the church
+          // If their ID is used as the churchId for other users, they're the Master Admin
+          const [masterAdminCheck] = await db
+            .select({
+              count: sql<number>`count(*)`
+            })
+            .from(users)
+            .where(and(
+              eq(users.churchId, id),
+              ne(users.id, id) // Exclude the user themselves
+            ));
+            
+          user.isMasterAdmin = (masterAdminCheck?.count || 0) > 0;
+          
+          // If we couldn't determine from the above, check if this is the first admin
+          if (!user.isMasterAdmin) {
+            // Get all admins ordered by creation date
+            const adminUsers = await db
+              .select()
+              .from(users)
+              .where(eq(users.role, 'ADMIN'))
+              .orderBy(asc(users.createdAt))
+              .limit(1);
+              
+            // If this is the first admin in the system, they're the Master Admin
+            if (adminUsers.length > 0 && adminUsers[0].id === id) {
+              user.isMasterAdmin = true;
+            }
+          }
+        } else {
+          user.isMasterAdmin = false;
+        }
       }
       
       return user;
@@ -375,6 +434,135 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getUsersByChurchId:", error);
       return [];
+    }
+  }
+  
+  // New Master Admin functions
+  
+  // Get the Master Admin for a church
+  async getMasterAdminForChurch(churchId: string): Promise<User | undefined> {
+    try {
+      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
+      
+      // First check if there's an Admin that matches the churchId - the church creator
+      const originalAdmin = await this.getUser(churchId);
+      if (originalAdmin && originalAdmin.role === 'ADMIN') {
+        console.log(`Using original Admin ${originalAdmin.id} as Master Admin for church ${churchId}`);
+        // Virtually mark this user as the Master Admin
+        return {
+          ...originalAdmin,
+          isMasterAdmin: true
+        };
+      }
+      
+      // If we couldn't find the original admin, find the first admin associated with this church
+      const churchUsers = await this.getUsersByChurchId(churchId);
+      const adminUsers = churchUsers.filter(user => user.role === 'ADMIN');
+      
+      if (adminUsers.length > 0) {
+        console.log(`Using Admin ${adminUsers[0].id} as Master Admin for church ${churchId}`);
+        // Virtually mark this user as the Master Admin
+        return {
+          ...adminUsers[0],
+          isMasterAdmin: true
+        };
+      }
+      
+      // Last resort: just find any admin in the system
+      const [fallbackAdmin] = await db
+        .select()
+        .from(users)
+        .where(eq(users.role, 'ADMIN'))
+        .limit(1);
+        
+      if (fallbackAdmin) {
+        console.log(`Using fallback Admin ${fallbackAdmin.id} as Master Admin (no church match found)`);
+        // Virtually mark this user as the Master Admin
+        return {
+          ...fallbackAdmin,
+          isMasterAdmin: true
+        };
+      }
+      
+      console.log(`Could not find any suitable Master Admin for church ${churchId}`);
+      return undefined;
+    } catch (error) {
+      console.error("Error in getMasterAdminForChurch:", error);
+      return undefined;
+    }
+  }
+  
+  // Set a user as the Master Admin for a church
+  async setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined> {
+    try {
+      // First, verify this user is an ADMIN
+      const user = await this.getUser(userId);
+      if (!user || user.role !== 'ADMIN') {
+        console.error(`Cannot set user ${userId} as Master Admin - user not found or not an ADMIN`);
+        return undefined;
+      }
+      
+      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
+      // For now, we'll set the churchId field to mark a special relationship
+      
+      // Update the user to set the church relationship
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          churchId: churchId,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+        
+      console.log(`Set user ${userId} as Master Admin for church ${churchId}`);
+      
+      // Virtually add the isMasterAdmin flag
+      return {
+        ...updatedUser,
+        isMasterAdmin: true
+      };
+    } catch (error) {
+      console.error("Error in setUserAsMasterAdmin:", error);
+      return undefined;
+    }
+  }
+  
+  // Transfer Master Admin status from one user to another
+  async transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
+    try {
+      // Verify both users exist and are admins
+      const fromUser = await this.getUser(fromUserId);
+      const toUser = await this.getUser(toUserId);
+      
+      if (!fromUser || !toUser) {
+        console.error(`Cannot transfer Master Admin - one or both users not found`);
+        return false;
+      }
+      
+      if (fromUser.role !== 'ADMIN' || toUser.role !== 'ADMIN') {
+        console.error(`Cannot transfer Master Admin - both users must be admins`);
+        return false;
+      }
+      
+      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
+      // For now, we'll set the churchId field on the target user
+      
+      // Update the target user with the church relationship
+      await db
+        .update(users)
+        .set({
+          churchId: churchId,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, toUserId));
+        
+      console.log(`Transferred Master Admin from ${fromUserId} to ${toUserId} for church ${churchId}`);
+      
+      return true;
+    } catch (error) {
+      console.error("Error in transferMasterAdmin:", error);
+      return false;
     }
   }
 
