@@ -112,71 +112,53 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     try {
-      // Use a more explicit select to avoid issues with schema changes
-      const [user] = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          bio: users.bio,
-          profileImageUrl: users.profileImageUrl,
-          role: users.role,
-          password: users.password,
-          isVerified: users.isVerified,
-          passwordResetToken: users.passwordResetToken,
-          passwordResetExpires: users.passwordResetExpires,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          churchName: users.churchName,
-          churchLogoUrl: users.churchLogoUrl,
-          emailNotificationsEnabled: users.emailNotificationsEnabled,
-          churchId: users.churchId
-          // isMasterAdmin column is not included here to avoid errors
-        })
+      // SELECT all columns explicitly to avoid issues with schema changes
+      const [userResult] = await db
+        .select()
         .from(users)
         .where(eq(users.id, id));
       
-      if (user) {
-        // Virtual fields based on runtime conditions
-        
+      if (!userResult) {
+        return undefined;
+      }
+      
+      // Convert to our User type with virtual properties
+      const user: User = {
+        ...userResult,
         // Virtual isActive field based on email prefix
-        user.isActive = !user.email?.startsWith('INACTIVE_');
-        
-        // Virtual isMasterAdmin field for now, until we migrate the database
-        // For first implementation, consider the user a Master Admin if:
-        // 1. They are an ADMIN user
-        // 2. Their ID matches the churchId, indicating they're the original admin
-        if (user.role === 'ADMIN') {
+        isActive: !userResult.email?.startsWith('INACTIVE_'),
+        // Default isMasterAdmin to false - we'll update it below if needed
+        isMasterAdmin: false
+      };
+      
+      // Calculate virtual isMasterAdmin property separately
+      if (user.role === 'ADMIN') {
+        try {
           // Check if this is the first/original admin of the church
           // If their ID is used as the churchId for other users, they're the Master Admin
-          // Using SQL rather than Drizzle's 'ne' operator to avoid missing import issues
-          const [masterAdminCheck] = await db
-            .select({
-              count: sql<number>`count(*)`
-            })
+          const otherUsers = await db
+            .select({ count: sql<number>`count(*)` })
             .from(users)
-            .where(sql`${users.churchId} = ${id} AND ${users.id} <> ${id}`);
+            .where(sql`${users.churchId} = ${id} AND ${users.id} != ${id}`);
             
-          user.isMasterAdmin = (masterAdminCheck?.count || 0) > 0;
-          
-          // If we couldn't determine from the above, check if this is the first admin
-          if (!user.isMasterAdmin) {
-            // Get all admins ordered by creation date
-            const adminUsers = await db
+          if (otherUsers.length > 0 && otherUsers[0].count > 0) {
+            user.isMasterAdmin = true;
+          } else {
+            // If no other users point to this user's ID, check if this is the first admin
+            const firstAdmin = await db
               .select()
               .from(users)
               .where(eq(users.role, 'ADMIN'))
               .orderBy(asc(users.createdAt))
               .limit(1);
               
-            // If this is the first admin in the system, they're the Master Admin
-            if (adminUsers.length > 0 && adminUsers[0].id === id) {
+            if (firstAdmin.length > 0 && firstAdmin[0].id === id) {
               user.isMasterAdmin = true;
             }
           }
-        } else {
+        } catch (innerError) {
+          console.error("Error determining Master Admin status:", innerError);
+          // Default to false for safety
           user.isMasterAdmin = false;
         }
       }
