@@ -76,7 +76,7 @@ const Help = () => {
               </AccordionItem>
               
               <AccordionItem value="item-3.5">
-                <AccordionTrigger>How do I complete the attestation process?</AccordionTrigger>
+                <AccordionTrigger>What is the attestation process?</AccordionTrigger>
                 <AccordionContent>
                   <p className="mb-2">
                     The attestation process requires two people to verify the count's accuracy:
