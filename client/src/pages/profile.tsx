@@ -348,11 +348,10 @@ const Profile = () => {
                 <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <Label htmlFor="currentPassword" className="font-bold">Current Password:</Label>
                       <Input 
                         id="currentPassword" 
                         type="password"
-                        placeholder="Enter your current password" 
                         {...passwordForm.register("currentPassword")}
                       />
                       {passwordForm.formState.errors.currentPassword && (
@@ -363,11 +362,10 @@ const Profile = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password</Label>
+                      <Label htmlFor="newPassword" className="font-bold">New Password:</Label>
                       <Input 
                         id="newPassword" 
                         type="password"
-                        placeholder="Enter your new password" 
                         {...passwordForm.register("newPassword")}
                       />
                       {passwordForm.formState.errors.newPassword && (
@@ -381,11 +379,10 @@ const Profile = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                      <Label htmlFor="confirmPassword" className="font-bold">Confirm New Password:</Label>
                       <Input 
                         id="confirmPassword" 
                         type="password"
-                        placeholder="Confirm your new password" 
                         {...passwordForm.register("confirmPassword")}
                       />
                       {passwordForm.formState.errors.confirmPassword && (
