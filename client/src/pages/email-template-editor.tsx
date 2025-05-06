@@ -41,7 +41,7 @@ const templateTypeInfo: Record<TemplateType, { name: string; description: string
   DONATION_CONFIRMATION: {
     name: 'Donation Receipt',
     description: 'Sent to donors when their donation is recorded.',
-    placeholders: ['{{donorName}}', '{{churchName}}', '{{amount}}', '{{date}}', '{{donationId}}']
+    placeholders: ['{{donorName}}', '{{churchName}}', '{{amount}}', '{{date}}', '{{donationId}}', '{{churchLogoUrl}}']
   },
   COUNT_REPORT: {
     name: 'Count Report',
