@@ -150,12 +150,17 @@ export async function sendEmail(
   }
 }
 
+import { storage } from './storage';
+
 interface DonationNotificationParams {
   to: string;
   amount: string;
   date: string;
   donorName: string;
   churchName: string;
+  churchId: string;
+  churchLogoUrl?: string;
+  donationId?: string;
 }
 
 export async function sendDonationNotification(params: DonationNotificationParams): Promise<boolean> {
@@ -172,11 +177,52 @@ export async function sendDonationNotification(params: DonationNotificationParam
     console.log('⚠️ Using fallback address, which may cause delivery failures in production.');
     console.log('⚠️ The sender email MUST be verified in your SendGrid account.');
   }
+
+  // Generate a random donation ID if one is not provided
+  const donationId = params.donationId || Math.floor(Math.random() * 100000).toString().padStart(6, '0');
   
-  const subject = `Thank You for Your Donation to ${params.churchName}`;
-  
-  // Plain text version of the email
-  const text = `
+  try {
+    // Attempt to retrieve the donation confirmation template from the database
+    const template = await storage.getEmailTemplateByType('DONATION_CONFIRMATION', params.churchId);
+    
+    if (template) {
+      console.log('📧 Using custom donation confirmation template from database');
+      
+      // Replace template variables with actual values
+      let subject = template.subject || `Thank You for Your Donation to ${params.churchName}`;
+      let text = template.bodyText || '';
+      let html = template.bodyHtml || '';
+      
+      // Replace template variables
+      const replacements: Record<string, string> = {
+        '{{donorName}}': params.donorName,
+        '{{amount}}': params.amount,
+        '{{date}}': params.date,
+        '{{churchName}}': params.churchName,
+        '{{donationId}}': donationId,
+      };
+      
+      Object.entries(replacements).forEach(([key, value]) => {
+        subject = subject.replace(new RegExp(key, 'g'), value);
+        text = text.replace(new RegExp(key, 'g'), value);
+        html = html.replace(new RegExp(key, 'g'), value);
+      });
+      
+      return await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+    } else {
+      console.log('⚠️ No custom template found, using default donation confirmation template');
+      
+      // Default subject if no template found
+      const subject = `Thank You for Your Donation to ${params.churchName}`;
+      
+      // Plain text version of the email (fallback)
+      const text = `
 Dear ${params.donorName},
 
 Thank you for your donation of $${params.amount} on ${params.date} to ${params.churchName}.
@@ -184,7 +230,7 @@ Thank you for your donation of $${params.amount} on ${params.date} to ${params.c
 Donation Details:
 - Amount: $${params.amount}
 - Date: ${params.date}
-- Donation ID: #${Math.floor(Math.random() * 100000).toString().padStart(6, '0')}
+- Donation ID: #${donationId}
 
 Your generosity makes a difference! Your contribution helps us:
 - Support outreach programs in our community
@@ -203,19 +249,37 @@ ${params.churchName}
 This is an automated receipt from ${params.churchName} via PlateSync.
 Please do not reply to this email. If you have any questions about your donation,
 please contact the church office directly.
-  `;
-  
-  // HTML version of the email with nicer formatting
-  const html = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Logo and Title -->
-  <div style="background-color: #2D3748; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">${params.churchName}</h1>
+      `;
+      
+      // HTML version with template that properly handles church logo
+      let html = '';
+      
+      if (params.churchLogoUrl) {
+        // Version with church logo
+        html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+  <!-- Header with Church Logo -->
+  <div style="padding: 25px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 250px; max-height: 80px;">
     <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>
   </div>
-  
+        `;
+      } else {
+        // Version with just church name
+        html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+  <!-- Header with Church Name -->
+  <div style="padding: 25px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+    <h1 style="margin: 0; font-size: 28px; color: #2D3748;">${params.churchName}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>
+  </div>
+        `;
+      }
+      
+      // Add the rest of the HTML content
+      html += `
   <!-- Main Content -->
-  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+  <div style="padding: 30px;">
     <p style="margin-top: 0;">Dear <strong>${params.donorName}</strong>,</p>
     
     <p>Thank you for your generous donation to ${params.churchName}. Your support is a blessing to our church community and helps us continue our mission and ministry.</p>
@@ -234,7 +298,7 @@ please contact the church office directly.
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Receipt #:</td>
-          <td style="padding: 8px 0;">${Math.floor(Math.random() * 100000).toString().padStart(6, '0')}</td>
+          <td style="padding: 8px 0;">${donationId}</td>
         </tr>
       </table>
     </div>
@@ -256,20 +320,25 @@ please contact the church office directly.
   </div>
   
   <!-- Footer -->
-  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p style="margin: 0;">This is an automated receipt from ${params.churchName} via PlateSync.</p>
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0;">This is an automated receipt from ${params.churchName}.</p>
     <p style="margin: 8px 0 0;">Please do not reply to this email. If you have any questions about your donation, please contact the church office directly.</p>
   </div>
 </div>
-  `;
-  
-  return await sendEmail({
-    to: params.to,
-    from: fromEmail,
-    subject,
-    text,
-    html
-  });
+      `;
+      
+      return await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+    }
+  } catch (error) {
+    console.error('Error preparing donation notification email:', error);
+    return false;
+  }
 }
 
 interface WelcomeEmailParams {

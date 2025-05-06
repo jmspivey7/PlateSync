@@ -1394,6 +1394,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     new Date(donation.date).toLocaleDateString(),
                   donorName: `${donation.member.firstName} ${donation.member.lastName}`,
                   churchName: churchName,
+                  churchId: churchId,
+                  churchLogoUrl: adminUser?.churchLogoUrl || undefined,
+                  donationId: donation.id.toString()
                 });
                 
                 // Update donation notification status based on result
