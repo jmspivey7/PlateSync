@@ -449,7 +449,7 @@ const UserManagement = () => {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.profileImageUrl || ""} />
+                            <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback className="bg-gray-100 text-gray-800">
                               {user.role === "ADMIN" ? "A" : "U"}
                             </AvatarFallback>
@@ -500,7 +500,7 @@ const UserManagement = () => {
                   <div className="space-y-4 py-2">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={user.profileImageUrl || ""} />
+                        <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                         <AvatarFallback className="bg-gray-100 text-gray-800 text-lg">
                           {user.role === "ADMIN" ? "A" : "U"}
                         </AvatarFallback>
