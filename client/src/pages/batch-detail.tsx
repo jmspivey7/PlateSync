@@ -565,7 +565,7 @@ const BatchDetailPage = () => {
               <Button 
                 onClick={handleShowDeleteConfirm}
                 variant="destructive"
-                className="h-12 px-6"
+                className="h-12 px-6 border-2 border-red-600"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Count
