@@ -107,9 +107,9 @@ const CreateUserForm = ({
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email*</FormLabel>
+              <FormLabel className="font-bold">Email:</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="john@example.com" {...field} />
+                <Input type="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -122,9 +122,9 @@ const CreateUserForm = ({
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name*</FormLabel>
+                <FormLabel className="font-bold">First Name:</FormLabel>
                 <FormControl>
-                  <Input placeholder="John" {...field} />
+                  <Input {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -136,9 +136,9 @@ const CreateUserForm = ({
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name*</FormLabel>
+                <FormLabel className="font-bold">Last Name:</FormLabel>
                 <FormControl>
-                  <Input placeholder="Doe" {...field} />
+                  <Input {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -151,14 +151,14 @@ const CreateUserForm = ({
           name="role"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Role*</FormLabel>
+              <FormLabel className="font-bold">Role:</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
                 defaultValue={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
+                    <SelectValue />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -175,7 +175,11 @@ const CreateUserForm = ({
         />
         
         <DialogFooter>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
