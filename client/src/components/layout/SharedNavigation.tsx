@@ -185,18 +185,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                     <span>Users</span>
                   </Button>
                   
-                  {/* Reports */}
-                  <Button 
-                    variant="ghost" 
-                    className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
-                    onClick={() => {
-                      setLocation("/reports");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <FileBarChart className="mr-4 h-5 w-5" />
-                    <span>Reports</span>
-                  </Button>
+
                   
                   {/* Settings */}
                   <Button 
