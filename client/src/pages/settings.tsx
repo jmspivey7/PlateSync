@@ -106,7 +106,7 @@ type FormValues = z.infer<typeof formSchema>;
 const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isMasterAdmin } = useAuth();
   // Removed showSuccessToast state to eliminate duplicate notifications
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
@@ -506,6 +506,26 @@ const Settings = () => {
     >
       
       <div className="grid grid-cols-1 gap-6">
+        {/* Master Admin Information Card */}
+        {isMasterAdmin && (
+          <Card className="border-[#69ad4c]/40 bg-[#69ad4c]/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <span className="bg-[#69ad4c] text-white p-1 rounded-md text-xs font-bold">M</span>
+                Master Admin Access
+              </CardTitle>
+              <CardDescription>
+                As the Master Admin, you have additional privileges:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Any settings you update will apply to all users in your church</li>
+                  <li>You can manage all users, batches, and settings across your church</li>
+                  <li>You are the primary administrator for your church's account</li>
+                </ul>
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Church Information</CardTitle>
