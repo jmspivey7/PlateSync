@@ -232,8 +232,8 @@ const Members = () => {
       icon={<UserPlus className="h-6 w-6 text-[#69ad4c]" />}
       action={
         <Link href="/settings">
-          <Button className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white">
-            <Settings className="mr-2 h-4 w-4" />
+          <Button variant="outline" className="border-gray-400 text-gray-700">
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Settings
           </Button>
         </Link>
