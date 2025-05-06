@@ -40,7 +40,7 @@ const QuickActions = () => {
             onClick={() => handleNavigate("/settings")}
           >
             <BarChart3 className="h-5 w-5 mr-2" />
-            Generate Reports
+            Manage Settings
           </Button>
         </div>
       </CardContent>

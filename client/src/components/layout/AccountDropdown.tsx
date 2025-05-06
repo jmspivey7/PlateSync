@@ -15,8 +15,7 @@ import {
   HelpCircle, 
   Settings, 
   Users, 
-  LogOut,
-  FileBarChart 
+  LogOut
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -88,10 +87,7 @@ const AccountDropdown = () => {
                 <span>Users</span>
               </DropdownMenuItem>
               
-              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/reports")}>
-                <FileBarChart className="mr-2 h-4 w-4" />
-                <span>Reports</span>
-              </DropdownMenuItem>
+
               
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/settings")}>
                 <Settings className="mr-2 h-4 w-4" />
