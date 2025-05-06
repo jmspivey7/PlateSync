@@ -30,7 +30,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
   return (
     <>
       {/* Header with Church Logo */}
-      <div className="flex justify-between items-center py-5 mb-6">
+      <div className="flex justify-between items-center py-6 mb-6 border-b border-gray-100 pb-6">
         {/* Show church logo if available, otherwise show church name with icon, or default app name */}
         <div 
           className="cursor-pointer flex items-center"
@@ -38,11 +38,11 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
         >
           {user?.churchLogoUrl ? (
             <div className="flex items-center">
-              <div className="h-20 w-auto overflow-hidden">
+              <div className="h-24 w-auto overflow-hidden">
                 <img 
                   src={user.churchLogoUrl} 
                   alt={`${user.churchName || 'Church'} logo`} 
-                  className="h-full w-auto max-h-20 object-contain"
+                  className="h-full w-auto max-h-24 object-contain"
                   onError={(e) => {
                     console.error("Error loading logo:", e);
                     // Fallback to church name if image fails to load
