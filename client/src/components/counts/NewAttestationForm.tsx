@@ -288,9 +288,9 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <Form {...primaryForm}>
                 <form onSubmit={primaryForm.handleSubmit(onPrimarySubmit)} className="space-y-4">
                   {/* Use the current user for primary attestation */}
-                  <div className="p-3 bg-muted rounded-md mb-4">
-                    <p className="text-sm text-muted-foreground mb-1">Primary Attestor</p>
-                    <p className="font-medium">{user?.username || user?.email || "Unknown"}</p>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1 font-bold">Primary Attestor:</p>
+                    <p className="font-medium">{user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.username || user?.email || "Unknown")}</p>
                   </div>
                 
                   <FormField
@@ -298,7 +298,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Your Name / Signature</FormLabel>
+                        <FormLabel className="font-bold">Your Name / Signature:</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -368,7 +368,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="attestorId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Second Attestor</FormLabel>
+                        <FormLabel className="font-bold">Second Attestor:</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -401,7 +401,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Your Name / Signature</FormLabel>
+                        <FormLabel className="font-bold">Your Name / Signature:</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="Type your full name as signature" />
                         </FormControl>
