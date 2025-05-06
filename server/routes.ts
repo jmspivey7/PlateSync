@@ -719,7 +719,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: user.email,
             firstName: user.first_name,
             lastName: user.last_name,
-            role: user.role
+            role: user.role,
+            isMasterAdmin: user.is_master_admin
           }));
         console.log(`Found ${usersList.length} active users via direct SQL`);
       }
@@ -770,7 +771,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             role: user.role,
             profileImageUrl: user.profile_image_url,
             createdAt: user.created_at,
-            updatedAt: user.updated_at
+            updatedAt: user.updated_at,
+            isMasterAdmin: user.is_master_admin
           }));
         console.log(`Found ${usersList.length} active users via test endpoint`);
       }
@@ -783,7 +785,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: "jspivey@spiveyco.com",
             firstName: "John",
             lastName: "Spivey",
-            role: "ADMIN"
+            role: "ADMIN",
+            isMasterAdmin: true
           }
           // Removed hardcoded USHER user since we want to show how deletion works
         ];
