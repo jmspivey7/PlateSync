@@ -26,7 +26,7 @@ import {
   type InsertEmailTemplate
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, sum, count, asc } from "drizzle-orm";
+import { eq, desc, and, gte, sql, sum, count, asc, ne } from "drizzle-orm";
 import { format } from "date-fns";
 
 // Interface for storage operations

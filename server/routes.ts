@@ -701,6 +701,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Master Admin routes
+  app.get('/api/master-admin', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const churchId = await storage.getChurchIdForUser(userId);
+      const masterAdmin = await storage.getMasterAdminForChurch(churchId);
+      
+      res.json({
+        masterAdminId: masterAdmin?.id,
+        isMasterAdmin: masterAdmin?.id === userId,
+        masterAdminName: masterAdmin ? `${masterAdmin.firstName || ''} ${masterAdmin.lastName || ''}`.trim() || masterAdmin.username : null
+      });
+    } catch (error) {
+      console.error("Error getting master admin status:", error);
+      res.status(500).json({ message: "Error getting master admin status" });
+    }
+  });
+  
+  app.post('/api/master-admin/transfer', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { targetUserId } = req.body;
+      if (!targetUserId) {
+        return res.status(400).json({ message: "Target user ID is required" });
+      }
+      
+      // Verify current user is the master admin
+      const churchId = await storage.getChurchIdForUser(userId);
+      const masterAdmin = await storage.getMasterAdminForChurch(churchId);
+      
+      if (!masterAdmin || masterAdmin.id !== userId) {
+        return res.status(403).json({ message: "Forbidden - Only the Master Admin can transfer this role" });
+      }
+      
+      // Transfer master admin status
+      const success = await storage.transferMasterAdmin(userId, targetUserId, churchId);
+      
+      if (success) {
+        res.json({ message: "Master Admin role transferred successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to transfer Master Admin role" });
+      }
+    } catch (error) {
+      console.error("Error transferring master admin:", error);
+      res.status(500).json({ message: "Error transferring master admin" });
+    }
+  });
+  
   // Create user (admin only)
   app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
