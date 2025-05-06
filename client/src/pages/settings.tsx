@@ -734,8 +734,8 @@ const Settings = () => {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="mb-2">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex justify-between items-start gap-8">
+                    <div className="max-w-[80%]">
                       <div className="text-sm text-gray-600">
                         Email notifications can be sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries. Click here to test the <button 
                           onClick={testSendGridConfiguration} 
@@ -746,7 +746,7 @@ const Settings = () => {
                         </button> configuration.
                       </div>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center pl-4">
                       <Switch
                         checked={form.watch("emailNotificationsEnabled")}
                         onCheckedChange={(checked) => {
@@ -816,8 +816,8 @@ const Settings = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="mb-2">
-                      <div className="text-sm text-gray-600">
+                    <div className="mb-4">
+                      <div className="text-sm text-gray-600 max-w-[90%]">
                         Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
                           onClick={() => {
                             fetch('/api/test-count-report')
@@ -933,7 +933,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent className="pt-2">
             <div className="space-y-3">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 max-w-[90%] mb-4">
                 <p>Service options are used when creating a new count. They represent different service types such as Sunday morning, Sunday evening, Wednesday night, etc.</p>
               </div>
               
@@ -1110,8 +1110,8 @@ const Settings = () => {
             <CardTitle>Import Members</CardTitle>
           </CardHeader>
           <CardContent className="pt-1 pb-4">
-            <div className="mb-2">
-              <p className="text-sm text-gray-600">
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 max-w-[90%]">
                 Upload a CSV file to import members in bulk to the database. Subsequent imports will overwrite the member list. To see a list of the most recent member import <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
               </p>
             </div>
