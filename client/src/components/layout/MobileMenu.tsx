@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface MobileMenuProps {
 
 const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const [location] = useLocation();
+  const { isAdmin, isMasterAdmin } = useAuth();
   
   const handleLinkClick = () => {
     onClose();
@@ -31,6 +33,15 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
       </div>
       
       <div className="container mx-auto px-4 py-2">
+        {isMasterAdmin && (
+          <div className="mb-4 px-2 py-2 bg-[#69ad4c]/20 rounded-md">
+            <div className="flex items-center">
+              <span className="bg-[#69ad4c] text-white p-1 rounded-md text-xs font-bold mr-2">M</span>
+              <span className="text-[#69ad4c] font-medium">Master Admin</span>
+            </div>
+          </div>
+        )}
+        
         <nav className="flex flex-col space-y-3 pb-3">
           <Link href="/">
             <a 
@@ -64,12 +75,27 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               Counts
             </a>
           </Link>
+          {isAdmin && (
+            <Link href="/user-management">
+              <a 
+                className={`font-inter font-medium text-white hover:text-[#48BB78] transition py-4 text-lg ${location === '/user-management' ? 'text-[#48BB78]' : ''}`}
+                onClick={handleLinkClick}
+              >
+                User Management
+              </a>
+            </Link>
+          )}
           <Link href="/settings">
             <a 
               className={`font-inter font-medium text-white hover:text-[#48BB78] transition py-4 text-lg ${location === '/settings' ? 'text-[#48BB78]' : ''}`}
               onClick={handleLinkClick}
             >
               Settings
+              {isMasterAdmin && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#69ad4c] text-white">
+                  M
+                </span>
+              )}
             </a>
           </Link>
           <a 
