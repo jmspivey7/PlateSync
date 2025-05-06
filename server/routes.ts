@@ -349,42 +349,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current logged in user
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // For testing purposes - if we're in development, return a hardcoded admin
-      if (process.env.NODE_ENV === 'development') {
+      // Get userId from session, replit auth, or just return a test user in development
+      const userId = req.session?.userId || req.user?.claims?.sub;
+      
+      // User is authenticated but we need to get the full profile
+      const userResult = await db.execute(
+        sql`SELECT 
+            u.*,
+            c.name as church_name,
+            c.logo as church_logo
+          FROM users u
+          LEFT JOIN churches c ON u.church_id = c.id
+          WHERE u.id = ${userId}`
+      );
+      
+      // If we didn't find the user but are in development, try to get any admin
+      if (userResult.rows.length === 0 && process.env.NODE_ENV === 'development') {
         const adminResult = await db.execute(
-          sql`SELECT * FROM users WHERE role = 'ADMIN' LIMIT 1`
+          sql`SELECT 
+              u.*,
+              c.name as church_name,
+              c.logo as church_logo
+            FROM users u
+            LEFT JOIN churches c ON u.church_id = c.id
+            WHERE u.role = 'ADMIN'
+            LIMIT 1`
         );
         
         if (adminResult.rows && adminResult.rows.length > 0) {
-          const admin = adminResult.rows[0];
+          const user = adminResult.rows[0];
           return res.json({
-            id: admin.id,
-            email: admin.email,
-            firstName: admin.first_name,
-            lastName: admin.last_name,
-            role: admin.role || "ADMIN",
-            churchId: admin.church_id,
-            churchName: admin.church_name,
-            churchLogoUrl: admin.church_logo,
-            emailNotificationsEnabled: admin.email_notifications_enabled || false,
-            donorEmailsEnabled: admin.donor_emails_enabled || false
+            id: user.id,
+            username: user.username || user.email,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            bio: user.bio,
+            profileImageUrl: user.profile_image_url,
+            role: user.role || "ADMIN",
+            churchId: user.church_id,
+            churchName: user.church_name,
+            churchLogoUrl: user.church_logo,
+            emailNotificationsEnabled: user.email_notifications_enabled || false,
+            donorEmailsEnabled: user.donor_emails_enabled || false,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at
           });
         }
       }
       
-      // If not in development or no admin found, check for actual user authentication
-      const userId = req.session?.userId || req.user?.claims?.sub;
-      
-      if (!userId) {
-        return res.status(401).json({
-          message: "Unauthorized"
-        });
-      }
-      
-      const userResult = await db.execute(
-        sql`SELECT * FROM users WHERE id = ${userId}`
-      );
-      
+      // Handle case where no user is found
       if (userResult.rows.length === 0) {
         return res.status(401).json({
           message: "User not found"
@@ -396,15 +410,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return user data (excluding sensitive fields)
       res.json({
         id: user.id,
+        username: user.username || user.email,
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
+        bio: user.bio,
+        profileImageUrl: user.profile_image_url,
         role: user.role || "USHER",
         churchId: user.church_id,
         churchName: user.church_name,
         churchLogoUrl: user.church_logo,
         emailNotificationsEnabled: user.email_notifications_enabled || false,
-        donorEmailsEnabled: user.donor_emails_enabled || false
+        donorEmailsEnabled: user.donor_emails_enabled || false,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
       });
       
     } catch (error) {
@@ -574,7 +593,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get current user
-      const currentUserId = req.user.claims.sub;
+      const currentUserId = req.session?.userId || req.user?.claims?.sub;
+      if (!currentUserId) {
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated"
+        });
+      }
+      
       const currentUserResult = await db.execute(
         sql`SELECT * FROM users WHERE id = ${currentUserId}`
       );
