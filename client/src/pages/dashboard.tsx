@@ -187,7 +187,7 @@ const Dashboard = () => {
         {/* Start New Count Card Button */}
         <div className="md:w-1/3">
           <Button 
-            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex flex-col items-center justify-center text-3xl font-bold p-6"
+            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-col items-center justify-center text-3xl font-bold p-6 transition-all duration-200 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/40"
             onClick={handleNewCount}
           >
             <span>Start</span>
