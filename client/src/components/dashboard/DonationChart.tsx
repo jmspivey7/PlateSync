@@ -221,11 +221,11 @@ export function DonationChart() {
       .reduce((sum: number, d: Donation) => sum + parseFloat(d.amount.toString()), 0);
 
     return {
-      date: format(new Date(batch.date), 'MMM d'),
+      date: batch.date ? format(new Date(batch.date), 'MMM d') : 'No date',
       cash: cashTotal,
       check: checkTotal,
       // Store the full date for tooltip
-      fullDate: format(new Date(batch.date), 'MMMM d, yyyy')
+      fullDate: batch.date ? format(new Date(batch.date), 'MMMM d, yyyy') : 'No date available'
     };
   });
 

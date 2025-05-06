@@ -109,7 +109,7 @@ export function useAuth() {
   let effectiveUser = user;
   if (process.env.NODE_ENV === 'development' && !user) {
     console.warn("Using fallback user data in development mode");
-    effectiveUser = fallbackUser as User;
+    effectiveUser = fallbackUser as unknown as User;
   }
 
   return {
