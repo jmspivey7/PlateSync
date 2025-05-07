@@ -671,7 +671,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
   };
   
   return (
-    <Card className={`${isInsideDialog ? 'mb-0' : 'mb-8'}`}>
+    <Card className={`${isInsideDialog ? 'mb-0 border-0 shadow-none' : 'mb-8'}`}>
       {!isInsideDialog && (
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
           <CardTitle className="text-xl font-bold text-[#2D3748]">
@@ -680,7 +680,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         </CardHeader>
       )}
       
-      <CardContent>
+      <CardContent className={`${isInsideDialog ? 'p-4 sm:p-6' : ''}`}>
         {(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch || isLoadingSpecificBatch) && (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
@@ -691,7 +691,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           <Form {...form}>
             <form 
               onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-6"
+              className="space-y-4 sm:space-y-6"
             >
               {/* Donor Selection */}
               <div className="space-y-4">
@@ -949,10 +949,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   </div>
                 )}
                 
-                <div className="flex justify-end space-x-2">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:space-x-2">
                   <Button 
                     type="button" 
-                    variant="outline" 
+                    variant="outline"
+                    className="mb-2 sm:mb-0 h-12"
                     onClick={() => {
                       // If inside dialog, use onClose to close the dialog
                       if (isInsideDialog && onClose) {
@@ -970,7 +971,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   </Button>
                   <Button 
                     type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white h-12"
                     disabled={createDonationMutation.isPending}
                     onClick={() => {
                       // Log form state before submission
