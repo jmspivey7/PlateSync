@@ -496,10 +496,10 @@ const BatchDetailPage = () => {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
                       <DropdownMenuItem 
                         onClick={handleShowDeleteConfirm}
-                        className="text-red-600 cursor-pointer"
+                        className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Count
@@ -652,11 +652,11 @@ const BatchDetailPage = () => {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
                     {batch.status === "OPEN" && (
                       <DropdownMenuItem 
                         onClick={handleShowDeleteConfirm}
-                        className="text-red-600 cursor-pointer"
+                        className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Count
