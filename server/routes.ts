@@ -3091,6 +3091,91 @@ PlateSync Reporting System`;
     }
   });
 
+  // Delete a donation
+  app.delete('/api/donations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const donationId = parseInt(req.params.id);
+      
+      if (isNaN(donationId)) {
+        return res.status(400).json({ message: "Invalid donation ID" });
+      }
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      // First, get the donation to check if it belongs to a finalized batch
+      const donation = await storage.getDonation(donationId, churchId);
+      if (!donation) {
+        return res.status(404).json({ message: "Donation not found" });
+      }
+      
+      if (donation.batchId) {
+        const batch = await storage.getBatch(donation.batchId, churchId);
+        
+        // Cannot delete donation from a finalized batch (except for ADMIN users)
+        if (batch && batch.status === 'FINALIZED') {
+          // Get the user with their role from the database
+          const user = await storage.getUser(userId);
+          
+          // Only ADMIN users can delete donations from FINALIZED batches
+          if (!user || user.role !== 'ADMIN') {
+            return res.status(403).json({ 
+              message: "Forbidden: Only administrators can delete donations from finalized counts" 
+            });
+          }
+        }
+        
+        // All checks passed, now delete the donation
+        const deletedDonation = await storage.deleteDonation(donationId, churchId);
+        
+        // Update the batch total after deleting the donation
+        if (batch && deletedDonation) {
+          // Get all remaining donations in this batch
+          const donations = await storage.getDonationsByBatch(batch.id, churchId);
+          
+          // Calculate new totals
+          let totalAmount = 0;
+          let cashAmount = 0;
+          let checkAmount = 0;
+          
+          donations.forEach(don => {
+            const amount = parseFloat(don.amount);
+            totalAmount += amount;
+            
+            if (don.donationType === 'CASH') {
+              cashAmount += amount;
+            } else if (don.donationType === 'CHECK') {
+              checkAmount += amount;
+            }
+          });
+          
+          // Update the batch with new totals
+          await storage.updateBatch(batch.id, {
+            totalAmount: totalAmount.toString(),
+            cashAmount: cashAmount.toString(),
+            checkAmount: checkAmount.toString()
+          }, churchId);
+        }
+        
+        res.json({ 
+          message: "Donation deleted successfully",
+          donation: deletedDonation
+        });
+      } else {
+        // Donation doesn't belong to a batch, just delete it
+        const deletedDonation = await storage.deleteDonation(donationId, churchId);
+        res.json({ 
+          message: "Donation deleted successfully",
+          donation: deletedDonation
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting donation:", error);
+      res.status(500).json({ message: "Failed to delete donation" });
+    }
+  });
+
   // Add test endpoints
   setupTestEndpoints(app);
 
