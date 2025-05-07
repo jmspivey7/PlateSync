@@ -1311,52 +1311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(batches);
       } catch (batchError) {
         console.error("Error fetching batches from storage:", batchError);
-        
-        // Return a minimal set of test data to keep the UI functional
-        const todayStr = new Date().toISOString().split('T')[0];
-        const weekAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        
-        // Provide test data that won't interfere with real data
-        const testBatches = [
-          {
-            id: 9991,
-            date: new Date(todayStr),
-            serviceType: "Morning Service",
-            status: "OPEN",
-            totalAmount: "1250.00",
-            cashAmount: "450.00",
-            checkAmount: "800.00",
-            notes: null,
-            churchId: churchId,
-            primaryAttestorId: userId,
-            primaryAttestorName: "System User",
-            secondaryAttestorId: null,
-            secondaryAttestorName: null,
-            attestationConfirmedBy: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 9992,
-            date: new Date(weekAgoStr),
-            serviceType: "Evening Service",
-            status: "FINALIZED",
-            totalAmount: "950.00",
-            cashAmount: "350.00",
-            checkAmount: "600.00",
-            notes: null,
-            churchId: churchId,
-            primaryAttestorId: userId,
-            primaryAttestorName: "System User",
-            secondaryAttestorId: userId,
-            secondaryAttestorName: "Secondary User",
-            attestationConfirmedBy: userId,
-            createdAt: new Date(weekAgoStr),
-            updatedAt: new Date(weekAgoStr)
-          }
-        ];
-        
-        res.json(testBatches);
+        res.status(500).json({ message: "Failed to fetch batches" });
       }
     } catch (error) {
       console.error("Error in /api/batches:", error);
@@ -1396,31 +1351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(finalizedBatch);
       } catch (batchError) {
         console.error("Error fetching latest finalized batch from storage:", batchError);
-        
-        // Return test data to keep the UI functional
-        const weekAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        
-        // Provide test data that won't interfere with real data
-        const testBatch = {
-          id: 9992,
-          date: new Date(weekAgoStr),
-          serviceType: "Evening Service",
-          status: "FINALIZED",
-          totalAmount: "950.00",
-          cashAmount: "350.00",
-          checkAmount: "600.00",
-          notes: null,
-          churchId: churchId,
-          primaryAttestorId: userId,
-          primaryAttestorName: "System User",
-          secondaryAttestorId: userId,
-          secondaryAttestorName: "Secondary User",
-          attestationConfirmedBy: userId,
-          createdAt: new Date(weekAgoStr),
-          updatedAt: new Date(weekAgoStr)
-        };
-        
-        res.json(testBatch);
+        res.status(404).json({ message: "No finalized batches found" });
       }
     } catch (error) {
       console.error("Error in /api/batches/latest-finalized:", error);
