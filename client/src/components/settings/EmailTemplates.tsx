@@ -157,10 +157,8 @@ export default function EmailTemplates() {
           <Table className="border border-gray-400 rounded-md overflow-hidden">
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="font-bold">Template Name</TableHead>
-                <TableHead className="font-bold">Last Edited</TableHead>
-                <TableHead className="font-bold">Customized By</TableHead>
-                <TableHead className="font-bold text-right">Action</TableHead>
+                <TableHead className="font-bold w-4/5">Template Information</TableHead>
+                <TableHead className="font-bold text-right w-1/5">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,11 +177,30 @@ export default function EmailTemplates() {
                 })
                 .map((template) => (
                 <TableRow key={template.id}>
-                  <TableCell className="font-medium">
-                    {templateTypeInfo[template.templateType]?.name || template.templateType}
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="font-medium text-base">
+                        {templateTypeInfo[template.templateType]?.name || template.templateType}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {templateTypeInfo[template.templateType]?.description}
+                      </div>
+                      
+                      <div className="text-xs text-gray-500 mt-1 flex flex-col sm:flex-row sm:gap-4">
+                        <span className="flex items-center">
+                          <span className="font-medium mr-1">Last Edited:</span> 
+                          {formatLastEdited(template)}
+                        </span>
+                        
+                        {isTemplateCustomized(template) && (
+                          <span className="flex items-center">
+                            <span className="font-medium mr-1">Customized By:</span> 
+                            System Administrator
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>{formatLastEdited(template)}</TableCell>
-                  <TableCell>{isTemplateCustomized(template) ? "System Administrator" : "N/A"}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       size="sm"
