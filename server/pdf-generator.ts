@@ -108,8 +108,9 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 20;
   
-  // Draw horizontal line
-  doc.moveTo(tableX, tableY).lineTo(tableX + tableWidth, tableY).stroke();
+  // Draw horizontal line - extend to cover full width including amount column
+  const fullTableWidth = tableWidth + 50; // Add extra width to cover the amount column completely
+  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
   tableY += 5;
   
   // Total row
@@ -144,8 +145,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     checkTotal += parseFloat(donation.amount);
   });
   
-  // Draw horizontal line
-  doc.moveTo(tableX, tableY).lineTo(tableX + tableWidth, tableY).stroke();
+  // Draw horizontal line - extend to cover full width including amount column
+  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
   tableY += 5;
   
   // Check subtotal
@@ -176,8 +177,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     cashTotal += parseFloat(donation.amount);
   });
   
-  // Draw horizontal line
-  doc.moveTo(tableX, tableY).lineTo(tableX + tableWidth, tableY).stroke();
+  // Draw horizontal line - extend to cover full width including amount column
+  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
   tableY += 5;
   
   // Cash subtotal
@@ -186,9 +187,9 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 50;
   
-  // Draw double horizontal line for grand total
-  doc.moveTo(tableX, tableY - 20).lineTo(tableX + tableWidth, tableY - 20).stroke();
-  doc.moveTo(tableX, tableY - 17).lineTo(tableX + tableWidth, tableY - 17).stroke();
+  // Draw double horizontal line for grand total - extend to cover full width including amount column
+  doc.moveTo(tableX, tableY - 20).lineTo(tableX + fullTableWidth, tableY - 20).stroke();
+  doc.moveTo(tableX, tableY - 17).lineTo(tableX + fullTableWidth, tableY - 17).stroke();
   
   // Grand total
   doc.fontSize(14);
