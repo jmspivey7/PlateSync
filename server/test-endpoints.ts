@@ -177,7 +177,8 @@ export function setupTestEndpoints(app: Express) {
         totalAmount: '1000.00',
         cashAmount: '600.00',
         checkAmount: '400.00',
-        donationCount: 5
+        donationCount: 5,
+        churchLogoUrl: user?.churchLogoUrl
       });
       
       if (emailResult) {
