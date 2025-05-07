@@ -422,9 +422,9 @@ const BatchDetailPage = () => {
         subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
       >
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             {/* Header with buttons in a row */}
-            <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
               {/* Left side - Back button - Stack vertically on mobile */}
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 {isFinalized && (
@@ -536,31 +536,31 @@ const BatchDetailPage = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             {isFinalized && (
-              <Alert className="mb-6 bg-muted">
+              <Alert className="mb-3 py-2 bg-muted">
                 <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Count Finalized</AlertTitle>
+                <AlertTitle className="text-base">Count Finalized</AlertTitle>
                 <AlertDescription>
                   This count has been finalized and can no longer be edited. You can print a copy for your records.
                 </AlertDescription>
               </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-muted p-4 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div className="bg-muted p-3 rounded-lg">
                 <div className="text-sm text-muted-foreground">Cash Total</div>
                 <div className="text-xl font-bold text-secondary-foreground">
                   {formatCurrency(cashTotal)}
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-lg">
+              <div className="bg-muted p-3 rounded-lg">
                 <div className="text-sm text-muted-foreground">Check Total</div>
                 <div className="text-xl font-bold text-secondary-foreground">
                   {formatCurrency(checkTotal)}
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-lg">
+              <div className="bg-muted p-3 rounded-lg">
                 <div className="text-sm text-muted-foreground">Total Amount</div>
                 <div className="text-xl font-bold text-secondary-foreground">
                   {formatCurrency(batch.totalAmount || 0)}
@@ -569,11 +569,11 @@ const BatchDetailPage = () => {
             </div>
 
             <div>
-              <h3 className="font-medium mb-3">Donations in this Count</h3>
+              <h3 className="font-medium mb-2">Donations in this Count</h3>
               {batch.donations && batch.donations.length > 0 ? (
-                <div className="border rounded-lg divide-y max-h-[450px] overflow-y-auto">
+                <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
                   {batch.donations.map((donation) => (
-                    <div key={donation.id} className="p-3 flex justify-between hover:bg-muted">
+                    <div key={donation.id} className="p-2.5 flex justify-between hover:bg-muted">
                       <div>
                         <div className="font-medium">
                           {donation.memberId && (donation as DonationWithMember).member ? 
@@ -592,7 +592,7 @@ const BatchDetailPage = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 border rounded-lg text-muted-foreground">
+                <div className="text-center py-4 border rounded-lg text-muted-foreground">
                   <p>No donations in this count yet</p>
                 </div>
               )}
