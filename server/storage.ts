@@ -1230,6 +1230,31 @@ export class DatabaseStorage implements IStorage {
     return updatedDonation;
   }
 
+  async deleteDonation(id: number, churchId: string): Promise<Donation | undefined> {
+    // First get the donation to return it after deletion
+    const [donation] = await db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.id, id),
+        eq(donations.churchId, churchId)
+      ));
+    
+    if (!donation) {
+      return undefined;
+    }
+    
+    // Then delete the donation
+    await db
+      .delete(donations)
+      .where(and(
+        eq(donations.id, id),
+        eq(donations.churchId, churchId)
+      ));
+    
+    return donation;
+  }
+
   async updateDonationNotificationStatus(id: number, status: string): Promise<void> {
     await db
       .update(donations)

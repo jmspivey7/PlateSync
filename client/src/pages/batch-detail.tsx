@@ -231,6 +231,42 @@ const BatchDetailPage = () => {
       setEditingDonationId(donationId);
     }
   };
+  
+  // Mutation for deleting a donation
+  const deleteDonationMutation = useMutation({
+    mutationFn: async (donationId: number) => {
+      const response = await apiRequest(`/api/donations/${donationId}`, "DELETE");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete donation");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      
+      toast({
+        title: "Success",
+        description: "Donation has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete donation: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const [isDeletingDonation, setIsDeletingDonation] = useState<number | null>(null);
+  
+  const handleDeleteDonation = (donationId: number) => {
+    // Set the donation ID that's being deleted to show confirmation
+    setIsDeletingDonation(donationId);
+  };
 
   const handleShowSummary = () => {
     setShowSummary(true);
@@ -640,7 +676,12 @@ const BatchDetailPage = () => {
                   <div 
                     key={donation.id} 
                     className={`p-3 flex justify-between group ${!isFinalized ? "hover:bg-green-100 cursor-pointer transition-colors duration-200" : ""}`}
-                    onClick={() => !isFinalized && handleEditDonation(donation.id)}
+                    onClick={(e) => {
+                      // Only trigger edit if we didn't click the delete button
+                      if (!isFinalized && !e.defaultPrevented) {
+                        handleEditDonation(donation.id);
+                      }
+                    }}
                     role={!isFinalized ? "button" : undefined}
                     tabIndex={!isFinalized ? 0 : undefined}
                     title={!isFinalized ? "Click to edit donation" : undefined}
@@ -658,9 +699,22 @@ const BatchDetailPage = () => {
                     </div>
                     <div className="font-medium text-secondary-foreground flex items-center">
                       {formatCurrency(donation.amount)}
-                      {!isFinalized && (
-                        <Edit className="ml-2 h-4 w-4 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                      )}
+                      <div className="ml-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {!isFinalized && (
+                          <>
+                            <Edit className="h-4 w-4 text-green-600 mr-2" />
+                            <Trash2 
+                              className="h-4 w-4 text-red-600 hover:text-red-700 cursor-pointer" 
+                              onClick={(e) => {
+                                e.preventDefault(); // Prevent edit from triggering
+                                e.stopPropagation(); // Prevent event bubbling
+                                handleDeleteDonation(donation.id);
+                              }}
+                              aria-label="Delete donation"
+                            />
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -738,7 +792,7 @@ const BatchDetailPage = () => {
           </div>
         </div>
         
-        {/* Delete Confirmation Dialog - Inline Version */}
+        {/* Batch Delete Confirmation Dialog */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -769,6 +823,48 @@ const BatchDetailPage = () => {
                     </>
                   ) : (
                     "Delete Count"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Donation Delete Confirmation Dialog */}
+        {isDeletingDonation && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-medium mb-4">Delete Donation</h3>
+              <div className="mb-6">
+                <p className="mb-2">Are you sure you want to delete this donation?</p>
+                <p className="text-muted-foreground text-sm">
+                  This action cannot be undone. The donation amount will be removed from the count total.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeletingDonation(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (isDeletingDonation) {
+                      deleteDonationMutation.mutate(isDeletingDonation);
+                      setIsDeletingDonation(null);
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  disabled={deleteDonationMutation.isPending}
+                >
+                  {deleteDonationMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Donation"
                   )}
                 </Button>
               </div>
