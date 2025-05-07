@@ -52,8 +52,8 @@ const AttestBatchPage = () => {
       description: "Count attestation completed successfully",
     });
     
-    // Navigate to the print report page for this batch
-    setLocation(`/print-report?batchId=${batchId}`);
+    // Open the PDF report in a new window
+    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
   };
 
   if (isLoading) {
