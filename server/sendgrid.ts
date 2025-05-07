@@ -500,7 +500,7 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
   
   try {
     // Generate PDF attachment if donations are provided
-    let pdfAttachment: any = null;
+    let pdfAttachment: { content: string; filename: string; type: string; disposition: string; } | null = null;
     
     if (params.donations && params.donations.length > 0) {
       console.log('Generating PDF attachment for count report...');
@@ -543,31 +543,51 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
         // IMPORTANT: We must ensure we ONLY pass EITHER the logo OR the church name, never both
         // This is a critical fix to prevent both from appearing in the PDF
         
-        // PDF parameters with common values
-        const pdfParams: CountReportPDFParams = {
+        // Create PDF parameters object with correct type from server/pdf-generator.ts
+        // Start without logo path, we'll add it conditionally
+        const pdfParams: {
+          churchName: string;
+          churchLogoPath?: string;
+          date: Date;
+          totalAmount: string;
+          cashAmount: string;
+          checkAmount: string;
+          donations: Array<{
+            memberId: number | null;
+            memberName: string;
+            donationType: string;
+            amount: string;
+            checkNumber?: string;
+          }>;
+        } = {
           churchName: '',  // Default empty string
           date: reportDate,
           totalAmount: params.totalAmount,
           cashAmount: params.cashAmount, 
           checkAmount: params.checkAmount,
-          donations: params.donations
+          donations: params.donations || []
         };
         
-        // Now set EITHER the logo OR the name, but never both
+        // EXCLUSIVE LOGIC: Set EITHER the logo OR the name, never both
+        // Create a new object with the correct properties to avoid TypeScript issues
         if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-          // If we have a valid logo, use it (and leave churchName as empty string)
-          pdfParams.churchLogoPath = churchLogoPath;
-          // Explicitly set churchName to empty
-          pdfParams.churchName = '';
+          console.log('PDF HEADER: Using only logo, no church name');
+          // Create a new object with only the logo path
+          Object.assign(pdfParams, {
+            churchLogoPath: churchLogoPath,
+            churchName: ''  // Explicitly empty string
+          });
         } else {
-          // No logo or invalid logo path - use church name instead
-          pdfParams.churchName = params.churchName;
-          // Explicitly ensure no logo is passed
-          pdfParams.churchLogoPath = undefined;
+          console.log('PDF HEADER: Using only church name, no logo');
+          // Create a new object with only the church name
+          Object.assign(pdfParams, {
+            churchName: params.churchName
+            // churchLogoPath is not included here
+          });
         }
         
         console.log('PDF PARAMS CHECK:');
-        console.log(`- Using church name: ${pdfParams.churchName ? 'YES' : 'NO'}`);
+        console.log(`- Using church name: '${pdfParams.churchName}' (${pdfParams.churchName ? 'YES' : 'NO'})`);
         console.log(`- Using logo: ${pdfParams.churchLogoPath ? 'YES' : 'NO'}`);
         
         // Generate the PDF with our carefully constructed parameters
