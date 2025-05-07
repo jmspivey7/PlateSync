@@ -669,20 +669,20 @@ const BatchDetailPage = () => {
           </div>
           
           {/* Amount summary section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div className="mb-2">
               <div className="text-sm text-muted-foreground">Total Amount</div>
               <div className="text-2xl font-bold text-secondary-foreground">
                 {formatCurrency(batch.totalAmount || 0)}
               </div>
             </div>
-            <div>
+            <div className="mb-2">
               <div className="text-sm text-muted-foreground">Cash Total</div>
               <div className="text-2xl font-bold text-secondary-foreground">
                 {formatCurrency(cashTotal)}
               </div>
             </div>
-            <div>
+            <div className="mb-2">
               <div className="text-sm text-muted-foreground">Check Total</div>
               <div className="text-2xl font-bold text-secondary-foreground">
                 {formatCurrency(checkTotal)}
@@ -691,7 +691,7 @@ const BatchDetailPage = () => {
           </div>
 
           {/* Action buttons */}
-          <div className="flex justify-between mb-8">
+          <div className="flex justify-between mb-4">
             <Button 
               onClick={handleAddDonation}
               className="bg-green-600 hover:bg-green-700 text-white h-12 px-4 sm:px-6 w-full sm:w-auto"
@@ -703,13 +703,13 @@ const BatchDetailPage = () => {
 
           {/* Donations section */}
           <div>
-            <h3 className="font-medium mb-3">Donations in this Count</h3>
+            <h3 className="font-medium mb-2">Donations in this Count</h3>
             {batch.donations && batch.donations.length > 0 ? (
-              <div className="border rounded-lg divide-y max-h-[350px] overflow-y-auto">
+              <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
                 {batch.donations.map((donation) => (
                   <div 
                     key={donation.id} 
-                    className={`p-3 flex justify-between group ${!isFinalized ? "hover:bg-green-100 cursor-pointer transition-colors duration-200" : ""}`}
+                    className={`p-2.5 flex justify-between group ${!isFinalized ? "hover:bg-green-100 cursor-pointer transition-colors duration-200" : ""}`}
                     onClick={(e) => {
                       // Only trigger edit if we didn't click the delete button
                       if (!isFinalized && !e.defaultPrevented) {
@@ -731,7 +731,7 @@ const BatchDetailPage = () => {
                         {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                       </div>
                     </div>
-                    <div className="font-medium text-secondary-foreground flex items-center">
+                    <div className="font-medium text-secondary-foreground flex items-center text-xl">
                       {formatCurrency(donation.amount)}
                       <div className="ml-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         {!isFinalized && (
