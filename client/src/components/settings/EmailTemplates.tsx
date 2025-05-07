@@ -151,17 +151,14 @@ export default function EmailTemplates() {
       ) : (
         <div className="space-y-2">
           <p className="text-sm text-gray-600 mb-2">
-            Customize the email templates used throughout the system. Click the Edit button to view and modify a template.
+            Customize the email templates used throughout the system. Click on any template to view and modify it.
           </p>
           
-          <Table className="border border-gray-400 rounded-md overflow-hidden">
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="font-bold w-4/5">Template Information</TableHead>
-                <TableHead className="font-bold text-right w-1/5">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <div className="border border-gray-400 rounded-md overflow-hidden">
+            <div className="bg-gray-50 p-3 font-bold">
+              Template Information
+            </div>
+            <div className="divide-y">
               {[...templates]
                 .sort((a, b) => {
                   // Define the order of template types
@@ -176,45 +173,41 @@ export default function EmailTemplates() {
                   return templateOrder[a.templateType as TemplateType] - templateOrder[b.templateType as TemplateType];
                 })
                 .map((template) => (
-                <TableRow key={template.id}>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="font-medium text-base">
-                        {templateTypeInfo[template.templateType]?.name || template.templateType}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {templateTypeInfo[template.templateType]?.description}
-                      </div>
-                      
-                      <div className="text-xs text-gray-500 mt-1 flex flex-col sm:flex-row sm:gap-4">
-                        <span className="flex items-center">
-                          <span className="font-medium mr-1">Last Edited:</span> 
-                          {formatLastEdited(template)}
-                        </span>
-                        
-                        {isTemplateCustomized(template) && (
-                          <span className="flex items-center">
-                            <span className="font-medium mr-1">Customized By:</span> 
-                            System Administrator
-                          </span>
-                        )}
-                      </div>
+                <div 
+                  key={template.id}
+                  onClick={() => handleEditTemplate(template)}
+                  className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150 group"
+                >
+                  <div className="space-y-1">
+                    <div className="font-medium text-base flex items-center justify-between">
+                      <span>{templateTypeInfo[template.templateType]?.name || template.templateType}</span>
+                      <span className="text-[#69ad4c] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center text-sm">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit Template
+                      </span>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      onClick={() => handleEditTemplate(template)}
-                      className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                    <div className="text-sm text-muted-foreground">
+                      {templateTypeInfo[template.templateType]?.description}
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 mt-1 flex flex-col sm:flex-row sm:gap-4">
+                      <span className="flex items-center">
+                        <span className="font-medium mr-1">Last Edited:</span> 
+                        {formatLastEdited(template)}
+                      </span>
+                      
+                      {isTemplateCustomized(template) && (
+                        <span className="flex items-center">
+                          <span className="font-medium mr-1">Customized By:</span> 
+                          System Administrator
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          </div>
         </div>
       )}
     </div>
