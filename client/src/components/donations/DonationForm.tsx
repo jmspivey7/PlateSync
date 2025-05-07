@@ -841,7 +841,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
               <div className="pt-4 border-t border-gray-200">
                 <h3 className="text-lg font-medium text-[#2D3748] mb-4">Donation Details</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-full overflow-hidden px-1">
                   <FormField
                     control={form.control}
                     name="date"
@@ -849,7 +849,12 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       <FormItem>
                         <FormLabel className="font-bold">Date:</FormLabel>
                         <FormControl>
-                          <Input {...field} type="date" />
+                          <Input 
+                            {...field} 
+                            type="date" 
+                            className="text-left w-full max-w-xs"
+                            style={{ textAlign: 'left' }} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
