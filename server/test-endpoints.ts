@@ -164,6 +164,15 @@ export function setupTestEndpoints(app: Express) {
       const recipient = recipients[0];
       console.log(`Testing count report email to ${recipient.email}`);
       
+      // Make sure to include the absolute URL for the church logo
+      const logoPath = user?.churchLogoUrl || '';
+      
+      // Build full URL - convert relative path to absolute URL for email client
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const churchLogoUrl = logoPath ? `${baseUrl}${logoPath}` : '';
+      
+      console.log(`Using church logo URL for email: ${churchLogoUrl || 'None available'}`);
+      
       const emailResult = await sendCountReport({
         to: recipient.email,
         recipientName: `${recipient.firstName} ${recipient.lastName}`,
@@ -178,7 +187,7 @@ export function setupTestEndpoints(app: Express) {
         cashAmount: '600.00',
         checkAmount: '400.00',
         donationCount: 5,
-        churchLogoUrl: user?.churchLogoUrl
+        churchLogoUrl
       });
       
       if (emailResult) {

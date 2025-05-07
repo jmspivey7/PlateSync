@@ -1705,7 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   donorName: `${donation.member.firstName} ${donation.member.lastName}`,
                   churchName: churchName,
                   churchId: churchId,
-                  churchLogoUrl: "https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png",
+                  churchLogoUrl: adminUser?.churchLogoUrl ? `${req.protocol}://${req.get('host')}${adminUser.churchLogoUrl}` : '',
                   donationId: donation.id.toString()
                 });
                 
@@ -1761,8 +1761,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const recipient of reportRecipients) {
               console.log(`Attempting to send count report email to ${recipient.email}`);
               try {
-                // Include the church logo URL if available
-                const churchLogoUrl = adminUser?.churchLogoUrl || '';
+                // Make sure to include the absolute URL for the church logo
+                // This matches how it works in the donation confirmation email template
+                const logoPath = adminUser?.churchLogoUrl || '';
+                
+                // Build full URL - convert relative path to absolute URL for email client
+                const baseUrl = `${req.protocol}://${req.get('host')}`;
+                const churchLogoUrl = logoPath ? `${baseUrl}${logoPath}` : '';
+                
                 console.log(`Using church logo URL for email: ${churchLogoUrl || 'None available'}`);
                 
                 const emailResult = await sendCountReport({
