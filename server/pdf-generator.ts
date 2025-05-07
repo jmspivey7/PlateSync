@@ -89,12 +89,13 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
       const logoData = fs.readFileSync(churchLogoPath);
       console.log(`Logo file size: ${logoData.length} bytes`);
       
-      // Draw the logo centered
+      // Draw the logo centered at the top of the page
       const logoWidth = 250;
-      doc.image(logoData, { 
-        fit: [logoWidth, 100],
-        align: 'center',
-        valign: 'center'
+      const pageWidth = doc.page.width;
+      const logoX = (pageWidth - logoWidth) / 2;  // Calculate X position to center the logo
+      
+      doc.image(logoData, logoX, 50, { 
+        fit: [logoWidth, 100]
       });
       
       // Position after logo
