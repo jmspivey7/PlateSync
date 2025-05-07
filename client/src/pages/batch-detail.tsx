@@ -439,16 +439,7 @@ const BatchDetailPage = () => {
                     Print
                   </Button>
                 )}
-                {isFinalized && isMasterAdmin && !showDeleteConfirm && (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleShowDeleteConfirm} 
-                    className="ml-2 border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Count
-                  </Button>
-                )}
+
                 
                 {/* Inline confirmation buttons that replace the Delete button when clicked */}
                 {isFinalized && isMasterAdmin && showDeleteConfirm && (
@@ -488,11 +479,34 @@ const BatchDetailPage = () => {
               </div>
               
               {/* Right side - Title and description */}
-              <div className="text-right">
-                <CardTitle>Count Summary</CardTitle>
-                <CardDescription>
-                  Review and finalize your count
-                </CardDescription>
+              <div className="text-right flex items-start">
+                <div className="flex-1 text-right">
+                  <CardTitle>Count Summary</CardTitle>
+                  <CardDescription>
+                    Review and finalize your count
+                  </CardDescription>
+                </div>
+                
+                {/* Three-dot menu - Only show for master admins */}
+                {isMasterAdmin && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0 ml-2">
+                        <span className="sr-only">Open menu</span>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={handleShowDeleteConfirm}
+                        className="text-red-600 cursor-pointer"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Count
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
             
