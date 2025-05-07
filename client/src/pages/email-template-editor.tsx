@@ -285,36 +285,37 @@ export default function EmailTemplateEditor() {
               <ArrowLeft className="h-5 w-5 mr-2" />
               <span>Return to Settings</span>
             </Button>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                onClick={handleReset}
-                disabled={resetTemplateMutation.isPending}
-                className="border-gray-400"
-              >
-                {resetTemplateMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <RefreshCcw className="h-4 w-4 mr-1" />
-                )}
-                Reset to Default
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!isFormDirty || updateTemplateMutation.isPending}
-                className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-              >
-                {updateTemplateMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-1" />
-                )}
-                Save Changes
-              </Button>
-            </div>
           </div>
           <CardTitle className="mt-4">{templateInfo.name} Template</CardTitle>
           <p className="text-sm text-gray-600 mt-1">{templateInfo.description}</p>
+          
+          <div className="flex flex-wrap gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              disabled={resetTemplateMutation.isPending}
+              className="border-gray-400"
+            >
+              {resetTemplateMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RefreshCcw className="h-4 w-4 mr-1" />
+              )}
+              Reset to Default
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!isFormDirty || updateTemplateMutation.isPending}
+              className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+            >
+              {updateTemplateMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-1" />
+              )}
+              Save Changes
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
