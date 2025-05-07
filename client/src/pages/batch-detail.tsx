@@ -9,6 +9,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { 
   Calendar,
   DollarSign, 
@@ -22,7 +28,8 @@ import {
   Loader2,
   X,
   UserCheck,
-  Trash2
+  Trash2,
+  MoreVertical
 } from "lucide-react";
 import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
