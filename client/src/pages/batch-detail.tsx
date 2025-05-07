@@ -621,11 +621,36 @@ const BatchDetailPage = () => {
             </div>
             
             {/* Right side - Title and Status */}
-            <div className="text-right">
-              <CardTitle className="text-2xl">Count Details</CardTitle>
-              <CardDescription className="mt-1">
-                Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
-              </CardDescription>
+            <div className="text-right flex items-start">
+              <div className="flex-1 text-right">
+                <CardTitle className="text-2xl">Count Details</CardTitle>
+                <CardDescription className="mt-1">
+                  Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                </CardDescription>
+              </div>
+              
+              {/* Three-dot menu - Only show for admins */}
+              {isAdmin && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0 ml-2">
+                      <span className="sr-only">Open menu</span>
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {batch.status === "OPEN" && (
+                      <DropdownMenuItem 
+                        onClick={handleShowDeleteConfirm}
+                        className="text-red-600 cursor-pointer"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Count
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
           
@@ -660,18 +685,6 @@ const BatchDetailPage = () => {
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Donations
             </Button>
-            
-            {/* Only show Delete button for OPEN counts and for admins */}
-            {batch.status === "OPEN" && isAdmin && (
-              <Button 
-                onClick={handleShowDeleteConfirm}
-                variant="destructive"
-                className="h-12 px-6 border-2 border-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Count
-              </Button>
-            )}
           </div>
 
           {/* Donations section */}
