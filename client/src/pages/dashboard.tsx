@@ -185,13 +185,13 @@ const Dashboard = () => {
     >
       <div className="flex flex-col md:flex-row gap-6 mb-6">
         {/* Start New Count Card Button */}
-        <div className="md:w-1/3">
+        <div className="md:w-1/3 h-16">
           <Button 
-            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-row items-center justify-center text-2xl font-bold p-4 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/50 hover:translate-y-[-2px] gap-5"
+            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-row items-center justify-center text-xl font-bold py-0 px-4 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/50 hover:translate-y-[-2px] gap-5"
             onClick={handleNewCount}
           >
-            <span className="flex-shrink-0 w-20 h-20 flex items-center justify-center">
-              <img src="/assets/ThumbsUp.png" alt="Thumbs Up" className="w-20 h-20" />
+            <span className="flex-shrink-0 w-20 h-16 flex items-center justify-center overflow-hidden">
+              <img src="/assets/ThumbsUp.png" alt="Thumbs Up" className="w-20 h-20 object-contain" />
             </span>
             <span className="whitespace-nowrap">New Count</span>
           </Button>
