@@ -186,9 +186,6 @@ export default function EmailTemplates() {
                         Edit Template
                       </span>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {templateTypeInfo[template.templateType]?.description}
-                    </div>
                     
                     <div className="text-xs text-gray-500 mt-1 flex flex-col sm:flex-row sm:gap-4">
                       <span className="flex items-center">
