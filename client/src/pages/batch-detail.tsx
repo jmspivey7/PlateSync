@@ -72,7 +72,6 @@ const BatchDetailPage = () => {
   const [editingDonationId, setEditingDonationId] = useState<number | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [isFinalized, setIsFinalized] = useState(false);
-  const [isPrintView, setIsPrintView] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
@@ -289,8 +288,17 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    // Open the PDF report in a new tab
-    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
+    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    if (batch && batch.id) {
+      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+    } else {
+      console.error("Cannot generate PDF: Batch ID not available");
+      toast({
+        title: "Error",
+        description: "Unable to generate PDF report. Batch information is missing.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -323,10 +331,7 @@ const BatchDetailPage = () => {
     deleteBatchMutation.mutate();
   };
 
-  // We've replaced the print view with a PDF report via the API
-  // Delete this old code block when confirmed working
-
-  // Regular view (not print view)
+  // View handling
   if (isLoading) {
     return (
       <PageLayout title="Loading...">
