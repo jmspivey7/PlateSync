@@ -323,69 +323,8 @@ const BatchDetailPage = () => {
     deleteBatchMutation.mutate();
   };
 
-  // Print-specific styles
-  if (isPrintView) {
-    return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">{batch?.name} - Donation Summary</h1>
-          <p className="text-muted-foreground">{format(new Date(batch?.date || new Date()), 'MMMM d, yyyy')}</p>
-          <p className="text-muted-foreground">Status: {batch?.status}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="border border-border p-4 rounded-lg bg-muted/30">
-            <h2 className="text-lg font-bold mb-2">Cash Total</h2>
-            <p className="text-xl text-secondary-foreground">{formatCurrency(cashTotal)}</p>
-          </div>
-          <div className="border border-border p-4 rounded-lg bg-muted/30">
-            <h2 className="text-lg font-bold mb-2">Check Total</h2>
-            <p className="text-xl text-secondary-foreground">{formatCurrency(checkTotal)}</p>
-          </div>
-        </div>
-
-        <div className="border border-border p-4 rounded-lg bg-muted/30 mb-6">
-          <h2 className="text-lg font-bold mb-2">Total Donations</h2>
-          <p className="text-xl text-secondary-foreground">{formatCurrency(parseFloat(batch?.totalAmount?.toString() || "0"))}</p>
-        </div>
-
-        <h2 className="text-xl font-bold mb-4">Donation Details</h2>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b-2 border-border">
-              <th className="text-left py-2">Donor</th>
-              <th className="text-left py-2">Date</th>
-              <th className="text-left py-2">Type</th>
-              <th className="text-left py-2">Details</th>
-              <th className="text-right py-2">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batch?.donations?.map((donation) => (
-              <tr key={donation.id} className="border-b border-border/50">
-                <td className="py-2">
-                  {donation.memberId && (donation as DonationWithMember).member ? 
-                    `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
-                    "Anonymous/Visitor"}
-                </td>
-                <td className="py-2">{format(new Date(donation.date), 'MMM d, yyyy')}</td>
-                <td className="py-2">{donation.donationType}</td>
-                <td className="py-2">
-                  {donation.donationType === "CHECK" ? `Check #${donation.checkNumber}` : ""}
-                </td>
-                <td className="py-2 text-right">{formatCurrency(donation.amount)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="mt-10 text-center text-muted-foreground text-sm">
-          <p>Printed on {format(new Date(), 'MMMM d, yyyy h:mm a')}</p>
-          <p>PlateSync - Church Donation Management</p>
-        </div>
-      </div>
-    );
-  }
+  // We've replaced the print view with a PDF report via the API
+  // Delete this old code block when confirmed working
 
   // Regular view (not print view)
   if (isLoading) {
