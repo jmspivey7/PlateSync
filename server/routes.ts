@@ -2772,7 +2772,7 @@ Please do not reply to this email. If you have any questions about your donation
               template.bodyText = 
 `Dear {{recipientName}},
 
-A count has been finalized for {{churchName}}.
+A count has been finalized for {{churchName}}, and a Detailed Count Report is attached to this email for your review.
 
 Count Details:
 Count: {{batchName}}
