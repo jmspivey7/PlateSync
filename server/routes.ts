@@ -1761,6 +1761,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const recipient of reportRecipients) {
               console.log(`Attempting to send count report email to ${recipient.email}`);
               try {
+                // Include the church logo URL if available
+                const churchLogoUrl = adminUser?.churchLogoUrl || '';
+                console.log(`Using church logo URL for email: ${churchLogoUrl || 'None available'}`);
+                
                 const emailResult = await sendCountReport({
                   to: recipient.email,
                   recipientName: `${recipient.firstName} ${recipient.lastName}`,
@@ -1770,7 +1774,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   totalAmount,
                   cashAmount,
                   checkAmount,
-                  donationCount: donations.length
+                  donationCount: donations.length,
+                  churchLogoUrl
                 });
                 console.log(`Email send result: ${emailResult ? 'Success' : 'Failed'}`);
               } catch (innerError) {
