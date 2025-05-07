@@ -58,20 +58,21 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const checkDonations = donations.filter(d => d.donationType === 'CHECK');
   const cashDonations = donations.filter(d => d.donationType === 'CASH');
   
-  // Add church logo or name at the top
+  // Add church logo OR name at the top (not both)
+  // This section handles the header of the report
   if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-    // With logo
+    // VERSION 1: With logo only (no church name)
     const logoWidth = 250;
     doc.image(churchLogoPath, (doc.page.width - logoWidth) / 2, 50, { width: logoWidth });
     doc.moveDown(2);
   } else {
-    // Without logo, just church name
-    doc.font('Helvetica-Bold').fontSize(22).text(churchName, { align: 'center' });
-    doc.moveDown(0.5);
+    // VERSION 2: Without logo, just church name in larger font
+    doc.font('Helvetica-Bold').fontSize(24).text(churchName, { align: 'center' });
+    doc.moveDown(1);
   }
   
-  // Add report title and date
-  doc.fontSize(18).text('Finalized Count Report', { align: 'center' });
+  // Add report title and date (appears in both versions)
+  doc.font('Helvetica-Bold').fontSize(18).text('Finalized Count Report', { align: 'center' });
   doc.fontSize(14).text(formattedDate, { align: 'center' });
   doc.moveDown(2);
   
