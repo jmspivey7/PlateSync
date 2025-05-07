@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, RefreshCcw, Save } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 // Define template types
 type TemplateType = 'WELCOME_EMAIL' | 'PASSWORD_RESET' | 'DONATION_CONFIRMATION' | 'COUNT_REPORT';
@@ -59,6 +60,7 @@ export default function EmailTemplateEditor() {
   const [activeTab, setActiveTab] = useState<string>("edit");
   const [templateData, setTemplateData] = useState<EmailTemplate | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
+  const { user } = useAuth();
 
   // Fetch template data
   const {
@@ -405,13 +407,27 @@ export default function EmailTemplateEditor() {
                     <ScrollArea className="h-[500px]">
                       <div className="p-4">
                         {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
-                          <div dangerouslySetInnerHTML={{ 
-                            __html: templateData.bodyHtml
-                              // For email templates with Count Report or Donation Confirmation,
-                              // we need to replace the logo image with an empty div (remove the img tag completely)
-                              .replace(/<img\s+src="{{churchLogoUrl}}"\s+alt="{{churchName}} Logo"[^>]*>/g, '')
-                              .replace(/max-width: \d+px/g, 'max-width: 375px')
-                              .replace(/max-height: \d+px/g, 'max-height: 150px')
+                          <div dangerouslySetInnerHTML={{
+                            __html: (() => {
+                              let html = templateData.bodyHtml;
+                              
+                              // If user exists and has a church logo, replace the placeholder with the actual logo URL
+                              if (user && user.churchLogoUrl) {
+                                html = html.replace(
+                                  /{{churchLogoUrl}}/g, 
+                                  user.churchLogoUrl.startsWith('http') 
+                                    ? user.churchLogoUrl 
+                                    : `${window.location.origin}${user.churchLogoUrl}`
+                                );
+                              } else {
+                                // Otherwise remove the image entirely
+                                html = html.replace(/<img\s+src="{{churchLogoUrl}}"\s+alt="{{churchName}} Logo"[^>]*>/g, '');
+                              }
+                              
+                              return html
+                                .replace(/max-width: \d+px/g, 'max-width: 375px')
+                                .replace(/max-height: \d+px/g, 'max-height: 150px');
+                            })()
                           }} />
                         ) : (
                           <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
