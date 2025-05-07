@@ -204,7 +204,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.text(`$${formatCurrency(totalAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   
   // Draw DOUBLE horizontal line BELOW grand total - extend to cover full width including amount column
-  tableY += 10; // Space below the grand total text
+  tableY += 15; // Increased spacing below the grand total text to avoid touching the numbers
   doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
   doc.moveTo(tableX, tableY + 3).lineTo(tableX + fullTableWidth, tableY + 3).stroke();
   
