@@ -71,6 +71,12 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
+  attachments?: Array<{
+    content: string;
+    filename: string;
+    type: string;
+    disposition: string;
+  }>;
 }
 
 export async function sendEmail(
@@ -98,16 +104,33 @@ export async function sendEmail(
     }
     
     console.log('\n📧 HTML version would be displayed properly in email clients');
+    
+    // Show attachment info in preview
+    if (params.attachments && params.attachments.length > 0) {
+      console.log('\n📧 ----- ATTACHMENTS -----');
+      params.attachments.forEach((attachment, index) => {
+        console.log(`📧 Attachment ${index + 1}: ${attachment.filename} (${attachment.type})`);
+      });
+    }
+    
     console.log('📧 ============ END EMAIL PREVIEW ============\n');
     
     // In production, actually send the email
-    await mailService.send({
+    const emailData: any = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
-    });
+    };
+    
+    // Add attachments if any
+    if (params.attachments && params.attachments.length > 0) {
+      console.log(`Including ${params.attachments.length} attachments in the email`);
+      emailData.attachments = params.attachments;
+    }
+    
+    await mailService.send(emailData);
     
     console.log(`Email sent successfully to ${params.to}`);
     return true;
@@ -461,12 +484,98 @@ interface CountReportParams {
   checkAmount: string;
   donationCount: number;
   churchLogoUrl?: string;
+  donations?: Array<{
+    memberId: number | null;
+    memberName: string;
+    donationType: string;
+    amount: string;
+    checkNumber?: string;
+  }>;
+  date?: Date;         // Raw date object for formatting the PDF filename
+  serviceOption?: string; // Service option for the filename
 }
 
 export async function sendCountReport(params: CountReportParams): Promise<boolean> {
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'reports@platesync.com';
   
   try {
+    // Generate PDF attachment if donations are provided
+    let pdfAttachment: any = null;
+    
+    if (params.donations && params.donations.length > 0) {
+      console.log('Generating PDF attachment for count report...');
+      
+      // Extract logo path from URL if available
+      let churchLogoPath: string | undefined;
+      if (params.churchLogoUrl) {
+        try {
+          // Convert relative URL to absolute file path
+          const urlParts = params.churchLogoUrl.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          // Assuming public logos are stored in public/logos
+          churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
+          
+          console.log(`Looking for church logo at: ${churchLogoPath}`);
+          
+          // Check if the file exists
+          if (!fs.existsSync(churchLogoPath)) {
+            console.log(`Church logo file not found at: ${churchLogoPath}`);
+            churchLogoPath = undefined;
+          } else {
+            console.log(`Found church logo at: ${churchLogoPath}`);
+          }
+        } catch (logoError) {
+          console.error('Error processing logo URL:', logoError);
+          churchLogoPath = undefined;
+        }
+      }
+      
+      try {
+        // Format date for filename
+        const reportDate = params.date || new Date(params.batchDate);
+        const dateForFilename = format(reportDate, 'yyyy-MM-dd');
+        
+        // Format the service option for filename
+        const serviceOption = params.serviceOption || params.batchName;
+        
+        // Generate the PDF
+        const pdfFilePath = await generateCountReportPDF({
+          churchName: params.churchName,
+          churchLogoPath,
+          date: reportDate,
+          totalAmount: params.totalAmount,
+          cashAmount: params.cashAmount,
+          checkAmount: params.checkAmount,
+          donations: params.donations
+        });
+        
+        console.log(`PDF generated successfully at: ${pdfFilePath}`);
+        
+        // Create attachment if PDF was generated successfully
+        if (pdfFilePath && fs.existsSync(pdfFilePath)) {
+          const fileContent = fs.readFileSync(pdfFilePath);
+          const attachmentFilename = `${dateForFilename} - ${serviceOption} - Detail.pdf`;
+          
+          pdfAttachment = {
+            content: fileContent.toString('base64'),
+            filename: attachmentFilename,
+            type: 'application/pdf',
+            disposition: 'attachment'
+          };
+          
+          console.log(`Created attachment: ${attachmentFilename}`);
+          
+          // Clean up the temporary file
+          fs.unlinkSync(pdfFilePath);
+          console.log(`Cleaned up temporary PDF file: ${pdfFilePath}`);
+        }
+      } catch (pdfError) {
+        console.error('Error generating PDF attachment:', pdfError);
+        // Continue without the attachment if there's an error
+      }
+    }
+    
     // Attempt to retrieve the count report template from the database if a churchId is provided
     let template;
     if (params.churchLogoUrl) {
