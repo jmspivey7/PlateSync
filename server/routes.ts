@@ -2798,7 +2798,7 @@ PlateSync Reporting System`;
   <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
     <p style="margin-top: 0;">Dear <strong>{{recipientName}}</strong>,</p>
     
-    <p>A count has been finalized for <strong>{{churchName}}</strong>.</p>
+    <p>A count has been finalized for <strong>{{churchName}}</strong>, and a <strong>Detailed Count Report</strong> is attached to this email for your review.</p>
     
     <!-- Count Details Box -->
     <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
