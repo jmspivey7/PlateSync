@@ -318,7 +318,11 @@ const CountsPage = () => {
                             "Anonymous Donation"}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {format(new Date(donation.date), 'MM/dd/yyyy')} • 
+                          {(() => {
+                            const dateObj = new Date(donation.date);
+                            const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+                            return format(correctedDate, 'MM/dd/yyyy');
+                          })()} • 
                           {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                         </div>
                       </div>

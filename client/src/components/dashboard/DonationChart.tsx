@@ -223,12 +223,16 @@ export function DonationChart() {
       .filter((d: Donation) => d.donationType === "CHECK")
       .reduce((sum: number, d: Donation) => sum + parseFloat(d.amount.toString()), 0);
 
+    // Ensure date is displayed correctly by adjusting for timezone offset
+    const dateObj = new Date(batch.date);
+    const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+    
     return {
-      date: format(new Date(batch.date), 'MMM d'),
+      date: format(correctedDate, 'MMM d'),
       cash: cashTotal,
       check: checkTotal,
       // Store the full date for tooltip
-      fullDate: format(new Date(batch.date), 'MMMM d, yyyy')
+      fullDate: format(correctedDate, 'MMMM d, yyyy')
     };
   });
 
