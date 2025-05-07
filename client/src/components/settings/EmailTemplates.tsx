@@ -155,9 +155,6 @@ export default function EmailTemplates() {
           </p>
           
           <div className="border border-gray-400 rounded-md overflow-hidden">
-            <div className="bg-gray-50 p-3 font-bold">
-              Template Information
-            </div>
             <div className="divide-y">
               {[...templates]
                 .sort((a, b) => {
