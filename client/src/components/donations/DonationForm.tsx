@@ -34,7 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, ThumbsUp } from "lucide-react";
 import { useLocation } from "wouter";
 import { Member, Donation, Batch } from "@shared/schema";
 
@@ -112,6 +112,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
   
   // State to force re-render of member combobox when form is reset
   const [comboboxKey, setComboboxKey] = useState(0);
+  
+  // State for showing the success thumbs-up indicator
+  const [showSuccess, setShowSuccess] = useState(false);
   
   // Load members for the dropdown
   const { data: members, isLoading: isLoadingMembers } = useQuery<Member[]>({
@@ -567,11 +570,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
       
       // For normal editing operations
       if (isEdit) {
-        toast({
-          title: "Success",
-          description: "Donation updated successfully.",
-          className: "bg-[#48BB78] text-white",
-        });
+        // Show success indicator (thumbs-up) briefly instead of toast
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 1000); // Hide after 1 second
         
         // First check if we should close the dialog instead of navigating
         if (onClose && isInsideDialog) {
@@ -600,11 +603,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           currency: 'USD'
         }).format(Number(amount));
         
-        toast({
-          title: "Donation Recorded",
-          description: `${formattedAmount} ${donorName} recorded. Ready for next donation.`,
-          className: "bg-[#48BB78] text-white",
-        });
+        // Show success indicator (thumbs-up) briefly instead of toast
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 1000); // Hide after 1 second
         
         // Reset form for next entry but keep the batchId as it should stay the same for all entries
         const currentBatchId = form.getValues("batchId");
@@ -938,7 +941,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 </div>
               </div>
               
-              <div className="flex justify-end mt-6 space-x-2">
+              <div className="flex justify-end mt-6 space-x-2 relative">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -977,6 +980,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     isEdit ? "Update Donation" : "Record & Next"
                   )}
                 </Button>
+                
+                {/* Success indicator - appears briefly after successful submission */}
+                {showSuccess && (
+                  <div className="absolute -right-12 top-1/2 transform -translate-y-1/2 animate-fade-in-out">
+                    <ThumbsUp className="h-6 w-6 text-green-500" />
+                  </div>
+                )}
               </div>
             </form>
           </Form>
