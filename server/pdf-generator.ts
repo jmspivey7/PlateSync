@@ -70,26 +70,26 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const checkDonations = donations.filter(d => d.donationType === 'CHECK');
   const cashDonations = donations.filter(d => d.donationType === 'CASH');
   
-  // IMPORTANT: This is a complete rewrite of the logo/church name logic
+  // CRITICAL FIX: COMPLETELY SEPARATE RENDERING LOGIC FOR LOGO VS CHURCH NAME
   
-  // Set starting position for content after the header
+  // Set starting position for content
   let startingY = 50;
   
   // Debug information
-  console.log("PDF GENERATION - HEADER SECTION");
+  console.log("PDF GENERATION - CONDITIONAL HEADER RENDERING");
   console.log(`Church logo path: ${churchLogoPath ? churchLogoPath : 'none'}`);
   console.log(`Church name: ${churchName ? churchName : 'none'}`);
   
   try {
-    // Check if we have a valid logo path and file exists
+    // CASE 1: We have a logo - show ONLY logo + report title
     if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-      console.log("USING LOGO ONLY PATH - No church name will be shown");
+      console.log("RENDERING LOGO ONLY (NO CHURCH NAME)");
       
       // Read the file to verify it's a valid image
       const logoData = fs.readFileSync(churchLogoPath);
       console.log(`Logo file size: ${logoData.length} bytes`);
       
-      // With logo only (NO church name)
+      // Draw the logo centered
       const logoWidth = 250;
       doc.image(logoData, { 
         fit: [logoWidth, 100],
@@ -97,40 +97,61 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
         valign: 'center'
       });
       
-      // Move down after logo
+      // Position after logo
       startingY = doc.y + 20;
-      console.log(`New Y position after logo: ${startingY}`);
-    } 
-    // Otherwise use church name if provided
-    else if (churchName && churchName.trim() !== '') {
-      console.log("USING CHURCH NAME ONLY PATH - No logo will be shown");
+      console.log(`Position after logo: ${startingY}`);
       
-      // Without logo, ONLY church name in larger font
+      // Set position for next content
+      doc.y = startingY;
+      
+      // Add report title and date below the logo
+      doc.font('Helvetica-Bold').fontSize(18).text('Finalized Count Report', { align: 'center' });
+      doc.fontSize(14).text(formattedDate, { align: 'center' });
+      doc.moveDown(2);
+    } 
+    // CASE 2: No logo but we have a non-empty church name - show church name as logo alternative
+    else if (churchName && churchName.trim() !== '') {
+      console.log("RENDERING CHURCH NAME AS HEADER (NO LOGO)");
+      
+      // Draw church name in larger font as header
       doc.font('Helvetica-Bold').fontSize(24).text(churchName, { align: 'center' });
       
-      // Move down after church name
+      // Add space after church name
       startingY = doc.y + 10;
-      console.log(`New Y position after church name: ${startingY}`);
+      
+      // Set position for next content
+      doc.y = startingY;
+      
+      // Add report title and date below the church name
+      doc.font('Helvetica-Bold').fontSize(18).text('Finalized Count Report', { align: 'center' });
+      doc.fontSize(14).text(formattedDate, { align: 'center' });
+      doc.moveDown(2);
     }
-    // If neither is available, leave space for the title
+    // CASE 3: Neither logo nor church name - just show report title
     else {
-      console.log("NO LOGO OR CHURCH NAME AVAILABLE - Using default spacing");
-      startingY = 80; // Just leave some blank space
+      console.log("NO LOGO OR CHURCH NAME - USING MINIMAL HEADER");
+      
+      // Leave some space at top
+      startingY = 80;
+      doc.y = startingY;
+      
+      // Just show the report title and date
+      doc.font('Helvetica-Bold').fontSize(20).text('Finalized Count Report', { align: 'center' });
+      doc.fontSize(14).text(formattedDate, { align: 'center' });
+      doc.moveDown(2);
     }
   } catch (error) {
-    // If there's any error with the image, fall back to just text or nothing
+    // If there's any error with the image, fall back to just text
     console.error("Error rendering header:", error);
+    
     startingY = 80;
+    doc.y = startingY;
+    
+    // Fallback to just report title
+    doc.font('Helvetica-Bold').fontSize(20).text('Finalized Count Report', { align: 'center' });
+    doc.fontSize(14).text(formattedDate, { align: 'center' });
+    doc.moveDown(2);
   }
-  
-  // Reset Y position to use the correct starting point
-  console.log(`Final starting Y position: ${startingY}`);
-  doc.y = startingY;
-  
-  // Add report title and date (appears in both versions)
-  doc.font('Helvetica-Bold').fontSize(18).text('Finalized Count Report', { align: 'center' });
-  doc.fontSize(14).text(formattedDate, { align: 'center' });
-  doc.moveDown(2);
   
   // Add summary totals
   const tableWidth = 400;
