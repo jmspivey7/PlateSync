@@ -1978,65 +1978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete a donation
-  app.delete('/api/donations/:id', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const donationId = parseInt(req.params.id);
-      
-      if (isNaN(donationId)) {
-        return res.status(400).json({ message: "Invalid donation ID" });
-      }
-      
-      // Get church ID to ensure proper data sharing between roles
-      const churchId = await storage.getChurchIdForUser(userId);
-      
-      // First, get the donation to be deleted to access its amount and batch info
-      const donation = await storage.getDonation(donationId, churchId);
-      
-      if (!donation) {
-        return res.status(404).json({ message: "Donation not found" });
-      }
-      
-      // Check if the donation is part of a finalized batch
-      if (donation.batchId) {
-        const batch = await storage.getBatch(donation.batchId, churchId);
-        if (batch && batch.status === "FINALIZED") {
-          return res.status(403).json({ 
-            message: "Cannot delete donation from a finalized count" 
-          });
-        }
-      }
-      
-      // Delete the donation
-      const deletedDonation = await storage.deleteDonation(donationId, churchId);
-      
-      // Update the batch total amount if the donation was part of a batch
-      if (donation.batchId) {
-        const batch = await storage.getBatch(donation.batchId, churchId);
-        if (batch) {
-          const currentTotal = parseFloat(batch.totalAmount.toString());
-          const donationAmount = parseFloat(donation.amount.toString());
-          const newTotal = Math.max(0, currentTotal - donationAmount); // Ensure we don't go below 0
-          
-          await storage.updateBatch(
-            batch.id,
-            { totalAmount: newTotal.toString() },
-            churchId
-          );
-        }
-      }
-      
-      res.json({ 
-        success: true, 
-        message: "Donation deleted successfully",
-        donation: deletedDonation
-      });
-    } catch (error) {
-      console.error("Error deleting donation:", error);
-      res.status(500).json({ message: "Failed to delete donation" });
-    }
-  });
+  // Donation deletion route is defined at the bottom of the file
 
   app.post('/api/donations', isAuthenticated, async (req: any, res) => {
     try {
