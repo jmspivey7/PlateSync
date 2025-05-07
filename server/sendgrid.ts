@@ -624,13 +624,21 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
         html = html.replace(new RegExp(key, 'g'), value);
       });
       
-      return await sendEmail({
+      // Prepare email data with PDF attachment if available
+      const emailData: EmailParams = {
         to: params.to,
         from: fromEmail,
         subject,
         text,
         html
-      });
+      };
+      
+      // Add the PDF attachment if it was generated
+      if (pdfAttachment) {
+        emailData.attachments = [pdfAttachment];
+      }
+      
+      return await sendEmail(emailData);
     } else {
       console.log('⚠️ No custom template found, using default count report template');
       
@@ -735,13 +743,21 @@ PlateSync Reporting System
 </div>
       `;
       
-      return await sendEmail({
+      // Prepare email data with PDF attachment if available
+      const emailData: EmailParams = {
         to: params.to,
         from: fromEmail,
         subject,
         text,
         html
-      });
+      };
+      
+      // Add the PDF attachment if it was generated
+      if (pdfAttachment) {
+        emailData.attachments = [pdfAttachment];
+      }
+      
+      return await sendEmail(emailData);
     }
   } catch (error) {
     console.error('Error preparing count report email:', error);
@@ -829,13 +845,21 @@ PlateSync Reporting System
 </div>
     `;
     
-    return await sendEmail({
+    // Prepare email data with PDF attachment if available
+    const emailData: EmailParams = {
       to: params.to,
       from: fromEmail,
       subject,
       text,
       html
-    });
+    };
+    
+    // Add the PDF attachment if it was generated
+    if (pdfAttachment) {
+      emailData.attachments = [pdfAttachment];
+    }
+    
+    return await sendEmail(emailData);
   }
 }
 
