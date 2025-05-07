@@ -279,8 +279,8 @@ please contact the church office directly.
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
   <!-- Header with Church Logo -->
   <div style="padding: 25px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 250px; max-height: 80px;">
-    <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>
+    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
+    <p style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: 500;">Donation Receipt</p>
   </div>
         `;
       } else {
@@ -394,10 +394,10 @@ The PlateSync Team
   // HTML version of the email with nicer formatting
   const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Logo and Title -->
-  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Welcome to ${params.churchName}</p>
+  <!-- Header with Logo and Title (clean white style) -->
+  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
+    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px; color: #2D3748;">Welcome to ${params.churchName}</p>
   </div>
   
   <!-- Main Content -->
@@ -554,7 +554,7 @@ PlateSync Reporting System
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Church Logo (clean white style) -->
   <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 250px; max-height: 80px;">
+    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
     <p style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: 500;">Count Report</p>
   </div>
         `;
