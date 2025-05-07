@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Printer, FileText, ArrowLeft } from "lucide-react";
+import { Printer, FileText, ArrowLeft, Download } from "lucide-react";
 import { Batch, Donation } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,7 +14,6 @@ interface PrintCountReportProps {
 }
 
 const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) => {
-  const [isPrintView, setIsPrintView] = useState(false);
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
@@ -29,16 +28,9 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
     enabled: !!batch,
   });
 
-  const handlePrint = () => {
-    setIsPrintView(true);
-    // Use setTimeout to allow the state to update before printing
-    setTimeout(() => {
-      window.print();
-      // Keep print view active a bit longer to ensure the print dialog has time to appear
-      setTimeout(() => {
-        setIsPrintView(false);
-      }, 500);
-    }, 300);
+  const handlePrintPDF = () => {
+    // Open the PDF in a new tab/window
+    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -92,91 +84,13 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
     );
   }
 
-  // Print view
-  if (isPrintView && batch) {
-    return (
-      <div className="print-view p-8 max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">{batch.name} - Count Report</h1>
-          <p className="text-muted-foreground">{format(new Date(batch.date), 'MMMM d, yyyy')}</p>
-          <p className="text-muted-foreground">Service: {batch.service || "Not specified"}</p>
-          <p className="text-muted-foreground">Status: {batch.status}</p>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Count Summary</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border rounded-md p-4">
-              <p className="text-sm text-muted-foreground">Cash Total</p>
-              <p className="text-xl font-medium">{formatCurrency(cashTotal)}</p>
-            </div>
-            <div className="border rounded-md p-4">
-              <p className="text-sm text-muted-foreground">Check Total</p>
-              <p className="text-xl font-medium">{formatCurrency(checkTotal)}</p>
-            </div>
-            <div className="border rounded-md p-4">
-              <p className="text-sm text-muted-foreground">Number of Donations</p>
-              <p className="text-xl font-medium">{donationCount}</p>
-            </div>
-            <div className="border rounded-md p-4 bg-gray-50">
-              <p className="text-sm text-muted-foreground">Grand Total</p>
-              <p className="text-xl font-bold">{formatCurrency(grandTotal)}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Attestation Information</h2>
-          <div className="border rounded-md p-4 mb-4">
-            <p className="font-medium">Primary Attestor</p>
-            <p>{batch.primaryAttestorName || "Unknown"}</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {batch.primaryAttestationDate ? 
-                format(new Date(batch.primaryAttestationDate), 'MMMM d, yyyy h:mm a') : 
-                "No date recorded"}
-            </p>
-          </div>
-          <div className="border rounded-md p-4">
-            <p className="font-medium">Secondary Attestor</p>
-            <p>{batch.secondaryAttestorName || "Unknown"}</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {batch.secondaryAttestationDate ? 
-                format(new Date(batch.secondaryAttestationDate), 'MMMM d, yyyy h:mm a') : 
-                "No date recorded"}
-            </p>
-          </div>
-        </div>
-
-        {/* Signature lines */}
-        <div className="mt-12 mb-8">
-          <div className="flex flex-col gap-8">
-            <div>
-              <div className="border-t border-gray-300 pt-2 w-64"></div>
-              <p className="text-sm">Primary Attestor Signature</p>
-            </div>
-            <div>
-              <div className="border-t border-gray-300 pt-2 w-64"></div>
-              <p className="text-sm">Secondary Attestor Signature</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-10 text-center text-muted-foreground text-sm">
-          <p>Printed on {format(new Date(), 'MMMM d, yyyy h:mm a')}</p>
-          <p>PlateSync - Church Collection Management</p>
-          <p className="mt-2">This report is to be included with the money bag.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Regular view
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Print Count Report</CardTitle>
+        <CardTitle>Count Report</CardTitle>
         <CardDescription>
-          Print this report to include with the money bag
+          Print this detailed report to include with the money bag
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -186,7 +100,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
               <Button
                 variant="outline"
                 onClick={handleBackToFinalized}
-                className="mb-6 non-printable"
+                className="mb-6"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Counts
@@ -210,9 +124,9 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
               <p className={batch.status === 'FINALIZED' ? 'text-green-700 mt-1' : 'text-blue-700 mt-1'}>
                 {batch.status === 'FINALIZED'
                   ? `Count ${batch.name} has been finalized and attested by two people.
-                     Please print this report to include with the money bag.`
-                  : `This is a printable report for count ${batch.name}.
-                     Please print this report to include with the money bag.`
+                     Please print the detailed PDF report to include with the money bag.`
+                  : `This is a detailed report for count ${batch.name}.
+                     Please print the PDF to include with the money bag.`
                 }
               </p>
             </div>
@@ -237,13 +151,19 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
                 </div>
               </div>
 
-              <Button 
-                onClick={handlePrint}
-                className="w-full bg-[#69ad4c] hover:bg-[#5a9941] text-white mt-4 non-printable"
-              >
-                <Printer className="mr-2 h-5 w-5" />
-                Print Report
-              </Button>
+              <div className="grid grid-cols-1 gap-3">
+                <Button 
+                  onClick={handlePrintPDF}
+                  className="w-full bg-[#69ad4c] hover:bg-[#5a9941] text-white"
+                >
+                  <Printer className="mr-2 h-5 w-5" />
+                  View & Print PDF Report
+                </Button>
+                
+                <p className="text-xs text-center text-muted-foreground">
+                  The PDF report includes all donation details and matches the format of emailed reports.
+                </p>
+              </div>
             </div>
           </>
         )}

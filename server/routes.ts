@@ -7,6 +7,9 @@ import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, 
 import { setupTestEndpoints } from "./test-endpoints";
 import { eq, sql } from "drizzle-orm";
 import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
+import { generateCountReportPDF } from "./pdf-generator";
 
 // Password hashing function using scrypt
 async function scryptHash(password: string): Promise<string> {
@@ -33,8 +36,6 @@ import { isAdmin, hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
-import path from "path";
-import fs from "fs";
 import { 
   insertMemberSchema, 
   insertDonationSchema,
@@ -1291,7 +1292,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Batch routes
+  // PDF Report Endpoint - Serves PDF version of count report for direct browser viewing
+  app.get('/api/batches/:id/pdf-report', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const churchId = await storage.getChurchIdForUser(userId);
+      const batchId = parseInt(req.params.id);
+      
+      // Get batch data
+      const batch = await storage.getBatch(batchId, churchId);
+      
+      if (!batch) {
+        return res.status(404).json({ message: "Batch not found" });
+      }
+      
+      // Ensure the batch belongs to this church
+      if (batch.churchId !== churchId && batch.churchId !== null) {
+        return res.status(403).json({ message: "No access to this batch - incorrect church ID" });
+      }
+      
+      // Get the donations from this batch
+      const donations = await storage.getDonationsByBatch(batchId, churchId);
+      
+      if (!donations || donations.length === 0) {
+        return res.status(404).json({ message: "No donations found for this batch" });
+      }
+      
+      // Calculate totals
+      let totalAmount = 0;
+      let cashAmount = 0;
+      let checkAmount = 0;
+      
+      donations.forEach(donation => {
+        const amount = parseFloat(donation.amount);
+        totalAmount += amount;
+        
+        if (donation.donationType === 'CASH') {
+          cashAmount += amount;
+        } else if (donation.donationType === 'CHECK') {
+          checkAmount += amount;
+        }
+      });
+      
+      // Format the amounts for display
+      const formattedTotal = totalAmount.toFixed(2);
+      const formattedCash = cashAmount.toFixed(2);
+      const formattedChecks = checkAmount.toFixed(2);
+      
+      const batchDate = new Date(batch.date);
+      
+      // Make sure to include the absolute URL for the church logo
+      const logoPath = user?.churchLogoUrl || '';
+      
+      // Map the donations for the PDF report
+      const donationsForReport = donations.map(d => {
+        // Get member name or use 'Visitor'
+        let memberName = 'Visitor';
+        if (d.memberId) {
+          const member = d.member;
+          if (member) {
+            memberName = `${member.firstName} ${member.lastName}`.trim();
+          }
+        }
+        
+        return {
+          memberId: d.memberId,
+          memberName,
+          donationType: d.donationType,
+          amount: d.amount,
+          checkNumber: d.checkNumber
+        };
+      });
+      
+      // Extract the church logo path for the PDF
+      let churchLogoPath: string | undefined;
+      if (logoPath) {
+        try {
+          // Convert relative URL to absolute file path
+          const urlParts = logoPath.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          // Assuming public logos are stored in public/logos
+          churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
+          
+          // Check if the file exists
+          if (!fs.existsSync(churchLogoPath)) {
+            console.log(`Church logo file not found at: ${churchLogoPath}`);
+            churchLogoPath = undefined;
+          }
+        } catch (logoError) {
+          console.error('Error processing logo URL:', logoError);
+          churchLogoPath = undefined;
+        }
+      }
+      
+      // Generate the PDF
+      const pdfFilePath = await generateCountReportPDF({
+        churchName: churchLogoPath ? '' : (user.churchName || 'Your Church'), // Only use name if no logo
+        churchLogoPath,
+        date: batchDate,
+        totalAmount: formattedTotal,
+        cashAmount: formattedCash,
+        checkAmount: formattedChecks,
+        donations: donationsForReport
+      });
+      
+      // Set the appropriate headers for a PDF download/display
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${batch.date.toISOString().split('T')[0]} - ${batch.service || 'Count'} - Detail.pdf"`);
+      
+      // Stream the file to the response
+      const fileStream = fs.createReadStream(pdfFilePath);
+      fileStream.pipe(res);
+      
+      // Clean up the file after sending
+      fileStream.on('end', () => {
+        fs.unlinkSync(pdfFilePath);
+        console.log(`Cleaned up temporary PDF file: ${pdfFilePath}`);
+      });
+      
+    } catch (error) {
+      console.error("Error generating PDF report:", error);
+      res.status(500).json({ message: "Failed to generate PDF report" });
+    }
+  });
+
+// Batch routes
   app.get('/api/batches', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
