@@ -424,17 +424,17 @@ const BatchDetailPage = () => {
         <Card>
           <CardHeader>
             {/* Header with buttons in a row */}
-            <div className="w-full flex justify-between items-center mb-4">
-              {/* Left side - Back button */}
-              <div className="flex space-x-2">
+            <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+              {/* Left side - Back button - Stack vertically on mobile */}
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 {isFinalized && (
-                  <Button variant="outline" onClick={handleBackToCounts}>
+                  <Button variant="outline" onClick={handleBackToCounts} className="w-full sm:w-auto">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Counts
                   </Button>
                 )}
                 {isFinalized && (
-                  <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white ml-2">
+                  <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                   </Button>
@@ -479,9 +479,9 @@ const BatchDetailPage = () => {
               </div>
               
               {/* Right side - Title and description */}
-              <div className="text-right flex items-start">
-                <div className="flex-1 text-right">
-                  <CardTitle>Count Summary</CardTitle>
+              <div className="text-left sm:text-right flex items-start w-full sm:w-auto">
+                <div className="flex-1">
+                  <CardTitle className="text-xl sm:text-2xl">Count Summary</CardTitle>
                   <CardDescription>
                     Review and finalize your count
                   </CardDescription>
@@ -610,11 +610,11 @@ const BatchDetailPage = () => {
       subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
     >
       <Card className="p-6">
-          {/* Top section - Right-aligned header and Left-aligned buttons */}
-          <div className="w-full flex justify-between items-start mb-8">
-            {/* Left side - Action buttons */}
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={handleBackToCounts} className="h-12 px-6">
+          {/* Top section - With full mobile responsiveness */}
+          <div className="w-full flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
+            {/* Left side - Action buttons - Stack vertically on mobile */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <Button variant="outline" onClick={handleBackToCounts} className="h-12 whitespace-nowrap">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Counts
               </Button>
@@ -625,7 +625,7 @@ const BatchDetailPage = () => {
                     console.log("Finalize Count button clicked");
                     prepareAttestationMutation.mutate();
                   }}
-                  className="bg-amber-500 hover:bg-amber-600 text-black h-12 px-6"
+                  className="bg-amber-500 hover:bg-amber-600 text-black h-12 whitespace-nowrap"
                   disabled={prepareAttestationMutation.isPending}
                 >
                   <UserCheck className="mr-2 h-4 w-4" />
@@ -634,10 +634,10 @@ const BatchDetailPage = () => {
               )}
             </div>
             
-            {/* Right side - Title and Status */}
-            <div className="text-right flex items-start">
-              <div className="flex-1 text-right">
-                <CardTitle className="text-2xl">Count Details</CardTitle>
+            {/* Right side - Title and Status - Full width on mobile */}
+            <div className="text-left md:text-right flex items-start w-full md:w-auto">
+              <div className="flex-1">
+                <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
                 <CardDescription className="mt-1">
                   Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
                 </CardDescription>
@@ -694,7 +694,7 @@ const BatchDetailPage = () => {
           <div className="flex justify-between mb-8">
             <Button 
               onClick={handleAddDonation}
-              className="bg-green-600 hover:bg-green-700 text-white h-12 px-6"
+              className="bg-green-600 hover:bg-green-700 text-white h-12 px-4 sm:px-6 w-full sm:w-auto"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Donations
