@@ -190,7 +190,13 @@ const CountsPage = () => {
                           <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
                         </td>
                         <td className="py-3 px-3 text-gray-700 font-medium">
-                          {format(new Date(batch.date), 'MM/dd/yyyy')}
+                          {(() => {
+                            // Parse the date string and add timezone offset to ensure correct display
+                            const dateObj = new Date(batch.date);
+                            // Add the timezone offset to keep the date as stored in the database
+                            const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+                            return format(correctedDate, 'MM/dd/yyyy');
+                          })()}
                         </td>
                         <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
                           {formatCurrency(batch.totalAmount || 0)}
@@ -225,7 +231,11 @@ const CountsPage = () => {
                 const serviceName = batchNameParts.length > 1 ? batchNameParts[0] : 'Regular Service';
                 return (
                   <>
-                    <CardTitle>{format(new Date(selectedBatch.date), 'MM/dd/yyyy')}</CardTitle>
+                    <CardTitle>{(() => {
+                      const dateObj = new Date(selectedBatch.date);
+                      const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+                      return format(correctedDate, 'MM/dd/yyyy');
+                    })()}</CardTitle>
                     <CardDescription>
                       Service: {serviceName}
                     </CardDescription>
