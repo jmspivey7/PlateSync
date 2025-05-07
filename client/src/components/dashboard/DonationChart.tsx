@@ -102,9 +102,9 @@ export function DonationChart() {
       try {
         if (!batches || !Array.isArray(batches) || batches.length === 0) return {};
         
-        // Fetch donations for all batches that have a totalAmount > 0
+        // Fetch donations only for FINALIZED batches that have a totalAmount > 0
         const relevantBatches = batches.filter((batch: Batch) => 
-          parseFloat(batch.totalAmount?.toString() || '0') > 0
+          batch.status === 'FINALIZED' && parseFloat(batch.totalAmount?.toString() || '0') > 0
         );
         
         // Create a map of batchId to donations
@@ -194,10 +194,13 @@ export function DonationChart() {
     );
   }
 
-  // Get the most recent batches (up to 6)
+  // Get the most recent FINALIZED batches (up to 6)
   const recentBatches = Array.isArray(batches) ? 
     [...batches]
-      .filter((batch: Batch) => parseFloat(batch.totalAmount?.toString() || '0') > 0)
+      .filter((batch: Batch) => {
+        // Only include FINALIZED batches with positive total amount
+        return batch.status === 'FINALIZED' && parseFloat(batch.totalAmount?.toString() || '0') > 0;
+      })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 6)
       .reverse()
