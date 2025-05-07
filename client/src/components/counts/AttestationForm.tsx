@@ -457,12 +457,12 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <div className="flex flex-col space-y-3">
                 <Button 
                   onClick={() => {
-                    window.location.href = `/print-report?batchId=${batchId}`;
+                    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >
                   <Printer className="mr-2 h-4 w-4" />
-                  Print Report
+                  View & Print PDF Report
                 </Button>
                 
                 <Button 
