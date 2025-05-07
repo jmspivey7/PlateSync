@@ -407,8 +407,9 @@ export default function EmailTemplateEditor() {
                         {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
                           <div dangerouslySetInnerHTML={{ 
                             __html: templateData.bodyHtml
-                              // Remove the image tag completely for the preview when no logo URL is available
-                              .replace(/<div style="text-align: center;"><img src="{{churchLogoUrl}}"[^>]*><\/div>/g, '')
+                              // For email templates with Count Report or Donation Confirmation,
+                              // we need to replace the logo image with an empty div (remove the img tag completely)
+                              .replace(/<img\s+src="{{churchLogoUrl}}"\s+alt="{{churchName}} Logo"[^>]*>/g, '')
                               .replace(/max-width: \d+px/g, 'max-width: 375px')
                               .replace(/max-height: \d+px/g, 'max-height: 150px')
                           }} />
