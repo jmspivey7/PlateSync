@@ -529,7 +529,7 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       const text = `
 Dear ${params.recipientName},
 
-A count has been finalized for ${params.churchName}.
+A count has been finalized for ${params.churchName}, and a Detailed Count Report is attached to this email for your review.
 
 Count Details:
 - Count: ${params.batchName}
@@ -641,7 +641,7 @@ PlateSync Reporting System
     const text = `
 Dear ${params.recipientName},
 
-A count has been finalized for ${params.churchName}.
+A count has been finalized for ${params.churchName}, and a Detailed Count Report is attached to this email for your review.
 
 Count Details:
 - Count: ${params.batchName}
@@ -670,7 +670,7 @@ PlateSync Reporting System
   <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
     <p style="margin-top: 0;">Dear <strong>${params.recipientName}</strong>,</p>
     
-    <p>A count has been finalized for <strong>${params.churchName}</strong>.</p>
+    <p>A count has been finalized for <strong>${params.churchName}</strong>, and a <strong>Detailed Count Report</strong> is attached to this email for your review.</p>
     
     <!-- Count Details Box -->
     <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
