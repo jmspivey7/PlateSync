@@ -549,23 +549,23 @@ PlateSync Reporting System
       let html = '';
       
       if (params.churchLogoUrl) {
-        // Version with church logo
+        // Version with church logo - matching Donation Receipt clean style
         html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Church Logo -->
-  <div style="padding: 25px; text-align: center; background-color: #69ad4c; color: white; border-radius: 8px 8px 0 0;">
+  <!-- Header with Church Logo (clean white style) -->
+  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
     <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 250px; max-height: 80px;">
-    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+    <p style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: 500;">Count Report</p>
   </div>
         `;
       } else {
         // Version with just church name
         html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Church Name -->
-  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">${params.churchName}</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+  <!-- Header with Church Name (clean white style) -->
+  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
+    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">${params.churchName}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px; color: #2D3748;">Count Report</p>
   </div>
         `;
       }
@@ -657,13 +657,13 @@ Sincerely,
 PlateSync Reporting System
     `;
     
-    // HTML version of the email with nicer formatting
+    // HTML version of the email with clean white header style (matching donation receipt)
     const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Logo and Title -->
-  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">${params.churchName}</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+  <!-- Header with Church Name (clean white style) -->
+  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
+    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">${params.churchName}</h1>
+    <p style="margin: 10px 0 0; font-size: 18px; color: #2D3748;">Count Report</p>
   </div>
   
   <!-- Main Content -->
@@ -749,13 +749,13 @@ Sincerely,
 The PlateSync Team
   `;
   
-  // HTML version of the email with nicer formatting
+  // HTML version of the email with clean white header style (matching other emails)
   const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Logo and Title -->
-  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
+  <!-- Header with Church Name (clean white style) -->
+  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
+    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px; color: #2D3748;">Password Reset Request</p>
   </div>
   
   <!-- Main Content -->
