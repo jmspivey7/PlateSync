@@ -232,7 +232,9 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                   <>
                     {title.split(',')[0]}
                     <br className="sm:hidden" />
-                    {title.split(',').slice(1).join(',').trim()}
+                    <span className="text-lg font-normal text-gray-600">
+                      {title.split(',').slice(1).join(',').trim()}
+                    </span>
                   </>
                 ) : title}
               </h2>
