@@ -1771,6 +1771,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 console.log(`Using church logo URL for email: ${churchLogoUrl || 'None available'}`);
                 
+                // Prepare donation data for the PDF report
+                const donationsForReport = donations.map(d => {
+                  // Get member name or visitor name
+                  let memberName = 'Visitor';
+                  if (d.memberId) {
+                    // Try to get member info from the relation, or use 'Member' as fallback
+                    const member = d.member || { firstName: 'Church', lastName: 'Member' };
+                    memberName = `${member.firstName || ''} ${member.lastName || ''}`.trim();
+                    if (!memberName) memberName = 'Church Member';
+                  }
+
+                  return {
+                    memberId: d.memberId,
+                    memberName: memberName,
+                    donationType: d.donationType,
+                    amount: d.amount,
+                    checkNumber: d.donationType === 'CHECK' ? d.checkNumber : undefined
+                  };
+                });
+
+                console.log(`Prepared ${donationsForReport.length} donations for PDF report`);
+
                 const emailResult = await sendCountReport({
                   to: recipient.email,
                   recipientName: `${recipient.firstName} ${recipient.lastName}`,
@@ -1781,7 +1803,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   cashAmount,
                   checkAmount,
                   donationCount: donations.length,
-                  churchLogoUrl
+                  churchLogoUrl,
+                  // Add donation details for PDF generation
+                  donations: donationsForReport,
+                  // Include original date object for proper filename formatting
+                  date: batchDate,
+                  // Include service option for the filename
+                  serviceOption: updatedBatch.service || updatedBatch.name
                 });
                 console.log(`Email send result: ${emailResult ? 'Success' : 'Failed'}`);
               } catch (innerError) {
