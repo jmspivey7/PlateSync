@@ -29,9 +29,12 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const { churchName, churchLogoPath, date, totalAmount, cashAmount, checkAmount, donations } = params;
   
   // Create the output directory if it doesn't exist
-  const outputDir = path.join(__dirname, '../temp-files');
+  // Use process.cwd() instead of __dirname which is not available in ES modules
+  const outputDir = path.join(process.cwd(), 'temp-files');
+  console.log(`Creating PDF output directory at: ${outputDir}`);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
+    console.log(`Created output directory: ${outputDir}`);
   }
   
   // Format the date for the filename and report
