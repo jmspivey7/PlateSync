@@ -176,7 +176,7 @@ export function DonationChart() {
           <div>
             <CardTitle>Count Trends</CardTitle>
             <CardDescription>
-              Cash vs. Check donations over time
+              Cash vs. Check donations
             </CardDescription>
           </div>
           <Button 
@@ -273,7 +273,7 @@ export function DonationChart() {
         <div>
           <CardTitle>Count Trends</CardTitle>
           <CardDescription>
-            Cash vs. Check donations over time
+            Cash vs. Check donations
           </CardDescription>
         </div>
         <Button 
