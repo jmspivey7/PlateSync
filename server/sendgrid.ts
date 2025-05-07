@@ -540,17 +540,38 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
         const serviceOption = params.serviceOption || params.batchName;
         
         // Generate the PDF
-        // IMPORTANT: We must ensure we only show EITHER the logo OR the name
-        // Use a completely new approach - pass empty string for churchName when we have logo
-        const pdfFilePath = await generateCountReportPDF({
-          churchName: churchLogoPath ? '' : params.churchName, // Only use church name if no logo - use empty string
-          churchLogoPath,
+        // IMPORTANT: We must ensure we ONLY pass EITHER the logo OR the church name, never both
+        // This is a critical fix to prevent both from appearing in the PDF
+        
+        // PDF parameters with common values
+        const pdfParams: CountReportPDFParams = {
+          churchName: '',  // Default empty string
           date: reportDate,
           totalAmount: params.totalAmount,
           cashAmount: params.cashAmount, 
           checkAmount: params.checkAmount,
           donations: params.donations
-        });
+        };
+        
+        // Now set EITHER the logo OR the name, but never both
+        if (churchLogoPath && fs.existsSync(churchLogoPath)) {
+          // If we have a valid logo, use it (and leave churchName as empty string)
+          pdfParams.churchLogoPath = churchLogoPath;
+          // Explicitly set churchName to empty
+          pdfParams.churchName = '';
+        } else {
+          // No logo or invalid logo path - use church name instead
+          pdfParams.churchName = params.churchName;
+          // Explicitly ensure no logo is passed
+          pdfParams.churchLogoPath = undefined;
+        }
+        
+        console.log('PDF PARAMS CHECK:');
+        console.log(`- Using church name: ${pdfParams.churchName ? 'YES' : 'NO'}`);
+        console.log(`- Using logo: ${pdfParams.churchLogoPath ? 'YES' : 'NO'}`);
+        
+        // Generate the PDF with our carefully constructed parameters
+        const pdfFilePath = await generateCountReportPDF(pdfParams);
         
         console.log(`PDF generated successfully at: ${pdfFilePath}`);
         
