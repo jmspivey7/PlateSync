@@ -198,16 +198,18 @@ const Dashboard = () => {
           </Button>
           
           {/* Desktop view: taller card-like button that matches Last Count Finalized height */}
-          <Card className="hidden md:flex h-full rounded-xl shadow-sm border overflow-hidden">
-            <CardContent className="p-0 w-full">
+          <Card className="hidden md:flex h-full rounded-xl shadow-sm border overflow-hidden bg-[#69ad4c]">
+            <CardContent className="p-0 w-full flex flex-col items-center justify-center">
               <Button 
-                className="w-full h-full rounded-none bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex flex-col items-center justify-center text-2xl font-bold py-4 transition-all duration-300 gap-3"
+                className="w-full h-full rounded-none bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex flex-col items-center justify-center border-none shadow-none py-2 transition-all duration-300"
                 onClick={handleNewCount}
               >
-                <span className="flex-shrink-0 w-24 h-24 flex items-center justify-center overflow-hidden">
-                  <img src="/assets/ThumbsUp.png" alt="Thumbs Up" className="w-24 h-24 object-contain" />
-                </span>
-                <span className="whitespace-nowrap text-3xl">New Count</span>
+                <div className="flex items-center justify-center flex-col gap-2 py-3">
+                  <span className="flex-shrink-0 w-16 h-16 flex items-center justify-center overflow-hidden">
+                    <img src="/assets/ThumbsUp.png" alt="Thumbs Up" className="w-16 h-16 object-contain" />
+                  </span>
+                  <span className="whitespace-nowrap text-2xl font-bold">New Count</span>
+                </div>
               </Button>
             </CardContent>
           </Card>
