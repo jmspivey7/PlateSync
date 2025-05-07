@@ -71,20 +71,38 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const cashDonations = donations.filter(d => d.donationType === 'CASH');
   
   // IMPORTANT: We only want to display EITHER the logo OR the church name, not both
-  let startingY = 50; // Default starting Y position
+  // Default starting Y position
+  let startingY = 50; 
   
-  if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-    // VERSION 1: With logo only (NO church name)
+  console.log(`Church logo path: ${churchLogoPath}`);
+  console.log(`Church name: ${churchName}`);
+  
+  // Check if the logo file exists and is accessible
+  const logoExists = churchLogoPath && fs.existsSync(churchLogoPath);
+  console.log(`Logo exists check: ${logoExists}`);
+  
+  // First case: we have a valid logo path -> show ONLY the logo
+  if (logoExists) {
+    console.log("USING LOGO ONLY PATH");
+    // With logo only (NO church name)
     const logoWidth = 250;
     doc.image(churchLogoPath, (doc.page.width - logoWidth) / 2, startingY, { width: logoWidth });
     startingY = doc.y + 20; // Move down after logo
-  } else {
-    // VERSION 2: Without logo, ONLY church name in larger font
+  } 
+  // Second case: no valid logo -> show ONLY the church name
+  else if (churchName && churchName.trim() !== '') {
+    console.log("USING CHURCH NAME ONLY PATH");
+    // Without logo, ONLY church name in larger font
     doc.font('Helvetica-Bold').fontSize(24).text(churchName, { align: 'center' });
     startingY = doc.y + 10; // Move down after church name
   }
+  // If neither is available, leave space for the title
+  else {
+    console.log("NO LOGO OR CHURCH NAME AVAILABLE");
+    startingY = 80; // Just leave some blank space
+  }
   
-  // Reset Y position to use the correct starting point after either logo OR name
+  // Reset Y position to use the correct starting point
   doc.y = startingY;
   
   // Add report title and date (appears in both versions)
