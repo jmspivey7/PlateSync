@@ -1069,7 +1069,9 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(batches.date))
       .limit(1);
     
-    return finalizedBatch;
+    // If no finalized batch was found, return null explicitly to make
+    // error handling in the route handler more straightforward
+    return finalizedBatch || null;
   }
 
   // Donation operations

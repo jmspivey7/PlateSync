@@ -1348,6 +1348,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         const finalizedBatch = await storage.getLatestFinalizedBatch(churchId);
+        
+        if (!finalizedBatch) {
+          return res.status(404).json({ message: "No finalized batches found" });
+        }
+        
         res.json(finalizedBatch);
       } catch (batchError) {
         console.error("Error fetching latest finalized batch from storage:", batchError);
