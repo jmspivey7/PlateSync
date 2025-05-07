@@ -407,10 +407,8 @@ export default function EmailTemplateEditor() {
                         {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
                           <div dangerouslySetInnerHTML={{ 
                             __html: templateData.bodyHtml
-                              /* Don't replace the churchLogoUrl placeholder with a hardcoded URL,
-                                 instead just leave the placeholder as-is for the preview.
-                                 When the email is actually sent, the real logo URL will be used (if available)
-                                 or the system will handle the case when no logo is present. */
+                              // Remove the image tag completely for the preview when no logo URL is available
+                              .replace(/<div style="text-align: center;"><img src="{{churchLogoUrl}}"[^>]*><\/div>/g, '')
                               .replace(/max-width: \d+px/g, 'max-width: 375px')
                               .replace(/max-height: \d+px/g, 'max-height: 150px')
                           }} />
