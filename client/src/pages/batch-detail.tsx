@@ -37,6 +37,12 @@ import AttestationForm from "../components/counts/AttestationForm";
 import { Batch, BatchWithDonations, Donation, DonationWithMember, batchStatusEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  MobileDialog, 
+  MobileDialogContent, 
+  MobileDialogHeader, 
+  MobileDialogTitle 
+} from "@/components/ui/mobile-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -754,28 +760,28 @@ const BatchDetailPage = () => {
           </div>
 
         {/* Modal for adding a donation */}
-        <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
-          <DialogContent className="sm:max-w-[800px] p-0">
-            <DialogHeader className="px-6 pt-6 pb-0">
-              <DialogTitle className="text-xl font-bold">Add Donation</DialogTitle>
-            </DialogHeader>
+        <MobileDialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
+          <MobileDialogContent className="sm:max-w-[800px] p-0">
+            <MobileDialogHeader className="px-6 pt-6 pb-0">
+              <MobileDialogTitle className="text-xl font-bold">Add Donation</MobileDialogTitle>
+            </MobileDialogHeader>
             <DonationForm 
               defaultBatchId={batchId} 
               isInsideDialog={true} 
               onClose={() => setIsAddingDonation(false)} 
             />
-          </DialogContent>
-        </Dialog>
+          </MobileDialogContent>
+        </MobileDialog>
         
         {/* Modal for editing a donation */}
-        <Dialog 
+        <MobileDialog 
           open={editingDonationId !== null} 
           onOpenChange={(open) => !open && setEditingDonationId(null)}
         >
-          <DialogContent className="sm:max-w-[800px] p-0">
-            <DialogHeader className="px-6 pt-6 pb-0">
-              <DialogTitle className="text-xl font-bold">Edit Donation</DialogTitle>
-            </DialogHeader>
+          <MobileDialogContent className="sm:max-w-[800px] p-0">
+            <MobileDialogHeader className="px-6 pt-6 pb-0">
+              <MobileDialogTitle className="text-xl font-bold">Edit Donation</MobileDialogTitle>
+            </MobileDialogHeader>
             {editingDonationId && (
               <DonationForm 
                 donationId={editingDonationId.toString()} 
@@ -785,8 +791,8 @@ const BatchDetailPage = () => {
                 onClose={handleDonationAdded} 
               />
             )}
-          </DialogContent>
-        </Dialog>
+          </MobileDialogContent>
+        </MobileDialog>
         
         {/* Modal for attestation process - fixed version */}
         <div 
