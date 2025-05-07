@@ -242,12 +242,7 @@ const BatchDetailPage = () => {
   // Mutation for deleting a donation
   const deleteDonationMutation = useMutation({
     mutationFn: async (donationId: number) => {
-      const response = await apiRequest(`/api/donations/${donationId}`, "DELETE");
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete donation");
-      }
-      return response.json();
+      return await apiRequest(`/api/donations/${donationId}`, "DELETE");
     },
     onSuccess: () => {
       // Invalidate relevant queries to refresh the data
