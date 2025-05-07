@@ -187,14 +187,18 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 50;
   
-  // Draw double horizontal line for grand total - extend to cover full width including amount column
+  // Draw SINGLE horizontal line ABOVE grand total - extend to cover full width including amount column
   doc.moveTo(tableX, tableY - 20).lineTo(tableX + fullTableWidth, tableY - 20).stroke();
-  doc.moveTo(tableX, tableY - 17).lineTo(tableX + fullTableWidth, tableY - 17).stroke();
   
   // Grand total
   doc.fontSize(14);
   doc.text('GRAND TOTAL', tableX, tableY);
   doc.text(`$${formatCurrency(totalAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  
+  // Draw DOUBLE horizontal line BELOW grand total - extend to cover full width including amount column
+  tableY += 10; // Space below the grand total text
+  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
+  doc.moveTo(tableX, tableY + 3).lineTo(tableX + fullTableWidth, tableY + 3).stroke();
   
   // Finalize the PDF
   doc.end();
