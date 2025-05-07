@@ -41,7 +41,6 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   const [isAddingDonation, setIsAddingDonation] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [isFinalized, setIsFinalized] = useState(false);
-  const [isPrintView, setIsPrintView] = useState(false);
 
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
@@ -110,12 +109,17 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   };
 
   const handlePrint = () => {
-    setIsPrintView(true);
-    // Use setTimeout to allow the state to update before printing
-    setTimeout(() => {
-      window.print();
-      setIsPrintView(false);
-    }, 100);
+    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    if (batch && batch.id) {
+      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+    } else {
+      console.error("Cannot generate PDF: Batch ID not available");
+      toast({
+        title: "Error",
+        description: "Unable to generate PDF report. Batch information is missing.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -135,72 +139,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
     return statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800";
   };
 
-  // Print-specific styles
-  if (isPrintView) {
-    return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">{batch?.name} - Donation Summary</h1>
-          <p className="text-gray-500">{format(new Date(batch?.date || new Date()), 'MMMM d, yyyy')}</p>
-          <p className="text-gray-500">Status: {batch?.status}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="border p-4 rounded">
-            <h2 className="text-lg font-bold mb-2">Cash Total</h2>
-            <p className="text-xl">{formatCurrency(cashTotal)}</p>
-          </div>
-          <div className="border p-4 rounded">
-            <h2 className="text-lg font-bold mb-2">Check Total</h2>
-            <p className="text-xl">{formatCurrency(checkTotal)}</p>
-          </div>
-        </div>
-
-        <div className="border p-4 rounded mb-6">
-          <h2 className="text-lg font-bold mb-2">Total Donations</h2>
-          <p className="text-xl">{formatCurrency(parseFloat(batch?.totalAmount?.toString() || "0"))}</p>
-        </div>
-
-        <h2 className="text-xl font-bold mb-4">Donation Details</h2>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b-2 border-gray-300">
-              <th className="text-left py-2">Donor</th>
-              <th className="text-left py-2">Date</th>
-              <th className="text-left py-2">Type</th>
-              <th className="text-left py-2">Details</th>
-              <th className="text-right py-2">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batch?.donations?.map((donation) => (
-              <tr key={donation.id} className="border-b border-gray-200">
-                <td className="py-2">
-                  {/* Access memberId instead of member property */}
-                  {donation.memberId ? 
-                    "Member Donation" : 
-                    "Anonymous/Visitor"}
-                </td>
-                <td className="py-2">{format(new Date(donation.date), 'MMM d, yyyy')}</td>
-                <td className="py-2">{donation.donationType}</td>
-                <td className="py-2">
-                  {donation.donationType === "CHECK" ? `Check #${donation.checkNumber}` : ""}
-                </td>
-                <td className="py-2 text-right">{formatCurrency(donation.amount)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="mt-10 text-center text-gray-500 text-sm">
-          <p>Printed on {format(new Date(), 'MMMM d, yyyy h:mm a')}</p>
-          <p>PlateSync - Church Donation Management</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Regular view (not print view)
+  // Regular views only - PDF rendering is handled by the server
   if (isLoading) {
     return <div className="flex justify-center items-center h-full">Loading...</div>;
   }
