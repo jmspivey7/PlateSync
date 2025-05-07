@@ -227,7 +227,11 @@ const Dashboard = () => {
                     )}
                   </div>
                   <div className="text-sm font-bold">
-                    {format(new Date(lastFinalizedBatch.date), 'EEEE, MMMM d, yyyy')}
+                    {(() => {
+                      const dateObj = new Date(lastFinalizedBatch.date);
+                      const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+                      return format(correctedDate, 'EEEE, MMMM d, yyyy');
+                    })()}
                   </div>
                 </div>
               </CardContent>
