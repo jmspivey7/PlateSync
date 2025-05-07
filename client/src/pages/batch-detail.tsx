@@ -651,7 +651,7 @@ const BatchDetailPage = () => {
               className="bg-green-600 hover:bg-green-700 text-white h-12 px-6"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
-              Record New Donation
+              Add Donations
             </Button>
             
             {/* Only show Delete button for OPEN counts and for admins */}
@@ -730,7 +730,7 @@ const BatchDetailPage = () => {
         <Dialog open={isAddingDonation} onOpenChange={setIsAddingDonation}>
           <DialogContent className="sm:max-w-[800px] p-0">
             <DialogHeader className="px-6 pt-6 pb-0">
-              <DialogTitle className="text-xl font-bold">Record New Donation</DialogTitle>
+              <DialogTitle className="text-xl font-bold">Add Donation</DialogTitle>
             </DialogHeader>
             <DonationForm 
               defaultBatchId={batchId} 
