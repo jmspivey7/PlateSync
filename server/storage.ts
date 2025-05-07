@@ -77,6 +77,7 @@ export interface IStorage {
   getDonationWithMember(id: number, churchId: string): Promise<DonationWithMember | undefined>;
   createDonation(donation: InsertDonation): Promise<Donation>;
   updateDonation(id: number, data: Partial<InsertDonation>, churchId: string): Promise<Donation | undefined>;
+  deleteDonation(id: number, churchId: string): Promise<Donation | undefined>;
   updateDonationNotificationStatus(id: number, status: string): Promise<void>;
   
   // Service options operations
