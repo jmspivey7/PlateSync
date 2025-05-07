@@ -609,18 +609,21 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         // Reset form for next entry but keep the batchId as it should stay the same for all entries
         const currentBatchId = form.getValues("batchId");
         const currentDate = form.getValues("date");
+        const currentDonorType = form.getValues("donorType");
         
         // First manually reset the amount field to ensure it's cleared
         form.setValue("amount", "");
         
-        // Reset form completely
+        // Reset form completely, but maintain current donor type if it's anonymous
         form.reset({
           date: currentDate,
           amount: "",  // Setting explicitly to empty string
-          donationType: "CASH",
+          // Set donation type based on donor type
+          donationType: currentDonorType === "visitor" ? "CASH" : "CHECK",
           checkNumber: "",
           notes: "",
-          donorType: "existing",
+          // Keep Anonymous (visitor) selection if that was the current donor type
+          donorType: currentDonorType === "visitor" ? "visitor" : "existing",
           memberId: "",
           firstName: "",
           lastName: "",
@@ -856,20 +859,28 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-bold">Donation Type:</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
+                        {formDonorType === "visitor" ? (
+                          // For Anonymous donors, show a read-only field that's always CASH
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
+                            <Input value="Cash" readOnly className="bg-gray-50" />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="CASH">Cash</SelectItem>
-                            <SelectItem value="CHECK">Check</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        ) : (
+                          // For all other donor types, show the normal dropdown
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="CASH">Cash</SelectItem>
+                              <SelectItem value="CHECK">Check</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
