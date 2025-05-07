@@ -842,6 +842,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 <h3 className="text-lg font-medium text-[#2D3748] mb-4">Donation Details</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-full overflow-hidden px-1">
+
                   <FormField
                     control={form.control}
                     name="date"
@@ -852,8 +853,14 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                           <Input 
                             {...field} 
                             type="date" 
-                            className="text-left w-full max-w-xs"
-                            style={{ textAlign: 'left' }} 
+                            className="w-full max-w-[90%] text-left sm:w-full"
+                            style={{ 
+                              textAlign: 'left', 
+                              MozAppearance: 'textfield',
+                              WebkitAppearance: 'none',
+                              direction: 'ltr',
+                              width: '90%'
+                            }} 
                           />
                         </FormControl>
                         <FormMessage />
@@ -870,7 +877,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         {formDonorType === "visitor" ? (
                           // For Anonymous donors, show a read-only field that's always CASH
                           <FormControl>
-                            <Input value="Cash" readOnly className="bg-gray-50" />
+                            <Input value="Cash" readOnly className="bg-gray-50 w-full max-w-[90%]" style={{ width: '90%' }} />
                           </FormControl>
                         ) : (
                           // For all other donor types, show the normal dropdown
@@ -879,7 +886,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             onValueChange={field.onChange}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full max-w-[90%]" style={{ width: '90%' }}>
                                 <SelectValue placeholder="Select type" />
                               </SelectTrigger>
                             </FormControl>
@@ -906,6 +913,8 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             placeholder="0.00" 
                             step="0.01" 
                             type="number"
+                            className="w-full max-w-[90%] text-left"
+                            style={{ width: '90%', textAlign: 'left' }}
                             value={field.value || ""} // Ensure it's never undefined
                             onChange={(e) => {
                               field.onChange(e.target.value);
@@ -925,7 +934,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         <FormItem>
                           <FormLabel className="font-bold">Check Number:</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input 
+                              {...field}
+                              className="w-full max-w-[90%] text-left"
+                              style={{ width: '90%', textAlign: 'left' }} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
