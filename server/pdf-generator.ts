@@ -3,6 +3,18 @@ import fs from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
 
+// Helper function to format currency with thousands separators
+function formatCurrency(amount: string | number): string {
+  // Convert to number if it's a string
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  
+  // Format with thousands separator and 2 decimal places
+  return numAmount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
 interface CountReportPDFParams {
   churchName: string;
   churchLogoPath?: string;
@@ -88,12 +100,12 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   
   // Checks row
   doc.text('Checks', tableX, tableY);
-  doc.text(`$${checkAmount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(checkAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 20;
   
   // Cash row
   doc.text('Cash', tableX, tableY);
-  doc.text(`$${cashAmount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 20;
   
   // Draw horizontal line
@@ -103,7 +115,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Total row
   doc.font('Helvetica-Bold');
   doc.text('TOTAL', tableX, tableY);
-  doc.text(`$${totalAmount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(totalAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 30;
   
   // CHECKS section
@@ -127,7 +139,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     if (donation.checkNumber) {
       doc.text(donation.checkNumber, tableX + 225, tableY);
     }
-    doc.text(`$${donation.amount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+    doc.text(`$${formatCurrency(donation.amount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
     tableY += 20;
     checkTotal += parseFloat(donation.amount);
   });
@@ -139,7 +151,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Check subtotal
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Checks', tableX, tableY);
-  doc.text(`$${checkAmount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(checkAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 30;
   
   // CASH section
@@ -159,7 +171,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   
   cashDonations.forEach(donation => {
     doc.text(donation.memberName, tableX, tableY);
-    doc.text(`$${donation.amount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+    doc.text(`$${formatCurrency(donation.amount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
     tableY += 20;
     cashTotal += parseFloat(donation.amount);
   });
@@ -171,7 +183,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Cash subtotal
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Cash', tableX, tableY);
-  doc.text(`$${cashAmount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 50;
   
   // Draw double horizontal line for grand total
@@ -181,7 +193,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Grand total
   doc.fontSize(14);
   doc.text('GRAND TOTAL', tableX, tableY);
-  doc.text(`$${totalAmount}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(totalAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   
   // Finalize the PDF
   doc.end();
