@@ -540,8 +540,10 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
         const serviceOption = params.serviceOption || params.batchName;
         
         // Generate the PDF
+        // IMPORTANT: Only pass churchName when there's no logo path
+        // This ensures we display EITHER the logo OR the name but not both
         const pdfFilePath = await generateCountReportPDF({
-          churchName: params.churchName,
+          churchName: churchLogoPath ? '' : params.churchName, // Only use church name if no logo
           churchLogoPath,
           date: reportDate,
           totalAmount: params.totalAmount,
