@@ -289,12 +289,8 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    setIsPrintView(true);
-    // Use setTimeout to allow the state to update before printing
-    setTimeout(() => {
-      window.print();
-      setIsPrintView(false);
-    }, 100);
+    // Open the PDF report in a new tab
+    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -436,7 +432,7 @@ const BatchDetailPage = () => {
                 {isFinalized && (
                   <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
                     <Printer className="mr-2 h-4 w-4" />
-                    Print
+                    View PDF Report
                   </Button>
                 )}
 
@@ -542,7 +538,7 @@ const BatchDetailPage = () => {
                 <CheckCircle className="h-4 w-4" />
                 <AlertTitle className="text-base">Count Finalized</AlertTitle>
                 <AlertDescription>
-                  This count has been finalized and can no longer be edited. You can print a copy for your records.
+                  This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.
                 </AlertDescription>
               </Alert>
             )}
