@@ -1,4 +1,9 @@
 import { MailService } from '@sendgrid/mail';
+import fs from 'fs';
+import path from 'path';
+import { storage } from './storage';
+import { format } from 'date-fns';
+import { generateCountReportPDF } from './pdf-generator';
 
 if (!process.env.SENDGRID_API_KEY) {
   console.warn("SENDGRID_API_KEY environment variable is not set. Email notifications will not be sent.");
@@ -149,8 +154,6 @@ export async function sendEmail(
     return false;
   }
 }
-
-import { storage } from './storage';
 
 interface DonationNotificationParams {
   to: string;
