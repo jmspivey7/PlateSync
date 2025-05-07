@@ -418,8 +418,7 @@ const BatchDetailPage = () => {
   if (showSummary || isFinalized) {
     return (
       <PageLayout 
-        title={batch.name} 
-        subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
+        title={batch.name}
       >
         <Card>
           <CardHeader className="pb-2">
@@ -606,8 +605,7 @@ const BatchDetailPage = () => {
   // Regular batch detail view
   return (
     <PageLayout 
-      title={batch.name} 
-      subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
+      title={batch.name}
     >
       <Card className="p-6">
           {/* Top section - With full mobile responsiveness */}
