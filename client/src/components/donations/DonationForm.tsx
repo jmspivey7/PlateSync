@@ -941,52 +941,54 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 </div>
               </div>
               
-              <div className="flex justify-end mt-6 space-x-2 relative">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    // If inside dialog, use onClose to close the dialog
-                    if (isInsideDialog && onClose) {
-                      onClose();
-                    } 
-                    // Otherwise navigate based on the batch ID
-                    else if (defaultBatchId) {
-                      setLocation(`/batch/${defaultBatchId}`);
-                    } else {
-                      setLocation("/counts");
-                    }
-                  }}
-                >
-                  Back to Count Summary
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  disabled={createDonationMutation.isPending}
-                  onClick={() => {
-                    // Log form state before submission
-                    console.log("Form state:", form.getValues());
-                    console.log("Form errors:", form.formState.errors);
-                    // Don't use preventDefault() as we want the normal form submit to happen
-                  }}
-                >
-                  {createDonationMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isEdit ? "Updating..." : "Recording..."}
-                    </>
-                  ) : (
-                    isEdit ? "Update Donation" : "Record & Next"
-                  )}
-                </Button>
-                
-                {/* Success indicator - appears briefly after successful submission */}
+              <div className="mt-6 relative">
+                {/* Success indicator - appears briefly above buttons, aligned right */}
                 {showSuccess && (
-                  <div className="absolute -right-12 top-1/2 transform -translate-y-1/2 animate-fade-in-out">
-                    <ThumbsUp className="h-6 w-6 text-green-500" />
+                  <div className="flex justify-end mb-2">
+                    <ThumbsUp className="h-6 w-6 text-green-500 animate-fade-in-out" />
                   </div>
                 )}
+                
+                <div className="flex justify-end space-x-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      // If inside dialog, use onClose to close the dialog
+                      if (isInsideDialog && onClose) {
+                        onClose();
+                      } 
+                      // Otherwise navigate based on the batch ID
+                      else if (defaultBatchId) {
+                        setLocation(`/batch/${defaultBatchId}`);
+                      } else {
+                        setLocation("/counts");
+                      }
+                    }}
+                  >
+                    Back to Count Summary
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                    disabled={createDonationMutation.isPending}
+                    onClick={() => {
+                      // Log form state before submission
+                      console.log("Form state:", form.getValues());
+                      console.log("Form errors:", form.formState.errors);
+                      // Don't use preventDefault() as we want the normal form submit to happen
+                    }}
+                  >
+                    {createDonationMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {isEdit ? "Updating..." : "Recording..."}
+                      </>
+                    ) : (
+                      isEdit ? "Update Donation" : "Record & Next"
+                    )}
+                  </Button>
+                </div>
               </div>
             </form>
           </Form>
