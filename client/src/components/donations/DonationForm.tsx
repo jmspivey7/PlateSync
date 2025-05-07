@@ -141,10 +141,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
       amount: "",
-      donationType: "CASH",
+      donationType: "CHECK", // Default to Check as requested
       checkNumber: "",
       notes: "",
-      donorType: "existing",
+      donorType: "existing", // Default to Existing Member
       memberId: "",
       firstName: "",
       lastName: "",
@@ -431,6 +431,13 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
   
   // Handle form field changes to show appropriate fields
   const formDonorType = form.watch("donorType");
+  
+  // Auto-set donation type to CASH when donor type is Anonymous (visitor)
+  useEffect(() => {
+    if (formDonorType === "visitor") {
+      form.setValue("donationType", "CASH");
+    }
+  }, [formDonorType, form]);
   const donationType = form.watch("donationType");
   
   // Create/update donation mutation
