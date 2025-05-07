@@ -407,9 +407,10 @@ export default function EmailTemplateEditor() {
                         {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
                           <div dangerouslySetInnerHTML={{ 
                             __html: templateData.bodyHtml
-                              .replace(/{{churchLogoUrl}}/g, 
-                                'https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png'
-                              )
+                              /* Don't replace the churchLogoUrl placeholder with a hardcoded URL,
+                                 instead just leave the placeholder as-is for the preview.
+                                 When the email is actually sent, the real logo URL will be used (if available)
+                                 or the system will handle the case when no logo is present. */
                               .replace(/max-width: \d+px/g, 'max-width: 375px')
                               .replace(/max-height: \d+px/g, 'max-height: 150px')
                           }} />
