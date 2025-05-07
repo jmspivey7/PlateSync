@@ -185,9 +185,10 @@ const Dashboard = () => {
     >
       <div className="flex flex-col md:flex-row gap-6 mb-6">
         {/* Start New Count Card Button */}
-        <div className="md:w-1/3 h-16">
+        <div className="md:w-1/3 h-16 md:h-auto">
+          {/* Mobile view: original compact button */}
           <Button 
-            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-row items-center justify-center text-2xl font-bold py-0 px-4 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/50 hover:translate-y-[-2px] gap-5"
+            className="w-full h-full md:hidden rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-row items-center justify-center text-2xl font-bold py-0 px-4 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/50 hover:translate-y-[-2px] gap-5"
             onClick={handleNewCount}
           >
             <span className="flex-shrink-0 w-20 h-16 flex items-center justify-center overflow-hidden">
@@ -195,6 +196,21 @@ const Dashboard = () => {
             </span>
             <span className="whitespace-nowrap text-3xl">New Count</span>
           </Button>
+          
+          {/* Desktop view: taller card-like button that matches Last Count Finalized height */}
+          <Card className="hidden md:flex h-full rounded-xl shadow-sm border overflow-hidden">
+            <CardContent className="p-0 w-full">
+              <Button 
+                className="w-full h-full rounded-none bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex flex-col items-center justify-center text-2xl font-bold py-4 transition-all duration-300 gap-3"
+                onClick={handleNewCount}
+              >
+                <span className="flex-shrink-0 w-24 h-24 flex items-center justify-center overflow-hidden">
+                  <img src="/assets/ThumbsUp.png" alt="Thumbs Up" className="w-24 h-24 object-contain" />
+                </span>
+                <span className="whitespace-nowrap text-3xl">New Count</span>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
         
         {/* Last Count Submitted */}
