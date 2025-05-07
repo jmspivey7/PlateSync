@@ -194,17 +194,36 @@ export function DonationChart() {
     );
   }
 
-  // Get the most recent FINALIZED batches (up to 6)
-  const recentBatches = Array.isArray(batches) ? 
-    [...batches]
-      .filter((batch: Batch) => {
-        // Only include FINALIZED batches with positive total amount
-        return batch.status === 'FINALIZED' && parseFloat(batch.totalAmount?.toString() || '0') > 0;
+  // Get all FINALIZED batches from the last 12 months
+  const recentBatches = (() => {
+    if (!Array.isArray(batches) || batches.length === 0) return [];
+    
+    // First, find all finalized batches with positive amounts
+    const finalizedBatches = batches.filter(b => 
+      b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0
+    );
+    
+    if (finalizedBatches.length === 0) return [];
+    
+    // Get the most recent finalized batch date
+    const sortedByDate = [...finalizedBatches].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    const mostRecentDate = new Date(sortedByDate[0].date);
+    
+    // Calculate the date 12 months ago from the most recent batch
+    const twelveMonthsAgo = new Date(mostRecentDate);
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    
+    // Filter to get only batches within the 12-month period
+    return finalizedBatches
+      .filter(batch => {
+        const batchDate = new Date(batch.date);
+        return batchDate >= twelveMonthsAgo;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 6)
-      .reverse()
-    : [];
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  })();
 
   console.log("Recent batches for chart:", recentBatches.map(b => b.id));
 
@@ -299,8 +318,10 @@ export function DonationChart() {
               <XAxis 
                 dataKey="date" 
                 tickLine={false} 
-                axisLine={false} 
+                axisLine={false}
                 tickMargin={4} // Reduced from 8 to 4 to tighten spacing
+                interval="preserveStartEnd" // Only show first and last tick when there are many data points
+                minTickGap={30} // Minimum pixel space between ticks
               />
               <Tooltip 
                 content={<CustomTooltip />}
