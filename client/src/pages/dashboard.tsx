@@ -187,11 +187,15 @@ const Dashboard = () => {
         {/* Start New Count Card Button */}
         <div className="md:w-1/3">
           <Button 
-            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-col items-center justify-center text-3xl font-bold p-6 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/50 hover:translate-y-[-2px]"
+            className="w-full h-full rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-row items-center justify-center text-2xl font-bold p-6 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/50 hover:translate-y-[-2px] gap-3"
             onClick={handleNewCount}
           >
-            <span>Start</span>
-            <span>New Count</span>
+            <span className="flex-shrink-0 bg-white rounded-full p-0.5 w-10 h-10 flex items-center justify-center">
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="#69ad4c">
+                <path d="M1,21H5V9H1V21M9,21H21.5L23,12.9V9H17.5L19.5,3H9V21" />
+              </svg>
+            </span>
+            <span className="whitespace-nowrap">New Count</span>
           </Button>
         </div>
         
