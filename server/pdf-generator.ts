@@ -112,8 +112,12 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
   tableY += 20;
   
-  // Draw horizontal line - extend to cover full width including amount column
-  const fullTableWidth = tableWidth + 50; // Add extra width to cover the amount column completely
+  // Ensure lines extend completely past the right edge of numbers
+  // Calculate the width needed to extend the line past the rightmost text
+  const textWidth = doc.widthOfString(`$${formatCurrency(totalAmount)}`);
+  const fullTableWidth = tableWidth + textWidth; // Add enough width to fully cover the amount column
+  
+  // Draw horizontal line above TOTAL row
   doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
   tableY += 5;
   
