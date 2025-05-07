@@ -371,9 +371,7 @@ export function DonationChart() {
               )}
             </div>
             <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              Recent Collections: {chartData.length > 0 ? 
-                `${chartData[0].fullDate} - ${chartData[chartData.length-1].fullDate}` : 
-                "No data available"}
+              Prior 12 Months
             </div>
           </div>
           
