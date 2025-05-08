@@ -41,7 +41,6 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const { churchName, churchLogoPath, date, totalAmount, cashAmount, checkAmount, donations } = params;
   
   // Create the output directory if it doesn't exist
-  // Use process.cwd() instead of __dirname which is not available in ES modules
   const outputDir = path.join(process.cwd(), 'temp-files');
   console.log(`Creating PDF output directory at: ${outputDir}`);
   if (!fs.existsSync(outputDir)) {
@@ -59,7 +58,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Create a new PDF document
   const doc = new PDFDocument({ 
     margin: 50,
-    size: 'letter' 
+    size: 'letter'
   });
   
   // Pipe the PDF to a file
@@ -70,254 +69,188 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const checkDonations = donations.filter(d => d.donationType === 'CHECK');
   const cashDonations = donations.filter(d => d.donationType === 'CASH');
   
-  // CRITICAL FIX: COMPLETELY SEPARATE RENDERING LOGIC FOR LOGO VS CHURCH NAME
+  // Set up constants for layout
+  const pageWidth = doc.page.width;
+  const margin = 50;
+  const contentWidth = pageWidth - (margin * 2);
   
-  // Set starting position for content
-  let startingY = 50;
-  
-  // Debug information
+  // Render church name or logo
   console.log("PDF GENERATION - CONDITIONAL HEADER RENDERING");
   console.log(`Church logo path: ${churchLogoPath ? churchLogoPath : 'none'}`);
   console.log(`Church name: ${churchName ? churchName : 'none'}`);
   
   try {
-    // CASE 1: We have a logo - show ONLY logo + report title
     if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-      console.log("RENDERING LOGO ONLY (NO CHURCH NAME)");
+      console.log("RENDERING LOGO");
       
-      // Read the file to verify it's a valid image
+      // Draw logo centered
       const logoData = fs.readFileSync(churchLogoPath);
       console.log(`Logo file size: ${logoData.length} bytes`);
       
-      // Draw the logo centered properly
       const logoWidth = 250;
-      const logoHeight = 100;
+      const centerX = (pageWidth - logoWidth) / 2;
       
-      // Calculate the center position of the page
-      const centerX = (doc.page.width - logoWidth) / 2;
-      
-      // Draw the image at the calculated position
-      doc.image(logoData, centerX, doc.y, { 
-        fit: [logoWidth, logoHeight]
+      doc.image(logoData, centerX, margin, { 
+        fit: [logoWidth, 100]
       });
       
-      // Position after logo - add significantly more spacing (100px instead of 40px)
-      startingY = doc.y + 100;
-      console.log(`Position after logo: ${startingY}`);
-      
-      // Set position for next content
-      doc.y = startingY;
-      
-      // Add report title and date below the logo
-      doc.font('Helvetica-Bold').fontSize(18).text('Count Report', { align: 'center' });
-      doc.fontSize(14).text(formattedDate, { align: 'center' });
-      doc.moveDown(2);
+      // Add spacer after logo
+      doc.moveDown(3);
     } 
-    // CASE 2: No logo but we have a non-empty church name - show church name as logo alternative
     else if (churchName && churchName.trim() !== '') {
-      console.log("RENDERING CHURCH NAME AS HEADER (NO LOGO)");
-      
-      // Draw church name in larger font as header
-      doc.font('Helvetica-Bold').fontSize(24).text(churchName, { align: 'center' });
-      
-      // Add space after church name
-      startingY = doc.y + 10;
-      
-      // Set position for next content
-      doc.y = startingY;
-      
-      // Add report title and date below the church name
-      doc.font('Helvetica-Bold').fontSize(18).text('Count Report', { align: 'center' });
-      doc.fontSize(14).text(formattedDate, { align: 'center' });
-      doc.moveDown(2);
-    }
-    // CASE 3: Neither logo nor church name - just show report title
-    else {
-      console.log("NO LOGO OR CHURCH NAME - USING MINIMAL HEADER");
-      
-      // Leave some space at top
-      startingY = 80;
-      doc.y = startingY;
-      
-      // Just show the report title and date
-      doc.font('Helvetica-Bold').fontSize(20).text('Count Report', { align: 'center' });
-      doc.fontSize(14).text(formattedDate, { align: 'center' });
-      doc.moveDown(2);
+      console.log("RENDERING CHURCH NAME HEADER");
+      doc.font('Helvetica-Bold').fontSize(24);
+      doc.text(churchName, margin, margin, { 
+        align: 'center',
+        width: contentWidth
+      });
+      doc.moveDown(1);
     }
   } catch (error) {
-    // If there's any error with the image, fall back to just text
     console.error("Error rendering header:", error);
-    
-    startingY = 80;
-    doc.y = startingY;
-    
-    // Fallback to just report title
-    doc.font('Helvetica-Bold').fontSize(20).text('Count Report', { align: 'center' });
-    doc.fontSize(14).text(formattedDate, { align: 'center' });
-    doc.moveDown(2);
   }
   
-  // Add summary totals - basic layout values
-  const tableWidth = 400;
-  const leftColumnWidth = 300;
+  // Report title and date
+  doc.font('Helvetica-Bold').fontSize(18);
+  doc.text('Count Report', {
+    align: 'center',
+    width: contentWidth
+  });
   
-  // Calculate the widest amount to display for alignment with additional margin
-  // Add extra padding to ensure there's enough room for the text
-  const amountPadding = 30; // Increased padding for wider text area
-  const maxAmountWidth = Math.max(
-    doc.widthOfString(`$${formatCurrency(totalAmount)}`),
-    doc.widthOfString(`$${formatCurrency(checkAmount)}`),
-    doc.widthOfString(`$${formatCurrency(cashAmount)}`)
-  ) + amountPadding;
+  doc.fontSize(14);
+  doc.text(formattedDate, {
+    align: 'center',
+    width: contentWidth
+  });
   
-  // Adjust column width to accommodate wider amounts
-  const rightColumnWidth = Math.max(100, maxAmountWidth);
+  doc.moveDown(2);
   
-  // Calculate table positioning
-  const tableX = (doc.page.width - tableWidth) / 2;
-  let tableY = doc.y;
+  // Set up table constants - using a simpler two column layout
+  const leftColX = margin;
+  const amountColX = pageWidth - margin - 150; // Fixed position for amount column
+  const amountWidth = 150;
   
-  // Calculate page dimensions and available space
-  const pageWidth = doc.page.width;
-  const rightMargin = 50; // Match the default margin
+  // Helper function to render a row consistently
+  function renderRow(label: string, amount: string, isBold: boolean = false) {
+    const y = doc.y;
+    
+    if (isBold) doc.font('Helvetica-Bold');
+    else doc.font('Helvetica');
+    
+    // Left column (label)
+    doc.text(label, leftColX, y);
+    
+    // Right column (amount) - fixed width and aligned right
+    doc.text(`$${formatCurrency(amount)}`, amountColX, y, {
+      width: amountWidth,
+      align: 'right'
+    });
+    
+    return doc.y; // Return current Y position
+  }
   
-  // Set exact position where we want the right edge of amounts to be
-  const amountRightX = pageWidth - rightMargin;
+  // Helper function to draw a line
+  function drawLine(y: number, isDouble: boolean = false) {
+    doc.moveTo(leftColX, y).lineTo(amountColX + amountWidth, y).stroke();
+    if (isDouble) {
+      doc.moveTo(leftColX, y + 3).lineTo(amountColX + amountWidth, y + 3).stroke();
+    }
+    return y + (isDouble ? 5 : 3);
+  }
   
-  // Use this for line endings - exactly aligned with the right edge of amounts
-  const lineEndX = amountRightX;
-  
-  // Draw summary table
+  // Summary section
   doc.font('Helvetica').fontSize(12);
+  renderRow('Checks', checkAmount);
+  renderRow('Cash', cashAmount);
   
-  // Define a fixed width for the amount column with a reasonable width
-  const amountColumnWidth = 100; // Width in points
+  // Draw line before total
+  let currentY = drawLine(doc.y + 5);
+  doc.y = currentY;
   
-  // Checks row
-  doc.text('Checks', tableX, tableY);
-  // Position text so that it ends at amountRightX, and give it a fixed width
-  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX - amountColumnWidth, tableY, { 
-    width: amountColumnWidth,
-    align: 'right'
-  });
-  tableY += 20;
-  
-  // Cash row
-  doc.text('Cash', tableX, tableY);
-  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX - amountColumnWidth, tableY, { 
-    width: amountColumnWidth,
-    align: 'right'
-  });
-  tableY += 20;
-  
-  // Draw horizontal line above TOTAL row - aligned exactly with the right edge of amounts
-  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
-  tableY += 5;
-  
-  // Total row
-  doc.font('Helvetica-Bold');
-  doc.text('TOTAL', tableX, tableY);
-  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX - amountColumnWidth, tableY, { 
-    width: amountColumnWidth,
-    align: 'right'
-  });
-  tableY += 30;
+  // Render total
+  renderRow('TOTAL', totalAmount, true);
+  doc.moveDown(1.5);
   
   // CHECKS section
   doc.font('Helvetica-Bold').fontSize(14);
-  doc.text('CHECKS', tableX, tableY);
-  tableY += 20;
+  doc.text('CHECKS', leftColX);
+  doc.moveDown(0.5);
   
-  // Draw check table header
+  // Check table header
   doc.font('Helvetica-Bold').fontSize(12);
-  doc.text('Member / Donor', tableX, tableY);
-  doc.text('Check #', tableX + 225, tableY);
-  doc.text('Amount', tableX + leftColumnWidth, tableY, { align: 'right' });
-  tableY += 20;
+  let headerY = doc.y;
+  doc.text('Member / Donor', leftColX, headerY);
+  doc.text('Check #', leftColX + 225, headerY);
+  doc.text('Amount', amountColX, headerY, { width: amountWidth, align: 'right' });
+  doc.moveDown(0.5);
   
-  // Draw check items
+  // Check items
   doc.font('Helvetica').fontSize(12);
-  let checkTotal = 0;
   
   checkDonations.forEach(donation => {
-    doc.text(donation.memberName, tableX, tableY);
+    const itemY = doc.y;
+    doc.text(donation.memberName, leftColX, itemY);
     if (donation.checkNumber) {
-      doc.text(donation.checkNumber, tableX + 225, tableY);
+      doc.text(donation.checkNumber, leftColX + 225, itemY);
     }
-    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX - amountColumnWidth, tableY, { 
-      width: amountColumnWidth,
+    doc.text(`$${formatCurrency(donation.amount)}`, amountColX, itemY, {
+      width: amountWidth,
       align: 'right'
     });
-    tableY += 20;
-    checkTotal += parseFloat(donation.amount);
+    doc.moveDown(0.5);
   });
   
-  // Draw horizontal line - align with the right edge of the amount column
-  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
-  tableY += 5;
+  // Draw line before check subtotal
+  currentY = drawLine(doc.y + 5);
+  doc.y = currentY;
   
   // Check subtotal
-  doc.font('Helvetica-Bold');
-  doc.text('Sub-Total Checks', tableX, tableY);
-  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX - amountColumnWidth, tableY, { 
-    width: amountColumnWidth,
-    align: 'right'
-  });
-  tableY += 30;
+  renderRow('Sub-Total Checks', checkAmount, true);
+  doc.moveDown(1.5);
   
   // CASH section
   doc.font('Helvetica-Bold').fontSize(14);
-  doc.text('CASH', tableX, tableY);
-  tableY += 20;
+  doc.text('CASH', leftColX);
+  doc.moveDown(0.5);
   
-  // Draw cash table header
+  // Cash table header
   doc.font('Helvetica-Bold').fontSize(12);
-  doc.text('Member / Donor', tableX, tableY);
-  doc.text('Amount', tableX + leftColumnWidth, tableY, { align: 'right' });
-  tableY += 20;
+  headerY = doc.y;
+  doc.text('Member / Donor', leftColX, headerY);
+  doc.text('Amount', amountColX, headerY, { width: amountWidth, align: 'right' });
+  doc.moveDown(0.5);
   
-  // Draw cash items
+  // Cash items
   doc.font('Helvetica').fontSize(12);
-  let cashTotal = 0;
   
   cashDonations.forEach(donation => {
-    doc.text(donation.memberName, tableX, tableY);
-    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX - amountColumnWidth, tableY, { 
-      width: amountColumnWidth,
+    const itemY = doc.y;
+    doc.text(donation.memberName, leftColX, itemY);
+    doc.text(`$${formatCurrency(donation.amount)}`, amountColX, itemY, {
+      width: amountWidth,
       align: 'right'
     });
-    tableY += 20;
-    cashTotal += parseFloat(donation.amount);
+    doc.moveDown(0.5);
   });
   
-  // Draw horizontal line - align with the right edge of the amount column
-  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
-  tableY += 5;
+  // Draw line before cash subtotal
+  currentY = drawLine(doc.y + 5);
+  doc.y = currentY;
   
   // Cash subtotal
-  doc.font('Helvetica-Bold');
-  doc.text('Sub-Total Cash', tableX, tableY);
-  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX - amountColumnWidth, tableY, { 
-    width: amountColumnWidth,
-    align: 'right'
-  });
-  tableY += 50;
+  renderRow('Sub-Total Cash', cashAmount, true);
+  doc.moveDown(2);
   
-  // Draw SINGLE horizontal line ABOVE grand total - align with the right edge of the amount column
-  doc.moveTo(tableX, tableY - 20).lineTo(lineEndX, tableY - 20).stroke();
+  // Draw line before grand total
+  currentY = drawLine(doc.y - 5);
+  doc.y = currentY + 10;
   
   // Grand total
   doc.fontSize(14);
-  doc.text('GRAND TOTAL', tableX, tableY);
-  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX - amountColumnWidth, tableY, { 
-    width: amountColumnWidth,
-    align: 'right'
-  });
+  renderRow('GRAND TOTAL', totalAmount, true);
   
-  // Draw DOUBLE horizontal line BELOW grand total - align with the right edge of the amount column
-  tableY += 15; // Increased spacing below the grand total text to avoid touching the numbers
-  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
-  doc.moveTo(tableX, tableY + 3).lineTo(lineEndX, tableY + 3).stroke();
+  // Double line after grand total
+  drawLine(doc.y + 5, true);
   
   // Finalize the PDF
   doc.end();
