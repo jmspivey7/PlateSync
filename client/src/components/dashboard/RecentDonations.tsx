@@ -122,7 +122,7 @@ const RecentDonations = () => {
                       <TableCell>
                         {donation.member ? 
                           `${donation.member.firstName} ${donation.member.lastName}` : 
-                          "Visitor"
+                          "Cash Donation"
                         }
                       </TableCell>
                       <TableCell>{formatDonationType(donation.donationType)}</TableCell>

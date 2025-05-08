@@ -518,7 +518,7 @@ const BatchDetailPage = () => {
                         <div className="font-medium">
                           {donation.memberId && (donation as DonationWithMember).member ? 
                             `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
-                            "Anonymous/Visitor"}
+                            "Cash Donation"}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {format(new Date(donation.date), 'MMM d, yyyy')} • 
@@ -663,7 +663,7 @@ const BatchDetailPage = () => {
                       <div className="font-medium">
                         {donation.memberId && (donation as DonationWithMember).member ? 
                           `${(donation as DonationWithMember).member!.lastName}, ${(donation as DonationWithMember).member!.firstName}` : 
-                          "Anonymous/Visitor"}
+                          "Cash Donation"}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {format(new Date(donation.date), 'MMM d, yyyy')} • 
