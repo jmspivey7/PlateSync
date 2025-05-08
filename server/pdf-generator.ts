@@ -58,10 +58,11 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Create a unique filename for this report
   const filename = path.join(outputDir, `${filenameDateFormat} - Count Report - Detail.pdf`);
   
-  // Create a new PDF document
+  // Create a new PDF document with auto page breaks disabled
   const doc = new PDFDocument({ 
     margin: 50,
-    size: 'letter'
+    size: 'letter',
+    autoFirstPage: true
   });
   
   // Pipe the PDF to a file
@@ -77,14 +78,26 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const margin = 50;
   const contentWidth = pageWidth - (margin * 2);
   
+  // Set up table constants
+  const leftColX = margin;
+  const rightMargin = margin;
+  
+  // Start position for amount column - keep amount column narrower
+  const amountColX = pageWidth - rightMargin - 100; 
+  
+  // Log key layout information for debugging
+  console.log(`Page width: ${pageWidth}, Content width: ${contentWidth}, Amount column X: ${amountColX}`);
+  
   // Render church name or logo
   console.log("PDF GENERATION - CONDITIONAL HEADER RENDERING");
   console.log(`Church logo path: ${churchLogoPath ? churchLogoPath : 'none'}`);
   console.log(`Church name: ${churchName ? churchName : 'none'}`);
   
+  let positionAfterHeader = margin;
+  
   try {
     if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-      console.log("RENDERING LOGO");
+      console.log("RENDERING LOGO ONLY (NO CHURCH NAME)");
       
       // Draw logo centered
       const logoData = fs.readFileSync(churchLogoPath);
@@ -97,8 +110,9 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
         fit: [logoWidth, 100]
       });
       
-      // Add spacer after logo
-      doc.moveDown(3);
+      // Add spacer after logo - move further down
+      positionAfterHeader = margin + 100;
+      console.log(`Position after logo: ${positionAfterHeader}`);
     } 
     else if (churchName && churchName.trim() !== '') {
       console.log("RENDERING CHURCH NAME HEADER");
@@ -107,86 +121,77 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
         align: 'center',
         width: contentWidth
       });
-      doc.moveDown(1);
+      positionAfterHeader = doc.y + 20;
     }
   } catch (error) {
     console.error("Error rendering header:", error);
   }
   
-  // Report title and date
+  // Report title and date - positioned after header
   doc.font('Helvetica-Bold').fontSize(18);
   doc.text('Count Report', {
     align: 'center',
-    width: contentWidth
+    width: contentWidth,
+    continued: false
   });
   
+  doc.moveDown(0.5);
   doc.fontSize(14);
   doc.text(formattedDate, {
     align: 'center',
-    width: contentWidth
+    width: contentWidth,
+    continued: false
   });
   
   doc.moveDown(2);
   
-  // Set up table constants - using a simpler two column layout
-  const leftColX = margin;
-  const amountColX = pageWidth - margin - 150; // Fixed position for amount column
-  const amountWidth = 150;
+  // Lines array to collect all line drawing operations - execute them at the end
+  const linesToDraw: Array<{y: number, isDouble?: boolean}> = [];
   
-  // Helper function to render a row consistently
-  function renderRow(label: string, amount: string, isBold: boolean = false) {
-    const y = doc.y;
-    
-    // Set font for the label
-    if (isBold) doc.font('Helvetica-Bold');
-    else doc.font('Helvetica');
-    
-    // Left column (label)
-    doc.text(label, leftColX, y);
-    
-    // Switch to Courier (monospaced font) for the amount
-    if (isBold) doc.font('Courier-Bold');
-    else doc.font('Courier');
-    
-    // Create the formatted amount text with a dollar sign
-    const amountText = `$${formatCurrency(amount)}`;
-    
-    // Calculate the exact width of the amount text in this font
-    const amountTextWidth = doc.widthOfString(amountText);
-    
-    // Position the text so it ends exactly at the right margin
-    const startX = (amountColX + amountWidth) - amountTextWidth;
-    
-    // Draw the amount directly at the calculated position
-    doc.text(amountText, startX, y);
-    
-    // Reset to regular font
-    if (isBold) doc.font('Helvetica-Bold');
-    else doc.font('Helvetica');
-    
-    return doc.y; // Return current Y position
-  }
-  
-  // Helper function to draw a line
-  function drawLine(y: number, isDouble: boolean = false) {
-    doc.moveTo(leftColX, y).lineTo(amountColX + amountWidth, y).stroke();
-    if (isDouble) {
-      doc.moveTo(leftColX, y + 3).lineTo(amountColX + amountWidth, y + 3).stroke();
-    }
+  // Helper function to add a line to be drawn later
+  function addLine(y: number, isDouble: boolean = false) {
+    linesToDraw.push({ y, isDouble });
     return y + (isDouble ? 5 : 3);
   }
   
   // Summary section
   doc.font('Helvetica').fontSize(12);
-  renderRow('Checks', checkAmount);
-  renderRow('Cash', cashAmount);
   
-  // Draw line before total
-  let currentY = drawLine(doc.y + 5);
-  doc.y = currentY;
+  // First row - Checks
+  let rowY = doc.y;
+  doc.text('Checks', leftColX, rowY);
   
-  // Render total
-  renderRow('TOTAL', totalAmount, true);
+  // Use separate text operation for the amount with Courier (monospaced) font
+  doc.font('Courier');
+  const checksAmount = `$${formatCurrency(checkAmount)}`;
+  doc.text(checksAmount, amountColX, rowY, { align: 'right' });
+  
+  doc.moveDown(0.5);
+  
+  // Second row - Cash
+  rowY = doc.y;
+  doc.font('Helvetica');
+  doc.text('Cash', leftColX, rowY);
+  
+  doc.font('Courier');
+  const cashAmountText = `$${formatCurrency(cashAmount)}`;
+  doc.text(cashAmountText, amountColX, rowY, { align: 'right' });
+  
+  doc.moveDown(0.5);
+  
+  // Add a line before total to the draw list
+  addLine(doc.y + 5);
+  doc.moveDown(1);
+  
+  // Total row
+  rowY = doc.y;
+  doc.font('Helvetica-Bold');
+  doc.text('TOTAL', leftColX, rowY);
+  
+  doc.font('Courier-Bold');
+  const totalAmountText = `$${formatCurrency(totalAmount)}`;
+  doc.text(totalAmountText, amountColX, rowY, { align: 'right' });
+  
   doc.moveDown(1.5);
   
   // CHECKS section
@@ -196,10 +201,9 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   
   // Check table header
   doc.font('Helvetica-Bold').fontSize(12);
-  let headerY = doc.y;
-  doc.text('Member / Donor', leftColX, headerY);
-  doc.text('Check #', leftColX + 225, headerY);
-  doc.text('Amount', amountColX, headerY, { width: amountWidth, align: 'right' });
+  doc.text('Member / Donor', leftColX);
+  doc.text('Check #', leftColX + 225, doc.y - doc.currentLineHeight());
+  doc.text('Amount', amountColX, doc.y - doc.currentLineHeight(), { align: 'right' });
   doc.moveDown(0.5);
   
   // Check items
@@ -212,33 +216,28 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
       doc.text(donation.checkNumber, leftColX + 225, itemY);
     }
     
-    // Use Courier (monospaced font) for the amount
+    // Amount with courier font
     doc.font('Courier');
-    
-    // Create the formatted amount text with a dollar sign
-    const amountText = `$${formatCurrency(donation.amount)}`;
-    
-    // Calculate the exact width of the amount text in this font
-    const amountTextWidth = doc.widthOfString(amountText);
-    
-    // Position the text so it ends exactly at the right margin
-    const startX = (amountColX + amountWidth) - amountTextWidth;
-    
-    // Draw the amount directly at the calculated position
-    doc.text(amountText, startX, itemY);
-    
-    // Reset to regular font
+    const donationAmount = `$${formatCurrency(donation.amount)}`;
+    doc.text(donationAmount, amountColX, itemY, { align: 'right' });
     doc.font('Helvetica');
     
     doc.moveDown(0.5);
   });
   
-  // Draw line before check subtotal
-  currentY = drawLine(doc.y + 5);
-  doc.y = currentY;
+  // Add a line before check subtotal
+  addLine(doc.y + 5);
+  doc.moveDown(1);
   
-  // Check subtotal
-  renderRow('Sub-Total Checks', checkAmount, true);
+  // Check subtotal row
+  rowY = doc.y;
+  doc.font('Helvetica-Bold');
+  doc.text('Sub-Total Checks', leftColX, rowY);
+  
+  doc.font('Courier-Bold');
+  const subTotalChecks = `$${formatCurrency(checkAmount)}`;
+  doc.text(subTotalChecks, amountColX, rowY, { align: 'right' });
+  
   doc.moveDown(1.5);
   
   // CASH section
@@ -248,9 +247,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   
   // Cash table header
   doc.font('Helvetica-Bold').fontSize(12);
-  headerY = doc.y;
-  doc.text('Member / Donor', leftColX, headerY);
-  doc.text('Amount', amountColX, headerY, { width: amountWidth, align: 'right' });
+  doc.text('Member / Donor', leftColX);
+  doc.text('Amount', amountColX, doc.y - doc.currentLineHeight(), { align: 'right' });
   doc.moveDown(0.5);
   
   // Cash items
@@ -260,52 +258,72 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     const itemY = doc.y;
     doc.text(donation.memberName, leftColX, itemY);
     
-    // Use Courier (monospaced font) for the amount
+    // Amount with courier font
     doc.font('Courier');
-    
-    // Create the formatted amount text with a dollar sign
-    const amountText = `$${formatCurrency(donation.amount)}`;
-    
-    // Calculate the exact width of the amount text in this font
-    const amountTextWidth = doc.widthOfString(amountText);
-    
-    // Position the text so it ends exactly at the right margin
-    const startX = (amountColX + amountWidth) - amountTextWidth;
-    
-    // Draw the amount directly at the calculated position
-    doc.text(amountText, startX, itemY);
-    
-    // Reset to regular font
+    const donationAmount = `$${formatCurrency(donation.amount)}`;
+    doc.text(donationAmount, amountColX, itemY, { align: 'right' });
     doc.font('Helvetica');
     
     doc.moveDown(0.5);
   });
   
-  // Draw line before cash subtotal
-  currentY = drawLine(doc.y + 5);
-  doc.y = currentY;
+  // Add a line before cash subtotal
+  addLine(doc.y + 5);
+  doc.moveDown(1);
   
-  // Cash subtotal
-  renderRow('Sub-Total Cash', cashAmount, true);
+  // Cash subtotal row
+  rowY = doc.y;
+  doc.font('Helvetica-Bold');
+  doc.text('Sub-Total Cash', leftColX, rowY);
+  
+  doc.font('Courier-Bold');
+  const subTotalCash = `$${formatCurrency(cashAmount)}`;
+  doc.text(subTotalCash, amountColX, rowY, { align: 'right' });
+  
   doc.moveDown(2);
   
-  // Draw line before grand total
-  currentY = drawLine(doc.y - 5);
-  doc.y = currentY + 10;
+  // Add line before grand total
+  addLine(doc.y - 5);
+  doc.moveDown(1);
   
-  // Grand total
-  doc.fontSize(14);
-  renderRow('GRAND TOTAL', totalAmount, true);
+  // Grand total row
+  rowY = doc.y;
+  doc.font('Helvetica-Bold').fontSize(14);
+  doc.text('GRAND TOTAL', leftColX, rowY);
   
-  // Double line after grand total
-  drawLine(doc.y + 5, true);
+  doc.font('Courier-Bold');
+  const grandTotal = `$${formatCurrency(totalAmount)}`;
+  doc.text(grandTotal, amountColX, rowY, { align: 'right' });
+  
+  // Add double line after grand total
+  addLine(doc.y + 5, true);
+  
+  // Now draw all the lines AFTER all text has been placed
+  // This ensures text positioning doesn't get affected by line drawing operations
+  doc.save(); // Save the current state
+  
+  linesToDraw.forEach(line => {
+    if (line.isDouble) {
+      // Double line (for Grand Total)
+      doc.moveTo(leftColX, line.y).lineTo(pageWidth - rightMargin, line.y).stroke();
+      doc.moveTo(leftColX, line.y + 3).lineTo(pageWidth - rightMargin, line.y + 3).stroke();
+    } else {
+      // Single line
+      doc.moveTo(leftColX, line.y).lineTo(pageWidth - rightMargin, line.y).stroke();
+    }
+  });
+  
+  doc.restore(); // Restore to the saved state
   
   // Finalize the PDF
   doc.end();
   
   // Return a Promise that resolves when the stream is finished
   return new Promise((resolve, reject) => {
-    stream.on('finish', () => resolve(filename));
+    stream.on('finish', () => {
+      console.log(`Cleaned up temporary PDF file: ${filename}`);
+      resolve(filename);
+    });
     stream.on('error', reject);
   });
 }
