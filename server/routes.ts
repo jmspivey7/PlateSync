@@ -713,10 +713,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (usersResult && usersResult.rows) {
         usersList = usersResult.rows
           // Filter out inactive users that have the INACTIVE_ prefix in their email
-          // Also filter out users who are not verified (like deleted Google Usher)
+          // But include new unverified users who are waiting for verification
           .filter(user => 
-            !user.email?.startsWith('INACTIVE_') && 
-            (user.is_verified === true || user.is_verified === 't')
+            !user.email?.startsWith('INACTIVE_')
           )
           .map(user => ({
             id: user.id,
@@ -725,6 +724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: user.first_name,
             lastName: user.last_name,
             role: user.role,
+            isVerified: user.is_verified === true || user.is_verified === 't',
             isMasterAdmin: user.is_master_admin
           }));
         console.log(`Found ${usersList.length} active users via direct SQL`);
@@ -767,10 +767,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (usersResult && usersResult.rows) {
         usersList = usersResult.rows
           // Filter out inactive users that have the INACTIVE_ prefix in their email
-          // Ensure we don't show users who have been deactivated
+          // Include unverified users who are waiting for verification
           .filter(user => 
-            !user.email?.startsWith('INACTIVE_') && 
-            (user.is_verified === true || user.is_verified === 't')
+            !user.email?.startsWith('INACTIVE_')
           )
           .map(user => ({
             id: user.id,
@@ -782,6 +781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             profileImageUrl: user.profile_image_url,
             createdAt: user.created_at,
             updatedAt: user.updated_at,
+            isVerified: user.is_verified === true || user.is_verified === 't',
             isMasterAdmin: user.is_master_admin
           }));
         console.log(`Found ${usersList.length} active users via test endpoint`);

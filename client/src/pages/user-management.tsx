@@ -435,6 +435,7 @@ const UserManagement = () => {
                   <TableRow>
                     <TableHead>User</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 
@@ -473,6 +474,17 @@ const UserManagement = () => {
                           }
                         >
                           {user.isMasterAdmin ? "MASTER ADMIN" : user.role || "USHER"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={
+                            user.isVerified 
+                              ? "bg-gray-100 text-gray-800"
+                              : "bg-amber-100 text-amber-800"
+                          }
+                        >
+                          {user.isVerified ? "Verified" : "Pending Verification"}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -536,6 +548,24 @@ const UserManagement = () => {
                         <p>
                           {user.createdAt ? format(new Date(user.createdAt), "MM/dd/yyyy - hh:mm a") : "—"}
                         </p>
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-gray-500">Status</p>
+                        <Badge 
+                          className={
+                            user.isVerified 
+                              ? "bg-gray-100 text-gray-800 mt-1"
+                              : "bg-amber-100 text-amber-800 mt-1"
+                          }
+                        >
+                          {user.isVerified ? "Verified" : "Pending Verification"}
+                        </Badge>
+                        {!user.isVerified && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            User needs to verify their email to complete account setup
+                          </p>
+                        )}
                       </div>
                     </div>
                     
