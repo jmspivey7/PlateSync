@@ -873,14 +873,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const masterAdmin = await storage.getMasterAdminForChurch(churchId);
       
       if (!masterAdmin || masterAdmin.id !== userId) {
-        return res.status(403).json({ message: "Forbidden - Only the Master Admin can transfer this role" });
+        // Return the current master admin ID so the client can update accordingly
+        return res.status(403).json({ 
+          message: "Forbidden - Only the Master Admin can transfer this role",
+          currentMasterAdmin: masterAdmin?.id
+        });
       }
       
       // Transfer master admin status
       const success = await storage.transferMasterAdmin(userId, targetUserId, churchId);
       
       if (success) {
-        res.json({ message: "Master Admin role transferred successfully" });
+        // Return both the previous and new master admin IDs
+        res.json({ 
+          message: "Master Admin role transferred successfully",
+          previousMasterAdmin: userId,
+          newMasterAdmin: targetUserId
+        });
       } else {
         res.status(500).json({ message: "Failed to transfer Master Admin role" });
       }

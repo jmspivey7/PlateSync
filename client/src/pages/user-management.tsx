@@ -342,9 +342,33 @@ const UserManagement = () => {
   // Transfer Master Admin mutation
   const { mutate: transferMasterAdmin, isPending: isTransferringMasterAdmin } = useMutation({
     mutationFn: async (targetUserId: string) => {
-      return await apiRequest<{message: string}>(`/api/master-admin/transfer`, "POST", { targetUserId });
+      try {
+        const response = await fetch('/api/master-admin/transfer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ targetUserId }),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          // Check if the error indicates that someone else is now Master Admin
+          if (response.status === 403 && data.currentMasterAdmin) {
+            // Update our local state to reflect the current Master Admin
+            throw new Error(`Transfer failed: Someone else is already the Master Admin. The page will refresh to show the current status.`);
+          }
+          throw new Error(data.message || 'Transfer failed');
+        }
+        
+        return data;
+      } catch (error) {
+        console.error('Error in transferMasterAdmin:', error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Master Admin Transferred",
         description: "Master Admin role has been transferred successfully",
@@ -357,6 +381,8 @@ const UserManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       
+      console.log('Transfer complete, will refresh page to update UI');
+      
       // Force refresh the page after a short delay
       setTimeout(() => {
         window.location.reload();
@@ -368,6 +394,12 @@ const UserManagement = () => {
         description: error instanceof Error ? error.message : "Failed to transfer Master Admin role",
         variant: "destructive",
       });
+      
+      // Force refresh the page to ensure we have the latest state
+      setTimeout(() => {
+        console.log('Error occurred, refreshing page to update UI state');
+        window.location.reload();
+      }, 2000);
     },
   });
   
