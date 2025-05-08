@@ -466,7 +466,7 @@ const BatchDetailPage = () => {
                       console.log("Attest & Finalize button clicked");
                       prepareAttestationMutation.mutate();
                     }} 
-                    className="bg-amber-500 hover:bg-amber-600 text-black"
+                    className="bg-amber-500 hover:bg-amber-600 text-white"
                     disabled={prepareAttestationMutation.isPending}
                   >
                     <UserCheck className="mr-2 h-4 w-4" />

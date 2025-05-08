@@ -509,7 +509,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                 
                 <Button 
                   onClick={() => setStep('confirmation')}
-                  className="bg-amber-500 hover:bg-amber-600 text-black"
+                  className="bg-amber-500 hover:bg-amber-600 text-white"
                 >
                   Continue to Finalize
                 </Button>
