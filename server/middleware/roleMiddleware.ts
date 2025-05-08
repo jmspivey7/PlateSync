@@ -179,8 +179,11 @@ export const isSameChurch = async (req: Request, res: Response, next: NextFuncti
       return next();
     }
     
+    // Get the user's church ID from storage function which handles the data access logic
+    const userChurchId = await storage.getChurchIdForUser(userId);
+    
     // Check if the user belongs to the requested church
-    if (dbUser.church_id !== resourceChurchId) {
+    if (userChurchId !== resourceChurchId) {
       return res.status(403).json({ message: 'Forbidden: Not a member of this church' });
     }
 
