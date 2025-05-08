@@ -2493,10 +2493,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
       
       // Send password reset email
-      await sendPasswordResetEmail({
+      console.log(`📧 Attempting to send password reset email to: ${email}`);
+      console.log(`📧 Reset URL: ${resetUrl}`);
+      
+      const emailSent = await sendPasswordResetEmail({
         to: email,
         resetUrl
       });
+      
+      if (emailSent) {
+        console.log(`✅ Password reset email sent successfully to: ${email}`);
+      } else {
+        console.error(`❌ Failed to send password reset email to: ${email}`);
+      }
       
       res.json({ 
         success: true, 

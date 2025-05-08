@@ -866,7 +866,18 @@ PlateSync Reporting System
 }
 
 export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<boolean> {
+  console.log('\n📧 Starting password reset email function...');
+  
+  // Check if SendGrid API key is set
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('❌ SendGrid API key is not set! Cannot send password reset email.');
+    return false;
+  }
+  
+  // Get sender email from environment variable with fallback
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
+  console.log(`📧 Using sender email: ${fromEmail}`);
+  console.log(`📧 Sending to: ${params.to}`);
   
   const subject = `PlateSync Password Reset Request`;
   
