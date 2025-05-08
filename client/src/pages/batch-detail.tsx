@@ -382,7 +382,7 @@ const BatchDetailPage = () => {
 
                 
                 {/* Inline confirmation buttons that replace the Delete button when clicked */}
-                {isFinalized && isMasterAdmin && showDeleteConfirm && (
+                {isFinalized && isAdmin && showDeleteConfirm && (
                   <div className="ml-2 flex gap-2 items-center border border-gray-200 rounded-md p-1.5">
                     <span className="text-sm font-medium text-gray-700 mr-1">Confirm deletion?</span>
                     <Button 
@@ -427,8 +427,8 @@ const BatchDetailPage = () => {
                   </CardDescription>
                 </div>
                 
-                {/* Three-dot menu - Only show for master admins */}
-                {isMasterAdmin && (
+                {/* Three-dot menu - Show for all admins (Admins and Master Admins) */}
+                {isAdmin && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
@@ -582,28 +582,37 @@ const BatchDetailPage = () => {
                 </CardDescription>
               </div>
               
-              {/* Three-dot menu - Only show for admins */}
-              {isAdmin && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
-                      <span className="sr-only">Open menu</span>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
-                    {batch.status === "OPEN" && (
-                      <DropdownMenuItem 
-                        onClick={handleShowDeleteConfirm}
-                        className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Count
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              {/* Three-dot menu - Show actions based on user role */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
+                    <span className="sr-only">Open menu</span>
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
+                  {/* Ushers can only delete OPEN counts */}
+                  {batch.status === "OPEN" && (
+                    <DropdownMenuItem 
+                      onClick={handleShowDeleteConfirm}
+                      className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Count
+                    </DropdownMenuItem>
+                  )}
+                  {/* Admins can delete FINALIZED counts */}
+                  {batch.status === "FINALIZED" && isAdmin && (
+                    <DropdownMenuItem 
+                      onClick={handleShowDeleteConfirm}
+                      className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Finalized Count
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           
