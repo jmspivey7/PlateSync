@@ -94,45 +94,6 @@ export const isMasterAdmin = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-// Middleware to check if the user is either an Admin or a Master Admin
-export const isAdminOrMasterAdmin = async (req: Request, res: Response, next: NextFunction) => {
-  // Development mode bypass
-  if (ALLOW_DEV_BYPASS && process.env.NODE_ENV === 'development') {
-    console.log('Using development auth bypass for ADMIN or MASTER ADMIN check');
-    return next();
-  }
-
-  if (!checkAuthentication(req, res)) {
-    return;
-  }
-
-  try {
-    const user = req.user as any;
-    const userId = user.claims.sub;
-    
-    // Get the user with their role and master admin status directly from database
-    const userQuery = await db.execute(
-      sql`SELECT * FROM users WHERE id = ${userId} LIMIT 1`
-    );
-    
-    if (userQuery.rows.length === 0) {
-      return res.status(403).json({ message: 'Forbidden: Admin access required' });
-    }
-    
-    const dbUser = userQuery.rows[0];
-    
-    // Check for ADMIN role (regardless of Master Admin status)
-    if (dbUser.role !== 'ADMIN') {
-      return res.status(403).json({ message: 'Forbidden: Admin access required' });
-    }
-
-    next();
-  } catch (error) {
-    console.error('Error checking admin role:', error);
-    return res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
-
 // Middleware to check if user has a specific role
 export const hasRole = (allowedRoles: UserRole[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -218,11 +179,8 @@ export const isSameChurch = async (req: Request, res: Response, next: NextFuncti
       return next();
     }
     
-    // Get the user's church ID from storage function which handles the data access logic
-    const userChurchId = await storage.getChurchIdForUser(userId);
-    
     // Check if the user belongs to the requested church
-    if (userChurchId !== resourceChurchId) {
+    if (dbUser.church_id !== resourceChurchId) {
       return res.status(403).json({ message: 'Forbidden: Not a member of this church' });
     }
 

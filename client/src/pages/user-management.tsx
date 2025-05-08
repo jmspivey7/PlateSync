@@ -59,7 +59,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, Trash2, UserPlus, Users, Crown } from "lucide-react";
+import { Loader2, Plus, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -205,10 +205,6 @@ const UserManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
-  const [masterAdminTransferOpen, setMasterAdminTransferOpen] = useState(false);
-  
-  // Check if current user is Master Admin
-  const isMasterAdmin = currentUser?.isMasterAdmin ?? false;
   
   // Fetch all users - using test endpoint for guaranteed results
   const { data: users, isLoading } = useQuery<User[]>({
@@ -339,70 +335,6 @@ const UserManagement = () => {
     },
   });
   
-  // Transfer Master Admin mutation
-  const { mutate: transferMasterAdmin, isPending: isTransferringMasterAdmin } = useMutation({
-    mutationFn: async (targetUserId: string) => {
-      try {
-        const response = await fetch('/api/master-admin/transfer', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ targetUserId }),
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-          // Check if the error indicates that someone else is now Master Admin
-          if (response.status === 403 && data.currentMasterAdmin) {
-            // Update our local state to reflect the current Master Admin
-            throw new Error(`Transfer failed: Someone else is already the Master Admin. The page will refresh to show the current status.`);
-          }
-          throw new Error(data.message || 'Transfer failed');
-        }
-        
-        return data;
-      } catch (error) {
-        console.error('Error in transferMasterAdmin:', error);
-        throw error;
-      }
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Master Admin Transferred",
-        description: "Master Admin role has been transferred successfully",
-        className: "bg-[#69ad4c] text-white",
-      });
-      setMasterAdminTransferOpen(false);
-      
-      // Invalidate all affected queries to ensure UI updates
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      
-      console.log('Transfer complete, will refresh page to update UI');
-      
-      // Force refresh the page after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    },
-    onError: (error) => {
-      toast({
-        title: "Transfer Failed",
-        description: error instanceof Error ? error.message : "Failed to transfer Master Admin role",
-        variant: "destructive",
-      });
-      
-      // Force refresh the page to ensure we have the latest state
-      setTimeout(() => {
-        console.log('Error occurred, refreshing page to update UI state');
-        window.location.reload();
-      }, 2000);
-    },
-  });
-  
   // Handle role change
   const handleRoleChange = (userId: string, role: string) => {
     mutate({ userId, role });
@@ -417,22 +349,6 @@ const UserManagement = () => {
       (user.lastName && user.lastName.toLowerCase().includes(searchLower))
     );
   }) || [];
-  
-  // Sort users to list Master Admin at top and sort others alphabetically
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
-    // Master Admin always first
-    if (a.isMasterAdmin) return -1;
-    if (b.isMasterAdmin) return 1;
-    
-    // Then sort by role (ADMIN then USHER)
-    if (a.role === "ADMIN" && b.role !== "ADMIN") return -1;
-    if (a.role !== "ADMIN" && b.role === "ADMIN") return 1;
-    
-    // Then sort alphabetically by name
-    const aName = `${a.firstName || ''} ${a.lastName || ''}`.trim();
-    const bName = `${b.firstName || ''} ${b.lastName || ''}`.trim();
-    return aName.localeCompare(bName);
-  });
   
   // If not admin, redirect or show error
   if (!isAdmin) {
@@ -523,10 +439,10 @@ const UserManagement = () => {
                 </TableHeader>
                 
                 <TableBody>
-                  {sortedUsers.map((user) => (
+                  {filteredUsers.map((user) => (
                     <TableRow 
                       key={user.id}
-                      className={`cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)] ${user.isMasterAdmin ? "bg-purple-50" : ""}`}
+                      className="cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)]"
                       onClick={() => {
                         setSelectedUserId(user.id);
                         setUserDetailsOpen(true);
@@ -626,70 +542,25 @@ const UserManagement = () => {
                     <div className="border-t pt-4">
                       <p className="text-sm font-medium text-gray-500 mb-2">Actions</p>
                       <div className="flex items-center gap-2">
-                        {/* Role Selection - Disabled for Master Admin */}
                         <Select 
                           defaultValue={user.isMasterAdmin ? "MASTER_ADMIN" : (user.role || "USHER")}
                           onValueChange={(value) => {
                             handleRoleChange(user.id, value);
                             setUserDetailsOpen(false);
                           }}
-                          disabled={isPending || user.isMasterAdmin}
+                          disabled={isPending}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Change Role" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
                             <SelectItem value="ADMIN">Administrator</SelectItem>
                             <SelectItem value="USHER">Usher</SelectItem>
                           </SelectContent>
                         </Select>
                         
-                        {/* Transfer Master Admin - Only shown if current user is Master Admin and target is ADMIN */}
-                        {isMasterAdmin && currentUser?.id !== user.id && user.role === "ADMIN" && !user.isMasterAdmin && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-purple-500 text-purple-700 hover:bg-purple-50"
-                              >
-                                <Crown className="h-4 w-4 mr-1" />
-                                Make Master Admin
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Transfer Master Admin Role</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to transfer your Master Admin role to {user.firstName} {user.lastName}?
-                                  <div className="mt-2 text-amber-600 font-medium">This will remove your Master Admin privileges.</div>
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => {
-                                    transferMasterAdmin(user.id);
-                                    setUserDetailsOpen(false);
-                                  }}
-                                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                                >
-                                  {isTransferringMasterAdmin ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Transferring...
-                                    </>
-                                  ) : (
-                                    "Transfer Master Admin"
-                                  )}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                        
-                        {/* Delete User - Not shown for current user or Master Admin */}
-                        {user.id !== currentUser?.id && !user.isMasterAdmin && (
+                        {user.id !== currentUser?.id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button

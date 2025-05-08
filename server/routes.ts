@@ -32,7 +32,7 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
     });
   });
 }
-import { isAdmin, isMasterAdmin, hasRole } from "./middleware/roleMiddleware";
+import { isAdmin, hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
@@ -363,8 +363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create a new user (Master Admin only)
-  app.post('/api/users', isAuthenticated, isMasterAdmin, async (req, res) => {
+  // Create a new user
+  app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { email, firstName, lastName, role, churchName } = req.body;
       
@@ -755,45 +755,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {      
       // Direct query to the users table
       const usersResult = await db.execute(
-        sql`SELECT * FROM users WHERE email NOT LIKE 'INACTIVE_%'`
+        sql`SELECT * FROM users`
       );
       
       let usersList = [];
       
       if (usersResult && usersResult.rows) {
-        usersList = usersResult.rows.map(user => ({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role,
-          profileImageUrl: user.profile_image_url,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-          // For Master Admin, trust the is_master_admin column
-          isMasterAdmin: user.is_master_admin === true
-        }));
+        usersList = usersResult.rows
+          // Filter out inactive users that have the INACTIVE_ prefix in their email
+          .filter(user => !user.email?.startsWith('INACTIVE_'))
+          .map(user => ({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            role: user.role,
+            profileImageUrl: user.profile_image_url,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at,
+            isMasterAdmin: user.is_master_admin
+          }));
         console.log(`Found ${usersList.length} active users via test endpoint`);
       }
       
-      // If there's no current Master Admin, fix it by setting the first ADMIN as Master Admin
-      const hasMasterAdmin = usersList.some(user => user.isMasterAdmin === true);
-      if (!hasMasterAdmin && usersList.length > 0) {
-        const firstAdmin = usersList.find(user => user.role === 'ADMIN');
-        if (firstAdmin) {
-          // Update the database
-          await db.execute(
-            sql`UPDATE users SET is_master_admin = true WHERE id = ${firstAdmin.id}`
-          );
-          
-          // Update our local list
-          firstAdmin.isMasterAdmin = true;
-          console.log(`Fixed missing Master Admin by setting user ${firstAdmin.id} as Master Admin`);
-        }
-      }
-      
-      // Only use fallback data if absolutely necessary
       if (usersList.length === 0) {
         usersList = [
           {
@@ -805,6 +790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             role: "ADMIN",
             isMasterAdmin: true
           }
+          // Removed hardcoded USHER user since we want to show how deletion works
         ];
         console.log("Sending hardcoded user data from test endpoint");
       }
@@ -819,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/users/:id/role', isAuthenticated, isMasterAdmin, async (req: any, res) => {
+  app.patch('/api/users/:id/role', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
       const userId = req.params.id;
@@ -856,22 +842,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
       
-      // Get the current user to check if they have isMasterAdmin = true
-      const currentUser = await storage.getUser(userId);
-      if (!currentUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // First check if this user is directly marked as Master Admin
-      if (currentUser.isMasterAdmin === true) {
-        return res.json({
-          masterAdminId: userId,
-          isMasterAdmin: true,
-          masterAdminName: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.username
-        });
-      }
-      
-      // Otherwise query to get the Master Admin for this church
       const churchId = await storage.getChurchIdForUser(userId);
       const masterAdmin = await storage.getMasterAdminForChurch(churchId);
       
@@ -898,55 +868,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Target user ID is required" });
       }
       
-      // Get the current user to check if they have isMasterAdmin = true
-      const currentUser = await storage.getUser(userId);
+      // Verify current user is the master admin
+      const churchId = await storage.getChurchIdForUser(userId);
+      const masterAdmin = await storage.getMasterAdminForChurch(churchId);
       
-      // Check for direct Master Admin flag first
-      if (!currentUser?.isMasterAdmin) {
-        // If not explicitly marked, check via church relationship
-        const churchId = await storage.getChurchIdForUser(userId);
-        const masterAdmin = await storage.getMasterAdminForChurch(churchId);
-        
-        if (!masterAdmin || masterAdmin.id !== userId) {
-          // Return the current master admin ID so the client can update accordingly
-          return res.status(403).json({ 
-            message: "Forbidden - Only the Master Admin can transfer this role",
-            currentMasterAdmin: masterAdmin?.id
-          });
-        }
+      if (!masterAdmin || masterAdmin.id !== userId) {
+        return res.status(403).json({ message: "Forbidden - Only the Master Admin can transfer this role" });
       }
       
-      // Get church ID - needed for the transfer operation
-      const churchId = await storage.getChurchIdForUser(userId);
-      
-      // Transfer master admin status using the new method that preserves data access
+      // Transfer master admin status
       const success = await storage.transferMasterAdmin(userId, targetUserId, churchId);
       
       if (success) {
-        // After transfer, immediately get the target user to confirm the change was made
-        const updatedTargetUser = await storage.getUser(targetUserId);
-        
-        // Return both the previous and new master admin IDs
-        res.json({ 
-          message: "Master Admin role transferred successfully",
-          previousMasterAdmin: userId,
-          newMasterAdmin: targetUserId,
-          success: updatedTargetUser?.isMasterAdmin === true
-        });
+        res.json({ message: "Master Admin role transferred successfully" });
       } else {
         res.status(500).json({ message: "Failed to transfer Master Admin role" });
       }
     } catch (error) {
       console.error("Error transferring master admin:", error);
-      res.status(500).json({ 
-        message: "Error transferring master admin", 
-        error: error instanceof Error ? error.message : String(error)
-      });
+      res.status(500).json({ message: "Error transferring master admin" });
     }
   });
   
-  // Create user (Master Admin only)
-  app.post('/api/users', isAuthenticated, isMasterAdmin, async (req: any, res) => {
+  // Create user (admin only)
+  app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
       
@@ -1024,8 +969,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Delete user (Master Admin only)
-  app.delete('/api/users/:id', isAuthenticated, isMasterAdmin, async (req: any, res) => {
+  // Delete user (admin only)
+  app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
       const userId = req.params.id;
@@ -2040,19 +1985,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Batch not found" });
       }
       
-      // Check if batch is FINALIZED - only ADMIN or MASTER ADMIN users can delete FINALIZED batches
+      // Check if batch is FINALIZED - only ADMIN users can delete FINALIZED batches
       if (batch.status === 'FINALIZED') {
         // Get the user with their role from the database
         const user = await storage.getUser(userId);
         
-        // Only ADMIN or MASTER ADMIN users can delete FINALIZED batches
+        // Only ADMIN users can delete FINALIZED batches
         if (!user || user.role !== 'ADMIN') {
           return res.status(403).json({ 
             message: "Forbidden: Only administrators can delete finalized counts" 
           });
         }
-        // Note: Both regular Admins and Master Admins are allowed to delete finalized counts now
-        // We don't need to check the isMasterAdmin flag
       }
       
       // Delete the batch and its donations
@@ -3283,19 +3226,17 @@ PlateSync Reporting System`;
       if (donation.batchId) {
         const batch = await storage.getBatch(donation.batchId, churchId);
         
-        // Cannot delete donation from a finalized batch (except for ADMIN or MASTER ADMIN users)
+        // Cannot delete donation from a finalized batch (except for ADMIN users)
         if (batch && batch.status === 'FINALIZED') {
           // Get the user with their role from the database
           const user = await storage.getUser(userId);
           
-          // Only ADMIN users (including Master Admins) can delete donations from FINALIZED batches
+          // Only ADMIN users can delete donations from FINALIZED batches
           if (!user || user.role !== 'ADMIN') {
             return res.status(403).json({ 
               message: "Forbidden: Only administrators can delete donations from finalized counts" 
             });
           }
-          // Note: Both regular Admins and Master Admins are allowed to delete finalized donations now
-          // We don't need to check the isMasterAdmin flag
         }
         
         // All checks passed, now delete the donation

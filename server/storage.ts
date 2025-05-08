@@ -500,35 +500,13 @@ export class DatabaseStorage implements IStorage {
   // Get the Master Admin for a church
   async getMasterAdminForChurch(churchId: string): Promise<User | undefined> {
     try {
-      // First, look for a user with isMasterAdmin = true for this church
-      const [masterAdmin] = await db
-        .select()
-        .from(users)
-        .where(and(
-          eq(users.role, 'ADMIN'),
-          eq(users.isMasterAdmin, true)
-        ))
-        .limit(1);
+      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
       
-      if (masterAdmin) {
-        console.log(`Found Master Admin ${masterAdmin.id} for church ${churchId} using isMasterAdmin flag`);
-        return masterAdmin;
-      }
-      
-      // Legacy fallback: check if there's an Admin that matches the churchId - the church creator
+      // First check if there's an Admin that matches the churchId - the church creator
       const originalAdmin = await this.getUser(churchId);
       if (originalAdmin && originalAdmin.role === 'ADMIN') {
         console.log(`Using original Admin ${originalAdmin.id} as Master Admin for church ${churchId}`);
-        
-        // Update this user to set isMasterAdmin = true to fix inconsistency
-        await db
-          .update(users)
-          .set({
-            isMasterAdmin: true,
-            updatedAt: new Date()
-          })
-          .where(eq(users.id, originalAdmin.id));
-        
+        // Virtually mark this user as the Master Admin
         return {
           ...originalAdmin,
           isMasterAdmin: true
@@ -541,16 +519,7 @@ export class DatabaseStorage implements IStorage {
       
       if (adminUsers.length > 0) {
         console.log(`Using Admin ${adminUsers[0].id} as Master Admin for church ${churchId}`);
-        
-        // Update this user to set isMasterAdmin = true to fix inconsistency
-        await db
-          .update(users)
-          .set({
-            isMasterAdmin: true,
-            updatedAt: new Date()
-          })
-          .where(eq(users.id, adminUsers[0].id));
-        
+        // Virtually mark this user as the Master Admin
         return {
           ...adminUsers[0],
           isMasterAdmin: true
@@ -566,16 +535,7 @@ export class DatabaseStorage implements IStorage {
         
       if (fallbackAdmin) {
         console.log(`Using fallback Admin ${fallbackAdmin.id} as Master Admin (no church match found)`);
-        
-        // Update this user to set isMasterAdmin = true to fix inconsistency
-        await db
-          .update(users)
-          .set({
-            isMasterAdmin: true,
-            updatedAt: new Date()
-          })
-          .where(eq(users.id, fallbackAdmin.id));
-        
+        // Virtually mark this user as the Master Admin
         return {
           ...fallbackAdmin,
           isMasterAdmin: true
@@ -600,20 +560,14 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      // First, remove any existing Master Admin for this church
-      await db
-        .update(users)
-        .set({
-          isMasterAdmin: false,
-          updatedAt: new Date()
-        })
-        .where(eq(users.isMasterAdmin, true));
-        
-      // Now set this user as the Master Admin using the isMasterAdmin column
+      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
+      // For now, we'll set the churchId field to mark a special relationship
+      
+      // Update the user to set the church relationship
       const [updatedUser] = await db
         .update(users)
         .set({
-          isMasterAdmin: true,
+          churchId: churchId,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId))
@@ -621,7 +575,11 @@ export class DatabaseStorage implements IStorage {
         
       console.log(`Set user ${userId} as Master Admin for church ${churchId}`);
       
-      return updatedUser;
+      // Virtually add the isMasterAdmin flag
+      return {
+        ...updatedUser,
+        isMasterAdmin: true
+      };
     } catch (error) {
       console.error("Error in setUserAsMasterAdmin:", error);
       return undefined;
@@ -645,31 +603,37 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
-      // IMPORTANT: Preserve original churchId which represents the "Church entity"
-      // Instead of changing all users' churchId (which affects data access), we'll:
-      // 1. Mark new Master Admin as such (eventually with isMasterAdmin column)
-      // 2. Update the church table with new adminId (not implemented yet)
+      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
       
-      // Instead of changing churchId for all users, just update the isMasterAdmin status
-      // For now, we store the original church creator in the churchId field of each user
+      // Get all users who have the old Master Admin as their churchId
+      const usersToUpdate = await db
+        .select()
+        .from(users)
+        .where(eq(users.churchId, fromUserId));
+        
+      console.log(`Found ${usersToUpdate.length} users to update from old Master Admin ${fromUserId} to new Master Admin ${toUserId}`);
       
-      // Mark the new user as Master Admin (pointing to original church)
+      // Update all these users to point to the new Master Admin
+      for (const userToUpdate of usersToUpdate) {
+        if (userToUpdate.id !== toUserId) {  // Don't update the new Master Admin yet
+          await db
+            .update(users)
+            .set({ 
+              churchId: toUserId,
+              updatedAt: new Date()
+            })
+            .where(eq(users.id, userToUpdate.id));
+        }
+      }
+      
+      // Make sure the new Master Admin points to themselves
       await db
         .update(users)
         .set({
-          isMasterAdmin: true,  // This is the DB column that marks Master Admin
+          churchId: toUserId,
           updatedAt: new Date()
         })
         .where(eq(users.id, toUserId));
-      
-      // Remove Master Admin status from previous user
-      await db
-        .update(users)
-        .set({
-          isMasterAdmin: false,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, fromUserId));
         
       console.log(`Transferred Master Admin from ${fromUserId} to ${toUserId} for church ${churchId}`);
       
