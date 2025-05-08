@@ -315,7 +315,7 @@ const CountsPage = () => {
                         <div className="font-medium">
                           {donation.memberId ? 
                             "Member Donation" : 
-                            "Anonymous Donation"}
+                            "Cash Donation"}
                         </div>
                         <div className="text-sm text-gray-500">
                           {(() => {

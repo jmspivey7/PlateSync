@@ -132,7 +132,7 @@ const Donations = () => {
                   <p className="text-lg font-medium">
                     {donation.member 
                       ? `${donation.member.firstName} ${donation.member.lastName}` 
-                      : "Anonymous/Visitor"
+                      : "Cash Donation"
                     }
                   </p>
                   {donation.member?.email && (

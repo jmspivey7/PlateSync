@@ -240,7 +240,7 @@ const BatchesPage = () => {
                             <div className="font-medium">
                               {donation.memberId ? 
                                 "Member Donation" : 
-                                "Anonymous Donation"}
+                                "Cash Donation"}
                             </div>
                             <div className="text-sm text-gray-500">
                               {format(new Date(donation.date), 'MMM d, yyyy')} • 
