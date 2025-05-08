@@ -719,7 +719,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             className={`flex items-center gap-2 flex-1 ${field.value === "existing" ? "border-green-500 bg-[#69ad4c] text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-green-50"}`}
                             aria-label="Existing Member"
                           >
-                            <UserCircle className={`h-4 w-4 ${field.value === "existing" ? "text-white" : "text-green-600"}`} />
+                            <div className="mr-0 flex items-center">
+                              <UserCircle className={`h-4 w-4 ${field.value === "existing" ? "text-white" : "text-green-600"}`} />
+                            </div>
                             <span>Existing Member</span>
                           </ToggleGroupItem>
                           <ToggleGroupItem 
@@ -727,7 +729,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             className={`flex items-center gap-2 flex-1 ${field.value === "new" ? "border-blue-500 bg-blue-500 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-blue-50"}`}
                             aria-label="Known Visitor"
                           >
-                            <UserPlus className={`h-4 w-4 ${field.value === "new" ? "text-white" : "text-blue-600"}`} />
+                            <div className="mr-0 flex items-center">
+                              <UserPlus className={`h-4 w-4 ${field.value === "new" ? "text-white" : "text-blue-600"}`} />
+                            </div>
                             <span>Known Visitor</span>
                           </ToggleGroupItem>
                           <ToggleGroupItem 
@@ -735,7 +739,9 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             className={`flex items-center gap-2 flex-1 ${field.value === "visitor" ? "border-slate-500 bg-slate-600 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-gray-100"}`}
                             aria-label="Cash"
                           >
-                            <User className={`h-4 w-4 ${field.value === "visitor" ? "text-white" : "text-slate-600"}`} />
+                            <div className="mr-0 flex items-center">
+                              <User className={`h-4 w-4 ${field.value === "visitor" ? "text-white" : "text-slate-600"}`} />
+                            </div>
                             <span>Cash</span>
                           </ToggleGroupItem>
                         </ToggleGroup>
