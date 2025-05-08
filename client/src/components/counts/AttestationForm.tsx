@@ -221,7 +221,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     onSuccess: () => {
       toast({
         title: "Count finalized",
-        description: "The count has been successfully finalized and attested.",
+        description: "The count has been successfully finalized.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       setStep('complete');
@@ -543,7 +543,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Attestation Complete</h3>
             <p className="text-gray-600 text-center mb-6">
-              This count has been finalized and is now locked.
+              This count has been finalized.
             </p>
             <Button
               onClick={onComplete}

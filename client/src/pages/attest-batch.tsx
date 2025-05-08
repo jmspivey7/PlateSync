@@ -132,7 +132,6 @@ const AttestBatchPage = () => {
           </Button>
           <div className="text-right">
             <h2 className="text-xl font-semibold">Count Attestation</h2>
-            <p className="text-sm text-gray-500">Complete the attestation process to finalize this count</p>
           </div>
         </div>
         <CardContent className="pt-6">
