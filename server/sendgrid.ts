@@ -793,7 +793,7 @@ PlateSync Reporting System
   <!-- Header with Church Name (clean white style) -->
   <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
     <h1 style="margin: 0; font-size: 24px; color: #2D3748;">${params.churchName}</h1>
-    <p style="margin: 10px 0 0; font-size: 18px; color: #2D3748;">Count Report</p>
+    <h2 style="margin: 10px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Count Report</h2>
   </div>
   
   <!-- Main Content -->
