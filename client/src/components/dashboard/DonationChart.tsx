@@ -169,7 +169,7 @@ export function DonationChart() {
   }
   
   // Handle error states - show empty chart with view history option
-  if (batchError || donationsError) {
+  if (batchError || donationsError || (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
     return (
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
@@ -187,8 +187,8 @@ export function DonationChart() {
           </Button>
         </CardHeader>
         <CardContent className="h-[300px] flex flex-col items-center justify-center">
-          <p className="text-muted-foreground mb-4">No donation data available to display</p>
-          <p className="text-sm text-muted-foreground">Click "All Counts" to see your counts</p>
+          <p className="text-muted-foreground mb-4">No finalized counts available to display</p>
+          <p className="text-sm text-muted-foreground">Finalize a count to see donation trends</p>
         </CardContent>
       </Card>
     );

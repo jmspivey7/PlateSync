@@ -720,7 +720,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             aria-label="Existing Member"
                           >
                             {/* Force icon to always be visible using solid green color */}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="h-5 w-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                               <circle cx="12" cy="8" r="5" />
                               <path d="M20 21a8 8 0 0 0-16 0" />
                             </svg>
@@ -760,7 +760,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       <FormItem>
                         <FormLabel className="font-bold">Select Member:</FormLabel>
                         <FormControl>
-                          {members && (
+                          {members && members.length > 0 ? (
                             <ComboboxSearch
                               key={comboboxKey}
                               options={members.map(member => ({
@@ -775,16 +775,24 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                               placeholder="Type to search for members..."
                               className="w-full"
                             />
+                          ) : (
+                            <div className="border rounded-md p-3 bg-amber-50 border-amber-200">
+                              <p className="text-sm text-amber-800">
+                                No members found in your church. To add members, go to the <strong>Members</strong> tab.
+                              </p>
+                            </div>
                           )}
                         </FormControl>
                         <FormDescription>
-                          {field.value && members ? (
-                            <span className="text-sm text-green-700 font-medium">
-                              Selected: {members.find(m => m.id.toString() === field.value)?.firstName} {members.find(m => m.id.toString() === field.value)?.lastName}
-                            </span>
-                          ) : (
-                            "Start typing to search for members by name"
-                          )}
+                          {members && members.length > 0 ? (
+                            field.value && members ? (
+                              <span className="text-sm text-green-700 font-medium">
+                                Selected: {members.find(m => m.id.toString() === field.value)?.firstName} {members.find(m => m.id.toString() === field.value)?.lastName}
+                              </span>
+                            ) : (
+                              "Start typing to search for members by name"
+                            )
+                          ) : null}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
