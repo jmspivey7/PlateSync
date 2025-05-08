@@ -41,7 +41,7 @@ const BatchesPage = () => {
     queryKey: ["/api/batches", selectedBatchId, "details"],
     queryFn: async () => {
       if (!selectedBatchId) return null;
-      const response = await apiRequest("GET", `/api/batches/${selectedBatchId}`);
+      const response = await apiRequest(`/api/batches/${selectedBatchId}`, "GET");
       if (!response.ok) {
         throw new Error("Failed to fetch batch details");
       }

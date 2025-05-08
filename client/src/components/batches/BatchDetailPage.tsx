@@ -59,8 +59,8 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   const finalizeBatchMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest(
+        `/api/batches/${batchId}`,
         "PATCH", 
-        `/api/batches/${batchId}`, 
         { status: "FINALIZED" }
       );
       return response.json();
