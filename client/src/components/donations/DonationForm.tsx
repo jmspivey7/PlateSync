@@ -716,26 +716,26 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         >
                           <ToggleGroupItem 
                             value="existing" 
-                            className={`flex items-center gap-2 flex-1 bg-white border border-gray-200 hover:bg-green-50 ${field.value === "existing" ? "border-green-500 bg-green-50 font-semibold" : ""}`}
+                            className={`flex items-center gap-2 flex-1 ${field.value === "existing" ? "border-green-500 bg-[#69ad4c] text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-green-50"}`}
                             aria-label="Existing Member"
                           >
-                            <UserCircle className={`h-4 w-4 ${field.value === "existing" ? "text-green-600" : ""}`} />
+                            <UserCircle className={`h-4 w-4 ${field.value === "existing" ? "text-white" : ""}`} />
                             <span>Existing Member</span>
                           </ToggleGroupItem>
                           <ToggleGroupItem 
                             value="new" 
-                            className={`flex items-center gap-2 flex-1 bg-white border border-gray-200 hover:bg-blue-50 ${field.value === "new" ? "border-blue-500 bg-blue-50 font-semibold" : ""}`}
+                            className={`flex items-center gap-2 flex-1 ${field.value === "new" ? "border-blue-500 bg-blue-500 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-blue-50"}`}
                             aria-label="Known Visitor"
                           >
-                            <UserPlus className={`h-4 w-4 ${field.value === "new" ? "text-blue-600" : ""}`} />
+                            <UserPlus className={`h-4 w-4 ${field.value === "new" ? "text-white" : ""}`} />
                             <span>Known Visitor</span>
                           </ToggleGroupItem>
                           <ToggleGroupItem 
                             value="visitor" 
-                            className={`flex items-center gap-2 flex-1 bg-white border border-gray-200 hover:bg-gray-50 ${field.value === "visitor" ? "border-slate-500 bg-slate-50 font-semibold" : ""}`}
+                            className={`flex items-center gap-2 flex-1 ${field.value === "visitor" ? "border-slate-500 bg-slate-600 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-gray-100"}`}
                             aria-label="Cash"
                           >
-                            <User className={`h-4 w-4 ${field.value === "visitor" ? "text-slate-600" : ""}`} />
+                            <User className={`h-4 w-4 ${field.value === "visitor" ? "text-white" : ""}`} />
                             <span>Cash</span>
                           </ToggleGroupItem>
                         </ToggleGroup>
