@@ -157,22 +157,28 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     doc.moveDown(2);
   }
   
-  // Add summary totals
+  // Add summary totals - basic layout values
   const tableWidth = 400;
   const leftColumnWidth = 300;
-  const rightColumnWidth = 100;
-  const tableX = (doc.page.width - tableWidth) / 2;
-  let tableY = doc.y;
   
-  // Calculate the widest amount to display for alignment
+  // Calculate the widest amount to display for alignment with additional margin
+  // Add extra padding to ensure there's enough room for the text
+  const amountPadding = 30; // Increased padding for wider text area
   const maxAmountWidth = Math.max(
     doc.widthOfString(`$${formatCurrency(totalAmount)}`),
     doc.widthOfString(`$${formatCurrency(checkAmount)}`),
     doc.widthOfString(`$${formatCurrency(cashAmount)}`)
-  );
+  ) + amountPadding;
+  
+  // Adjust column width to accommodate wider amounts
+  const rightColumnWidth = Math.max(100, maxAmountWidth);
+  
+  // Calculate table positioning
+  const tableX = (doc.page.width - tableWidth) / 2;
+  let tableY = doc.y;
   
   // Calculate the right edge of the amount column (where text ends)
-  const amountRightX = tableX + tableWidth + maxAmountWidth;
+  const amountRightX = tableX + leftColumnWidth; 
   
   // Use this for line endings - exactly aligned with the right edge of amounts
   const lineEndX = amountRightX;
