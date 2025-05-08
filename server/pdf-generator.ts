@@ -101,8 +101,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
         fit: [logoWidth, logoHeight]
       });
       
-      // Position after logo - add more spacing (40px instead of 20px)
-      startingY = doc.y + 40;
+      // Position after logo - add significantly more spacing (100px instead of 40px)
+      startingY = doc.y + 100;
       console.log(`Position after logo: ${startingY}`);
       
       // Set position for next content
