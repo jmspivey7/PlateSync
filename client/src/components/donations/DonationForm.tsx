@@ -719,8 +719,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             className={`flex items-center gap-2 flex-1 ${field.value === "existing" ? "border-green-500 bg-[#69ad4c] text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-green-50"}`}
                             aria-label="Existing Member"
                           >
-                            {/* Force icon to display in all states */}
-                            <UserCircle className={`h-5 w-5 ${field.value === "existing" ? "text-white" : "text-green-600"}`} />
+                            {/* Force icon to always be visible using solid green color */}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="h-5 w-5">
+                              <circle cx="12" cy="8" r="5" />
+                              <path d="M20 21a8 8 0 0 0-16 0" />
+                            </svg>
                             <span>Existing Member</span>
                           </ToggleGroupItem>
                           <ToggleGroupItem 
