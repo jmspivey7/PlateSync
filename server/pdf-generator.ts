@@ -100,8 +100,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   let dateHeight = 0;
   
   // Calculate space for all three header elements
-  const logoWidth = 250;
-  const logoEstimatedHeight = 100;
+  const logoWidth = 312.5; // Increased by 25% from 250
+  const logoEstimatedHeight = 125; // Increased by 25% from 100
   
   // STEP 1: TOP ELEMENT - LOGO
   let headerY = margin;
