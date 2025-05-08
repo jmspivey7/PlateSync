@@ -145,7 +145,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   headerY = margin + logoHeight + 15;
   console.log(`Drawing title at Y: ${headerY}`);
   doc.font('Helvetica-Bold').fontSize(18);
-  doc.text('Count Report', margin, headerY, {
+  doc.text('Final Count Report', margin, headerY, {
     align: 'center',
     width: contentWidth
   });
