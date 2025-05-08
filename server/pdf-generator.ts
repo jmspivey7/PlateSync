@@ -88,74 +88,87 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Log key layout information for debugging
   console.log(`Page width: ${pageWidth}, Content width: ${contentWidth}, Amount column X: ${amountColX}`);
   
-  // Three-stage header layout: Title → Date → Logo
-  console.log("PDF GENERATION - RENDERING HEADER WITH CORRECTED ORDER");
+  // COMPLETELY DIFFERENT APPROACH FOR HEADER LAYOUT
+  // We'll build the header in REVERSE order in the code, but resulting in the correct 
+  // physical order: Logo at top, Title below, Date below that
   
-  // Start at the top margin
-  let currentY = margin;
+  console.log("=== CREATING NEW PDF WITH STRICT LAYOUT ORDER: LOGO, TITLE, DATE ===");
   
-  // Stage 1: Report title (at the top)
-  doc.font('Helvetica-Bold').fontSize(18);
-  doc.text('Count Report', margin, currentY, {
-    align: 'center',
-    width: contentWidth,
-    continued: false
-  });
+  // Clear all Y position tracking
+  let logoHeight = 0;
+  let titleHeight = 0;
+  let dateHeight = 0;
   
-  // Move down for date
-  currentY = doc.y + 10;
+  // Calculate space for all three header elements
+  const logoWidth = 250;
+  const logoEstimatedHeight = 100;
   
-  // Stage 2: Report date
-  doc.fontSize(14);
-  doc.text(formattedDate, margin, currentY, {
-    align: 'center',
-    width: contentWidth,
-    continued: false
-  });
-  
-  // Move down for logo
-  currentY = doc.y + 20;
-  
-  // Stage 3: Logo or church name
+  // STEP 1: TOP ELEMENT - LOGO
+  let headerY = margin;
   try {
     if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-      console.log(`Church logo path: ${churchLogoPath}`);
+      console.log(`Drawing logo at Y: ${headerY}`);
       
       // Load logo data
       const logoData = fs.readFileSync(churchLogoPath);
       console.log(`Logo file size: ${logoData.length} bytes`);
       
-      // Size and position settings
-      const logoWidth = 250;
-      const logoHeight = 100;
-      
       // Position logo horizontally in the center
       const centerX = (pageWidth - logoWidth) / 2;
       
       // Add logo to the document at the specified position
-      doc.image(logoData, centerX, currentY, { 
-        fit: [logoWidth, logoHeight],
+      doc.image(logoData, centerX, headerY, { 
+        fit: [logoWidth, logoEstimatedHeight],
         align: 'center'
       });
       
-      // Update Y position after logo
-      currentY += logoHeight + 20;
+      // Add space below logo
+      logoHeight = logoEstimatedHeight;
     } 
     else if (churchName && churchName.trim() !== '') {
+      console.log(`Drawing church name at Y: ${headerY}`);
       doc.font('Helvetica-Bold').fontSize(24);
-      doc.text(churchName, margin, currentY, { 
+      doc.text(churchName, margin, headerY, { 
         align: 'center',
         width: contentWidth
       });
-      currentY = doc.y + 20;
+      
+      // Estimate the height used
+      logoHeight = 30;
     }
   } catch (error) {
     console.error("Error rendering logo/name:", error);
   }
   
-  // Set the cursor position after the header section
-  doc.y = currentY + 10;
-  console.log(`Position after header section: ${doc.y}`);
+  // STEP 2: SECOND ELEMENT - TITLE
+  // Provide extra space after logo
+  headerY = margin + logoHeight + 15;
+  console.log(`Drawing title at Y: ${headerY}`);
+  doc.font('Helvetica-Bold').fontSize(18);
+  doc.text('Count Report', margin, headerY, {
+    align: 'center',
+    width: contentWidth
+  });
+  
+  titleHeight = 25; // Estimate height of title
+  
+  // STEP 3: THIRD ELEMENT - DATE
+  // Move position down after title
+  headerY = margin + logoHeight + 15 + titleHeight + 5;
+  console.log(`Drawing date at Y: ${headerY}`);
+  doc.font('Helvetica').fontSize(14);
+  doc.text(formattedDate, margin, headerY, {
+    align: 'center',
+    width: contentWidth
+  });
+  
+  dateHeight = 20; // Estimate height of date text
+  
+  // Set the cursor position for the content section
+  // Leave space after the header
+  headerY = margin + logoHeight + titleHeight + dateHeight + 40;
+  doc.y = headerY;
+  console.log(`Final position after header section: ${doc.y}`);
   
   // Lines array to collect all line drawing operations - execute them at the end
   const linesToDraw: Array<{y: number, isDouble?: boolean}> = [];
