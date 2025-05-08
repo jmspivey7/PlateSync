@@ -391,17 +391,67 @@ interface WelcomeEmailParams {
   firstName: string;
   lastName: string;
   churchName: string;
+  churchId: string;
   verificationToken: string;
   verificationUrl: string;
 }
 
 export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
+  console.log('\n📧 Starting welcome email function...');
+  
+  // Check if SendGrid API key is set
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('❌ SendGrid API key is not set! Cannot send welcome email.');
+    return false;
+  }
+  
+  // Get sender email from environment variable with fallback
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
+  console.log(`📧 Using sender email: ${fromEmail}`);
+  console.log(`📧 Sending to: ${params.to}`);
   
-  const subject = `Welcome to PlateSync for ${params.churchName}`;
-  
-  // Plain text version of the email
-  const text = `
+  try {
+    // Try to get the custom template for this church
+    console.log(`📧 Looking for WELCOME_EMAIL template for church ID: ${params.churchId}`);
+    const template = await storage.getEmailTemplateByType('WELCOME_EMAIL', params.churchId);
+    
+    if (template) {
+      console.log('📧 Using custom welcome email template from database');
+      
+      // Replace template variables with actual values
+      let subject = template.subject || `Welcome to PlateSync for ${params.churchName}`;
+      let text = template.bodyText || '';
+      let html = template.bodyHtml || '';
+      
+      // Replace template variables
+      const replacements: Record<string, string> = {
+        '{{firstName}}': params.firstName,
+        '{{lastName}}': params.lastName,
+        '{{churchName}}': params.churchName,
+        '{{verificationUrl}}': `${params.verificationUrl}?token=${params.verificationToken}`
+      };
+      
+      Object.entries(replacements).forEach(([key, value]) => {
+        subject = subject.replace(new RegExp(key, 'g'), value);
+        text = text.replace(new RegExp(key, 'g'), value);
+        html = html.replace(new RegExp(key, 'g'), value);
+      });
+      
+      return await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+    } else {
+      // If no custom template found, use default template
+      console.log('⚠️ No custom welcome email template found, using fallback template');
+      
+      const subject = `Welcome to PlateSync for ${params.churchName}`;
+      
+      // Plain text version of the email
+      const text = `
 Dear ${params.firstName} ${params.lastName},
 
 Welcome to PlateSync! You have been added as a user for ${params.churchName}.
@@ -415,15 +465,15 @@ If you did not request this account, you can safely ignore this email.
 
 Sincerely,
 The PlateSync Team
-  `;
-  
-  // HTML version of the email with nicer formatting
-  const html = `
+      `;
+      
+      // HTML version with green header matching the app's design
+      const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Logo and Title (clean white style) -->
-  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">PlateSync</h1>
-    <p style="margin: 10px 0 0; font-size: 18px; color: #2D3748;">Welcome to ${params.churchName}</p>
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Welcome to ${params.churchName}</p>
   </div>
   
   <!-- Main Content -->
@@ -457,15 +507,20 @@ The PlateSync Team
     <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
   </div>
 </div>
-  `;
-  
-  return await sendEmail({
-    to: params.to,
-    from: fromEmail,
-    subject,
-    text,
-    html
-  });
+      `;
+      
+      return await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+    }
+  } catch (error) {
+    console.error('Error preparing welcome email:', error);
+    return false;
+  }
 }
 
 interface PasswordResetEmailParams {
@@ -879,10 +934,58 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
   console.log(`📧 Using sender email: ${fromEmail}`);
   console.log(`📧 Sending to: ${params.to}`);
   
-  const subject = `PlateSync Password Reset Request`;
-  
-  // Plain text version of the email
-  const text = `
+  try {
+    // First try to fetch the custom email template from the database
+    // We'll need to get the church ID from a user lookup based on email
+    console.log(`📧 Looking for user with email: ${params.to}`);
+    const user = await storage.getUserByEmail(params.to);
+    
+    if (!user || !user.churchId) {
+      console.warn(`⚠️ Could not find user or church ID for email: ${params.to}`);
+      console.warn(`⚠️ Will use default template as fallback`);
+    }
+    
+    // Try to get the custom template for this church (if we have a church ID)
+    let template;
+    if (user && user.churchId) {
+      console.log(`📧 Looking for PASSWORD_RESET template for church ID: ${user.churchId}`);
+      template = await storage.getEmailTemplateByType('PASSWORD_RESET', user.churchId);
+    }
+    
+    if (template) {
+      console.log('📧 Using custom password reset template from database');
+      
+      // Replace template variables with actual values
+      let subject = template.subject || `PlateSync Password Reset Request`;
+      let text = template.bodyText || '';
+      let html = template.bodyHtml || '';
+      
+      // Replace resetUrl placeholder with actual URL
+      const replacements: Record<string, string> = {
+        '{{resetUrl}}': params.resetUrl
+      };
+      
+      Object.entries(replacements).forEach(([key, value]) => {
+        subject = subject.replace(new RegExp(key, 'g'), value);
+        text = text.replace(new RegExp(key, 'g'), value);
+        html = html.replace(new RegExp(key, 'g'), value);
+      });
+      
+      return await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+    } else {
+      // If no custom template found, use default template as fallback
+      console.log('⚠️ No custom password reset template found, using fallback template');
+      
+      const subject = `PlateSync Password Reset Request`;
+      
+      // Plain text version of the email
+      const text = `
 Hello,
 
 We received a request to reset your password for your PlateSync account.
@@ -896,15 +999,15 @@ If you did not request a password reset, please ignore this email or contact you
 
 Sincerely,
 The PlateSync Team
-  `;
-  
-  // HTML version of the email with clean white header style (matching other emails)
-  const html = `
+      `;
+      
+      // HTML version that matches the app's UI - using green header
+      const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Church Name (clean white style) -->
-  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">PlateSync</h1>
-    <p style="margin: 10px 0 0; font-size: 18px; color: #2D3748;">Password Reset Request</p>
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
   </div>
   
   <!-- Main Content -->
@@ -936,13 +1039,18 @@ The PlateSync Team
     <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
   </div>
 </div>
-  `;
-  
-  return await sendEmail({
-    to: params.to,
-    from: fromEmail,
-    subject,
-    text,
-    html
-  });
+      `;
+      
+      return await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+    }
+  } catch (error) {
+    console.error('Error preparing password reset email:', error);
+    return false;
+  }
 }
