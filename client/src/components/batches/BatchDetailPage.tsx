@@ -236,7 +236,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
                   <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
                     <div>
                       <div className="font-medium">
-                        {donation.memberId ? "Member Donation" : "Anonymous/Visitor"}
+                        {donation.memberId ? "Member Donation" : "Cash Donation"}
                       </div>
                       <div className="text-sm text-gray-500">
                         {format(new Date(donation.date), 'MMM d, yyyy')} • 
@@ -328,7 +328,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
                 <div key={donation.id} className="p-3 flex justify-between hover:bg-gray-50">
                   <div>
                     <div className="font-medium">
-                      {donation.memberId ? "Member Donation" : "Anonymous/Visitor"}
+                      {donation.memberId ? "Member Donation" : "Cash Donation"}
                     </div>
                     <div className="text-sm text-gray-500">
                       {format(new Date(donation.date), 'MMM d, yyyy')} • 
