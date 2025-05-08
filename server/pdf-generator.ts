@@ -88,31 +88,35 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Log key layout information for debugging
   console.log(`Page width: ${pageWidth}, Content width: ${contentWidth}, Amount column X: ${amountColX}`);
   
-  // Render church name or logo
+  // Two-stage header rendering: logo first, then title/date
   console.log("PDF GENERATION - CONDITIONAL HEADER RENDERING");
-  console.log(`Church logo path: ${churchLogoPath ? churchLogoPath : 'none'}`);
-  console.log(`Church name: ${churchName ? churchName : 'none'}`);
   
-  let positionAfterHeader = margin;
-  
+  // Stage 1: Logo or church name
   try {
     if (churchLogoPath && fs.existsSync(churchLogoPath)) {
-      console.log("RENDERING LOGO ONLY (NO CHURCH NAME)");
+      console.log(`Church logo path: ${churchLogoPath}`);
       
-      // Draw logo centered
+      // Load logo data
       const logoData = fs.readFileSync(churchLogoPath);
       console.log(`Logo file size: ${logoData.length} bytes`);
       
+      // Size and position settings
       const logoWidth = 250;
+      const logoHeight = 100;
+      const logoStartY = margin;  // Start at top margin
+      
+      // Position logo horizontally in the center
       const centerX = (pageWidth - logoWidth) / 2;
       
-      doc.image(logoData, centerX, margin, { 
-        fit: [logoWidth, 100]
+      // Add logo to the document at the specified position
+      doc.image(logoData, centerX, logoStartY, { 
+        fit: [logoWidth, logoHeight],
+        align: 'center'
       });
       
-      // Add spacer after logo - move further down
-      positionAfterHeader = margin + 100;
-      console.log(`Position after logo: ${positionAfterHeader}`);
+      // Set the cursor position for the next items (title/date)
+      // Add more space after the logo
+      doc.y = logoStartY + logoHeight + 30;  // 30px extra space after logo
     } 
     else if (churchName && churchName.trim() !== '') {
       console.log("RENDERING CHURCH NAME HEADER");
@@ -121,13 +125,17 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
         align: 'center',
         width: contentWidth
       });
-      positionAfterHeader = doc.y + 20;
+      doc.moveDown(1);
     }
   } catch (error) {
-    console.error("Error rendering header:", error);
+    console.error("Error rendering logo/name:", error);
   }
   
-  // Report title and date - positioned after header
+  // Save the starting Y position for the title
+  const titleStartY = doc.y;
+  console.log(`Title starting Y position: ${titleStartY}`);
+  
+  // Stage 2: Report title
   doc.font('Helvetica-Bold').fontSize(18);
   doc.text('Count Report', {
     align: 'center',
@@ -135,6 +143,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     continued: false
   });
   
+  // Stage 3: Report date
   doc.moveDown(0.5);
   doc.fontSize(14);
   doc.text(formattedDate, {
@@ -143,7 +152,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     continued: false
   });
   
-  doc.moveDown(2);
+  // Add appropriate space after the header section
+  doc.moveDown(1.5);
   
   // Lines array to collect all line drawing operations - execute them at the end
   const linesToDraw: Array<{y: number, isDouble?: boolean}> = [];
