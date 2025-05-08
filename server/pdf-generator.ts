@@ -177,8 +177,12 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const tableX = (doc.page.width - tableWidth) / 2;
   let tableY = doc.y;
   
-  // Calculate the right edge of the amount column (where text ends)
-  const amountRightX = tableX + leftColumnWidth; 
+  // Calculate page dimensions and available space
+  const pageWidth = doc.page.width;
+  const rightMargin = 50; // Match the default margin
+  
+  // Set exact position where we want the right edge of amounts to be
+  const amountRightX = pageWidth - rightMargin;
   
   // Use this for line endings - exactly aligned with the right edge of amounts
   const lineEndX = amountRightX;
@@ -186,14 +190,24 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Draw summary table
   doc.font('Helvetica').fontSize(12);
   
+  // Define a fixed width for the amount column with a reasonable width
+  const amountColumnWidth = 100; // Width in points
+  
   // Checks row
   doc.text('Checks', tableX, tableY);
-  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX, tableY, { align: 'right' });
+  // Position text so that it ends at amountRightX, and give it a fixed width
+  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX - amountColumnWidth, tableY, { 
+    width: amountColumnWidth,
+    align: 'right'
+  });
   tableY += 20;
   
   // Cash row
   doc.text('Cash', tableX, tableY);
-  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX - amountColumnWidth, tableY, { 
+    width: amountColumnWidth,
+    align: 'right'
+  });
   tableY += 20;
   
   // Draw horizontal line above TOTAL row - aligned exactly with the right edge of amounts
@@ -203,7 +217,10 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Total row
   doc.font('Helvetica-Bold');
   doc.text('TOTAL', tableX, tableY);
-  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX - amountColumnWidth, tableY, { 
+    width: amountColumnWidth,
+    align: 'right'
+  });
   tableY += 30;
   
   // CHECKS section
@@ -227,7 +244,10 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     if (donation.checkNumber) {
       doc.text(donation.checkNumber, tableX + 225, tableY);
     }
-    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX, tableY, { align: 'right' });
+    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX - amountColumnWidth, tableY, { 
+      width: amountColumnWidth,
+      align: 'right'
+    });
     tableY += 20;
     checkTotal += parseFloat(donation.amount);
   });
@@ -239,7 +259,10 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Check subtotal
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Checks', tableX, tableY);
-  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX - amountColumnWidth, tableY, { 
+    width: amountColumnWidth,
+    align: 'right'
+  });
   tableY += 30;
   
   // CASH section
@@ -259,7 +282,10 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   
   cashDonations.forEach(donation => {
     doc.text(donation.memberName, tableX, tableY);
-    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX, tableY, { align: 'right' });
+    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX - amountColumnWidth, tableY, { 
+      width: amountColumnWidth,
+      align: 'right'
+    });
     tableY += 20;
     cashTotal += parseFloat(donation.amount);
   });
@@ -271,7 +297,10 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Cash subtotal
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Cash', tableX, tableY);
-  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX - amountColumnWidth, tableY, { 
+    width: amountColumnWidth,
+    align: 'right'
+  });
   tableY += 50;
   
   // Draw SINGLE horizontal line ABOVE grand total - align with the right edge of the amount column
@@ -280,7 +309,10 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Grand total
   doc.fontSize(14);
   doc.text('GRAND TOTAL', tableX, tableY);
-  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX - amountColumnWidth, tableY, { 
+    width: amountColumnWidth,
+    align: 'right'
+  });
   
   // Draw DOUBLE horizontal line BELOW grand total - align with the right edge of the amount column
   tableY += 15; // Increased spacing below the grand total text to avoid touching the numbers
