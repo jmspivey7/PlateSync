@@ -69,7 +69,7 @@ const RecentDonations = () => {
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>;
       case 'NOT_REQUIRED':
       default:
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Anonymous</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Cash</Badge>;
     }
   };
   

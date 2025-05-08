@@ -437,7 +437,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
   // Handle form field changes to show appropriate fields
   const formDonorType = form.watch("donorType");
   
-  // Auto-set donation type to CASH when donor type is Anonymous (visitor)
+  // Auto-set donation type to CASH when donor type is Cash (visitor)
   useEffect(() => {
     if (formDonorType === "visitor") {
       form.setValue("donationType", "CASH");
@@ -619,7 +619,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         // First manually reset the amount field to ensure it's cleared
         form.setValue("amount", "");
         
-        // Reset form completely, but maintain current donor type if it's anonymous
+        // Reset form completely, but maintain current donor type if it's cash
         form.reset({
           date: currentDate,
           amount: "",  // Setting explicitly to empty string
@@ -627,7 +627,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           donationType: currentDonorType === "visitor" ? "CASH" : "CHECK",
           checkNumber: "",
           notes: "",
-          // Keep Anonymous (visitor) selection if that was the current donor type
+          // Keep Cash (visitor) selection if that was the current donor type
           donorType: currentDonorType === "visitor" ? "visitor" : "existing",
           memberId: "",
           firstName: "",
@@ -733,10 +733,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                           <ToggleGroupItem 
                             value="visitor" 
                             className={`flex items-center gap-2 flex-1 bg-white border border-gray-200 hover:bg-gray-50 ${field.value === "visitor" ? "border-slate-500 bg-slate-50 font-semibold" : ""}`}
-                            aria-label="Anonymous"
+                            aria-label="Cash"
                           >
                             <User className={`h-4 w-4 ${field.value === "visitor" ? "text-slate-600" : ""}`} />
-                            <span>Anonymous</span>
+                            <span>Cash</span>
                           </ToggleGroupItem>
                         </ToggleGroup>
                       </FormControl>
@@ -849,11 +849,11 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   </div>
                 )}
                 
-                {/* Anonymous Information */}
+                {/* Cash Donation Information */}
                 {formDonorType === "visitor" && (
                   <div className="bg-gray-50 p-4 rounded border border-gray-200">
                     <p className="text-sm text-gray-700">
-                      This donation will be recorded as anonymous. No receipt will be generated.
+                      This will be recorded as a cash donation. No receipt will be generated.
                     </p>
                   </div>
                 )}
@@ -897,7 +897,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                       <FormItem>
                         <FormLabel className="font-bold">Donation Type:</FormLabel>
                         {formDonorType === "visitor" ? (
-                          // For Anonymous donors, show a read-only field that's always CASH
+                          // For Cash donations, show a read-only field that's always CASH
                           <FormControl>
                             <Input value="Cash" readOnly className="bg-gray-50 w-full max-w-[90%]" style={{ width: '90%' }} />
                           </FormControl>
