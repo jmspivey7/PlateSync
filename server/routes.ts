@@ -363,8 +363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create a new user
-  app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+  // Create a new user (Master Admin only)
+  app.post('/api/users', isAuthenticated, isMasterAdmin, async (req, res) => {
     try {
       const { email, firstName, lastName, role, churchName } = req.body;
       
