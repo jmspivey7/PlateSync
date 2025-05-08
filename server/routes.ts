@@ -2040,17 +2040,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Batch not found" });
       }
       
-      // Check if batch is FINALIZED - only ADMIN users can delete FINALIZED batches
+      // Check if batch is FINALIZED - only ADMIN or MASTER ADMIN users can delete FINALIZED batches
       if (batch.status === 'FINALIZED') {
         // Get the user with their role from the database
         const user = await storage.getUser(userId);
         
-        // Only ADMIN users can delete FINALIZED batches
+        // Only ADMIN or MASTER ADMIN users can delete FINALIZED batches
         if (!user || user.role !== 'ADMIN') {
           return res.status(403).json({ 
             message: "Forbidden: Only administrators can delete finalized counts" 
           });
         }
+        // Note: Both regular Admins and Master Admins are allowed to delete finalized counts now
+        // We don't need to check the isMasterAdmin flag
       }
       
       // Delete the batch and its donations
@@ -3281,17 +3283,19 @@ PlateSync Reporting System`;
       if (donation.batchId) {
         const batch = await storage.getBatch(donation.batchId, churchId);
         
-        // Cannot delete donation from a finalized batch (except for ADMIN users)
+        // Cannot delete donation from a finalized batch (except for ADMIN or MASTER ADMIN users)
         if (batch && batch.status === 'FINALIZED') {
           // Get the user with their role from the database
           const user = await storage.getUser(userId);
           
-          // Only ADMIN users can delete donations from FINALIZED batches
+          // Only ADMIN users (including Master Admins) can delete donations from FINALIZED batches
           if (!user || user.role !== 'ADMIN') {
             return res.status(403).json({ 
               message: "Forbidden: Only administrators can delete donations from finalized counts" 
             });
           }
+          // Note: Both regular Admins and Master Admins are allowed to delete finalized donations now
+          // We don't need to check the isMasterAdmin flag
         }
         
         // All checks passed, now delete the donation
