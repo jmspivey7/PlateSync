@@ -351,7 +351,16 @@ const UserManagement = () => {
         className: "bg-[#69ad4c] text-white",
       });
       setMasterAdminTransferOpen(false);
+      
+      // Invalidate all affected queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
+      // Force refresh the page after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     },
     onError: (error) => {
       toast({
@@ -621,7 +630,7 @@ const UserManagement = () => {
                                 <AlertDialogTitle>Transfer Master Admin Role</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Are you sure you want to transfer your Master Admin role to {user.firstName} {user.lastName}?
-                                  <p className="mt-2 text-amber-600 font-medium">This will remove your Master Admin privileges.</p>
+                                  <div className="mt-2 text-amber-600 font-medium">This will remove your Master Admin privileges.</div>
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
