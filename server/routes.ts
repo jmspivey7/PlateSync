@@ -2476,12 +2476,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       expires.setHours(expires.getHours() + 1);
       
       // Update user with reset token
+      // Make sure to preserve user verification status
       await db
         .update(users)
         .set({
           passwordResetToken: resetToken,
           passwordResetExpires: expires,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          // Do not change isVerified status during password reset
+          isVerified: user.isVerified
         })
         .where(eq(users.id, user.id));
       
@@ -2536,13 +2539,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const passwordHash = await scryptHash(password);
       
       // Update user with new password and clear reset token
+      // Make sure to keep the user verified if they were already verified
       const [updatedUser] = await db
         .update(users)
         .set({
           password: passwordHash,
           passwordResetToken: null,
           passwordResetExpires: null,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          isVerified: true // Ensure user remains verified after password reset
         })
         .where(eq(users.id, user.id))
         .returning();

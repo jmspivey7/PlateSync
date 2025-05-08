@@ -32,7 +32,20 @@ export default function ForgotPassword() {
     setError("");
     
     try {
-      await apiRequest("POST", "/api/auth/forgot-password", { email });
+      // Correct way to call the forgot password endpoint
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to process request");
+      }
+      
       setIsSubmitted(true);
     } catch (err: any) {
       setError(err.message || "An error occurred while processing your request.");

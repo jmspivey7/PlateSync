@@ -83,10 +83,20 @@ export default function ResetPassword() {
     setError("");
     
     try {
-      await apiRequest("POST", "/api/auth/reset-password", { 
-        token, 
-        password 
+      // Correct way to call the reset password endpoint
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token, password }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to reset password");
+      }
+      
       setIsSuccess(true);
       toast({
         title: "Password reset successful",
