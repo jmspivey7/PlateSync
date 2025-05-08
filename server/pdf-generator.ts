@@ -164,32 +164,42 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const tableX = (doc.page.width - tableWidth) / 2;
   let tableY = doc.y;
   
+  // Pre-calculate maximum width for all lines
+  // First determine the widest amount to display (typically the total)
+  const maxAmountWidth = Math.max(
+    doc.widthOfString(`$${formatCurrency(totalAmount)}`),
+    doc.widthOfString(`$${formatCurrency(checkAmount)}`),
+    doc.widthOfString(`$${formatCurrency(cashAmount)}`)
+  );
+  
+  // Add extra padding to ensure lines extend past the amounts
+  const linePadding = 20;
+  const fullTableWidth = tableWidth + maxAmountWidth + linePadding;
+  
+  // Calculate right alignment point for all amounts
+  const amountRightX = tableX + tableWidth + maxAmountWidth;
+  
   // Draw summary table
   doc.font('Helvetica').fontSize(12);
   
   // Checks row
   doc.text('Checks', tableX, tableY);
-  doc.text(`$${formatCurrency(checkAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX, tableY, { align: 'right' });
   tableY += 20;
   
   // Cash row
   doc.text('Cash', tableX, tableY);
-  doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX, tableY, { align: 'right' });
   tableY += 20;
   
-  // Ensure lines extend completely past the right edge of numbers
-  // Calculate the width needed to extend the line past the rightmost text
-  const textWidth = doc.widthOfString(`$${formatCurrency(totalAmount)}`);
-  const fullTableWidth = tableWidth + textWidth; // Add enough width to fully cover the amount column
-  
-  // Draw horizontal line above TOTAL row
+  // Draw horizontal line above TOTAL row - extending past the right-most text
   doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
   tableY += 5;
   
   // Total row
   doc.font('Helvetica-Bold');
   doc.text('TOTAL', tableX, tableY);
-  doc.text(`$${formatCurrency(totalAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX, tableY, { align: 'right' });
   tableY += 30;
   
   // CHECKS section
@@ -213,7 +223,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     if (donation.checkNumber) {
       doc.text(donation.checkNumber, tableX + 225, tableY);
     }
-    doc.text(`$${formatCurrency(donation.amount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX, tableY, { align: 'right' });
     tableY += 20;
     checkTotal += parseFloat(donation.amount);
   });
