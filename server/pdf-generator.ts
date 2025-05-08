@@ -105,7 +105,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
       doc.y = startingY;
       
       // Add report title and date below the logo
-      doc.font('Helvetica-Bold').fontSize(18).text('Finalized Count Report', { align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(18).text('Count Report', { align: 'center' });
       doc.fontSize(14).text(formattedDate, { align: 'center' });
       doc.moveDown(2);
     } 
@@ -123,7 +123,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
       doc.y = startingY;
       
       // Add report title and date below the church name
-      doc.font('Helvetica-Bold').fontSize(18).text('Finalized Count Report', { align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(18).text('Count Report', { align: 'center' });
       doc.fontSize(14).text(formattedDate, { align: 'center' });
       doc.moveDown(2);
     }
@@ -136,7 +136,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
       doc.y = startingY;
       
       // Just show the report title and date
-      doc.font('Helvetica-Bold').fontSize(20).text('Finalized Count Report', { align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(20).text('Count Report', { align: 'center' });
       doc.fontSize(14).text(formattedDate, { align: 'center' });
       doc.moveDown(2);
     }
@@ -148,7 +148,7 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     doc.y = startingY;
     
     // Fallback to just report title
-    doc.font('Helvetica-Bold').fontSize(20).text('Finalized Count Report', { align: 'center' });
+    doc.font('Helvetica-Bold').fontSize(20).text('Count Report', { align: 'center' });
     doc.fontSize(14).text(formattedDate, { align: 'center' });
     doc.moveDown(2);
   }
