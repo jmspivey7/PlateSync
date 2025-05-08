@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { isAdmin, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { setupTestEndpoints } from "./test-endpoints";
 import { eq, sql } from "drizzle-orm";
@@ -32,7 +33,7 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
     });
   });
 }
-import { isAdmin, hasRole } from "./middleware/roleMiddleware";
+import { hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
@@ -3230,6 +3231,46 @@ PlateSync Reporting System`;
     } catch (error) {
       console.error("Error resetting email template:", error);
       res.status(500).json({ message: "Failed to reset email template" });
+    }
+  });
+  
+  // RESET all email templates of a specific type (MASTER ADMIN only)
+  app.post('/api/email-templates/type/:type/reset-all', isAuthenticated, isMasterAdmin, async (req: any, res) => {
+    try {
+      const templateType = req.params.type;
+      
+      if (!templateType) {
+        return res.status(400).json({ message: "Template type is required" });
+      }
+      
+      // Get all templates of this type across all churches
+      const allTemplates = await storage.getAllEmailTemplatesByType(templateType);
+      
+      if (!allTemplates.length) {
+        return res.status(404).json({ message: "No templates found for this type" });
+      }
+      
+      const results = [];
+      
+      // Reset each template to default
+      for (const template of allTemplates) {
+        const resetTemplate = await storage.resetEmailTemplateToDefault(template.id, template.churchId);
+        if (resetTemplate) {
+          results.push({
+            templateId: resetTemplate.id,
+            churchId: resetTemplate.churchId,
+            status: 'reset'
+          });
+        }
+      }
+      
+      res.json({
+        message: `Reset ${results.length} templates of type ${templateType}`,
+        results
+      });
+    } catch (error) {
+      console.error(`Error resetting all templates of type ${req.params.type}:`, error);
+      res.status(500).json({ message: "Failed to reset templates" });
     }
   });
 

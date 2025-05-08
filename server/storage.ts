@@ -104,6 +104,7 @@ export interface IStorage {
   getEmailTemplates(churchId: string): Promise<EmailTemplate[]>;
   getEmailTemplate(id: number, churchId: string): Promise<EmailTemplate | undefined>;
   getEmailTemplateByType(templateType: string, churchId: string): Promise<EmailTemplate | undefined>;
+  getAllEmailTemplatesByType(templateType: string): Promise<EmailTemplate[]>;
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
   updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId: string): Promise<EmailTemplate | undefined>;
   resetEmailTemplateToDefault(id: number, churchId: string): Promise<EmailTemplate | undefined>;
@@ -1613,6 +1614,15 @@ export class DatabaseStorage implements IStorage {
     return template;
   }
   
+  async getAllEmailTemplatesByType(templateType: string): Promise<EmailTemplate[]> {
+    const templates = await db
+      .select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.templateType, templateType));
+    
+    return templates;
+  }
+  
   async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
     const [newTemplate] = await db
       .insert(emailTemplates)
@@ -1890,7 +1900,7 @@ PlateSync Reporting System
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
     <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+    <p style="margin: 10px 0 0; font-size: 18px; font-weight: bold;">Count Report</p>
   </div>
   
   <!-- Main Content -->
