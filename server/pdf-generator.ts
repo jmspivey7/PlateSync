@@ -88,10 +88,35 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   // Log key layout information for debugging
   console.log(`Page width: ${pageWidth}, Content width: ${contentWidth}, Amount column X: ${amountColX}`);
   
-  // Two-stage header rendering: logo first, then title/date
-  console.log("PDF GENERATION - CONDITIONAL HEADER RENDERING");
+  // Three-stage header layout: Title → Date → Logo
+  console.log("PDF GENERATION - RENDERING HEADER WITH CORRECTED ORDER");
   
-  // Stage 1: Logo or church name
+  // Start at the top margin
+  let currentY = margin;
+  
+  // Stage 1: Report title (at the top)
+  doc.font('Helvetica-Bold').fontSize(18);
+  doc.text('Count Report', margin, currentY, {
+    align: 'center',
+    width: contentWidth,
+    continued: false
+  });
+  
+  // Move down for date
+  currentY = doc.y + 10;
+  
+  // Stage 2: Report date
+  doc.fontSize(14);
+  doc.text(formattedDate, margin, currentY, {
+    align: 'center',
+    width: contentWidth,
+    continued: false
+  });
+  
+  // Move down for logo
+  currentY = doc.y + 20;
+  
+  // Stage 3: Logo or church name
   try {
     if (churchLogoPath && fs.existsSync(churchLogoPath)) {
       console.log(`Church logo path: ${churchLogoPath}`);
@@ -103,57 +128,34 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
       // Size and position settings
       const logoWidth = 250;
       const logoHeight = 100;
-      const logoStartY = margin;  // Start at top margin
       
       // Position logo horizontally in the center
       const centerX = (pageWidth - logoWidth) / 2;
       
       // Add logo to the document at the specified position
-      doc.image(logoData, centerX, logoStartY, { 
+      doc.image(logoData, centerX, currentY, { 
         fit: [logoWidth, logoHeight],
         align: 'center'
       });
       
-      // Set the cursor position for the next items (title/date)
-      // Add more space after the logo
-      doc.y = logoStartY + logoHeight + 30;  // 30px extra space after logo
+      // Update Y position after logo
+      currentY += logoHeight + 20;
     } 
     else if (churchName && churchName.trim() !== '') {
-      console.log("RENDERING CHURCH NAME HEADER");
       doc.font('Helvetica-Bold').fontSize(24);
-      doc.text(churchName, margin, margin, { 
+      doc.text(churchName, margin, currentY, { 
         align: 'center',
         width: contentWidth
       });
-      doc.moveDown(1);
+      currentY = doc.y + 20;
     }
   } catch (error) {
     console.error("Error rendering logo/name:", error);
   }
   
-  // Save the starting Y position for the title
-  const titleStartY = doc.y;
-  console.log(`Title starting Y position: ${titleStartY}`);
-  
-  // Stage 2: Report title
-  doc.font('Helvetica-Bold').fontSize(18);
-  doc.text('Count Report', {
-    align: 'center',
-    width: contentWidth,
-    continued: false
-  });
-  
-  // Stage 3: Report date
-  doc.moveDown(0.5);
-  doc.fontSize(14);
-  doc.text(formattedDate, {
-    align: 'center',
-    width: contentWidth,
-    continued: false
-  });
-  
-  // Add appropriate space after the header section
-  doc.moveDown(1.5);
+  // Set the cursor position after the header section
+  doc.y = currentY + 10;
+  console.log(`Position after header section: ${doc.y}`);
   
   // Lines array to collect all line drawing operations - execute them at the end
   const linesToDraw: Array<{y: number, isDouble?: boolean}> = [];
