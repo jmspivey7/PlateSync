@@ -696,7 +696,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
               className="space-y-3 sm:space-y-4 md:space-y-3"
             >
               {/* Donor Selection */}
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-2">
                 <FormField
                   control={form.control}
                   name="donorType"
@@ -788,7 +788,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 
                 {/* Known Visitor Form */}
                 {formDonorType === "new" && (
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -860,10 +860,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
               </div>
               
               {/* Donation Details */}
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-lg font-medium text-[#2D3748] mb-4">Donation Details</h3>
+              <div className="pt-3 md:pt-2 border-t border-gray-200">
+                <h3 className="text-lg font-medium text-[#2D3748] mb-3 md:mb-2">Donation Details</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-full overflow-hidden px-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3 max-w-full overflow-hidden px-1">
 
                   <FormField
                     control={form.control}
@@ -981,7 +981,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 </div>
               </div>
               
-              <div className="mt-6 relative">
+              <div className="mt-4 md:mt-3 relative">
                 {/* Success indicator - appears briefly above buttons, aligned right */}
                 {showSuccess && (
                   <div className="flex justify-end mb-2">
