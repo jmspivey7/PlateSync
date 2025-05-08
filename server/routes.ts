@@ -2980,7 +2980,7 @@ PlateSync Reporting System`;
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
     <h1 style="margin: 0; font-size: 24px;">{{churchName}}</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Count Report</p>
+    <p style="margin: 10px 0 0; font-size: 18px; font-weight: bold;">Count Report</p>
   </div>
   
   <!-- Main Content -->
