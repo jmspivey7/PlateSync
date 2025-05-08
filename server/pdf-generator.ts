@@ -9,10 +9,13 @@ function formatCurrency(amount: string | number): string {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   
   // Format with thousands separator and 2 decimal places
-  return numAmount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+  // Use a simpler approach that won't cause formatting issues
+  const numStr = numAmount.toFixed(2);
+  
+  // Format with commas for thousands
+  const parts = numStr.split('.');
+  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${integerPart}.${parts[1]}`;
 }
 
 interface CountReportPDFParams {
@@ -134,17 +137,32 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   function renderRow(label: string, amount: string, isBold: boolean = false) {
     const y = doc.y;
     
+    // Set font for the label
     if (isBold) doc.font('Helvetica-Bold');
     else doc.font('Helvetica');
     
     // Left column (label)
     doc.text(label, leftColX, y);
     
-    // Right column (amount) - fixed width and aligned right
-    doc.text(`$${formatCurrency(amount)}`, amountColX, y, {
-      width: amountWidth,
-      align: 'right'
-    });
+    // Switch to Courier (monospaced font) for the amount
+    if (isBold) doc.font('Courier-Bold');
+    else doc.font('Courier');
+    
+    // Create the formatted amount text with a dollar sign
+    const amountText = `$${formatCurrency(amount)}`;
+    
+    // Calculate the exact width of the amount text in this font
+    const amountTextWidth = doc.widthOfString(amountText);
+    
+    // Position the text so it ends exactly at the right margin
+    const startX = (amountColX + amountWidth) - amountTextWidth;
+    
+    // Draw the amount directly at the calculated position
+    doc.text(amountText, startX, y);
+    
+    // Reset to regular font
+    if (isBold) doc.font('Helvetica-Bold');
+    else doc.font('Helvetica');
     
     return doc.y; // Return current Y position
   }
@@ -193,10 +211,25 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     if (donation.checkNumber) {
       doc.text(donation.checkNumber, leftColX + 225, itemY);
     }
-    doc.text(`$${formatCurrency(donation.amount)}`, amountColX, itemY, {
-      width: amountWidth,
-      align: 'right'
-    });
+    
+    // Use Courier (monospaced font) for the amount
+    doc.font('Courier');
+    
+    // Create the formatted amount text with a dollar sign
+    const amountText = `$${formatCurrency(donation.amount)}`;
+    
+    // Calculate the exact width of the amount text in this font
+    const amountTextWidth = doc.widthOfString(amountText);
+    
+    // Position the text so it ends exactly at the right margin
+    const startX = (amountColX + amountWidth) - amountTextWidth;
+    
+    // Draw the amount directly at the calculated position
+    doc.text(amountText, startX, itemY);
+    
+    // Reset to regular font
+    doc.font('Helvetica');
+    
     doc.moveDown(0.5);
   });
   
@@ -226,10 +259,25 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   cashDonations.forEach(donation => {
     const itemY = doc.y;
     doc.text(donation.memberName, leftColX, itemY);
-    doc.text(`$${formatCurrency(donation.amount)}`, amountColX, itemY, {
-      width: amountWidth,
-      align: 'right'
-    });
+    
+    // Use Courier (monospaced font) for the amount
+    doc.font('Courier');
+    
+    // Create the formatted amount text with a dollar sign
+    const amountText = `$${formatCurrency(donation.amount)}`;
+    
+    // Calculate the exact width of the amount text in this font
+    const amountTextWidth = doc.widthOfString(amountText);
+    
+    // Position the text so it ends exactly at the right margin
+    const startX = (amountColX + amountWidth) - amountTextWidth;
+    
+    // Draw the amount directly at the calculated position
+    doc.text(amountText, startX, itemY);
+    
+    // Reset to regular font
+    doc.font('Helvetica');
+    
     doc.moveDown(0.5);
   });
   
