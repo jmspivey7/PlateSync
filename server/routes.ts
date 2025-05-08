@@ -713,7 +713,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (usersResult && usersResult.rows) {
         usersList = usersResult.rows
           // Filter out inactive users that have the INACTIVE_ prefix in their email
-          .filter(user => !user.email?.startsWith('INACTIVE_'))
+          // Also filter out users who are not verified (like deleted Google Usher)
+          .filter(user => 
+            !user.email?.startsWith('INACTIVE_') && 
+            (user.is_verified === true || user.is_verified === 't')
+          )
           .map(user => ({
             id: user.id,
             username: user.username,
@@ -763,7 +767,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (usersResult && usersResult.rows) {
         usersList = usersResult.rows
           // Filter out inactive users that have the INACTIVE_ prefix in their email
-          .filter(user => !user.email?.startsWith('INACTIVE_'))
+          // Ensure we don't show users who have been deactivated
+          .filter(user => 
+            !user.email?.startsWith('INACTIVE_') && 
+            (user.is_verified === true || user.is_verified === 't')
+          )
           .map(user => ({
             id: user.id,
             username: user.username,
