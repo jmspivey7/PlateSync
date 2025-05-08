@@ -402,6 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: firstName || '',
         lastName: lastName || '',
         churchName: churchName || 'PlateSync',
+        churchId: newUser.churchId || (role === 'ADMIN' ? newUser.id : req.user.claims.sub),
         verificationToken: newUser.passwordResetToken || '',
         verificationUrl
       });
