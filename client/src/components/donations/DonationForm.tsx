@@ -34,7 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Icons } from "@/components/ui/icons";
+import { User, UserCircle, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ThumbsUp } from "lucide-react";
 import { useLocation } from "wouter";
@@ -703,24 +703,44 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-base font-bold">Donor Type:</FormLabel>
-                      <RadioGroup
-                        defaultValue={field.value}
-                        onValueChange={field.onChange}
-                        className="flex items-center space-x-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="existing" id="existing" />
-                          <Label htmlFor="existing">Existing Member</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="new" id="new" />
-                          <Label htmlFor="new">Known Visitor</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="visitor" id="visitor" />
-                          <Label htmlFor="visitor">Anonymous</Label>
-                        </div>
-                      </RadioGroup>
+                      <FormControl>
+                        <ToggleGroup
+                          type="single"
+                          variant="outline"
+                          size="lg"
+                          value={field.value}
+                          onValueChange={(value) => {
+                            if (value) field.onChange(value);
+                          }}
+                          className="justify-start gap-3 my-2"
+                        >
+                          <ToggleGroupItem 
+                            value="existing" 
+                            className={`flex items-center gap-2 flex-1 bg-white border border-gray-200 hover:bg-green-50 ${field.value === "existing" ? "border-green-500 bg-green-50 font-semibold" : ""}`}
+                            aria-label="Existing Member"
+                          >
+                            <UserCircle className={`h-4 w-4 ${field.value === "existing" ? "text-green-600" : ""}`} />
+                            <span>Existing Member</span>
+                          </ToggleGroupItem>
+                          <ToggleGroupItem 
+                            value="new" 
+                            className={`flex items-center gap-2 flex-1 bg-white border border-gray-200 hover:bg-blue-50 ${field.value === "new" ? "border-blue-500 bg-blue-50 font-semibold" : ""}`}
+                            aria-label="Known Visitor"
+                          >
+                            <UserPlus className={`h-4 w-4 ${field.value === "new" ? "text-blue-600" : ""}`} />
+                            <span>Known Visitor</span>
+                          </ToggleGroupItem>
+                          <ToggleGroupItem 
+                            value="visitor" 
+                            className={`flex items-center gap-2 flex-1 bg-white border border-gray-200 hover:bg-gray-50 ${field.value === "visitor" ? "border-slate-500 bg-slate-50 font-semibold" : ""}`}
+                            aria-label="Anonymous"
+                          >
+                            <User className={`h-4 w-4 ${field.value === "visitor" ? "text-slate-600" : ""}`} />
+                            <span>Anonymous</span>
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
