@@ -53,7 +53,7 @@ const AttestBatchPage = () => {
     });
     
     // Navigate to batch details instead of opening PDF
-    setLocation(`/counts/${batchId}`);
+    setLocation(`/batch/${batchId}`);
   };
 
   if (isLoading) {
