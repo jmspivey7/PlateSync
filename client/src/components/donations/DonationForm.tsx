@@ -682,7 +682,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         </CardHeader>
       )}
       
-      <CardContent className={`${isInsideDialog ? 'p-4 sm:p-6' : ''}`}>
+      <CardContent className={`${isInsideDialog ? 'p-4 sm:p-6' : 'p-4 sm:p-5 md:p-4'}`}>
         {(isLoadingMembers || isLoadingDonation || isLoadingBatches || isLoadingCurrentBatch || isLoadingSpecificBatch) && (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-[#4299E1]" />
@@ -693,7 +693,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           <Form {...form}>
             <form 
               onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-4 sm:space-y-6"
+              className="space-y-3 sm:space-y-4 md:space-y-3"
             >
               {/* Donor Selection */}
               <div className="space-y-4">
