@@ -242,11 +242,9 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
       doc.text(donation.checkNumber, leftColX + 225, itemY);
     }
     
-    // Amount with courier font
-    doc.font('Courier');
+    // Amount with standard app font
     const donationAmount = `$${formatCurrency(donation.amount)}`;
     doc.text(donationAmount, amountColX, itemY, { align: 'right' });
-    doc.font('Helvetica');
     
     doc.moveDown(0.5);
   });
@@ -260,7 +258,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Checks', leftColX, rowY);
   
-  doc.font('Courier-Bold');
+  // Keep consistent with bold app font
+  doc.font('Helvetica-Bold');
   const subTotalChecks = `$${formatCurrency(checkAmount)}`;
   doc.text(subTotalChecks, amountColX, rowY, { align: 'right' });
   
@@ -284,11 +283,9 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     const itemY = doc.y;
     doc.text(donation.memberName, leftColX, itemY);
     
-    // Amount with courier font
-    doc.font('Courier');
+    // Amount with standard app font
     const donationAmount = `$${formatCurrency(donation.amount)}`;
     doc.text(donationAmount, amountColX, itemY, { align: 'right' });
-    doc.font('Helvetica');
     
     doc.moveDown(0.5);
   });
@@ -302,7 +299,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Cash', leftColX, rowY);
   
-  doc.font('Courier-Bold');
+  // Keep consistent with bold app font
+  doc.font('Helvetica-Bold');
   const subTotalCash = `$${formatCurrency(cashAmount)}`;
   doc.text(subTotalCash, amountColX, rowY, { align: 'right' });
   
@@ -317,7 +315,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.font('Helvetica-Bold').fontSize(14);
   doc.text('GRAND TOTAL', leftColX, rowY);
   
-  doc.font('Courier-Bold');
+  // Keep consistent with bold app font
+  doc.font('Helvetica-Bold');
   const grandTotal = `$${formatCurrency(totalAmount)}`;
   doc.text(grandTotal, amountColX, rowY, { align: 'right' });
   
