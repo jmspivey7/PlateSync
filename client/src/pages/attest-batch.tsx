@@ -83,8 +83,7 @@ const AttestBatchPage = () => {
   if (!canAttest()) {
     return (
       <PageLayout 
-        title={`Count Already Finalized`} 
-        subtitle={`${batch.name}`}
+        title={`Count Already Finalized: ${batch.name}`}
       >
         <Card className="max-w-xl mx-auto">
           <div className="p-6 flex items-center justify-between">
@@ -118,8 +117,7 @@ const AttestBatchPage = () => {
   // Show attestation form for OPEN batches
   return (
     <PageLayout 
-      title={`Attest Count: ${batch.name}`} 
-      subtitle={`Count created on ${format(new Date(batch.date), 'MMMM d, yyyy')}`}
+      title={`Attest Count: ${batch.name}`}
     >
       <Card className="max-w-xl mx-auto">
         <div className="p-6 flex items-center justify-between">
