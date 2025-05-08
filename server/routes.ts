@@ -32,7 +32,7 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
     });
   });
 }
-import { isAdmin, hasRole } from "./middleware/roleMiddleware";
+import { isAdmin, isMasterAdmin, hasRole } from "./middleware/roleMiddleware";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
@@ -805,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/users/:id/role', isAuthenticated, isAdmin, async (req: any, res) => {
+  app.patch('/api/users/:id/role', isAuthenticated, isMasterAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
       const userId = req.params.id;
@@ -890,8 +890,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create user (admin only)
-  app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
+  // Create user (Master Admin only)
+  app.post('/api/users', isAuthenticated, isMasterAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
       
@@ -969,8 +969,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Delete user (admin only)
-  app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+  // Delete user (Master Admin only)
+  app.delete('/api/users/:id', isAuthenticated, isMasterAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
       const userId = req.params.id;
