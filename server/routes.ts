@@ -2524,19 +2524,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token, password } = req.body;
       
+      console.log('🔑 Password reset attempt with token:', token ? token.substring(0, 8) + '...' : 'none');
+      
       if (!token || !password) {
+        console.log('❌ Token or password missing in request');
         return res.status(400).json({ message: "Token and password are required" });
       }
       
       // Find user with matching token
+      console.log('🔍 Looking for user with matching reset token...');
       const [user] = await db
         .select()
         .from(users)
         .where(eq(users.passwordResetToken, token));
       
       if (!user) {
+        console.log('❌ No user found with the provided reset token');
         return res.status(404).json({ message: "Invalid or expired token" });
       }
+      
+      console.log('✅ User found:', user.email);
       
       // Check if token is expired
       const now = new Date();

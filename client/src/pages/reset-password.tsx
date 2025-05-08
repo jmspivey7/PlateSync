@@ -23,9 +23,12 @@ export default function ResetPassword() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Extract token from URL
-  const params = new URLSearchParams(location.split('?')[1]);
-  const token = params.get('token');
+  // Extract token from URL query parameters
+  // Fix: location is the full path, so we need to extract the query part properly
+  const searchParams = new URLSearchParams(window.location.search);
+  const token = searchParams.get('token');
+  
+  console.log("Reset Token Found:", token); // Debug log
   
   if (!token) {
     return (
