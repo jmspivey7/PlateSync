@@ -164,20 +164,18 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   const tableX = (doc.page.width - tableWidth) / 2;
   let tableY = doc.y;
   
-  // Pre-calculate maximum width for all lines
-  // First determine the widest amount to display (typically the total)
+  // Calculate the widest amount to display for alignment
   const maxAmountWidth = Math.max(
     doc.widthOfString(`$${formatCurrency(totalAmount)}`),
     doc.widthOfString(`$${formatCurrency(checkAmount)}`),
     doc.widthOfString(`$${formatCurrency(cashAmount)}`)
   );
   
-  // Add extra padding to ensure lines extend past the amounts
-  const linePadding = 20;
-  const fullTableWidth = tableWidth + maxAmountWidth + linePadding;
-  
-  // Calculate right alignment point for all amounts
+  // Calculate the right edge of the amount column (where text ends)
   const amountRightX = tableX + tableWidth + maxAmountWidth;
+  
+  // Use this for line endings - exactly aligned with the right edge of amounts
+  const lineEndX = amountRightX;
   
   // Draw summary table
   doc.font('Helvetica').fontSize(12);
@@ -192,8 +190,8 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   doc.text(`$${formatCurrency(cashAmount)}`, amountRightX, tableY, { align: 'right' });
   tableY += 20;
   
-  // Draw horizontal line above TOTAL row - extending past the right-most text
-  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
+  // Draw horizontal line above TOTAL row - aligned exactly with the right edge of amounts
+  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
   tableY += 5;
   
   // Total row
@@ -228,14 +226,14 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
     checkTotal += parseFloat(donation.amount);
   });
   
-  // Draw horizontal line - extend to cover full width including amount column
-  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
+  // Draw horizontal line - align with the right edge of the amount column
+  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
   tableY += 5;
   
   // Check subtotal
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Checks', tableX, tableY);
-  doc.text(`$${formatCurrency(checkAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(checkAmount)}`, amountRightX, tableY, { align: 'right' });
   tableY += 30;
   
   // CASH section
@@ -255,33 +253,33 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   
   cashDonations.forEach(donation => {
     doc.text(donation.memberName, tableX, tableY);
-    doc.text(`$${formatCurrency(donation.amount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+    doc.text(`$${formatCurrency(donation.amount)}`, amountRightX, tableY, { align: 'right' });
     tableY += 20;
     cashTotal += parseFloat(donation.amount);
   });
   
-  // Draw horizontal line - extend to cover full width including amount column
-  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
+  // Draw horizontal line - align with the right edge of the amount column
+  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
   tableY += 5;
   
   // Cash subtotal
   doc.font('Helvetica-Bold');
   doc.text('Sub-Total Cash', tableX, tableY);
-  doc.text(`$${formatCurrency(cashAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(cashAmount)}`, amountRightX, tableY, { align: 'right' });
   tableY += 50;
   
-  // Draw SINGLE horizontal line ABOVE grand total - extend to cover full width including amount column
-  doc.moveTo(tableX, tableY - 20).lineTo(tableX + fullTableWidth, tableY - 20).stroke();
+  // Draw SINGLE horizontal line ABOVE grand total - align with the right edge of the amount column
+  doc.moveTo(tableX, tableY - 20).lineTo(lineEndX, tableY - 20).stroke();
   
   // Grand total
   doc.fontSize(14);
   doc.text('GRAND TOTAL', tableX, tableY);
-  doc.text(`$${formatCurrency(totalAmount)}`, tableX + leftColumnWidth, tableY, { align: 'right' });
+  doc.text(`$${formatCurrency(totalAmount)}`, amountRightX, tableY, { align: 'right' });
   
-  // Draw DOUBLE horizontal line BELOW grand total - extend to cover full width including amount column
+  // Draw DOUBLE horizontal line BELOW grand total - align with the right edge of the amount column
   tableY += 15; // Increased spacing below the grand total text to avoid touching the numbers
-  doc.moveTo(tableX, tableY).lineTo(tableX + fullTableWidth, tableY).stroke();
-  doc.moveTo(tableX, tableY + 3).lineTo(tableX + fullTableWidth, tableY + 3).stroke();
+  doc.moveTo(tableX, tableY).lineTo(lineEndX, tableY).stroke();
+  doc.moveTo(tableX, tableY + 3).lineTo(lineEndX, tableY + 3).stroke();
   
   // Finalize the PDF
   doc.end();
