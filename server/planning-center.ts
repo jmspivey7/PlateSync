@@ -116,7 +116,74 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
   });
   
-  // Endpoint to initiate the OAuth flow
+  // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
+  app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Generate and store a random state parameter to prevent CSRF attacks
+    const state = Math.random().toString(36).substring(2, 15);
+    
+    // Log what host Replit thinks we are
+    console.log('Your Replit host: ' + req.get('host'));
+    console.log('X-Forwarded-Host: ' + req.get('x-forwarded-host'));
+    console.log('Protocol: ' + req.protocol);
+    
+    if (req.session) {
+      req.session.planningCenterState = state;
+      // Save session to ensure state is properly stored
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+    
+    // Generate Planning Center's authorization URL with all required parameters
+    // Documentation: https://developer.planning.center/docs/#/overview/authentication
+    // Get the registered callback URL that's registered in Planning Center
+    // First try to use a configured callback URL if set in environment
+    // Otherwise fall back to the dynamic host, but this may not work with Planning Center
+    // which requires pre-registered callback URLs
+    let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
+    console.log('Current host:', host);
+    const protocol = req.protocol || 'https';
+    
+    // Use a fixed callback URL if provided in environment
+    let redirectUri;
+    if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+      redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
+      console.log('Using fixed callback URL from env:', redirectUri);
+    } else {
+      redirectUri = `${protocol}://${host}/api/planning-center/callback`;
+      console.log('Using dynamic callback URL:', redirectUri);
+    }
+    console.log('Redirect URI:', redirectUri);
+    
+    // Make sure we're following Planning Center OAuth spec exactly
+    // https://developer.planning.center/docs/#/overview/authentication
+    const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
+    authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('response_type', 'code');
+    
+    // According to the docs, scope should be space-separated list in a single parameter
+    // For People API access, we need the 'people' scope
+    authUrl.searchParams.append('scope', 'people');
+    
+    // Add state for CSRF protection
+    authUrl.searchParams.append('state', state);
+    
+    // Print full URL for troubleshooting
+    console.log('Full Planning Center Auth URL:', authUrl.toString());
+    
+    // Return the URL instead of redirecting
+    res.json({ url: authUrl.toString() });
+  });
+
+  // Endpoint to initiate the OAuth flow via redirect (keep this for backwards compatibility)
   app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
     if (!req.user) {
       return res.status(401).send('Authentication required');
