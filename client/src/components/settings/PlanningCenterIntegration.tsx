@@ -35,16 +35,9 @@ const PlanningCenterIntegration = () => {
   // Handle connect to Planning Center
   const handleConnect = () => {
     console.log('Connecting to Planning Center...');
-    // Make the button click more visible in logs
-    fetch('/api/planning-center/authorize')
-      .then(response => {
-        console.log('Planning Center authorization response:', response);
-        window.location.href = '/api/planning-center/authorize';
-      })
-      .catch(error => {
-        console.error('Planning Center authorization error:', error);
-        window.location.href = '/api/planning-center/authorize';
-      });
+    // Directly redirect to our backend authorization endpoint
+    // Our server will then redirect to Planning Center
+    window.location.href = '/api/planning-center/authorize';
   };
 
   // Handle import members from Planning Center
