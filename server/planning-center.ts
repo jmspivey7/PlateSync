@@ -99,13 +99,33 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Store the tokens in the database
       if (req.user?.id) {
-        await storage.savePlanningCenterTokens({
-          userId: req.user.id,
-          churchId: req.user.churchId,
-          accessToken: access_token,
-          refreshToken: refresh_token,
-          expiresAt: new Date(Date.now() + expires_in * 1000),
-        });
+        console.log('Saving Planning Center tokens for user:', req.user.id, 'church:', req.user.churchId);
+        
+        // Debug user object
+        console.log('Full req.user object:', JSON.stringify(req.user, null, 2));
+        
+        // If churchId is missing, fall back to using userId as churchId
+        const churchId = req.user.churchId || req.user.id;
+        console.log('Using churchId:', churchId);
+        
+        try {
+          await storage.savePlanningCenterTokens({
+            userId: req.user.id,
+            churchId: churchId,
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            expiresAt: new Date(Date.now() + expires_in * 1000),
+          });
+          console.log('Successfully saved Planning Center tokens');
+          
+          // After saving, verify tokens were stored properly
+          const storedTokens = await storage.getPlanningCenterTokens(req.user.id, churchId);
+          console.log('Verified tokens in database:', storedTokens ? 'YES' : 'NO');
+        } catch (tokenSaveError) {
+          console.error('Error saving Planning Center tokens:', tokenSaveError);
+        }
+      } else {
+        console.error('Cannot save Planning Center tokens - no user ID available in session');
       }
       
       // Redirect back to the settings page with success message
@@ -293,8 +313,22 @@ export function setupPlanningCenterRoutes(app: Express) {
     const user = req.user as any;
     console.log('Checking Planning Center status for user:', user.id, 'church:', user.churchId);
     
+    // Debug user object to see what properties are available
+    console.log('Full req.user object in status check:', JSON.stringify(req.user, null, 2));
+    
+    // If churchId is missing, fall back to using userId as churchId (same as in callback)
+    const churchId = user.churchId || user.id;
+    console.log('Using churchId for token lookup:', churchId);
+    
     try {
-      const tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
+      // Try to get tokens with churchId first (preferred)
+      let tokens = await storage.getPlanningCenterTokens(user.id, churchId);
+      
+      // If that fails, try with userId as churchId
+      if (!tokens && churchId !== user.id) {
+        console.log('No tokens found with churchId, trying with userId as churchId...');
+        tokens = await storage.getPlanningCenterTokens(user.id, user.id);
+      }
       
       console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
       
