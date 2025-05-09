@@ -579,11 +579,24 @@ export function setupPlanningCenterRoutes(app: Express) {
 
 // Helper function to refresh an expired token
 async function refreshPlanningCenterToken(
-  tokens: { refreshToken: string },
+  tokens: { refreshToken: string; expiresAt?: Date; createdAt?: Date; updatedAt?: Date },
   userId: string,
   churchId: string
 ) {
   try {
+    // Check if refresh token is older than 90 days
+    // Planning Center's refresh tokens are valid for 90 days from when they were issued
+    const refreshTokenAge = tokens.updatedAt || tokens.createdAt;
+    if (refreshTokenAge) {
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      
+      if (refreshTokenAge < ninetyDaysAgo) {
+        console.warn('Refresh token is older than 90 days, cannot refresh automatically. User needs to re-authorize.');
+        throw new Error('Refresh token expired. User needs to re-authorize with Planning Center.');
+      }
+    }
+    
     // Using URLSearchParams for form data as required by Planning Center API
     const params = new URLSearchParams();
     params.append('grant_type', 'refresh_token');
@@ -599,13 +612,17 @@ async function refreshPlanningCenterToken(
     
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
     
+    // Access tokens expire after 2 hours (7200 seconds)
+    // But we'll use the expires_in value from the response to be safe
+    const expiresAt = new Date(Date.now() + (expires_in || 7200) * 1000);
+    
     // Save the new tokens
     await storage.savePlanningCenterTokens({
       userId,
       churchId,
       accessToken: access_token,
       refreshToken: refresh_token,
-      expiresAt: new Date(Date.now() + expires_in * 1000),
+      expiresAt: expiresAt,
     });
     
     return access_token;
