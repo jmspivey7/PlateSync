@@ -61,7 +61,7 @@
   <div class="loader" id="loader"></div>
   <h1>Redirecting to Planning Center</h1>
   <p>You're being redirected to Planning Center for authentication. If you're not redirected automatically, please click the button below.</p>
-  <a href="#" class="button" id="redirect-button">Go to Planning Center</a>
+  <a href="#" class="button" id="redirect-button">Open Planning Center Login</a>
 
   <script>
     // Fetch the auth URL when the page loads
@@ -80,9 +80,16 @@
           const redirectButton = document.getElementById('redirect-button');
           redirectButton.href = data.url;
           
-          // Automatically redirect after a short delay
+          // Open Planning Center auth URL in a popup window instead of redirecting
+          // This works better with Planning Center's cross-origin restrictions
           setTimeout(() => {
-            window.location.href = data.url;
+            window.open(data.url, "PlanningCenterAuth", "width=800,height=700");
+            
+            // Update message to indicate popup has been opened
+            document.querySelector('p').textContent = 
+              'A new window has been opened to log in to Planning Center. ' +
+              'After logging in, you will be redirected back to PlateSync. ' +
+              'Please check your browser popup blocker if no window appears.';
           }, 1500);
         } else {
           throw new Error('No auth URL received');
