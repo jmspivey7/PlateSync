@@ -233,9 +233,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       // Set step to complete
       setStep('complete');
       
-      // Navigate directly to the summary page instead of the regular batch page
-      // This prevents the flash of the detail page
-      setLocation(`/batch-summary/${batchId}`);
+      // Force navigation to the dedicated summary page
+      window.location.href = `/batch-summary/${batchId}`;
       
       // Only call onComplete if we don't navigate (as a backup)
       if (onComplete) {
