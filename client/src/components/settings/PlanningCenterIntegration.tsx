@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, RefreshCw, Link as LinkIcon, UserPlus, Users } from "lucide-react";
+import { Loader2, Link as LinkIcon, UserPlus, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
@@ -89,21 +88,14 @@ const PlanningCenterIntegration = () => {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Planning Center Integration</CardTitle>
-            <CardDescription>
-              Connect to Planning Center Online to import your members
-            </CardDescription>
-          </div>
-          {status?.connected && (
-            <Badge className="bg-[#69ad4c]">Connected</Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
+    <div className="w-full">
+      <div className="flex justify-end mb-2">
+        {status?.connected && (
+          <Badge className="bg-[#69ad4c]">Connected</Badge>
+        )}
+      </div>
+      
+      <div className="mb-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-24">
             <Loader2 className="h-8 w-8 animate-spin text-[#69ad4c]" />
@@ -148,9 +140,10 @@ const PlanningCenterIntegration = () => {
             </div>
           </div>
         )}
-      </CardContent>
+      </div>
+      
       {status?.connected && (
-        <CardFooter className="flex justify-between border-t pt-6">
+        <div className="flex justify-between pt-4 border-t">
           <Button 
             variant="outline" 
             onClick={() => disconnectMutation.mutate()}
@@ -175,9 +168,9 @@ const PlanningCenterIntegration = () => {
             )}
             Import Members
           </Button>
-        </CardFooter>
+        </div>
       )}
-    </Card>
+    </div>
   );
 };
 
