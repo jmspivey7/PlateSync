@@ -52,8 +52,8 @@ const AttestBatchPage = () => {
       description: "Count attestation completed successfully",
     });
     
-    // Navigate to batch details instead of opening PDF
-    setLocation(`/batch/${batchId}`);
+    // Navigate directly to the counts summary page
+    setLocation('/counts');
   };
 
   if (isLoading) {
