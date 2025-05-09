@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Batch, Donation, Member, User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +55,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [_, setLocation] = useLocation();
   
   // Log when the attestation form is mounted
   useEffect(() => {
@@ -223,8 +225,19 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         title: "Count finalized",
         description: "The count has been successfully finalized.",
       });
+      
+      // Invalidate queries first to ensure data is fresh
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches', batchId, 'details'] });
+      
+      // Set step to complete
       setStep('complete');
+      
+      // Navigate directly to the summary page instead of the regular batch page
+      // This prevents the flash of the detail page
+      setLocation(`/batch-summary/${batchId}`);
+      
+      // Only call onComplete if we don't navigate (as a backup)
       if (onComplete) {
         onComplete();
       }
