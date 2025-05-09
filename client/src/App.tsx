@@ -83,6 +83,7 @@ function Router() {
       <Route path="/members" component={Members} />
       <Route path="/counts" component={Counts} />
       <Route path="/batch/:id" component={BatchDetail} />
+      <Route path="/batch-summary/:id" component={BatchDetail} />
       <Route path="/attest-batch/:id" component={AttestBatch} />
       <Route path="/print-report" component={PrintReport} />
       

@@ -63,10 +63,13 @@ import { useAuth } from "@/hooks/useAuth";
 const BatchDetailPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [_, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
   const { isAdmin, isMasterAdmin } = useAuth();
+  
+  // Check if we're on the summary route
+  const isSummaryRoute = location.includes('batch-summary');
   
   const [isAddingDonation, setIsAddingDonation] = useState(false);
   const [editingDonationId, setEditingDonationId] = useState<number | null>(null);
@@ -115,11 +118,21 @@ const BatchDetailPage = () => {
   });
 
   // Set isFinalized based on batch status when data is loaded
+  // and also handle the summary route state
   useEffect(() => {
-    if (batch && batch.status === "FINALIZED") {
-      setIsFinalized(true);
+    if (batch) {
+      // If it's finalized, update state
+      if (batch.status === "FINALIZED") {
+        setIsFinalized(true);
+      }
+      
+      // If we're on the summary route, force summary view regardless of finalization status
+      if (isSummaryRoute) {
+        setShowSummary(true);
+        setIsFinalized(true); // Treat it as finalized to show the right UI
+      }
     }
-  }, [batch]);
+  }, [batch, isSummaryRoute]);
 
   // Calculate totals for cash and check donations
   const cashTotal = batch?.donations?.filter(d => d.donationType === "CASH")
