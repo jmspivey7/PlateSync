@@ -38,10 +38,7 @@ export function useAuth() {
     onSuccess: () => {
       // Invalidate user query to refetch user data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Login successful",
-        description: "You have been logged in successfully.",
-      });
+      // Login toast removed as requested - it was distracting, especially on mobile
     },
     onError: (error: Error) => {
       toast({
