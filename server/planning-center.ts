@@ -2,7 +2,7 @@ import axios from 'axios';
 import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
-import { db } from './db';
+import { db, pool } from './db';
 import { users, planningCenterTokens } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
@@ -408,17 +408,24 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Add detailed debugging for token retrieval
       console.log('Token retrieval params: user.id =', user.id, ', user.churchId =', user.churchId);
       
-      // Let's directly query the database to see if tokens exist
+      // Use raw SQL query to check if tokens exist in database
       try {
-        const allTokens = await db.select().from(planningCenterTokens);
+        // Use the raw pool to execute SQL directly
+        const { rows: allTokens } = await pool.query(`
+          SELECT * FROM planning_center_tokens
+        `);
+        
         console.log('All Planning Center tokens in database:', allTokens.length);
-        allTokens.forEach(token => {
-          console.log('Token:', { 
-            userId: token.userId, 
-            churchId: token.churchId,
-            expiresAt: token.expiresAt
+        
+        if (allTokens.length > 0) {
+          allTokens.forEach(token => {
+            console.log('Token:', { 
+              userId: token.user_id, 
+              churchId: token.church_id,
+              expiresAt: token.expires_at
+            });
           });
-        });
+        }
       } catch (dbError) {
         console.error('Error querying tokens directly:', dbError);
       }
