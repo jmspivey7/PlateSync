@@ -412,15 +412,15 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    // Try to get the custom template for this church
-    console.log(`📧 Looking for WELCOME_EMAIL template for church ID: ${params.churchId}`);
-    const template = await storage.getEmailTemplateByType('WELCOME_EMAIL', params.churchId);
+    // First try to fetch the custom email template from the database
+    console.log(`📧 Looking for WELCOME template for church ID: ${params.churchId}`);
+    const template = await storage.getEmailTemplateByType('WELCOME', params.churchId);
     
     if (template) {
-      console.log('📧 Using custom welcome email template from database');
+      console.log('📧 Using custom welcome template from database');
       
       // Replace template variables with actual values
-      let subject = template.subject || `Welcome to PlateSync for ${params.churchName}`;
+      let subject = template.subject || `Welcome to ${params.churchName} on PlateSync`;
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
@@ -429,7 +429,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         '{{firstName}}': params.firstName,
         '{{lastName}}': params.lastName,
         '{{churchName}}': params.churchName,
-        '{{verificationUrl}}': `${params.verificationUrl}?token=${params.verificationToken}`
+        '{{verificationUrl}}': params.verificationUrl,
       };
       
       Object.entries(replacements).forEach(([key, value]) => {
@@ -446,29 +446,31 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         html
       });
     } else {
-      // If no custom template found, use default template
-      console.log('⚠️ No custom welcome email template found, using fallback template');
+      // If no custom template found, use default template as fallback
+      console.log('⚠️ No custom welcome template found, using fallback template');
       
-      const subject = `Welcome to PlateSync for ${params.churchName}`;
+      const subject = `Welcome to ${params.churchName} on PlateSync`;
       
       // Plain text version of the email
       const text = `
-Dear ${params.firstName} ${params.lastName},
+Hello ${params.firstName} ${params.lastName},
 
-Welcome to PlateSync! You have been added as a user for ${params.churchName}.
+Welcome to ${params.churchName}'s PlateSync donation system!
 
-Please verify your email and set up your password by clicking the following link:
-${params.verificationUrl}?token=${params.verificationToken}
+Your account has been created and you're just one step away from accessing the system.
 
-This link will expire in 48 hours.
+Please verify your email by clicking on the following link:
+${params.verificationUrl}
 
-If you did not request this account, you can safely ignore this email.
+This link will expire in 24 hours for security reasons.
+
+If you did not request this account, please contact your administrator immediately.
 
 Sincerely,
-The PlateSync Team
+${params.churchName} Admin Team
       `;
       
-      // HTML version with green header matching the app's design
+      // HTML version that matches the app's UI - using green header
       const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Logo and Title -->
@@ -479,32 +481,30 @@ The PlateSync Team
   
   <!-- Main Content -->
   <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-    <p style="margin-top: 0;">Dear <strong>${params.firstName} ${params.lastName}</strong>,</p>
+    <p style="margin-top: 0;">Hello <strong>${params.firstName} ${params.lastName}</strong>,</p>
     
-    <p>Welcome to PlateSync! You have been added as a user for <strong>${params.churchName}</strong>.</p>
+    <p>Welcome to ${params.churchName}'s PlateSync donation system! Your account has been created and you're just one step away from accessing the system.</p>
     
-    <p>To complete your account setup, please verify your email and create a password by clicking the button below:</p>
+    <p>To complete your registration, please verify your email by clicking the button below:</p>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${params.verificationUrl}?token=${params.verificationToken}" 
+      <a href="${params.verificationUrl}" 
          style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
-        Verify Email & Set Password
+        Verify Email
       </a>
     </div>
     
-    <p>This link will expire in 48 hours for security reasons.</p>
+    <p>This link will expire in 24 hours for security reasons.</p>
     
-    <p>Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.</p>
-    
-    <p>If you did not request this account, you can safely ignore this email.</p>
+    <p>If you did not request this account, please contact your administrator immediately.</p>
     
     <p style="margin-bottom: 0;">Sincerely,<br>
-    <strong>The PlateSync Team</strong></p>
+    <strong>${params.churchName} Admin Team</strong></p>
   </div>
   
   <!-- Footer -->
   <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 0;">This is an automated message from ${params.churchName} via PlateSync.</p>
     <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
   </div>
 </div>
@@ -636,284 +636,6 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       }
     }
     
-    // Attempt to retrieve the count report template from the database if a churchId is provided
-    let template;
-    if (params.churchLogoUrl) {
-      const churchId = params.churchLogoUrl.split('/').pop()?.split('.')[0];
-      if (churchId) {
-        template = await storage.getEmailTemplateByType('COUNT_REPORT', churchId);
-      }
-    }
-    
-    if (template) {
-      console.log('📧 Using custom count report template from database');
-      
-      // Replace template variables with actual values
-      let subject = template.subject || `Count Report: ${params.batchName} - ${params.churchName}`;
-      let text = template.bodyText || '';
-      let html = template.bodyHtml || '';
-      
-      // Replace template variables
-      const replacements: Record<string, string> = {
-        '{{recipientName}}': params.recipientName,
-        '{{churchName}}': params.churchName,
-        '{{batchName}}': params.batchName,
-        '{{batchDate}}': params.batchDate,
-        '{{totalAmount}}': params.totalAmount,
-        '{{cashAmount}}': params.cashAmount,
-        '{{checkAmount}}': params.checkAmount,
-        '{{donationCount}}': params.donationCount.toString(),
-      };
-      
-      // Special handling for churchLogoUrl
-      if (params.churchLogoUrl) {
-        // Include the church logo if available
-        html = html.replace(/{{churchLogoUrl}}/g, params.churchLogoUrl);
-      } else {
-        // If no logo, replace with a generic transparent 1px image to avoid broken image
-        const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        html = html.replace(/{{churchLogoUrl}}/g, fallbackImgSrc);
-        
-        // Add CSS to hide the image when using the fallback
-        html = html.replace(/<img\s+src="{{churchLogoUrl}}"/g, '<img src="{{churchLogoUrl}}" style="display:none;"');
-      }
-      
-      Object.entries(replacements).forEach(([key, value]) => {
-        subject = subject.replace(new RegExp(key, 'g'), value);
-        text = text.replace(new RegExp(key, 'g'), value);
-        html = html.replace(new RegExp(key, 'g'), value);
-      });
-      
-      // Prepare email data with PDF attachment if available
-      const emailData: EmailParams = {
-        to: params.to,
-        from: fromEmail,
-        subject,
-        text,
-        html
-      };
-      
-      // Add the PDF attachment if it was generated
-      if (pdfAttachment) {
-        emailData.attachments = [pdfAttachment];
-      }
-      
-      return await sendEmail(emailData);
-    } else {
-      console.log('⚠️ No custom template found, using default count report template');
-      
-      // Default subject
-      const subject = `Count Report: ${params.batchName} - ${params.churchName}`;
-      
-      // Plain text version of the email
-      const text = `
-Dear ${params.recipientName},
-
-A count has been finalized for ${params.churchName}, and a Detailed Count Report is attached to this email for your review.
-
-Count Details:
-- Count: ${params.batchName}
-- Date: ${params.batchDate}
-- Total Amount: $${params.totalAmount}
-- Cash: $${params.cashAmount}
-- Checks: $${params.checkAmount}
-- Number of Donations: ${params.donationCount}
-
-This report is automatically generated by PlateSync when a count is finalized after attestation.
-
-Sincerely,
-PlateSync Reporting System
-      `;
-      
-      // HTML version with template that properly handles church logo
-      let html = '';
-      
-      if (params.churchLogoUrl) {
-        // Version with church logo - matching Donation Receipt clean style
-        html = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Church Logo (clean white style) -->
-  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
-    <h2 style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Count Report</h2>
-  </div>
-        `;
-      } else {
-        // Version with just church name
-        html = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Church Name (clean white style) -->
-  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">${params.churchName}</h1>
-    <h2 style="margin: 10px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Count Report</h2>
-  </div>
-        `;
-      }
-      
-      // Add the rest of the HTML content
-      html += `
-  <!-- Main Content -->
-  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-    <p style="margin-top: 0;">Dear <strong>${params.recipientName}</strong>,</p>
-    
-    <p>A count has been finalized for <strong>${params.churchName}</strong>, and a <strong>Detailed Count Report</strong> is attached to this email for your review.</p>
-    
-    <!-- Count Details Box -->
-    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
-      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Count Details</h2>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr>
-          <td style="padding: 8px 0; width: 40%; color: #718096;">Count:</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.batchName}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Date:</td>
-          <td style="padding: 8px 0;">${params.batchDate}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${params.totalAmount}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Cash:</td>
-          <td style="padding: 8px 0;">$${params.cashAmount}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Checks:</td>
-          <td style="padding: 8px 0;">$${params.checkAmount}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
-          <td style="padding: 8px 0;">${params.donationCount}</td>
-        </tr>
-      </table>
-    </div>
-    
-    <p>This report is automatically generated by PlateSync when a count is finalized after attestation.</p>
-    
-    <p style="margin-bottom: 0;">Sincerely,<br>
-    <strong>PlateSync Reporting System</strong></p>
-  </div>
-  
-  <!-- Footer -->
-  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p style="margin: 0;">This is an automated report from PlateSync.</p>
-    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
-  </div>
-</div>
-      `;
-      
-      // Prepare email data with PDF attachment if available
-      const emailData: EmailParams = {
-        to: params.to,
-        from: fromEmail,
-        subject,
-        text,
-        html
-      };
-      
-      // Add the PDF attachment if it was generated
-      if (pdfAttachment) {
-        emailData.attachments = [pdfAttachment];
-      }
-      
-      return await sendEmail(emailData);
-    }
-  } catch (error) {
-    console.error('Error preparing count report email:', error);
-    
-    // Fallback to the default template
-    const subject = `Count Report: ${params.batchName} - ${params.churchName}`;
-    
-    // Plain text version of the email
-    const text = `
-Dear ${params.recipientName},
-
-A count has been finalized for ${params.churchName}, and a Detailed Count Report is attached to this email for your review.
-
-Count Details:
-- Count: ${params.batchName}
-- Date: ${params.batchDate}
-- Total Amount: $${params.totalAmount}
-- Cash: $${params.cashAmount}
-- Checks: $${params.checkAmount}
-- Number of Donations: ${params.donationCount}
-
-This report is automatically generated by PlateSync when a count is finalized after attestation.
-
-Sincerely,
-PlateSync Reporting System
-    `;
-    
-    // HTML version of the email with clean white header style (matching donation receipt)
-    const html = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Church Name (clean white style) -->
-  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">${params.churchName}</h1>
-    <h2 style="margin: 10px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Count Report</h2>
-  </div>
-  
-  <!-- Main Content -->
-  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-    <p style="margin-top: 0;">Dear <strong>${params.recipientName}</strong>,</p>
-    
-    <p>A count has been finalized for <strong>${params.churchName}</strong>, and a <strong>Detailed Count Report</strong> is attached to this email for your review.</p>
-    
-    <!-- Count Details Box -->
-    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
-      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Count Details</h2>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr>
-          <td style="padding: 8px 0; width: 40%; color: #718096;">Count:</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.batchName}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Date:</td>
-          <td style="padding: 8px 0;">${params.batchDate}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${params.totalAmount}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Cash:</td>
-          <td style="padding: 8px 0;">$${params.cashAmount}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Checks:</td>
-          <td style="padding: 8px 0;">$${params.checkAmount}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
-          <td style="padding: 8px 0;">${params.donationCount}</td>
-        </tr>
-      </table>
-    </div>
-    
-    <p>This report is automatically generated by PlateSync when a count is finalized after attestation.</p>
-    
-    <p style="margin-bottom: 0;">Sincerely,<br>
-    <strong>PlateSync Reporting System</strong></p>
-  </div>
-  
-  <!-- Footer -->
-  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p style="margin: 0;">This is an automated report from PlateSync.</p>
-    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
-  </div>
-</div>
-    `;
-    
-    // Prepare email data with PDF attachment if available
-    const emailData: EmailParams = {
-      to: params.to,
-      from: fromEmail,
-      subject,
-      text,
-      html
-    };
-    
     // Generate CSV attachment with donation data
     let csvAttachment: any = null;
     
@@ -983,6 +705,268 @@ PlateSync Reporting System
         console.error('Error generating CSV attachment:', csvError);
         // Continue without the CSV attachment if there's an error
       }
+    }
+    
+    // Attempt to retrieve the count report template from the database if a churchId is provided
+    let template;
+    if (params.churchLogoUrl) {
+      const churchId = params.churchLogoUrl.split('/').pop()?.split('.')[0];
+      if (churchId) {
+        template = await storage.getEmailTemplateByType('COUNT_REPORT', churchId);
+      }
+    }
+    
+    if (template) {
+      console.log('📧 Using custom count report template from database');
+      
+      // Replace template variables with actual values
+      let subject = template.subject || `Count Report: ${params.batchName} - ${params.churchName}`;
+      let text = template.bodyText || '';
+      let html = template.bodyHtml || '';
+      
+      // Replace template variables
+      const replacements: Record<string, string> = {
+        '{{recipientName}}': params.recipientName,
+        '{{churchName}}': params.churchName,
+        '{{batchName}}': params.batchName,
+        '{{batchDate}}': params.batchDate,
+        '{{totalAmount}}': params.totalAmount,
+        '{{cashAmount}}': params.cashAmount,
+        '{{checkAmount}}': params.checkAmount,
+        '{{donationCount}}': params.donationCount.toString(),
+      };
+      
+      // Special handling for churchLogoUrl
+      if (params.churchLogoUrl) {
+        // Include the church logo if available
+        html = html.replace(/{{churchLogoUrl}}/g, params.churchLogoUrl);
+      } else {
+        // If no logo, replace with a generic transparent 1px image to avoid broken image
+        const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        html = html.replace(/{{churchLogoUrl}}/g, fallbackImgSrc);
+        
+        // Add CSS to hide the image when using the fallback
+        html = html.replace(/<img\s+src="{{churchLogoUrl}}"/g, '<img src="{{churchLogoUrl}}" style="display:none;"');
+      }
+      
+      Object.entries(replacements).forEach(([key, value]) => {
+        subject = subject.replace(new RegExp(key, 'g'), value);
+        text = text.replace(new RegExp(key, 'g'), value);
+        html = html.replace(new RegExp(key, 'g'), value);
+      });
+      
+      // Prepare email data with attachments
+      const emailData: EmailParams = {
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      };
+      
+      // Add both PDF and CSV attachments if they were generated
+      const attachments = [];
+      if (pdfAttachment) attachments.push(pdfAttachment);
+      if (csvAttachment) attachments.push(csvAttachment);
+      
+      if (attachments.length > 0) {
+        emailData.attachments = attachments;
+      }
+      
+      return await sendEmail(emailData);
+    } else {
+      console.log('⚠️ No custom template found, using default count report template');
+      
+      // Default subject
+      const subject = `Count Report: ${params.batchName} - ${params.churchName}`;
+      
+      // Plain text version of the email
+      const text = `
+Dear ${params.recipientName},
+
+A count has been finalized for ${params.churchName}, and a Detailed Count Report is attached to this email for your review.
+
+Count Details:
+- Count: ${params.batchName}
+- Date: ${params.batchDate}
+- Total Amount: $${params.totalAmount}
+- Cash: $${params.cashAmount}
+- Checks: $${params.checkAmount}
+- Number of Donations: ${params.donationCount}
+
+This report is automatically generated by PlateSync when a count is finalized after attestation.
+
+Sincerely,
+PlateSync Reporting System
+      `;
+      
+      // HTML version with template that properly handles church logo
+      let html = '';
+      
+      if (params.churchLogoUrl) {
+        // Version with church logo - matching Donation Receipt clean style
+        html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Church Logo (clean white style) -->
+  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
+    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
+    <h2 style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Final Count Report</h2>
+  </div>
+        `;
+      } else {
+        // Version with just church name
+        html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Church Name (clean white style) -->
+  <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
+    <h1 style="margin: 0; font-size: 24px; color: #2D3748;">${params.churchName}</h1>
+    <h2 style="margin: 10px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Final Count Report</h2>
+  </div>
+        `;
+      }
+      
+      // Add the rest of the HTML content
+      html += `
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>${params.recipientName}</strong>,</p>
+    
+    <p>A count has been finalized for <strong>${params.churchName}</strong>, and a <strong>Detailed Count Report</strong> is attached to this email for your review.</p>
+    
+    <!-- Count Details Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Count Details</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Count:</td>
+          <td style="padding: 8px 0; font-weight: bold;">${params.batchName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Date:</td>
+          <td style="padding: 8px 0;">${params.batchDate}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${params.totalAmount}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Cash:</td>
+          <td style="padding: 8px 0;">$${params.cashAmount}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Checks:</td>
+          <td style="padding: 8px 0;">$${params.checkAmount}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
+          <td style="padding: 8px 0;">${params.donationCount}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>This report is automatically generated by PlateSync when a count is finalized after attestation.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>PlateSync Reporting System</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated report from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>
+      `;
+      
+      // Prepare email data with attachments
+      const emailData: EmailParams = {
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      };
+      
+      // Add both PDF and CSV attachments if they were generated
+      const attachments = [];
+      if (pdfAttachment) attachments.push(pdfAttachment);
+      if (csvAttachment) attachments.push(csvAttachment);
+      
+      if (attachments.length > 0) {
+        emailData.attachments = attachments;
+      }
+      
+      return await sendEmail(emailData);
+    }
+  } catch (error) {
+    console.error('Error preparing count report email:', error);
+    
+    // Fallback to the default template
+    const subject = `Count Report: ${params.batchName} - ${params.churchName}`;
+    
+    // Plain text version of the email
+    const text = `
+Dear ${params.recipientName},
+
+A count has been finalized for ${params.churchName}, and a Detailed Count Report is attached to this email for your review.
+
+Count Details:
+- Count: ${params.batchName}
+- Date: ${params.batchDate}
+- Total Amount: $${params.totalAmount}
+- Cash: $${params.cashAmount}
+- Checks: $${params.checkAmount}
+- Number of Donations: ${params.donationCount}
+
+This report is automatically generated by PlateSync when a count is finalized after attestation.
+
+Sincerely,
+PlateSync Reporting System
+    `;
+    
+    // Simple HTML version
+    const html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 5px;">
+  <h1 style="color: #4a5568; text-align: center;">${params.churchName}</h1>
+  <h2 style="color: #4a5568; text-align: center;">Final Count Report</h2>
+  
+  <p>Dear ${params.recipientName},</p>
+  
+  <p>A count has been finalized for ${params.churchName}, and a Detailed Count Report is attached to this email for your review.</p>
+  
+  <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: 15px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #4299E1;">Count Details</h3>
+    <p><strong>Count:</strong> ${params.batchName}</p>
+    <p><strong>Date:</strong> ${params.batchDate}</p>
+    <p><strong>Total Amount:</strong> $${params.totalAmount}</p>
+    <p><strong>Cash:</strong> $${params.cashAmount}</p>
+    <p><strong>Checks:</strong> $${params.checkAmount}</p>
+    <p><strong>Number of Donations:</strong> ${params.donationCount}</p>
+  </div>
+  
+  <p>This report is automatically generated by PlateSync when a count is finalized after attestation.</p>
+  
+  <p>Sincerely,<br>
+  PlateSync Reporting System</p>
+</div>
+    `;
+    
+    // Prepare email data with attachments
+    const emailData: EmailParams = {
+      to: params.to,
+      from: fromEmail,
+      subject,
+      text,
+      html
+    };
+    
+    // Add both PDF and CSV attachments if they were generated
+    const attachments = [];
+    if (pdfAttachment) attachments.push(pdfAttachment);
+    if (csvAttachment) attachments.push(csvAttachment);
+    
+    if (attachments.length > 0) {
+      emailData.attachments = attachments;
     }
     
     return await sendEmail(emailData);
