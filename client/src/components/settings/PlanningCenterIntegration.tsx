@@ -129,34 +129,15 @@ const PlanningCenterIntegration = () => {
               storing your credentials.
             </p>
             <div className="flex justify-center">
-              <button 
-                onClick={async () => {
-                  try {
-                    // Fetch the auth URL directly
-                    const response = await fetch('/api/planning-center/auth-url');
-                    if (!response.ok) {
-                      throw new Error('Failed to get authorization URL');
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.url) {
-                      // Open the Planning Center auth URL in a new tab
-                      window.open(data.url, '_blank');
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Connection Error",
-                      description: "Could not connect to Planning Center. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
+              <a
+                href="/api/planning-center/authorize"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
               >
                 <LinkIcon className="mr-2 h-4 w-4" />
                 Connect to Planning Center
-              </button>
+              </a>
             </div>
           </div>
         )}
