@@ -423,52 +423,113 @@ const Settings = () => {
     mutationFn: async (tempKey: string) => {
       setClaimingTokens(true);
       console.log("Claiming token with key:", tempKey);
-      const response = await apiRequest(`/api/planning-center/claim-temp-tokens/${tempKey}`, 'GET');
-      return response;
+      
+      // Add retry logic directly in the mutation function to improve reliability
+      let retries = 0;
+      const maxRetries = 3;
+      let lastError: Error | null = null;
+      
+      while (retries < maxRetries) {
+        try {
+          // Add a small delay between retries to allow server to stabilize
+          if (retries > 0) {
+            console.log(`Retry attempt ${retries} for claiming token...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+          }
+          
+          const response = await apiRequest(`/api/planning-center/claim-temp-tokens/${tempKey}`, 'GET');
+          console.log("Token claim API response:", response);
+          return response;
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+          console.error(`Token claim attempt ${retries + 1} failed:`, lastError);
+          retries++;
+          
+          // If we've exhausted all retries, throw the last error
+          if (retries >= maxRetries) {
+            throw lastError;
+          }
+        }
+      }
+      
+      // This should never be reached, but TypeScript needs a return value
+      throw lastError || new Error("Failed to claim token after multiple attempts");
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       console.log("Planning Center token claim successful, refreshing status...");
+      toast({
+        title: "Tokens Claimed",
+        description: "Successfully claimed Planning Center tokens. Verifying connection...",
+        className: "bg-[#69ad4c] text-white",
+      });
+      
       // First invalidate queries
       queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
       
-      // Then explicitly refetch the current status
-      queryClient.fetchQuery({ queryKey: ['/api/planning-center/status'] })
-        .then((newStatus: any) => {
-          console.log("New Planning Center status after token claim:", newStatus);
-          if (newStatus?.connected) {
+      // Allow a small delay for the server to process the token claim
+      setTimeout(() => {
+        // Then explicitly refetch the current status
+        queryClient.fetchQuery({ queryKey: ['/api/planning-center/status'] })
+          .then((newStatus: any) => {
+            console.log("New Planning Center status after token claim:", newStatus);
+            if (newStatus?.connected) {
+              toast({
+                title: "Connection Successful",
+                description: "Successfully connected to Planning Center!",
+                className: "bg-[#69ad4c] text-white",
+              });
+            } else {
+              // If still not connected, show a warning with more specific info
+              toast({
+                title: "Connection Partial",
+                description: newStatus?.message || 
+                  "Tokens were claimed but connection status is still pending. Try reloading the page or clicking 'Clear Connection' and trying again.",
+                variant: "default",
+              });
+            }
+          })
+          .catch(err => {
+            console.error("Failed to refresh Planning Center status:", err);
             toast({
-              title: "Connection Successful",
-              description: "Successfully connected to Planning Center!",
-              className: "bg-[#69ad4c] text-white",
+              title: "Status Check Failed",
+              description: "Could not verify Planning Center connection status. Please reload the page to check if the connection was successful.",
+              variant: "destructive",
             });
-          } else {
-            // If still not connected, show a warning
-            toast({
-              title: "Connection Partial",
-              description: "Tokens were claimed but connection status is still pending. Try refreshing the page.",
-              variant: "default",
-            });
-          }
-        })
-        .catch(err => {
-          console.error("Failed to refresh Planning Center status:", err);
-        });
-      
-      setClaimingTokens(false);
+          })
+          .finally(() => {
+            setClaimingTokens(false);
+          });
+      }, 1000);
       
       // Remove the tempKey from the URL to clean it up
       window.history.replaceState({}, document.title, window.location.pathname);
     },
     onError: (error) => {
       console.error("Planning Center token claim failed:", error);
+      
+      // Detailed error message based on the specific error
+      let errorMessage = "Failed to connect to Planning Center.";
+      
+      if (error instanceof Error) {
+        // Parse error details if available in the message
+        if (error.message.includes("Temporary tokens not found")) {
+          errorMessage = "The connection tokens have expired. Please clear the connection and try again.";
+        } else if (error.message.includes("Authentication required")) {
+          errorMessage = "You need to be logged in to connect to Planning Center. Please refresh the page and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Failed to connect to Planning Center. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      
       setClaimingTokens(false);
     },
-    retry: 2, // Retry up to 2 times if the claim fails
+    retry: 0, // We handle retries manually in the mutation function
   });
   
   // Check for temp tokens in URL
@@ -476,14 +537,23 @@ const Settings = () => {
     // Check if there's a token in the URL query string
     // The format is ?pc_temp_key=<key>
     if (search && search.includes('pc_temp_key=')) {
-      const tempKey = new URLSearchParams(search).get('pc_temp_key');
+      const params = new URLSearchParams(search);
+      const tempKey = params.get('pc_temp_key');
       
       if (tempKey && !claimingTokens && !claimTokensMutation.isPending) {
-        console.log("Found temporary Planning Center token key, claiming tokens...");
-        // Short delay to ensure the page is fully loaded
+        console.log("Found temporary Planning Center token key in URL:", tempKey);
+        
+        // Show a toast to inform the user
+        toast({
+          title: "Processing Connection",
+          description: "Completing Planning Center connection...",
+        });
+        
+        // Short delay to ensure the page is fully loaded and auth is established
         setTimeout(() => {
+          console.log("Claiming tokens now...");
           claimTokensMutation.mutate(tempKey);
-        }, 500);
+        }, 1000);
       }
     }
   }, [search, claimingTokens, claimTokensMutation.isPending]);

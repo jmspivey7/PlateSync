@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redirecting to Planning Center</title>
+  <title>Connecting to Planning Center</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -39,6 +39,11 @@
       margin-bottom: 20px;
       max-width: 600px;
     }
+    .message {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #555;
+    }
     .button {
       display: inline-block;
       background-color: #69ad4c;
@@ -48,72 +53,341 @@
       text-decoration: none;
       font-weight: 500;
       transition: background-color 0.2s;
+      margin: 5px;
     }
     .button:hover {
       background-color: #579b3c;
     }
+    .button.secondary {
+      background-color: #6c757d;
+    }
+    .button.secondary:hover {
+      background-color: #5a6268;
+    }
     .hidden {
+      display: none;
+    }
+    .status-container {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      max-width: 600px;
+    }
+    .success {
+      background-color: rgba(105, 173, 76, 0.1);
+      border-left: 4px solid #69ad4c;
+    }
+    .error {
+      background-color: rgba(220, 53, 69, 0.1);
+      border-left: 4px solid #dc3545;
+    }
+    .warning {
+      background-color: rgba(255, 193, 7, 0.1);
+      border-left: 4px solid #ffc107;
+    }
+    .status-text {
+      text-align: left;
+      padding: 0 10px;
+    }
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    #debug-info {
+      margin-top: 30px;
+      text-align: left;
+      max-width: 600px;
+      background-color: #f0f0f0;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      overflow-x: auto;
       display: none;
     }
   </style>
 </head>
 <body>
   <div class="loader" id="loader"></div>
-  <h1>Redirecting to Planning Center</h1>
-  <p>You're being redirected to Planning Center for authentication. If you're not redirected automatically, please click the button below.</p>
-  <a href="#" class="button" id="redirect-button">Continue to Planning Center</a>
+  <h1 id="title">Connecting to Planning Center</h1>
+  <p id="description">Preparing to connect your Planning Center account. This will securely authorize PlateSync to access your member data.</p>
+  
+  <div class="status-container hidden" id="status-container">
+    <div class="status-text" id="status-text"></div>
+  </div>
+  
+  <div class="button-container">
+    <a href="#" class="button" id="redirect-button">Continue to Planning Center</a>
+    <a href="/settings" class="button secondary hidden" id="return-button">Return to Settings</a>
+    <button class="button secondary hidden" id="retry-button">Try Again</button>
+    <button class="button secondary hidden" id="clear-button">Clear Connection</button>
+    <button class="button secondary hidden" id="debug-button">Show Debug Info</button>
+  </div>
+  
+  <div id="debug-info"></div>
+  
+  <div class="message" id="message-container"></div>
 
   <script>
-    // Fetch the auth URL when the page loads
-    window.addEventListener('DOMContentLoaded', async () => {
+    // Global variables to track state
+    let authUrl = '';
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
+    
+    // DOM elements
+    const loader = document.getElementById('loader');
+    const title = document.getElementById('title');
+    const description = document.getElementById('description');
+    const redirectButton = document.getElementById('redirect-button');
+    const returnButton = document.getElementById('return-button');
+    const retryButton = document.getElementById('retry-button');
+    const clearButton = document.getElementById('clear-button');
+    const debugButton = document.getElementById('debug-button');
+    const statusContainer = document.getElementById('status-container');
+    const statusText = document.getElementById('status-text');
+    const messageContainer = document.getElementById('message-container');
+    const debugInfo = document.getElementById('debug-info');
+    
+    // Helper to update UI for different states
+    function updateUI(state, message = '') {
+      // Reset all dynamic elements
+      loader.classList.remove('hidden');
+      statusContainer.classList.remove('hidden', 'success', 'error', 'warning');
+      returnButton.classList.add('hidden');
+      retryButton.classList.add('hidden');
+      clearButton.classList.add('hidden');
+      debugButton.classList.add('hidden');
+      
+      switch (state) {
+        case 'loading':
+          title.textContent = 'Connecting to Planning Center';
+          description.textContent = 'Preparing to connect your Planning Center account. This will securely authorize PlateSync to access your member data.';
+          redirectButton.classList.remove('hidden');
+          messageContainer.textContent = 'This will open a new page at Planning Center to authorize access.';
+          break;
+          
+        case 'redirecting':
+          title.textContent = 'Redirecting to Planning Center';
+          description.textContent = 'You will be redirected to Planning Center in a few seconds. If you are not redirected automatically, please click the button below.';
+          redirectButton.classList.remove('hidden');
+          messageContainer.textContent = 'After authorization, you will be returned to PlateSync automatically.';
+          break;
+          
+        case 'error':
+          loader.classList.add('hidden');
+          title.textContent = 'Connection Error';
+          description.textContent = message || 'There was a problem connecting to Planning Center. Please try again or contact support.';
+          statusContainer.classList.add('error');
+          statusText.textContent = 'Error details: ' + (message || 'Unknown error');
+          redirectButton.classList.add('hidden');
+          returnButton.classList.remove('hidden');
+          retryButton.classList.remove('hidden');
+          clearButton.classList.remove('hidden');
+          debugButton.classList.remove('hidden');
+          messageContainer.textContent = 'If this error persists, try clearing the connection and starting over.';
+          break;
+          
+        case 'retry':
+          title.textContent = 'Retrying Connection';
+          description.textContent = 'Attempting to reconnect to Planning Center...';
+          statusContainer.classList.add('warning');
+          statusText.textContent = 'Retry attempt ' + retryCount + ' of ' + maxRetries;
+          redirectButton.classList.add('hidden');
+          break;
+          
+        case 'cleared':
+          loader.classList.add('hidden');
+          title.textContent = 'Connection Cleared';
+          description.textContent = 'Your Planning Center connection has been cleared. You can now try connecting again.';
+          statusContainer.classList.add('success');
+          statusText.textContent = 'All temporary connection data has been removed successfully.';
+          redirectButton.classList.remove('hidden');
+          redirectButton.textContent = 'Try Connecting Again';
+          returnButton.classList.remove('hidden');
+          messageContainer.textContent = 'Choose "Try Connecting Again" to restart the connection process or return to settings.';
+          break;
+      }
+    }
+    
+    // Function to handle clearing tokens
+    async function clearConnection() {
+      updateUI('loading');
+      title.textContent = 'Clearing Connection';
+      description.textContent = 'Removing any existing Planning Center connection data...';
+      
       try {
+        // Call the clear tokens endpoint
+        const response = await fetch('/api/planning-center/clear-tokens', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to clear Planning Center connection');
+        }
+        
+        // Clear local storage
+        localStorage.removeItem('planningCenterRedirect');
+        sessionStorage.removeItem('pc_auth_url');
+        
+        // Show success message
+        updateUI('cleared');
+        
+        // Update the redirect button to point to the auth URL generator
+        redirectButton.href = '/api/planning-center/authorize';
+        
+      } catch (error) {
+        console.error('Error clearing connection:', error);
+        updateUI('error', 'Failed to clear connection: ' + error.message);
+      }
+    }
+    
+    // Function to get auth URL with retry capability
+    async function getAuthUrl() {
+      try {
+        updateUI('loading');
+        
         // Clear any existing PC related flags
         localStorage.removeItem('planningCenterRedirect');
-        
-        // Clear any cached Planning Center URLs that might have outdated state parameters
         sessionStorage.removeItem('pc_auth_url');
         
         // Get a fresh auth URL from the server
         const response = await fetch('/api/planning-center/auth-url');
         
         if (!response.ok) {
-          throw new Error('Failed to get Planning Center auth URL');
+          throw new Error('Server returned ' + response.status + ': ' + response.statusText);
         }
         
         const data = await response.json();
         
-        if (data.url) {
-          // Update the manual redirect button
-          const redirectButton = document.getElementById('redirect-button');
-          redirectButton.href = data.url;
-          
-          // Store current URL for later tracking
-          sessionStorage.setItem('pc_auth_url', data.url);
-          
-          // Redirect in the same window instead of a popup
-          // This ensures the session is maintained throughout the auth flow
-          setTimeout(() => {
-            // Store the fact that we're doing a Planning Center redirect
-            localStorage.setItem('planningCenterRedirect', 'true');
-            
-            // Redirect directly to Planning Center
-            window.location.href = data.url;
-          }, 1500);
-        } else {
-          throw new Error('No auth URL received');
+        if (!data.url) {
+          throw new Error('No authorization URL received from server');
         }
+        
+        // Store the URL
+        authUrl = data.url;
+        
+        // Update the UI
+        updateUI('redirecting');
+        
+        // Update the manual redirect button
+        redirectButton.href = authUrl;
+        
+        // Store current URL for later tracking
+        sessionStorage.setItem('pc_auth_url', authUrl);
+        
+        // Add to debug info
+        const debugText = document.createElement('div');
+        debugText.textContent = 'Authorization URL obtained successfully.';
+        debugInfo.appendChild(debugText);
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          // Store the fact that we're doing a Planning Center redirect
+          localStorage.setItem('planningCenterRedirect', 'true');
+          
+          // Redirect directly to Planning Center
+          window.location.href = authUrl;
+        }, 1500);
+        
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error getting auth URL:', error);
         
-        // Show error instead of loader
-        document.getElementById('loader').classList.add('hidden');
-        document.querySelector('h1').textContent = 'Connection Error';
-        document.querySelector('p').textContent = 'Could not connect to Planning Center. Please return to the settings page and try again.';
+        // Add to debug info
+        const debugText = document.createElement('div');
+        debugText.textContent = 'Error: ' + error.message;
+        debugInfo.appendChild(debugText);
         
-        // Change button to go back
-        const redirectButton = document.getElementById('redirect-button');
+        // Check if we should retry
+        if (retryCount < maxRetries) {
+          retryCount++;
+          updateUI('retry');
+          
+          // Wait a bit before retrying
+          setTimeout(getAuthUrl, retryDelay);
+        } else {
+          // We've exhausted our retries
+          updateUI('error', error.message);
+        }
+      }
+    }
+    
+    // Event listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check if we were redirected back from Planning Center with an error
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('error')) {
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description') || 'No error description provided';
+        
+        updateUI('error', `${error}: ${errorDescription}`);
+        
+        // Add to debug info
+        const debugText = document.createElement('div');
+        debugText.textContent = `Planning Center returned error: ${error}\nDescription: ${errorDescription}`;
+        debugInfo.appendChild(debugText);
+      } else {
+        // Start the auth flow
+        getAuthUrl();
+      }
+    });
+    
+    // Add event listeners to buttons
+    retryButton.addEventListener('click', () => {
+      retryCount = 0;
+      getAuthUrl();
+    });
+    
+    clearButton.addEventListener('click', clearConnection);
+    
+    debugButton.addEventListener('click', () => {
+      // Toggle debug info visibility
+      if (debugInfo.style.display === 'block') {
+        debugInfo.style.display = 'none';
+        debugButton.textContent = 'Show Debug Info';
+      } else {
+        debugInfo.style.display = 'block';
+        debugButton.textContent = 'Hide Debug Info';
+        
+        // Add system info
+        const sysInfoText = document.createElement('div');
+        sysInfoText.innerHTML = '<strong>System Info:</strong><br>' + 
+          'User Agent: ' + navigator.userAgent + '<br>' +
+          'Time: ' + new Date().toISOString() + '<br>' +
+          'Retry Count: ' + retryCount;
+        
+        // Add as first child
+        if (debugInfo.firstChild) {
+          debugInfo.insertBefore(sysInfoText, debugInfo.firstChild);
+        } else {
+          debugInfo.appendChild(sysInfoText);
+        }
+      }
+    });
+    
+    // Detect if we're coming back from a Planning Center OAuth flow
+    window.addEventListener('load', () => {
+      // Check for code/state params indicating we've returned from Planning Center OAuth
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('code') && urlParams.has('state')) {
+        // This is a callback from Planning Center OAuth
+        // We need to close this window or redirect back to settings
+        title.textContent = 'Authorization Complete';
+        description.textContent = 'Planning Center authorization complete! You may close this window.';
+        loader.classList.add('hidden');
         redirectButton.textContent = 'Return to Settings';
-        redirectButton.href = '/settings';
+        redirectButton.href = '/settings?planningCenterConnected=true';
+        
+        // Automatically redirect after 3 seconds
+        setTimeout(() => {
+          window.location.href = '/settings?planningCenterConnected=true';
+        }, 3000);
       }
     });
   </script>

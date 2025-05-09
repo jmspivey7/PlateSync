@@ -549,32 +549,134 @@ export function setupPlanningCenterRoutes(app: Express) {
       const user = req.user as any;
       await storage.deletePlanningCenterTokens(user.id, user.churchId);
       
-      res.json({ success: true });
+      res.json({ success: true, message: 'Successfully disconnected from Planning Center' });
     } catch (error) {
       console.error('Error disconnecting from Planning Center:', error);
-      res.status(500).send('Error disconnecting from Planning Center');
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error disconnecting from Planning Center',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  // Endpoint to clear all Planning Center tokens (for debugging)
+  app.post('/api/planning-center/clear-tokens', async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    
+    try {
+      console.log('Clearing Planning Center tokens and temporary storage');
+      
+      // Clear any temporary tokens in memory
+      if (app.locals.tempPlanningCenterTokens) {
+        console.log('Clearing temporary tokens:', Object.keys(app.locals.tempPlanningCenterTokens).length, 'entries');
+        app.locals.tempPlanningCenterTokens = {};
+      }
+      
+      // Clear permanent token storage
+      const user = req.user as any;
+      const churchId = user.churchId || user.id;
+      
+      console.log(`Removing Planning Center tokens for user: ${user.id}, church: ${churchId}`);
+      await storage.deletePlanningCenterTokens(user.id, churchId);
+      
+      // Also try to clear with user ID as churchId in case that's how they were stored
+      if (churchId !== user.id) {
+        console.log(`Also removing tokens where churchId = userId: ${user.id}`);
+        await storage.deletePlanningCenterTokens(user.id, user.id);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'All Planning Center tokens cleared successfully'
+      });
+    } catch (error) {
+      console.error('Error clearing Planning Center tokens:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to clear Planning Center tokens',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
   
   // Endpoint to retrieve temporary tokens and store them permanently
   app.get('/api/planning-center/claim-temp-tokens/:tempKey', async (req: Request, res: Response) => {
     if (!req.user) {
-      return res.status(401).send('Authentication required');
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Authentication required',
+        details: 'User is not authenticated. Please log in first.'
+      });
     }
     
     const { tempKey } = req.params;
     
-    if (!tempKey || !app.locals.tempPlanningCenterTokens || !app.locals.tempPlanningCenterTokens[tempKey]) {
-      return res.status(404).json({ success: false, error: 'Temporary tokens not found or expired' });
+    // Log more details about the temporary token request
+    console.log(`Attempting to claim Planning Center token with key: ${tempKey}`);
+    console.log(`Temporary tokens available: ${app.locals.tempPlanningCenterTokens ? 'YES' : 'NO'}`);
+    
+    if (app.locals.tempPlanningCenterTokens) {
+      // Log all available temporary token keys (without exposing the actual tokens)
+      console.log(`Available temp token keys: ${Object.keys(app.locals.tempPlanningCenterTokens).join(', ')}`);
+    }
+    
+    if (!tempKey) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing temporary key',
+        details: 'The temporary key parameter is required but was not provided.'
+      });
+    }
+    
+    if (!app.locals.tempPlanningCenterTokens) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No temporary tokens available',
+        details: 'The temporary token storage has not been initialized yet.'
+      });
+    }
+    
+    if (!app.locals.tempPlanningCenterTokens[tempKey]) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Temporary tokens not found or expired',
+        details: `The temporary token with key '${tempKey}' was not found or has expired.`
+      });
     }
     
     try {
       const tokens = app.locals.tempPlanningCenterTokens[tempKey];
       const user = req.user as any;
+      
+      // Debug - log user information
+      console.log(`Claiming tokens for user: ${user.id}, church: ${user.churchId || 'not specified'}`);
+      
+      // Determine churchId (using fallback if needed)
       const churchId = user.churchId || user.id;
+      console.log(`Using churchId for token storage: ${churchId}`);
+      
+      // First verify that the tokens are valid by making a test request
+      try {
+        console.log('Verifying Planning Center tokens before saving...');
+        const testResponse = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people?per_page=1`, {
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          }
+        });
+        
+        console.log('Token verification successful. Planning Center API response:', 
+          testResponse.status, testResponse.statusText);
+      } catch (verifyError) {
+        console.error('Token verification failed:', verifyError);
+        // We'll still proceed with saving the tokens even if verification fails,
+        // since this might be a temporary API issue
+      }
       
       // Save the tokens to the database
-      await storage.savePlanningCenterTokens({
+      const savedTokens = await storage.savePlanningCenterTokens({
         userId: user.id,
         churchId: churchId,
         accessToken: tokens.accessToken,
@@ -582,13 +684,28 @@ export function setupPlanningCenterRoutes(app: Express) {
         expiresAt: tokens.expiresAt,
       });
       
+      console.log('Tokens saved successfully:', savedTokens ? 'YES' : 'NO');
+      
+      // Verify that tokens were actually saved
+      const verifyTokens = await storage.getPlanningCenterTokens(user.id, churchId);
+      console.log('Tokens verified in database:', verifyTokens ? 'YES' : 'NO');
+      
       // Delete the temporary tokens
       delete app.locals.tempPlanningCenterTokens[tempKey];
       
-      res.json({ success: true });
+      res.json({ 
+        success: true,
+        message: 'Planning Center tokens claimed and saved successfully.',
+        userId: user.id,
+        churchId: churchId
+      });
     } catch (error) {
       console.error('Error claiming temporary tokens:', error);
-      res.status(500).json({ success: false, error: 'Failed to claim temporary tokens' });
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to claim temporary tokens',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
     }
   });
   
