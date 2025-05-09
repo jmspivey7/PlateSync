@@ -282,30 +282,60 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       const people = peopleResponse.data.data;
       
+      // Planning Center's API response structure is different from what we expected
+      // Let's log the first person to see the structure
+      if (people && people.length > 0) {
+        console.log('Planning Center API response structure:', 
+          JSON.stringify(peopleResponse.data, null, 2).substring(0, 1000) + '...');
+      }
+      
+      // Get the included data (emails and phone numbers)
+      const included = peopleResponse.data.included || [];
+      
+      // Create lookup maps for emails and phone numbers by their owner ID
+      const emailsByOwnerId = new Map();
+      const phonesByOwnerId = new Map();
+      
+      // Process included data to organize by owner
+      included.forEach((item: any) => {
+        if (item.type === 'Email') {
+          const ownerId = item.relationships?.person?.data?.id;
+          if (ownerId) {
+            if (!emailsByOwnerId.has(ownerId)) {
+              emailsByOwnerId.set(ownerId, []);
+            }
+            emailsByOwnerId.get(ownerId).push(item.attributes?.address);
+          }
+        } else if (item.type === 'PhoneNumber') {
+          const ownerId = item.relationships?.person?.data?.id;
+          if (ownerId) {
+            if (!phonesByOwnerId.has(ownerId)) {
+              phonesByOwnerId.set(ownerId, []);
+            }
+            phonesByOwnerId.get(ownerId).push(item.attributes?.number);
+          }
+        }
+      });
+      
+      console.log(`Found ${emailsByOwnerId.size} people with emails and ${phonesByOwnerId.size} people with phone numbers`);
+      
       // Convert Planning Center people to PlateSync members
       const members = people.map((person: any) => {
         const attributes = person.attributes;
+        const personId = person.id;
         
-        // Extract first email
-        let email = null;
-        if (person.included && person.included.emails && person.included.emails.length > 0) {
-          email = person.included.emails[0].attributes.address;
-        }
-        
-        // Extract first phone
-        let phone = null;
-        if (person.included && person.included.phone_numbers && person.included.phone_numbers.length > 0) {
-          phone = person.included.phone_numbers[0].attributes.number;
-        }
+        // Get first email and phone for this person
+        const emails = emailsByOwnerId.get(personId) || [];
+        const phones = phonesByOwnerId.get(personId) || [];
         
         return {
           firstName: attributes.first_name,
           lastName: attributes.last_name,
-          email,
-          phone,
+          email: emails.length > 0 ? emails[0] : null,
+          phone: phones.length > 0 ? phones[0] : null,
           isVisitor: false,
           churchId: req.user.churchId,
-          externalId: person.id,
+          externalId: personId,
           externalSystem: 'PLANNING_CENTER'
         };
       });
