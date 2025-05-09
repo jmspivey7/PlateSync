@@ -18,6 +18,31 @@ const PlanningCenterIntegration = () => {
   const queryClient = useQueryClient();
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'success' | 'error' | null>(null);
+
+  // Check URL parameters for connection status
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('planningCenterConnected')) {
+      setConnectionStatus('success');
+      
+      // Clear the URL parameter after 5 seconds
+      setTimeout(() => {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        setConnectionStatus(null);
+      }, 5000);
+    } else if (params.has('planningCenterError')) {
+      setConnectionStatus('error');
+      
+      // Clear the URL parameter after 5 seconds
+      setTimeout(() => {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        setConnectionStatus(null);
+      }, 5000);
+    }
+  }, []);
 
   // Get Planning Center connection status
   const { data: status, isLoading } = useQuery<PlanningCenterStatus>({
@@ -86,14 +111,64 @@ const PlanningCenterIntegration = () => {
       });
     },
   });
+  
+  // Handle clearing of Planning Center tokens (for debugging connection issues)
+  const clearTokensMutation = useMutation({
+    mutationFn: async () => {
+      setIsClearing(true);
+      const response = await apiRequest('/api/planning-center/clear-tokens', 'POST');
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Tokens Cleared",
+        description: "Successfully cleared Planning Center tokens. You may need to reconnect.",
+        className: "bg-[#69ad4c] text-white",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
+      setIsClearing(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Clear Failed",
+        description: error instanceof Error ? error.message : "Failed to clear Planning Center tokens.",
+        variant: "destructive",
+      });
+      setIsClearing(false);
+    },
+  });
 
   return (
     <div className="w-full">
       <div className="flex justify-end mb-2">
-        {status?.connected && (
+        {status?.connected ? (
           <Badge className="bg-[#69ad4c]">Connected</Badge>
+        ) : (
+          <Badge variant="outline" className="border-gray-300 text-gray-500">Not Connected</Badge>
         )}
       </div>
+      
+      {connectionStatus && (
+        <div className="mb-4">
+          {connectionStatus === 'success' ? (
+            <Alert className="bg-[#69ad4c]/10 border-[#69ad4c]">
+              <CheckCircle className="h-4 w-4 text-[#69ad4c]" />
+              <AlertTitle className="text-[#69ad4c]">Connection Successful</AlertTitle>
+              <AlertDescription>
+                Your Planning Center account has been successfully connected to PlateSync.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Connection Failed</AlertTitle>
+              <AlertDescription>
+                There was an error connecting to your Planning Center account. Please try again or contact support.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
       
       <div className="mb-4">
         {isLoading ? (
@@ -123,7 +198,7 @@ const PlanningCenterIntegration = () => {
             </Alert>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-4">
             <p className="text-sm text-gray-600">
               Connect your Planning Center Online account to import your members directly into PlateSync.
               This integration uses OAuth 2.0 to securely connect to your Planning Center account without
@@ -140,37 +215,81 @@ const PlanningCenterIntegration = () => {
                 Connect to Planning Center
               </a>
             </div>
+            
+            <div className="border-t mt-4 pt-4">
+              <div className="text-sm text-gray-500 mb-2">
+                <strong>Troubleshooting:</strong> If you're having connection issues, try clearing any existing tokens.
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => clearTokensMutation.mutate()}
+                disabled={isClearing || clearTokensMutation.isPending}
+                className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+              >
+                {isClearing || clearTokensMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                )}
+                Clear Planning Center Connection (Debug)
+              </Button>
+            </div>
           </div>
         )}
       </div>
       
       {status?.connected && (
-        <div className="flex justify-between pt-4 border-t">
-          <Button 
-            variant="outline" 
-            onClick={() => disconnectMutation.mutate()}
-            disabled={disconnectMutation.isPending}
-            className="w-64"
-          >
-            {disconnectMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <LinkIcon className="mr-2 h-4 w-4" />
-            )}
-            Disconnect
-          </Button>
-          <Button 
-            className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
-            onClick={() => importMembersMutation.mutate()}
-            disabled={isImporting || importMembersMutation.isPending}
-          >
-            {isImporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <UserPlus className="mr-2 h-4 w-4" />
-            )}
-            Import Members
-          </Button>
+        <div className="space-y-4 pt-4 border-t">
+          <div className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => disconnectMutation.mutate()}
+              disabled={disconnectMutation.isPending}
+              className="w-64"
+            >
+              {disconnectMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LinkIcon className="mr-2 h-4 w-4" />
+              )}
+              Disconnect
+            </Button>
+            <Button 
+              className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
+              onClick={() => importMembersMutation.mutate()}
+              disabled={isImporting || importMembersMutation.isPending}
+            >
+              {isImporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="mr-2 h-4 w-4" />
+              )}
+              Import Members
+            </Button>
+          </div>
+          
+          <div className="border-t pt-4">
+            <div className="text-sm text-gray-500 mb-2">
+              <strong>Troubleshooting:</strong> If you're having connection issues, try clearing the tokens to force a fresh connection.
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => clearTokensMutation.mutate()}
+              disabled={isClearing || clearTokensMutation.isPending}
+              className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+            >
+              {isClearing || clearTokensMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              )}
+              Clear Planning Center Connection (Debug)
+            </Button>
+          </div>
         </div>
       )}
     </div>
