@@ -1144,7 +1144,7 @@ const Settings = () => {
               </div>
               
               <div className="mt-6">
-                <h3 className="text-md font-medium mb-3">Planning Center Integration</h3>
+                <h3 className="text-md font-medium mb-1">Planning Center Integration</h3>
                 <PlanningCenterIntegration />
               </div>
             </div>

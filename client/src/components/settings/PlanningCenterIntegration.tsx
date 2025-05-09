@@ -101,7 +101,7 @@ const PlanningCenterIntegration = () => {
             <Loader2 className="h-8 w-8 animate-spin text-[#69ad4c]" />
           </div>
         ) : status?.connected ? (
-          <div className="space-y-4">
+          <div className="space-y-2">
             <Alert>
               <AlertTitle className="flex items-center">
                 <Users className="h-4 w-4 mr-2" />
@@ -110,7 +110,7 @@ const PlanningCenterIntegration = () => {
               <AlertDescription>
                 Your Planning Center account is connected and ready to import members.
                 {status.lastSyncDate && (
-                  <div className="mt-2 text-sm text-gray-500">
+                  <div className="mt-1 text-sm text-gray-500">
                     Last synced: {new Date(status.lastSyncDate).toLocaleDateString()} {new Date(status.lastSyncDate).toLocaleTimeString()}
                   </div>
                 )}
@@ -123,7 +123,7 @@ const PlanningCenterIntegration = () => {
             </Alert>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             <p className="text-sm text-gray-600">
               Connect your Planning Center Online account to import your members directly into PlateSync.
               This integration uses OAuth 2.0 to securely connect to your Planning Center account without
