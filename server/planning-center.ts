@@ -404,6 +404,24 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
       
+      // Add detailed debugging for token retrieval
+      console.log('Token retrieval params: user.id =', user.id, ', user.churchId =', user.churchId);
+      
+      // Let's directly query the database to see if tokens exist
+      try {
+        const allTokens = await db.select().from(planningCenterTokens);
+        console.log('All Planning Center tokens in database:', allTokens.length);
+        allTokens.forEach(token => {
+          console.log('Token:', { 
+            userId: token.userId, 
+            churchId: token.churchId,
+            expiresAt: token.expiresAt
+          });
+        });
+      } catch (dbError) {
+        console.error('Error querying tokens directly:', dbError);
+      }
+      
       if (!tokens) {
         // Show more details in the 'false' response
         return res.status(200).json({ 
