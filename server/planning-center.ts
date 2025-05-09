@@ -111,6 +111,12 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Generate and store a random state parameter to prevent CSRF attacks
     const state = Math.random().toString(36).substring(2, 15);
+    
+    // Log what host Replit thinks we are
+    console.log('Your Replit host: ' + req.get('host'));
+    console.log('X-Forwarded-Host: ' + req.get('x-forwarded-host'));
+    console.log('Protocol: ' + req.protocol);
+    
     if (req.session) {
       req.session.planningCenterState = state;
       // Save session to ensure state is properly stored
