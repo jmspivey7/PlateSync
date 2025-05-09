@@ -1128,34 +1128,26 @@ const Settings = () => {
             
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Import Members via CSV</CardTitle>
+            <CardTitle>Import Members</CardTitle>
           </CardHeader>
           <CardContent className="pt-1 pb-4">
             <div className="mb-4">
               <p className="text-sm text-gray-600 max-w-[90%]">
-                You can import members in bulk using a CSV file. To see a list of the most recent member import <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
+                You can import members in bulk using a CSV file or connect directly to Planning Center Online. To see a list of the most recent member import <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
               </p>
             </div>
             
             <div className="space-y-6">
-              <CsvImporter />
+              <div>
+                <h3 className="text-md font-medium mb-3">CSV Import</h3>
+                <CsvImporter />
+              </div>
+              
+              <div className="mt-6">
+                <h3 className="text-md font-medium mb-3">Planning Center Integration</h3>
+                <PlanningCenterIntegration />
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Planning Center Integration card */}
-        <Card className="col-span-1 mt-4">
-          <CardHeader className="pb-2">
-            <CardTitle>Planning Center Integration</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-1 pb-4">
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 max-w-[90%]">
-                Connect to Planning Center Online to import your members directly into PlateSync.
-              </p>
-            </div>
-            
-            <PlanningCenterIntegration />
           </CardContent>
         </Card>
         
