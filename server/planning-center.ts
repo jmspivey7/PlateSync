@@ -222,19 +222,34 @@ export function setupPlanningCenterRoutes(app: Express) {
       return res.status(401).send('Authentication required');
     }
     
+    console.log('Checking Planning Center status for user:', req.user.id, 'church:', req.user.churchId);
+    
     try {
       const tokens = await storage.getPlanningCenterTokens(req.user.id, req.user.churchId);
       
+      console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
+      
       if (!tokens) {
-        return res.status(403).json({ connected: false });
+        // Show more details in the 'false' response
+        return res.status(200).json({ 
+          connected: false,
+          message: 'No Planning Center tokens found in database',
+          userId: req.user.id,
+          churchId: req.user.churchId
+        });
       }
+      
+      console.log('Planning Center token expires at:', tokens.expiresAt);
+      console.log('Current time:', new Date());
       
       // Check if token is expired and refresh if needed
       if (tokens.expiresAt < new Date()) {
+        console.log('Token is expired, refreshing...');
         await refreshPlanningCenterToken(tokens, req.user.id, req.user.churchId);
       }
       
       // Make API request to get people count
+      console.log('Making request to Planning Center API to verify connection...');
       const peopleResponse = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people`, {
         headers: {
           Authorization: `Bearer ${tokens.accessToken}`
@@ -244,8 +259,10 @@ export function setupPlanningCenterRoutes(app: Express) {
         }
       });
       
+      console.log('Planning Center API responded successfully');
+      
       // Return connection status with people count if available
-      res.json({
+      res.status(200).json({
         connected: true,
         lastSyncDate: tokens.updatedAt?.toISOString(),
         peopleCount: peopleResponse.data.meta?.total_count || 0
@@ -253,7 +270,10 @@ export function setupPlanningCenterRoutes(app: Express) {
     } catch (error) {
       console.error('Error fetching Planning Center status:', error);
       // Still return a valid response structure, just with connected: false
-      res.status(403).json({ connected: false });
+      res.status(200).json({ 
+        connected: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
