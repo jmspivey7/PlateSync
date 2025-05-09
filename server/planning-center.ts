@@ -360,17 +360,17 @@ export function setupPlanningCenterRoutes(app: Express) {
           email: emails.length > 0 ? emails[0] : null,
           phone: phones.length > 0 ? phones[0] : null,
           isVisitor: false,
-          churchId: req.user.churchId,
+          churchId: req.user?.churchId || user.churchId,
           externalId: personId,
           externalSystem: 'PLANNING_CENTER'
         };
       });
       
       // Import members into the database
-      const importedCount = await storage.bulkImportMembers(members, req.user.churchId);
+      const importedCount = await storage.bulkImportMembers(members, req.user?.churchId || user.churchId);
       
       // Update last sync date
-      await storage.updatePlanningCenterLastSync(req.user.id, req.user.churchId);
+      await storage.updatePlanningCenterLastSync(req.user?.id || user.id, req.user?.churchId || user.churchId);
       
       res.json({ success: true, importedCount });
     } catch (error) {
@@ -387,7 +387,8 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     try {
       // Remove the tokens from the database
-      await storage.deletePlanningCenterTokens(req.user.id, req.user.churchId);
+      const user = req.user as any;
+      await storage.deletePlanningCenterTokens(user.id, user.churchId);
       
       res.json({ success: true });
     } catch (error) {
