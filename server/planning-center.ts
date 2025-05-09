@@ -2,6 +2,8 @@ import axios from 'axios';
 import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
+import { db } from './db';
+import { users } from '@shared/schema';
 
 // Extend Express.User interface to include properties we need
 declare global {
@@ -17,6 +19,15 @@ declare global {
 declare module 'express-session' {
   interface SessionData {
     planningCenterState?: string;
+    passport?: {
+      user?: {
+        claims?: {
+          sub: string;
+          [key: string]: any;
+        };
+        [key: string]: any;
+      };
+    };
   }
 }
 
@@ -183,7 +194,7 @@ export function setupPlanningCenterRoutes(app: Express) {
             console.log(`Found ${allUsers.length} users in database`);
             
             // Find admin users first, as they're more likely to be the ones connecting Planning Center
-            const adminUsers = allUsers.filter(u => u.role === 'ADMIN');
+            const adminUsers = allUsers.filter((u: {role: string}) => u.role === 'ADMIN');
             
             if (adminUsers.length > 0) {
               console.log('Found admin users, using first admin for Planning Center tokens');
