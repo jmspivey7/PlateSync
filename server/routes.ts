@@ -6,6 +6,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { isAdmin, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { setupTestEndpoints } from "./test-endpoints";
+import { setupPlanningCenterRoutes } from "./planning-center";
 import { eq, sql } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as fs from "fs";
@@ -3359,6 +3360,9 @@ PlateSync Reporting System`;
       res.status(500).json({ message: "Failed to delete donation" });
     }
   });
+
+  // Setup Planning Center integration
+  setupPlanningCenterRoutes(app);
 
   // Add test endpoints
   setupTestEndpoints(app);
