@@ -21,8 +21,8 @@ declare module 'express-session' {
 }
 
 // Planning Center OAuth constants
-// Updated URLs according to Planning Center API documentation
-const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/authorize';
+// Updated URLs according to Planning Center documentation and error messages
+const PLANNING_CENTER_AUTH_URL = 'https://login.planningcenteronline.com/oauth/authorize';
 const PLANNING_CENTER_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
