@@ -1,6 +1,7 @@
 import { MailService } from '@sendgrid/mail';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { storage } from './storage';
 import { format } from 'date-fns';
 import { generateCountReportPDF } from './pdf-generator';
@@ -545,6 +546,8 @@ interface CountReportParams {
     donationType: string;
     amount: string;
     checkNumber?: string;
+    date?: string | Date;
+    notes?: string;
   }>;
   date?: Date;         // Raw date object for formatting the PDF filename
   serviceOption?: string; // Service option for the filename
@@ -911,9 +914,75 @@ PlateSync Reporting System
       html
     };
     
-    // Add the PDF attachment if it was generated
-    if (pdfAttachment) {
-      emailData.attachments = [pdfAttachment];
+    // Generate CSV attachment with donation data
+    let csvAttachment: any = null;
+    
+    if (params.donations && params.donations.length > 0) {
+      console.log('Generating CSV attachment for count report...');
+      
+      // Format date for filename
+      const reportDate = params.date || new Date(params.batchDate);
+      const dateForFilename = format(reportDate, 'yyyy-MM-dd');
+      
+      try {
+        // Create CSV content with headers
+        let csvContent = 'Date,Donor Name,Member ID,Donation Type,Amount,Check Number,Notes\n';
+        
+        // Add a row for each donation
+        params.donations.forEach(donation => {
+          // Format date - note that donation.date could be undefined
+          let donationDate = format(reportDate, 'MM/dd/yyyy'); // Default to batch date
+          
+          if (donation.date) {
+            donationDate = donation.date instanceof Date 
+              ? format(donation.date, 'MM/dd/yyyy')
+              : format(new Date(donation.date), 'MM/dd/yyyy');
+          }
+          
+          // Format member name - escape any commas in the name
+          const memberName = donation.memberName ? `"${donation.memberName.replace(/"/g, '""')}"` : 'Anonymous';
+          
+          // Format donation type
+          const donationType = donation.donationType || '';
+          
+          // Format amount
+          const amount = donation.amount || '0.00';
+          
+          // Format check number (only for check donations)
+          const checkNumber = donation.checkNumber || '';
+          
+          // Format notes - escape any commas or quotes in the notes
+          const notes = donation.notes ? `"${donation.notes.replace(/"/g, '""')}"` : '';
+          
+          // Add the row to CSV content
+          csvContent += `${donationDate},${memberName},${donation.memberId || ''},${donationType},${amount},${checkNumber},${notes}\n`;
+        });
+        
+        // Create a temporary file for the CSV
+        const tempDir = os.tmpdir();
+        const csvFilePath = path.join(tempDir, `${dateForFilename}_finalized_count.csv`);
+        fs.writeFileSync(csvFilePath, csvContent);
+        
+        console.log(`CSV generated successfully at: ${csvFilePath}`);
+        
+        // Create attachment
+        const fileContent = fs.readFileSync(csvFilePath);
+        csvAttachment = {
+          content: fileContent.toString('base64'),
+          filename: `${dateForFilename}_finalized_count.csv`,
+          type: 'text/csv',
+          disposition: 'attachment'
+        };
+        
+        console.log(`Created CSV attachment: ${dateForFilename}_finalized_count.csv`);
+        
+        // Clean up the temporary file
+        fs.unlinkSync(csvFilePath);
+        console.log(`Cleaned up temporary CSV file: ${csvFilePath}`);
+      } catch (csvError) {
+        console.error('Error generating CSV attachment:', csvError);
+        // Continue without the CSV attachment if there's an error
+      }
     }
     
     return await sendEmail(emailData);
