@@ -22,7 +22,8 @@ declare module 'express-session' {
 
 // Planning Center OAuth constants
 // Updated URLs according to Planning Center documentation and error messages
-const PLANNING_CENTER_AUTH_URL = 'https://login.planningcenteronline.com/oauth/authorize';
+// According to the official docs at https://developer.planning.center/docs/#/overview/authentication
+const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/authorize';
 const PLANNING_CENTER_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
@@ -53,7 +54,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Exchange the authorization code for an access token
       // Using URLSearchParams for exact format required by Planning Center OAuth2
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/planning-center/callback`;
+      // Force HTTPS for the redirect URI as required by most OAuth providers
+      // Replit's req.protocol might not always return https even though it's using it
+      const redirectUri = `https://${req.get('host')}/api/planning-center/callback`;
       
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
@@ -118,15 +121,27 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Redirect to Planning Center's authorization page with all required parameters
     // Documentation: https://developer.planning.center/docs/#/overview/authentication
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/planning-center/callback`;
+    // Force HTTPS for the redirect URI as required by most OAuth providers
+    // Replit's req.protocol might not always return https even though it's using it
+    const redirectUri = `https://${req.get('host')}/api/planning-center/callback`;
     console.log('Redirect URI:', redirectUri);
     
+    // Make sure we're following Planning Center OAuth spec exactly
+    // https://developer.planning.center/docs/#/overview/authentication
     const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
     authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('response_type', 'code');
+    
+    // According to the docs, scope should be space-separated list in a single parameter
+    // For People API access, we need the 'people' scope
     authUrl.searchParams.append('scope', 'people');
+    
+    // Add state for CSRF protection
     authUrl.searchParams.append('state', state);
+    
+    // Print full URL for troubleshooting
+    console.log('Full Planning Center Auth URL:', authUrl.toString());
 
     console.log('Planning Center Auth URL:', authUrl.toString());
     
