@@ -129,15 +129,18 @@ const PlanningCenterIntegration = () => {
               storing your credentials.
             </p>
             <div className="flex justify-center">
-              <a 
-                href={planningCenterRedirectUrl}
-                target="_blank" 
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => {
+                  // Store a flag in localStorage to indicate we're doing a Planning Center redirect
+                  localStorage.setItem('planningCenterRedirect', 'true');
+                  // Navigate directly to the redirect page in the same window
+                  window.location.href = planningCenterRedirectUrl;
+                }}
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
               >
                 <LinkIcon className="mr-2 h-4 w-4" />
                 Connect to Planning Center
-              </a>
+              </button>
             </div>
           </div>
         )}

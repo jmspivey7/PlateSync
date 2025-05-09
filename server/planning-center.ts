@@ -2,6 +2,7 @@ import axios from 'axios';
 import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
+import crypto from 'crypto';
 
 // Extend Express.User interface to include properties we need
 declare global {
@@ -156,8 +157,9 @@ export function setupPlanningCenterRoutes(app: Express) {
         
         console.log('Created temporary token storage with key:', tempKey);
         
-        // Redirect with the temporary key as a parameter
-        return res.redirect(`/settings?planningCenterTempKey=${tempKey}`);
+        // Redirect with the temporary key as a parameter using parameter name pc_temp_key
+        // to match what we're expecting in the settings page
+        return res.redirect(`/settings?pc_temp_key=${tempKey}`);
       }
       
       // Standard success redirect
