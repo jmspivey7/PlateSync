@@ -35,9 +35,16 @@ const PlanningCenterIntegration = () => {
   // Handle connect to Planning Center
   const handleConnect = () => {
     console.log('Connecting to Planning Center...');
-    // Directly redirect to our backend authorization endpoint
-    // Our server will then redirect to Planning Center
-    window.location.href = '/api/planning-center/authorize';
+    // Open in a new tab instead of redirecting the current window
+    // This can help with redirect issues in the Replit environment
+    window.open('/api/planning-center/authorize', '_blank');
+    
+    // Show a toast notification to explain what's happening
+    toast({
+      title: "Planning Center Authentication",
+      description: "A new tab has opened for Planning Center authentication. Please complete the login process there.",
+      className: "bg-[#69ad4c] text-white",
+    });
   };
 
   // Handle import members from Planning Center
