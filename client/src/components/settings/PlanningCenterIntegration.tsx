@@ -33,18 +33,34 @@ const PlanningCenterIntegration = () => {
   });
 
   // Handle connect to Planning Center
-  const handleConnect = () => {
+  const handleConnect = async () => {
     console.log('Connecting to Planning Center...');
-    // Open in a new tab instead of redirecting the current window
-    // This can help with redirect issues in the Replit environment
-    window.open('/api/planning-center/authorize', '_blank');
-    
-    // Show a toast notification to explain what's happening
-    toast({
-      title: "Planning Center Authentication",
-      description: "A new tab has opened for Planning Center authentication. Please complete the login process there.",
-      className: "bg-[#69ad4c] text-white",
-    });
+    try {
+      // First get the auth URL from our new endpoint
+      const response = await fetch('/api/planning-center/auth-url');
+      const data = await response.json();
+      
+      if (data.url) {
+        // Open the auth URL in a new tab
+        window.open(data.url, '_blank', 'noopener,noreferrer');
+        
+        // Show a toast notification to explain what's happening
+        toast({
+          title: "Planning Center Authentication",
+          description: "A new tab has opened for Planning Center authentication. Please complete the login process there.",
+          className: "bg-[#69ad4c] text-white",
+        });
+      } else {
+        throw new Error('No auth URL received from server');
+      }
+    } catch (error) {
+      console.error('Failed to get Planning Center auth URL:', error);
+      toast({
+        title: "Connection Error",
+        description: "Could not connect to Planning Center. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle import members from Planning Center

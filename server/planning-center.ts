@@ -242,10 +242,10 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
   });
   
-  // Endpoint to initiate the OAuth flow
-  app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
+  // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
+  app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
     if (!req.user) {
-      return res.status(401).send('Authentication required');
+      return res.status(401).json({ error: 'Authentication required' });
     }
     
     // Generate and store a random state parameter to prevent CSRF attacks
@@ -267,7 +267,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    // Redirect to Planning Center's authorization page with all required parameters
+    // Generate Planning Center's authorization URL with all required parameters
     // Documentation: https://developer.planning.center/docs/#/overview/authentication
     // Get the registered callback URL that's registered in Planning Center
     // First try to use a configured callback URL if set in environment
@@ -304,7 +304,51 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Print full URL for troubleshooting
     console.log('Full Planning Center Auth URL:', authUrl.toString());
-
+    
+    // Return the URL instead of redirecting
+    res.json({ url: authUrl.toString() });
+  });
+  
+  // Endpoint to initiate the OAuth flow via redirect (keep this for backwards compatibility)
+  app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).send('Authentication required');
+    }
+    
+    // Generate and store a random state parameter to prevent CSRF attacks
+    const state = Math.random().toString(36).substring(2, 15);
+    
+    if (req.session) {
+      req.session.planningCenterState = state;
+      // Save session to ensure state is properly stored
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+    
+    // Redirect to Planning Center's authorization page with all required parameters
+    let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
+    const protocol = req.protocol || 'https';
+    
+    // Use a fixed callback URL if provided in environment
+    let redirectUri;
+    if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+      redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
+    } else {
+      redirectUri = `${protocol}://${host}/api/planning-center/callback`;
+    }
+    
+    // Make sure we're following Planning Center OAuth spec exactly
+    const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
+    authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('scope', 'people');
+    authUrl.searchParams.append('state', state);
+    
     console.log('Planning Center Auth URL:', authUrl.toString());
     
     res.redirect(authUrl.toString());
