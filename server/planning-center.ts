@@ -21,8 +21,8 @@ declare module 'express-session' {
 }
 
 // Planning Center OAuth constants
-// Updated URLs for Planning Center OAuth
-const PLANNING_CENTER_AUTH_URL = 'https://login.planningcenteronline.com/oauth/authorize';
+// Updated URLs according to Planning Center API documentation
+const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/authorize';
 const PLANNING_CENTER_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
@@ -52,12 +52,26 @@ export function setupPlanningCenterRoutes(app: Express) {
       }
       
       // Exchange the authorization code for an access token
-      const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, {
+      // Using FormData to match the exact format expected by Planning Center
+      const params = new URLSearchParams();
+      params.append('grant_type', 'authorization_code');
+      params.append('code', code as string);
+      params.append('client_id', PLANNING_CENTER_CLIENT_ID);
+      params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+      params.append('redirect_uri', `${req.protocol}://${req.get('host')}/api/planning-center/callback`);
+      
+      console.log('Token request params:', {
+        url: PLANNING_CENTER_TOKEN_URL,
         grant_type: 'authorization_code',
-        code,
+        code: code,
         client_id: PLANNING_CENTER_CLIENT_ID,
-        client_secret: PLANNING_CENTER_CLIENT_SECRET,
         redirect_uri: `${req.protocol}://${req.get('host')}/api/planning-center/callback`
+      });
+      
+      const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       });
       
       const { access_token, refresh_token, expires_in } = tokenResponse.data;
@@ -278,11 +292,17 @@ async function refreshPlanningCenterToken(
   churchId: string
 ) {
   try {
-    const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, {
-      grant_type: 'refresh_token',
-      refresh_token: tokens.refreshToken,
-      client_id: PLANNING_CENTER_CLIENT_ID,
-      client_secret: PLANNING_CENTER_CLIENT_SECRET
+    // Using URLSearchParams for form data as required by Planning Center API
+    const params = new URLSearchParams();
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', tokens.refreshToken);
+    params.append('client_id', PLANNING_CENTER_CLIENT_ID);
+    params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+    
+    const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     });
     
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
