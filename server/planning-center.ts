@@ -21,7 +21,8 @@ declare module 'express-session' {
 }
 
 // Planning Center OAuth constants
-const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/authorize';
+// Updated URLs for Planning Center OAuth
+const PLANNING_CENTER_AUTH_URL = 'https://login.planningcenteronline.com/oauth/authorize';
 const PLANNING_CENTER_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
@@ -42,7 +43,11 @@ export function setupPlanningCenterRoutes(app: Express) {
     try {
       // Verify state parameter to prevent CSRF attacks
       // State should match a value we stored in the user's session
-      if (req.session && req.session['planningCenterState'] !== state) {
+      if (req.session && req.session.planningCenterState !== state) {
+        console.log('State mismatch:', { 
+          expected: req.session.planningCenterState, 
+          received: state 
+        });
         return res.status(403).send('Invalid state parameter');
       }
       
@@ -77,7 +82,7 @@ export function setupPlanningCenterRoutes(app: Express) {
   });
   
   // Endpoint to initiate the OAuth flow
-  app.get('/api/planning-center/authorize', (req: Request, res: Response) => {
+  app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
     if (!req.user) {
       return res.status(401).send('Authentication required');
     }
@@ -85,7 +90,14 @@ export function setupPlanningCenterRoutes(app: Express) {
     // Generate and store a random state parameter to prevent CSRF attacks
     const state = Math.random().toString(36).substring(2, 15);
     if (req.session) {
-      req.session['planningCenterState'] = state;
+      req.session.planningCenterState = state;
+      // Save session to ensure state is properly stored
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
     }
     
     // Redirect to Planning Center's authorization page
