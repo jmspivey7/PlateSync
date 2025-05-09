@@ -1,6 +1,24 @@
 import axios from 'axios';
 import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
+import session from 'express-session';
+
+// Extend Express.User interface to include properties we need
+declare global {
+  namespace Express {
+    interface User {
+      id: string;
+      churchId: string;
+    }
+  }
+}
+
+// Extend express-session to include our custom properties
+declare module 'express-session' {
+  interface SessionData {
+    planningCenterState?: string;
+  }
+}
 
 // Planning Center OAuth constants
 const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/authorize';
@@ -24,7 +42,7 @@ export function setupPlanningCenterRoutes(app: Express) {
     try {
       // Verify state parameter to prevent CSRF attacks
       // State should match a value we stored in the user's session
-      if (req.session?.planningCenterState !== state) {
+      if (req.session && req.session['planningCenterState'] !== state) {
         return res.status(403).send('Invalid state parameter');
       }
       
@@ -66,7 +84,9 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Generate and store a random state parameter to prevent CSRF attacks
     const state = Math.random().toString(36).substring(2, 15);
-    req.session.planningCenterState = state;
+    if (req.session) {
+      req.session['planningCenterState'] = state;
+    }
     
     // Redirect to Planning Center's authorization page
     const authUrl = `${PLANNING_CENTER_AUTH_URL}?client_id=${PLANNING_CENTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/api/planning-center/callback`)}&response_type=code&scope=people&state=${state}`;
