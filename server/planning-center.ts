@@ -552,16 +552,31 @@ export function setupPlanningCenterRoutes(app: Express) {
     // Debug user object to see what properties are available
     console.log('Full req.user object in status check:', JSON.stringify(req.user, null, 2));
     
-    // If churchId is missing, fall back to using userId as churchId (same as in callback)
-    const churchId = user.churchId || user.id;
-    console.log('Using churchId for token lookup:', churchId);
+    // Validate and handle missing user ID
+    if (!user.id) {
+      console.error('Missing user ID in request');
+      return res.status(400).json({
+        connected: false,
+        error: 'invalid_user',
+        message: 'Invalid user data'
+      });
+    }
+    
+    // If churchId is missing, fall back to using userId as churchId
+    if (!user.churchId) {
+      console.log('No churchId found in user object, using user ID as fallback');
+      user.churchId = user.id;
+      console.log(`User ${user.id} has churchId ${user.churchId} directly assigned`);
+    }
+    
+    console.log('Using churchId for token lookup:', user.churchId);
     
     try {
       // Try to get tokens with churchId first (preferred)
-      let tokens = await storage.getPlanningCenterTokens(user.id, churchId);
+      let tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
       
       // If that fails, try with userId as churchId
-      if (!tokens && churchId !== user.id) {
+      if (!tokens && user.churchId !== user.id) {
         console.log('No tokens found with churchId, trying with userId as churchId...');
         tokens = await storage.getPlanningCenterTokens(user.id, user.id);
       }
@@ -575,6 +590,19 @@ export function setupPlanningCenterRoutes(app: Express) {
           message: 'No Planning Center tokens found in database',
           userId: user.id,
           churchId: user.churchId
+        });
+      }
+      
+      // Verify token completeness
+      if (!tokens.accessToken || !tokens.refreshToken) {
+        console.log('Planning Center tokens incomplete:', {
+          hasAccessToken: !!tokens.accessToken,
+          hasRefreshToken: !!tokens.refreshToken
+        });
+        return res.json({
+          connected: false,
+          partial: true,
+          message: 'Planning Center connection is incomplete. Please reconnect.'
         });
       }
       
@@ -902,7 +930,31 @@ async function refreshPlanningCenterToken(
   userId: string,
   churchId: string
 ) {
+  console.log(`Refreshing Planning Center token for user ${userId} church ${churchId}`);
+  
   try {
+    // Validate input parameters
+    if (!tokens || !tokens.refreshToken) {
+      console.error('Missing required refresh token', { 
+        hasTokensObj: !!tokens,
+        hasRefreshToken: tokens && !!tokens.refreshToken
+      });
+      throw new Error('Cannot refresh Planning Center token: No refresh token available');
+    }
+    
+    if (!userId || !churchId) {
+      console.error('Missing required user or church ID', { 
+        userId: userId || 'missing', 
+        churchId: churchId || 'missing' 
+      });
+      throw new Error('Cannot refresh Planning Center token: Missing user or church ID');
+    }
+    
+    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
+      console.error('Missing Planning Center API credentials');
+      throw new Error('Planning Center credentials not configured');
+    }
+
     // Check if refresh token is older than 90 days
     // Planning Center's refresh tokens are valid for 90 days from when they were issued
     const refreshTokenAge = tokens.updatedAt || tokens.createdAt;
@@ -916,6 +968,8 @@ async function refreshPlanningCenterToken(
       }
     }
     
+    console.log('Preparing to make token refresh request to Planning Center');
+    
     // Using URLSearchParams for form data as required by Planning Center API
     const params = new URLSearchParams();
     params.append('grant_type', 'refresh_token');
@@ -923,17 +977,49 @@ async function refreshPlanningCenterToken(
     params.append('client_id', PLANNING_CENTER_CLIENT_ID);
     params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
     
+    console.log('Planning Center token refresh request details:', {
+      url: PLANNING_CENTER_TOKEN_URL,
+      grant_type: 'refresh_token',
+      refresh_token_present: !!tokens.refreshToken,
+      client_id_present: !!PLANNING_CENTER_CLIENT_ID,
+      client_secret_present: !!PLANNING_CENTER_CLIENT_SECRET
+    });
+    
     const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params.toString(), {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+        'User-Agent': 'PlateSync/1.0'
+      },
+      timeout: 10000 // 10 second timeout
+    });
+    
+    console.log('Planning Center token refresh response received:', {
+      status: tokenResponse.status,
+      statusText: tokenResponse.statusText
     });
     
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
     
+    // Validate response data
+    if (!access_token || !refresh_token) {
+      console.error('Invalid token response from Planning Center', {
+        has_access_token: !!access_token,
+        has_refresh_token: !!refresh_token,
+        expires_in: expires_in
+      });
+      throw new Error('Invalid token response from Planning Center');
+    }
+    
     // Access tokens expire after 2 hours (7200 seconds)
     // But we'll use the expires_in value from the response to be safe
     const expiresAt = new Date(Date.now() + (expires_in || 7200) * 1000);
+    
+    console.log('Saving refreshed Planning Center tokens', {
+      userId,
+      churchId,
+      expiresAt: expiresAt.toISOString()
+    });
     
     // Save the new tokens
     await storage.savePlanningCenterTokens({
@@ -944,9 +1030,31 @@ async function refreshPlanningCenterToken(
       expiresAt: expiresAt,
     });
     
+    console.log('Planning Center tokens refreshed and saved successfully');
     return access_token;
-  } catch (error) {
-    console.error('Error refreshing Planning Center token:', error);
+  } catch (error: any) {
+    console.error('Error refreshing Planning Center token:', error.message);
+    
+    // Detailed error logging for debugging
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Planning Center API error response:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Planning Center API no response received:', {
+          request: error.request,
+          config: error.config
+        });
+      }
+    }
+    
     throw error;
   }
 }
