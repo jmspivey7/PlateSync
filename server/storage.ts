@@ -7,6 +7,7 @@ import {
   serviceOptions,
   reportRecipients,
   emailTemplates,
+  planningCenterTokens,
   type User,
   type UpsertUser,
   type Member,
@@ -23,7 +24,9 @@ import {
   type ReportRecipient,
   type InsertReportRecipient,
   type EmailTemplate,
-  type InsertEmailTemplate
+  type InsertEmailTemplate,
+  type PlanningCenterTokens,
+  type InsertPlanningCenterTokens
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, sum, count, asc, ne } from "drizzle-orm";
@@ -109,6 +112,12 @@ export interface IStorage {
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
   updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId: string): Promise<EmailTemplate | undefined>;
   resetEmailTemplateToDefault(id: number, churchId: string): Promise<EmailTemplate | undefined>;
+  
+  // Planning Center operations
+  getPlanningCenterTokens(userId: string, churchId: string): Promise<PlanningCenterTokens | undefined>;
+  savePlanningCenterTokens(data: InsertPlanningCenterTokens): Promise<PlanningCenterTokens>;
+  deletePlanningCenterTokens(userId: string, churchId: string): Promise<void>;
+  bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2073,6 +2082,174 @@ PlateSync Reporting System
       .returning();
     
     return updatedTemplate;
+  }
+  
+  // Planning Center operations
+  async getPlanningCenterTokens(userId: string, churchId: string): Promise<PlanningCenterTokens | undefined> {
+    try {
+      const [tokens] = await db
+        .select()
+        .from(planningCenterTokens)
+        .where(and(
+          eq(planningCenterTokens.userId, userId),
+          eq(planningCenterTokens.churchId, churchId)
+        ))
+        .limit(1);
+      
+      return tokens;
+    } catch (error) {
+      console.error("Error in getPlanningCenterTokens:", error);
+      return undefined;
+    }
+  }
+
+  async savePlanningCenterTokens(data: InsertPlanningCenterTokens): Promise<PlanningCenterTokens> {
+    try {
+      // Check if tokens already exist for this user/church
+      const existingTokens = await this.getPlanningCenterTokens(data.userId, data.churchId);
+      
+      if (existingTokens) {
+        // Update existing tokens
+        const [updatedTokens] = await db
+          .update(planningCenterTokens)
+          .set({
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            expiresAt: data.expiresAt,
+            updatedAt: new Date()
+          })
+          .where(eq(planningCenterTokens.id, existingTokens.id))
+          .returning();
+        
+        return updatedTokens;
+      } else {
+        // Insert new tokens
+        const [newTokens] = await db
+          .insert(planningCenterTokens)
+          .values({
+            ...data,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .returning();
+        
+        return newTokens;
+      }
+    } catch (error) {
+      console.error("Error in savePlanningCenterTokens:", error);
+      throw error;
+    }
+  }
+
+  async deletePlanningCenterTokens(userId: string, churchId: string): Promise<void> {
+    try {
+      await db
+        .delete(planningCenterTokens)
+        .where(and(
+          eq(planningCenterTokens.userId, userId),
+          eq(planningCenterTokens.churchId, churchId)
+        ));
+    } catch (error) {
+      console.error("Error in deletePlanningCenterTokens:", error);
+      throw error;
+    }
+  }
+
+  async bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number> {
+    try {
+      let importedCount = 0;
+      
+      // Process each member one by one
+      for (const memberData of members) {
+        // If the member has an externalId, check if they already exist
+        if (memberData.externalId && memberData.externalSystem) {
+          const [existingMember] = await db
+            .select()
+            .from(members)
+            .where(and(
+              eq(members.externalId, memberData.externalId),
+              eq(members.externalSystem, memberData.externalSystem),
+              eq(members.churchId, churchId)
+            ))
+            .limit(1);
+          
+          if (existingMember) {
+            // Update existing member
+            await db
+              .update(members)
+              .set({
+                firstName: memberData.firstName || existingMember.firstName,
+                lastName: memberData.lastName || existingMember.lastName,
+                email: memberData.email || existingMember.email,
+                phone: memberData.phone || existingMember.phone,
+                notes: memberData.notes || existingMember.notes,
+                updatedAt: new Date()
+              })
+              .where(eq(members.id, existingMember.id));
+              
+            importedCount++;
+            continue;
+          }
+        }
+        
+        // If no external ID or member not found, check by name and email
+        if (memberData.firstName && memberData.lastName && memberData.email) {
+          const [existingMember] = await db
+            .select()
+            .from(members)
+            .where(and(
+              eq(members.firstName, memberData.firstName),
+              eq(members.lastName, memberData.lastName),
+              eq(members.email, memberData.email),
+              eq(members.churchId, churchId)
+            ))
+            .limit(1);
+          
+          if (existingMember) {
+            // Update existing member and add the external IDs
+            await db
+              .update(members)
+              .set({
+                externalId: memberData.externalId || existingMember.externalId,
+                externalSystem: memberData.externalSystem || existingMember.externalSystem,
+                phone: memberData.phone || existingMember.phone,
+                notes: memberData.notes || existingMember.notes,
+                updatedAt: new Date()
+              })
+              .where(eq(members.id, existingMember.id));
+              
+            importedCount++;
+            continue;
+          }
+        }
+        
+        // If we reach here, we need to create a new member
+        if (memberData.firstName && memberData.lastName) {
+          await db
+            .insert(members)
+            .values({
+              firstName: memberData.firstName,
+              lastName: memberData.lastName,
+              email: memberData.email,
+              phone: memberData.phone,
+              notes: memberData.notes,
+              isVisitor: memberData.isVisitor || false,
+              externalId: memberData.externalId,
+              externalSystem: memberData.externalSystem,
+              churchId: churchId,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+            
+          importedCount++;
+        }
+      }
+      
+      return importedCount;
+    } catch (error) {
+      console.error("Error in bulkImportMembers:", error);
+      throw error;
+    }
   }
 }
 
