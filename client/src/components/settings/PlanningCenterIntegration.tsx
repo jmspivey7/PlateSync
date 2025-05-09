@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, Link as LinkIcon, RefreshCw, UserPlus, Users } from "lucide-react";
+import { Loader2, Link as LinkIcon, UserPlus, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
@@ -32,37 +32,9 @@ const PlanningCenterIntegration = () => {
     },
   });
 
-  // Instead of using a button with a handler, we'll use a direct link
-  // to solve the popup blocker issues in Replit's environment
-  const [authUrl, setAuthUrl] = React.useState<string | null>(null);
-  const [isLoadingUrl, setIsLoadingUrl] = React.useState(false);
-  
-  // Fetch the auth URL when component mounts
-  React.useEffect(() => {
-    if (!status?.connected && !isLoadingUrl && !authUrl) {
-      setIsLoadingUrl(true);
-      fetch('/api/planning-center/auth-url')
-        .then(response => response.json())
-        .then(data => {
-          if (data.url) {
-            setAuthUrl(data.url);
-          } else {
-            throw new Error('No auth URL received from server');
-          }
-        })
-        .catch(error => {
-          console.error('Failed to get Planning Center auth URL:', error);
-          toast({
-            title: "Connection Error",
-            description: "Could not get Planning Center connection URL. Please try again later.",
-            variant: "destructive",
-          });
-        })
-        .finally(() => {
-          setIsLoadingUrl(false);
-        });
-    }
-  }, [status?.connected, isLoadingUrl, authUrl, toast]);
+  // We'll use a dedicated redirect page that's meant to handle Planning Center auth
+  // This approach is more reliable in the Replit environment than direct URL or popup
+  const planningCenterRedirectUrl = '/planning-center-redirect.html';
 
   // Handle import members from Planning Center
   const importMembersMutation = useMutation({
@@ -157,30 +129,15 @@ const PlanningCenterIntegration = () => {
               storing your credentials.
             </p>
             <div className="flex justify-center">
-              {isLoadingUrl ? (
-                <Button className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64" disabled>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
-                </Button>
-              ) : authUrl ? (
-                <a 
-                  href={authUrl}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
-                >
-                  <LinkIcon className="mr-2 h-4 w-4" />
-                  Connect to Planning Center
-                </a>
-              ) : (
-                <Button 
-                  className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
-                  onClick={() => window.location.reload()}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry Connection
-                </Button>
-              )}
+              <a 
+                href={planningCenterRedirectUrl}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
+              >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Connect to Planning Center
+              </a>
             </div>
           </div>
         )}

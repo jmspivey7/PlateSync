@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting to Planning Center</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #69ad4c;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #666;
+      margin-bottom: 20px;
+      max-width: 600px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #69ad4c;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button:hover {
+      background-color: #579b3c;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="loader" id="loader"></div>
+  <h1>Redirecting to Planning Center</h1>
+  <p>You're being redirected to Planning Center for authentication. If you're not redirected automatically, please click the button below.</p>
+  <a href="#" class="button" id="redirect-button">Go to Planning Center</a>
+
+  <script>
+    // Fetch the auth URL when the page loads
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const response = await fetch('/api/planning-center/auth-url');
+        
+        if (!response.ok) {
+          throw new Error('Failed to get Planning Center auth URL');
+        }
+        
+        const data = await response.json();
+        
+        if (data.url) {
+          // Update the manual redirect button
+          const redirectButton = document.getElementById('redirect-button');
+          redirectButton.href = data.url;
+          
+          // Automatically redirect after a short delay
+          setTimeout(() => {
+            window.location.href = data.url;
+          }, 1500);
+        } else {
+          throw new Error('No auth URL received');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        
+        // Show error instead of loader
+        document.getElementById('loader').classList.add('hidden');
+        document.querySelector('h1').textContent = 'Connection Error';
+        document.querySelector('p').textContent = 'Could not connect to Planning Center. Please return to the settings page and try again.';
+        
+        // Change button to go back
+        const redirectButton = document.getElementById('redirect-button');
+        redirectButton.textContent = 'Return to Settings';
+        redirectButton.href = '/settings';
+      }
+    });
+  </script>
+</body>
+</html>
