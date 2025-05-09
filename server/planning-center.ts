@@ -52,23 +52,25 @@ export function setupPlanningCenterRoutes(app: Express) {
       }
       
       // Exchange the authorization code for an access token
-      // Using FormData to match the exact format expected by Planning Center
+      // Using URLSearchParams for exact format required by Planning Center OAuth2
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/planning-center/callback`;
+      
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
       params.append('code', code as string);
       params.append('client_id', PLANNING_CENTER_CLIENT_ID);
       params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
-      params.append('redirect_uri', `${req.protocol}://${req.get('host')}/api/planning-center/callback`);
+      params.append('redirect_uri', redirectUri);
       
       console.log('Token request params:', {
         url: PLANNING_CENTER_TOKEN_URL,
         grant_type: 'authorization_code',
         code: code,
         client_id: PLANNING_CENTER_CLIENT_ID,
-        redirect_uri: `${req.protocol}://${req.get('host')}/api/planning-center/callback`
+        redirect_uri: redirectUri
       });
       
-      const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params, {
+      const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -114,10 +116,21 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    // Redirect to Planning Center's authorization page
-    const authUrl = `${PLANNING_CENTER_AUTH_URL}?client_id=${PLANNING_CENTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/api/planning-center/callback`)}&response_type=code&scope=people&state=${state}`;
+    // Redirect to Planning Center's authorization page with all required parameters
+    // Documentation: https://developer.planning.center/docs/#/overview/authentication
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/planning-center/callback`;
+    console.log('Redirect URI:', redirectUri);
     
-    res.redirect(authUrl);
+    const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
+    authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('scope', 'people');
+    authUrl.searchParams.append('state', state);
+
+    console.log('Planning Center Auth URL:', authUrl.toString());
+    
+    res.redirect(authUrl.toString());
   });
   
   // Endpoint to get Planning Center people data
@@ -299,7 +312,7 @@ async function refreshPlanningCenterToken(
     params.append('client_id', PLANNING_CENTER_CLIENT_ID);
     params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
     
-    const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params, {
+    const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
