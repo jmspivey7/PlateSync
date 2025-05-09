@@ -18,6 +18,7 @@ declare global {
 declare module 'express-session' {
   interface SessionData {
     planningCenterState?: string;
+    planningCenterChurchId?: string;
   }
 }
 
@@ -173,8 +174,16 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log('Saving Planning Center tokens for user:', req.user.id, 'church:', req.user.churchId);
         
         // Debug user object (redacted for security)
-        const userDebug = { ...req.user };
-        if (userDebug.password) userDebug.password = '[REDACTED]';
+        const userDebug = { ...req.user as Record<string, any> };
+        // Safely redact any sensitive information
+        if (typeof userDebug === 'object' && userDebug) {
+          // Redact common sensitive fields that might be present
+          ['password', 'token', 'secret'].forEach(field => {
+            if (field in userDebug) {
+              userDebug[field] = '[REDACTED]';
+            }
+          });
+        }
         console.log('User details:', JSON.stringify(userDebug, null, 2));
         
         // If churchId is missing, fall back to using userId as churchId
@@ -265,31 +274,56 @@ export function setupPlanningCenterRoutes(app: Express) {
       let errorDetails = 'unknown';
       let errorDescription = 'An unexpected error occurred';
       
-      if (error.response) {
-        // The request was made and the server responded with a status code outside of 2xx
-        errorDetails = `http_${error.response.status}`;
-        errorDescription = error.response.data?.error_description || 
-                          error.response.data?.error || 
-                          error.response.statusText || 
-                          `HTTP error ${error.response.status}`;
-        
-        console.error('API response error details:', {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data
-        });
-      } else if (error.request) {
-        // The request was made but no response was received
-        errorDetails = 'network';
-        errorDescription = error.code || 'Network error, no response received';
-        console.error('Network error details:', {
-          code: error.code,
-          message: error.message
-        });
-      } else {
-        // Something happened in setting up the request
-        errorDetails = 'request_setup';
-        errorDescription = error.message || 'Error setting up request';
+      // Type guard for AxiosError
+      if (error && typeof error === 'object') {
+        // Handle Axios error response
+        if ('response' in error && error.response) {
+          // The request was made and the server responded with a status code outside of 2xx
+          const response = error.response as Record<string, any>;
+          const responseStatus = typeof response.status === 'number' ? response.status : 500;
+          errorDetails = `http_${responseStatus}`;
+          
+          // Safely extract error description
+          let responseData: any = null;
+          try {
+            responseData = response.data;
+          } catch (e) {
+            console.error('Error parsing response data:', e);
+          }
+          
+          // Safely get status text
+          const statusText = typeof response.statusText === 'string' ? response.statusText : 'Unknown Error';
+          
+          errorDescription = 
+            responseData && responseData.error_description ? responseData.error_description : 
+            responseData && responseData.error ? responseData.error : 
+            statusText || 
+            `HTTP error ${responseStatus}`;
+          
+          console.error('API response error details:', {
+            status: responseStatus,
+            statusText: statusText,
+            data: responseData
+          });
+        } 
+        // Handle network errors
+        else if ('request' in error && error.request) {
+          // The request was made but no response was received
+          errorDetails = 'network';
+          const errorCode = 'code' in error ? String(error.code) : 'unknown';
+          errorDescription = errorCode || 'Network error, no response received';
+          
+          console.error('Network error details:', {
+            code: errorCode,
+            message: 'message' in error ? String(error.message) : 'Unknown message'
+          });
+        } 
+        // Handle other errors
+        else if ('message' in error) {
+          // Something happened in setting up the request
+          errorDetails = 'request_setup';
+          errorDescription = String(error.message) || 'Error setting up request';
+        }
       }
       
       // Redirect to settings with encoded error details
