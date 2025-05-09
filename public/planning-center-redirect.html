@@ -373,21 +373,98 @@
     
     // Detect if we're coming back from a Planning Center OAuth flow
     window.addEventListener('load', () => {
-      // Check for code/state params indicating we've returned from Planning Center OAuth
+      // Check for various URL parameters
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('code') && urlParams.has('state')) {
-        // This is a callback from Planning Center OAuth
-        // We need to close this window or redirect back to settings
-        title.textContent = 'Authorization Complete';
-        description.textContent = 'Planning Center authorization complete! You may close this window.';
-        loader.classList.add('hidden');
-        redirectButton.textContent = 'Return to Settings';
-        redirectButton.href = '/settings?planningCenterConnected=true';
+      
+      // Case 1: Success with temp key - newly issued temporary token
+      if (urlParams.has('success') && urlParams.has('tempKey')) {
+        const tempKey = urlParams.get('tempKey');
         
-        // Automatically redirect after 3 seconds
+        // Success - redirect to settings with the temp key to claim the token
+        title.textContent = 'Connection Successful!';
+        description.textContent = 'Your Planning Center account has been successfully connected. Redirecting back to settings...';
+        statusContainer.classList.remove('hidden');
+        statusContainer.classList.add('success');
+        statusText.textContent = 'Authorization successful. You will be redirected in a moment.';
+        loader.classList.add('hidden');
+        redirectButton.textContent = 'Go to Settings';
+        redirectButton.href = `/settings?pc_temp_key=${tempKey}`;
+        debugButton.classList.remove('hidden');
+        
+        // Add detailed debug info
+        const debugText = document.createElement('div');
+        debugText.innerHTML = '<strong>Authentication Success</strong><br>' +
+                             'Temporary token key: ' + tempKey.substring(0, 8) + '...<br>' +
+                             'Status: Authenticated and temporary token received<br>' +
+                             'Next: Automatic redirect to settings page to process token';
+        debugInfo.appendChild(debugText);
+        
+        // Automatically redirect after 2 seconds
         setTimeout(() => {
-          window.location.href = '/settings?planningCenterConnected=true';
-        }, 3000);
+          window.location.href = `/settings?pc_temp_key=${tempKey}`;
+        }, 2000);
+      }
+      // Case 2: OAuth callback with code/state - should never happen in this page directly
+      else if (urlParams.has('code') && urlParams.has('state')) {
+        // We're in an actual OAuth callback - this shouldn't happen as callbacks go to the API endpoint
+        // But handle it gracefully in case the URL got mangled
+        title.textContent = 'Unexpected Authorization Code';
+        description.textContent = 'Your browser received an OAuth code directly instead of sending it to our server. This sometimes happens with browser security settings or network issues.';
+        statusContainer.classList.remove('hidden');
+        statusContainer.classList.add('warning');
+        statusText.textContent = 'We cannot process this code directly. Please try again.';
+        loader.classList.add('hidden');
+        redirectButton.textContent = 'Try Again';
+        redirectButton.href = '/api/planning-center/authorize';
+        returnButton.classList.remove('hidden');
+        debugButton.classList.remove('hidden');
+        clearButton.classList.remove('hidden');
+        
+        // Add detailed debug info
+        const debugText = document.createElement('div');
+        debugText.innerHTML = '<strong>Warning: Direct OAuth Callback</strong><br>' +
+                             'Code present: Yes<br>' +
+                             'State present: Yes<br>' +
+                             'Problem: Callback parameters received on redirect page instead of API endpoint<br>' +
+                             'Recommendation: Clear connection and try again';
+        debugInfo.appendChild(debugText);
+      }
+      // Case 3: Error handling
+      else if (urlParams.has('error')) {
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description') || 'No error description provided';
+        
+        // Standardize error display and advice based on error type
+        let errorAdvice = '';
+        
+        // Different advice based on error type
+        if (error === 'invalid_state') {
+          errorAdvice = 'Your session may have expired or been lost. This can happen if your browser has strict privacy settings, you have multiple tabs open, or if you waited too long.';
+        } else if (error === 'authentication_required') {
+          errorAdvice = 'You need to be logged in to connect to Planning Center. Please return to settings, ensure you are logged in, and try again.';
+        } else if (error.startsWith('http_')) {
+          errorAdvice = 'There was a communication error between our server and Planning Center. This could be a temporary issue with either service.';
+        } else if (error === 'network') {
+          errorAdvice = 'There was a network connectivity issue. This could be due to firewall settings, internet connectivity problems, or temporary outages.';
+        } else if (error === 'missing_params') {
+          errorAdvice = 'The authorization process was incomplete or interrupted. Make sure you complete the entire authorization flow at Planning Center.';
+        } else if (error === 'token_storage_failed') {
+          errorAdvice = 'We received authorization from Planning Center but couldn\'t save it to your account. This could be a database issue.';
+        } else {
+          errorAdvice = 'An unexpected error occurred during the authorization process.';
+        }
+        
+        updateUI('error', `${errorDescription}`);
+        description.textContent = errorAdvice;
+        
+        // Add detailed debug info
+        const debugText = document.createElement('div');
+        debugText.innerHTML = '<strong>Authentication Error</strong><br>' +
+                             'Error type: ' + error + '<br>' +
+                             'Error description: ' + errorDescription + '<br>' +
+                             'Time: ' + new Date().toISOString() + '<br>' +
+                             'Advice: ' + errorAdvice;
+        debugInfo.appendChild(debugText);
       }
     });
   </script>

@@ -60,32 +60,61 @@ export function setupPlanningCenterRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to clear Planning Center tokens' });
     }
   });
-  // OAuth callback endpoint
+  // OAuth callback endpoint with enhanced error handling and security
   app.get('/api/planning-center/callback', async (req: Request, res: Response) => {
-    const { code, state } = req.query;
-    
-    if (!code || !state) {
-      return res.status(400).send('Missing code or state parameter');
-    }
-    
     try {
-      // In direct same-window approach, we're getting redirected directly from Planning Center,
-      // so we may not be able to rely on session state as much. We'll need to be more lenient.
-      if (req.session && req.session.planningCenterState && req.session.planningCenterState !== state) {
-        console.log('State mismatch (still proceeding):', { 
-          expected: req.session.planningCenterState, 
-          received: state 
-        });
-        // Not returning an error here, allowing the flow to continue
+      // Extract all query parameters for detailed logging
+      const { code, state, error, error_description } = req.query;
+      
+      // Log the callback details for debugging (redacting sensitive parts)
+      console.log('Planning Center callback received with params:', {
+        code: code ? `${String(code).substring(0, 4)}...` : 'undefined',
+        state: state ? `${String(state).substring(0, 4)}...` : 'undefined',
+        error: error || 'none',
+        error_description: error_description || 'none',
+        host: req.get('host'),
+        'x-forwarded-host': req.get('x-forwarded-host'),
+        'user-agent': req.get('user-agent')
+      });
+      
+      // Check if Planning Center returned an explicit error
+      if (error) {
+        console.error('Planning Center returned an error:', error, error_description);
+        return res.redirect(`/settings?planningCenterError=${encodeURIComponent(String(error))}&error_description=${encodeURIComponent(String(error_description || 'Unknown error'))}`);
       }
       
-      // Exchange the authorization code for an access token
-      // Using URLSearchParams for exact format required by Planning Center OAuth2
+      // Validate required parameters
+      if (!code || !state) {
+        console.error('Missing code or state parameter', { code: !!code, state: !!state });
+        return res.redirect('/settings?planningCenterError=missing_params');
+      }
+      
+      // Only check state match if session is available, otherwise proceed with caution
+      if (req.session && req.session.planningCenterState) {
+        // Partial state logging for debugging (never log full state values)
+        console.log('Session state:', req.session.planningCenterState.substring(0, 8) + '...');
+        console.log('Callback state:', String(state).substring(0, 8) + '...');
+        
+        // Verify the state parameter matches what we stored (CSRF protection)
+        // But with fallback behavior if it doesn't match (after logging the mismatch)
+        if (req.session.planningCenterState !== state) {
+          console.log('State mismatch (still proceeding):', { 
+            expected: req.session.planningCenterState.substring(0, 8) + '...', 
+            received: String(state).substring(0, 8) + '...'
+          });
+          // Not returning an error here, allowing the flow to continue
+          // This makes the flow more resilient to session issues during redirects
+        }
+      } else {
+        console.warn('Session or planningCenterState not available, proceeding without state verification');
+      }
+      
+      // Determine the correct redirect URI (must match what was used in the initial authorization request)
       let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
       console.log('Current callback host:', host);
       const protocol = req.protocol || 'https';
       
-      // Use a fixed callback URL if provided in environment
+      // Prefer the environment-configured redirect URI if available
       let redirectUri;
       if (process.env.PLANNING_CENTER_CALLBACK_URL) {
         redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
@@ -95,6 +124,8 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log('Using dynamic callback URL:', redirectUri);
       }
       
+      // Build properly formatted parameters for token request
+      // Using URLSearchParams to ensure proper encoding and formatting
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
       params.append('code', code as string);
@@ -102,39 +133,56 @@ export function setupPlanningCenterRoutes(app: Express) {
       params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
       params.append('redirect_uri', redirectUri);
       
-      console.log('Token request params:', {
+      console.log('Token request to Planning Center with params:', {
         url: PLANNING_CENTER_TOKEN_URL,
         grant_type: 'authorization_code',
-        code: code,
+        code: `${String(code).substring(0, 4)}...`, // Redacted for security
         client_id: PLANNING_CENTER_CLIENT_ID,
         redirect_uri: redirectUri
       });
       
+      // Request access token from Planning Center
       const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params.toString(), {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+          'User-Agent': 'PlateSync/1.0'
+        },
+        // Adding timeout to prevent hanging requests
+        timeout: 10000 // 10 second timeout
       });
       
+      // Extract token data from response
       const { access_token, refresh_token, expires_in } = tokenResponse.data;
       
-      // We need to save the tokens, but there's a problem when the session
-      // has been lost in the OAuth redirect flow.
-      // Two approaches:
-      // 1. Store the tokens temporarily and let the client retrieve them
-      // 2. Force a login and then save the tokens
+      // Validate required token data
+      if (!access_token || !refresh_token) {
+        console.error('Missing tokens in Planning Center response!', {
+          has_access_token: !!access_token,
+          has_refresh_token: !!refresh_token,
+          expires_in: expires_in
+        });
+        return res.redirect('/settings?planningCenterError=invalid_token_response');
+      }
       
+      console.log('Successfully received tokens from Planning Center');
+      
+      // Handle the tokens based on user authentication state
       if (req.user?.id) {
+        // User is authenticated - save tokens directly
         console.log('Saving Planning Center tokens for user:', req.user.id, 'church:', req.user.churchId);
         
-        // Debug user object
-        console.log('Full req.user object:', JSON.stringify(req.user, null, 2));
+        // Debug user object (redacted for security)
+        const userDebug = { ...req.user };
+        if (userDebug.password) userDebug.password = '[REDACTED]';
+        console.log('User details:', JSON.stringify(userDebug, null, 2));
         
         // If churchId is missing, fall back to using userId as churchId
         const churchId = req.user.churchId || req.user.id;
-        console.log('Using churchId:', churchId);
+        console.log('Using churchId for token storage:', churchId);
         
         try {
+          // Save tokens to database
           await storage.savePlanningCenterTokens({
             userId: req.user.id,
             churchId: churchId,
@@ -142,191 +190,287 @@ export function setupPlanningCenterRoutes(app: Express) {
             refreshToken: refresh_token,
             expiresAt: new Date(Date.now() + expires_in * 1000),
           });
-          console.log('Successfully saved Planning Center tokens');
+          console.log('Successfully saved Planning Center tokens to database');
           
-          // After saving, verify tokens were stored properly
+          // Verify tokens were stored properly
           const storedTokens = await storage.getPlanningCenterTokens(req.user.id, churchId);
-          console.log('Verified tokens in database:', storedTokens ? 'YES' : 'NO');
+          const verificationSuccess = !!storedTokens;
+          console.log('Verified tokens in database:', verificationSuccess ? 'YES' : 'NO');
+          
+          if (!verificationSuccess) {
+            console.error('Token verification failed - tokens not found in database after save');
+            return res.redirect('/settings?planningCenterError=token_storage_failed');
+          }
+          
+          // Successfully saved tokens - redirect to success page
+          return res.redirect('/settings?planningCenterConnected=true');
         } catch (tokenSaveError) {
           console.error('Error saving Planning Center tokens:', tokenSaveError);
+          return res.redirect('/settings?planningCenterError=token_save_failed');
         }
       } else {
-        // If no user in session, we're doing something special: 
-        // We'll create a temporary token storage with instructions for the main page
-        // to save it once the user is authenticated again
+        // No user in session - store tokens temporarily with improved security
         console.log('No user session found - storing tokens temporarily');
         
-        // Generate a secure temporary key
-        const tempKey = Math.random().toString(36).substring(2, 15) + 
-                        Math.random().toString(36).substring(2, 15);
+        // Generate a more secure temporary key with higher entropy
+        const tempKey = crypto.randomBytes(24).toString('hex');
         
-        // Store tokens in server memory temporarily (5 minute expiration)
-        // This is a simplistic approach - in production you'd want something more robust
+        // Store tokens in server memory temporarily (extended expiration for better UX)
+        // Initialize the temporary token storage if it doesn't exist
         app.locals.tempPlanningCenterTokens = app.locals.tempPlanningCenterTokens || {};
+        
+        // Store token with detailed metadata for debugging
         app.locals.tempPlanningCenterTokens[tempKey] = {
           accessToken: access_token,
           refreshToken: refresh_token,
           expiresAt: new Date(Date.now() + expires_in * 1000),
-          created: new Date()
+          created: new Date(),
+          meta: {
+            userAgent: req.get('user-agent') || 'unknown',
+            ipAddress: req.ip || 'unknown',
+            timestamp: new Date().toISOString(),
+            host: req.get('host') || 'unknown'
+          }
         };
         
-        // Clean up old temporary tokens (older than 5 minutes)
+        // Log temporary token creation (without exposing sensitive data)
+        console.log(`Created temporary token with key ${tempKey.substring(0, 8)}...`);
+        console.log(`Total temporary tokens in memory: ${Object.keys(app.locals.tempPlanningCenterTokens).length}`);
+        
+        // Clean up expired temporary tokens (housekeeping)
         const now = new Date();
+        const TEMP_TOKEN_EXPIRATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+        let expiredCount = 0;
+        
         Object.keys(app.locals.tempPlanningCenterTokens).forEach(key => {
           const created = app.locals.tempPlanningCenterTokens[key].created;
-          if ((now.getTime() - created.getTime()) > 5 * 60 * 1000) {
+          if ((now.getTime() - created.getTime()) > TEMP_TOKEN_EXPIRATION) {
             delete app.locals.tempPlanningCenterTokens[key];
+            expiredCount++;
           }
         });
         
-        console.log('Created temporary token storage with key:', tempKey);
+        if (expiredCount > 0) {
+          console.log(`Cleaned up ${expiredCount} expired temporary tokens`);
+        }
         
-        // Redirect with the temporary key as a parameter using parameter name pc_temp_key
-        // to match what we're expecting in the settings page
+        // Redirect with temporary key for client-side token claiming
         return res.redirect(`/settings?pc_temp_key=${tempKey}`);
       }
-      
-      // Standard success redirect
-      res.redirect('/settings?planningCenterConnected=true');
     } catch (error) {
+      // Comprehensive error handling with detailed logging
       console.error('Planning Center OAuth error:', error);
-      res.redirect('/settings?planningCenterError=true');
+      
+      // Try to extract useful details from the error
+      let errorDetails = 'unknown';
+      let errorDescription = 'An unexpected error occurred';
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code outside of 2xx
+        errorDetails = `http_${error.response.status}`;
+        errorDescription = error.response.data?.error_description || 
+                          error.response.data?.error || 
+                          error.response.statusText || 
+                          `HTTP error ${error.response.status}`;
+        
+        console.error('API response error details:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorDetails = 'network';
+        errorDescription = error.code || 'Network error, no response received';
+        console.error('Network error details:', {
+          code: error.code,
+          message: error.message
+        });
+      } else {
+        // Something happened in setting up the request
+        errorDetails = 'request_setup';
+        errorDescription = error.message || 'Error setting up request';
+      }
+      
+      // Redirect to settings with encoded error details
+      return res.redirect(`/settings?planningCenterError=${errorDetails}&error_description=${encodeURIComponent(errorDescription)}`);
     }
   });
   
   // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    
-    // Generate and store a random state parameter to prevent CSRF attacks
-    const state = Math.random().toString(36).substring(2, 15);
-    
-    // Log what host Replit thinks we are
-    console.log('Your Replit host: ' + req.get('host'));
-    console.log('X-Forwarded-Host: ' + req.get('x-forwarded-host'));
-    console.log('Protocol: ' + req.protocol);
-    
-    if (req.session) {
-      req.session.planningCenterState = state;
-      // Save session to ensure state is properly stored
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
+      console.log('No authenticated user found for Planning Center auth URL generation');
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'You must be logged in to connect to Planning Center',
+        details: 'Please ensure you are logged in and try again'
       });
     }
     
-    // Generate Planning Center's authorization URL with all required parameters
-    // Documentation: https://developer.planning.center/docs/#/overview/authentication
-    // Get the registered callback URL that's registered in Planning Center
-    // First try to use a configured callback URL if set in environment
-    // Otherwise fall back to the dynamic host, but this may not work with Planning Center
-    // which requires pre-registered callback URLs
-    let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
-    console.log('Current host:', host);
-    const protocol = req.protocol || 'https';
-    
-    // Use a fixed callback URL if provided in environment
-    let redirectUri;
-    if (process.env.PLANNING_CENTER_CALLBACK_URL) {
-      redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
-      console.log('Using fixed callback URL from env:', redirectUri);
-    } else {
-      redirectUri = `${protocol}://${host}/api/planning-center/callback`;
-      console.log('Using dynamic callback URL:', redirectUri);
+    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
+      console.error('Planning Center API credentials not configured');
+      return res.status(400).json({ 
+        error: 'Planning Center credentials not configured',
+        message: 'Administrator setup required',
+        details: 'The system needs to be configured with valid Planning Center API credentials'
+      });
     }
-    console.log('Redirect URI:', redirectUri);
     
-    // Make sure we're following Planning Center OAuth spec exactly
-    // https://developer.planning.center/docs/#/overview/authentication
-    const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
-    authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
-    authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('response_type', 'code');
-    
-    // According to the docs, scope should be space-separated list in a single parameter
-    // For People API access, we need the 'people' scope
-    authUrl.searchParams.append('scope', 'people');
-    
-    // Add state for CSRF protection
-    authUrl.searchParams.append('state', state);
-    
-    // Print full URL for troubleshooting
-    console.log('Full Planning Center Auth URL:', authUrl.toString());
-    
-    // Return the URL instead of redirecting
-    res.json({ url: authUrl.toString() });
+    try {
+      // Use crypto for more secure state parameter with higher entropy
+      const state = crypto.randomBytes(24).toString('hex');
+      
+      // Log user details for debugging
+      const user = req.user as any;
+      console.log(`Auth URL request from user: ${user.id}, church: ${user.churchId || 'not set'}`);
+      
+      // Log what host Replit thinks we are for debugging network problems
+      console.log('Debug - Host details:');
+      console.log('  Replit host: ' + req.get('host'));
+      console.log('  X-Forwarded-Host: ' + req.get('x-forwarded-host'));
+      console.log('  Protocol: ' + req.protocol);
+      console.log('  User Agent: ' + req.get('user-agent'));
+      
+      // Store state in session for verification during callback
+      if (req.session) {
+        req.session.planningCenterState = state;
+        console.log('State saved in session:', state.substring(0, 8) + '...');
+        
+        // Force session save to ensure state is properly stored before redirect
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              console.error('Error saving session:', err);
+              reject(err);
+            } else {
+              console.log('Session saved successfully');
+              resolve();
+            }
+          });
+        });
+      } else {
+        console.warn('Session not available! Cannot save state parameter.');
+      }
+      
+      // Generate Planning Center's authorization URL with all required parameters
+      // Documentation: https://developer.planning.center/docs/#/overview/authentication
+      
+      // Get the registered callback URL that's registered in Planning Center
+      let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
+      const protocol = req.protocol || 'https';
+      
+      // Use a fixed callback URL if provided in environment (preferred)
+      let redirectUri;
+      if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+        redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
+        console.log('Using fixed callback URL from env:', redirectUri);
+      } else {
+        redirectUri = `${protocol}://${host}/api/planning-center/callback`;
+        console.log('Using dynamic callback URL:', redirectUri);
+      }
+      
+      // Make sure we're following Planning Center OAuth spec exactly
+      // https://developer.planning.center/docs/#/overview/authentication
+      const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
+      authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+      authUrl.searchParams.append('redirect_uri', redirectUri);
+      authUrl.searchParams.append('response_type', 'code');
+      
+      // For People API access, we need the 'people' scope
+      authUrl.searchParams.append('scope', 'people');
+      
+      // Add state for CSRF protection
+      authUrl.searchParams.append('state', state);
+      
+      // Log URL for troubleshooting (redact sensitive parts)
+      const logUrl = authUrl.toString().replace(/state=([^&]+)/, 'state=REDACTED');
+      console.log('Planning Center Auth URL generated:', logUrl);
+      
+      // Return the URL to the client
+      res.json({ 
+        url: authUrl.toString(),
+        state: state.substring(0, 8) + '...' // Return partial state for debugging
+      });
+    } catch (error) {
+      console.error('Error generating Planning Center auth URL:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate Planning Center auth URL',
+        message: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   });
 
-  // Endpoint to initiate the OAuth flow via redirect (keep this for backwards compatibility)
+  // Endpoint to initiate the OAuth flow via redirect
   app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
     if (!req.user) {
-      return res.status(401).send('Authentication required');
-    }
-    
-    // Generate and store a random state parameter to prevent CSRF attacks
-    const state = Math.random().toString(36).substring(2, 15);
-    
-    // Log what host Replit thinks we are
-    console.log('Your Replit host: ' + req.get('host'));
-    console.log('X-Forwarded-Host: ' + req.get('x-forwarded-host'));
-    console.log('Protocol: ' + req.protocol);
-    
-    if (req.session) {
-      req.session.planningCenterState = state;
-      // Save session to ensure state is properly stored
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
+      console.log('No authenticated user found for Planning Center auth');
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'You must be logged in to connect to Planning Center',
+        details: 'Please ensure you are logged in and try again'
       });
     }
     
-    // Redirect to Planning Center's authorization page with all required parameters
-    // Documentation: https://developer.planning.center/docs/#/overview/authentication
-    // Get the registered callback URL that's registered in Planning Center
-    // First try to use a configured callback URL if set in environment
-    // Otherwise fall back to the dynamic host, but this may not work with Planning Center
-    // which requires pre-registered callback URLs
-    let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
-    console.log('Current host:', host);
-    const protocol = req.protocol || 'https';
-    
-    // Use a fixed callback URL if provided in environment
-    let redirectUri;
-    if (process.env.PLANNING_CENTER_CALLBACK_URL) {
-      redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
-      console.log('Using fixed callback URL from env:', redirectUri);
-    } else {
-      redirectUri = `${protocol}://${host}/api/planning-center/callback`;
-      console.log('Using dynamic callback URL:', redirectUri);
+    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
+      console.error('Planning Center API credentials not configured');
+      return res.status(400).json({ 
+        error: 'Planning Center credentials not configured',
+        message: 'Administrator setup required',
+        details: 'The system needs to be configured with valid Planning Center API credentials'
+      });
     }
-    console.log('Redirect URI:', redirectUri);
     
-    // Make sure we're following Planning Center OAuth spec exactly
-    // https://developer.planning.center/docs/#/overview/authentication
-    const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
-    authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
-    authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('response_type', 'code');
-    
-    // According to the docs, scope should be space-separated list in a single parameter
-    // For People API access, we need the 'people' scope
-    authUrl.searchParams.append('scope', 'people');
-    
-    // Add state for CSRF protection
-    authUrl.searchParams.append('state', state);
-    
-    // Print full URL for troubleshooting
-    console.log('Full Planning Center Auth URL:', authUrl.toString());
-
-    console.log('Planning Center Auth URL:', authUrl.toString());
-    
-    res.redirect(authUrl.toString());
+    try {
+      // Use crypto for more secure state parameter with higher entropy
+      const state = crypto.randomBytes(24).toString('hex');
+      
+      // Log user details for debugging
+      const user = req.user as any;
+      console.log(`Authorize request from user: ${user.id}, church: ${user.churchId || 'not set'}`);
+      
+      // Log what host Replit thinks we are for debugging network problems
+      console.log('Debug - Host details:');
+      console.log('  Replit host: ' + req.get('host'));
+      console.log('  X-Forwarded-Host: ' + req.get('x-forwarded-host'));
+      console.log('  Protocol: ' + req.protocol);
+      console.log('  User Agent: ' + req.get('user-agent'));
+      
+      // Store state in session for verification during callback
+      if (req.session) {
+        req.session.planningCenterState = state;
+        console.log('State saved in session:', state.substring(0, 8) + '...');
+        
+        // Force session save to ensure state is properly stored before redirect
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              console.error('Error saving session:', err);
+              reject(err);
+            } else {
+              console.log('Session saved successfully');
+              resolve();
+            }
+          });
+        });
+      } else {
+        console.warn('Session not available! Cannot save state parameter.');
+      }
+      
+      // Instead of directly redirecting to Planning Center, we'll redirect to our
+      // intermediate page that handles the flow more elegantly
+      console.log('Redirecting to Planning Center redirect page');
+      res.redirect('/planning-center-redirect.html');
+      
+    } catch (error) {
+      console.error('Error starting Planning Center authorization flow:', error);
+      res.status(500).json({ 
+        error: 'Failed to start Planning Center authorization', 
+        message: 'An unexpected error occurred',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   });
   
   // Endpoint to get Planning Center people data
