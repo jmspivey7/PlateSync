@@ -755,10 +755,13 @@ const BatchDetailPage = () => {
               <AttestationForm 
                 batchId={batchId}
                 onComplete={() => {
+                  // First set both states to ensure the summary view shows immediately
                   setIsAttesting(false);
-                  // After attestation is complete, trigger a batch refetch and mark as finalized
-                  queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+                  setShowSummary(true);
                   setIsFinalized(true);
+                  
+                  // Then trigger the refetch to update the data
+                  queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
                 }}
               />
             )}
