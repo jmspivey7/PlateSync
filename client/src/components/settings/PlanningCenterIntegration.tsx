@@ -131,7 +131,7 @@ const PlanningCenterIntegration = () => {
             </p>
             <div className="flex justify-center">
               <Button
-                className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
                 onClick={handleConnect}
               >
                 <LinkIcon className="mr-2 h-4 w-4" />
@@ -148,6 +148,7 @@ const PlanningCenterIntegration = () => {
             variant="outline" 
             onClick={() => disconnectMutation.mutate()}
             disabled={disconnectMutation.isPending}
+            className="w-64"
           >
             {disconnectMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -157,7 +158,7 @@ const PlanningCenterIntegration = () => {
             Disconnect
           </Button>
           <Button 
-            className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+            className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
             onClick={() => importMembersMutation.mutate()}
             disabled={isImporting || importMembersMutation.isPending}
           >
