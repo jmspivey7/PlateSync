@@ -47,6 +47,7 @@ import { Separator } from "@/components/ui/separator";
 import PageLayout from "@/components/layout/PageLayout";
 import CsvImporter from "@/components/settings/CsvImporter";
 import EmailTemplates from "@/components/settings/EmailTemplates";
+import PlanningCenterIntegration from "@/components/settings/PlanningCenterIntegration";
 import {
   Select,
   SelectContent,
