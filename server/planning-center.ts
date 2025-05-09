@@ -54,9 +54,12 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Exchange the authorization code for an access token
       // Using URLSearchParams for exact format required by Planning Center OAuth2
-      // Using hardcoded callback URL to match what's registered in Planning Center
-      // This is the exact URL registered in the Planning Center Developer dashboard
-      const redirectUri = `https://replit.com/@jspivey/PlateSync/api/planning-center/callback`;
+      // Using the host from the current request to build our callback URL
+      // This should match what's registered in Planning Center Developer dashboard
+      const host = req.get('host');
+      console.log('Current callback host:', host);
+      const protocol = req.protocol || 'https';
+      const redirectUri = `${protocol}://${host}/api/planning-center/callback`;
       
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
@@ -121,9 +124,12 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Redirect to Planning Center's authorization page with all required parameters
     // Documentation: https://developer.planning.center/docs/#/overview/authentication
-    // Using hardcoded callback URL to match what's registered in Planning Center
-    // This is the exact URL registered in the Planning Center Developer dashboard
-    const redirectUri = `https://replit.com/@jspivey/PlateSync/api/planning-center/callback`;
+    // Using the host from the current request to build our callback URL
+    // This should match what's registered in Planning Center Developer dashboard
+    const host = req.get('host');
+    console.log('Current host:', host);
+    const protocol = req.protocol || 'https';
+    const redirectUri = `${protocol}://${host}/api/planning-center/callback`;
     console.log('Redirect URI:', redirectUri);
     
     // Make sure we're following Planning Center OAuth spec exactly
