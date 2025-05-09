@@ -139,7 +139,14 @@ export function setupPlanningCenterRoutes(app: Express) {
       console.log('req.isAuthenticated():', req.isAuthenticated ? req.isAuthenticated() : 'method not available');
       
       // Store the tokens in the database
-      if (req.user?.id) {
+      // Extract user ID from req.user OR from the session claims
+      const userId = req.user?.id || req.session?.passport?.user?.claims?.sub;
+      const churchId = req.user?.churchId || userId; // Fallback to userId if churchId not set
+      
+      console.log('Using userId for token storage:', userId);
+      console.log('Using churchId for token storage:', churchId);
+      
+      if (userId) {
         // Type casting to handle req.user properties
         const user = req.user as any;
         console.log('User ID from session:', user.id);
@@ -147,8 +154,8 @@ export function setupPlanningCenterRoutes(app: Express) {
         
         try {
           await storage.savePlanningCenterTokens({
-            userId: user.id,
-            churchId: user.churchId,
+            userId: userId,
+            churchId: churchId,
             accessToken: access_token,
             refreshToken: refresh_token,
             expiresAt: new Date(Date.now() + expires_in * 1000),
