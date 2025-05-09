@@ -130,17 +130,27 @@ const PlanningCenterIntegration = () => {
             </p>
             <div className="flex justify-center">
               <button 
-                onClick={() => {
-                  // Clear existing state first
-                  localStorage.removeItem('planningCenterRedirect');
-                  sessionStorage.removeItem('pc_auth_url');
-                  
-                  // Then set fresh flag
-                  localStorage.setItem('planningCenterRedirect', 'true');
-                  
-                  // Navigate directly to the redirect page in the same window
-                  // Using an additional timestamp parameter to avoid browser cache
-                  window.location.href = `${planningCenterRedirectUrl}?t=${Date.now()}`;
+                onClick={async () => {
+                  try {
+                    // Fetch the auth URL directly
+                    const response = await fetch('/api/planning-center/auth-url');
+                    if (!response.ok) {
+                      throw new Error('Failed to get authorization URL');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.url) {
+                      // Open the Planning Center auth URL in a new tab
+                      window.open(data.url, '_blank');
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Connection Error",
+                      description: "Could not connect to Planning Center. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
                 }}
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
               >
