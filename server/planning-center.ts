@@ -25,9 +25,9 @@ const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/aut
 const PLANNING_CENTER_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
-// These will be stored securely
-let PLANNING_CENTER_CLIENT_ID: string;
-let PLANNING_CENTER_CLIENT_SECRET: string;
+// Load credentials from environment variables
+const PLANNING_CENTER_CLIENT_ID = process.env.PLANNING_CENTER_CLIENT_ID || '';
+const PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
 
 // Export the setup function to be called from routes.ts
 export function setupPlanningCenterRoutes(app: Express) {
@@ -250,13 +250,10 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
   });
   
-  // Set the client ID and secret from environment variables
+  // Check if credentials are configured
   app.use((req, res, next) => {
-    if (!PLANNING_CENTER_CLIENT_ID) {
-      PLANNING_CENTER_CLIENT_ID = process.env.PLANNING_CENTER_CLIENT_ID || '';
-    }
-    if (!PLANNING_CENTER_CLIENT_SECRET) {
-      PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
+      console.warn('Planning Center credentials not properly configured');
     }
     next();
   });
