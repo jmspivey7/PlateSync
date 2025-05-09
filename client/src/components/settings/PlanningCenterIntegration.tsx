@@ -1,7 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, Link as LinkIcon, UserPlus, Users } from "lucide-react";
+import { Loader2, Link as LinkIcon, RefreshCw, UserPlus, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
@@ -32,36 +32,37 @@ const PlanningCenterIntegration = () => {
     },
   });
 
-  // Handle connect to Planning Center
-  const handleConnect = async () => {
-    console.log('Connecting to Planning Center...');
-    try {
-      // First get the auth URL from our new endpoint
-      const response = await fetch('/api/planning-center/auth-url');
-      const data = await response.json();
-      
-      if (data.url) {
-        // Open the auth URL in a new tab
-        window.open(data.url, '_blank', 'noopener,noreferrer');
-        
-        // Show a toast notification to explain what's happening
-        toast({
-          title: "Planning Center Authentication",
-          description: "A new tab has opened for Planning Center authentication. Please complete the login process there.",
-          className: "bg-[#69ad4c] text-white",
+  // Instead of using a button with a handler, we'll use a direct link
+  // to solve the popup blocker issues in Replit's environment
+  const [authUrl, setAuthUrl] = React.useState<string | null>(null);
+  const [isLoadingUrl, setIsLoadingUrl] = React.useState(false);
+  
+  // Fetch the auth URL when component mounts
+  React.useEffect(() => {
+    if (!status?.connected && !isLoadingUrl && !authUrl) {
+      setIsLoadingUrl(true);
+      fetch('/api/planning-center/auth-url')
+        .then(response => response.json())
+        .then(data => {
+          if (data.url) {
+            setAuthUrl(data.url);
+          } else {
+            throw new Error('No auth URL received from server');
+          }
+        })
+        .catch(error => {
+          console.error('Failed to get Planning Center auth URL:', error);
+          toast({
+            title: "Connection Error",
+            description: "Could not get Planning Center connection URL. Please try again later.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setIsLoadingUrl(false);
         });
-      } else {
-        throw new Error('No auth URL received from server');
-      }
-    } catch (error) {
-      console.error('Failed to get Planning Center auth URL:', error);
-      toast({
-        title: "Connection Error",
-        description: "Could not connect to Planning Center. Please try again.",
-        variant: "destructive",
-      });
     }
-  };
+  }, [status?.connected, isLoadingUrl, authUrl, toast]);
 
   // Handle import members from Planning Center
   const importMembersMutation = useMutation({
@@ -156,13 +157,30 @@ const PlanningCenterIntegration = () => {
               storing your credentials.
             </p>
             <div className="flex justify-center">
-              <Button
-                className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
-                onClick={handleConnect}
-              >
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Connect to Planning Center
-              </Button>
+              {isLoadingUrl ? (
+                <Button className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64" disabled>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
+                </Button>
+              ) : authUrl ? (
+                <a 
+                  href={authUrl}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
+                >
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  Connect to Planning Center
+                </a>
+              ) : (
+                <Button 
+                  className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
+                  onClick={() => window.location.reload()}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Retry Connection
+                </Button>
+              )}
             </div>
           </div>
         )}

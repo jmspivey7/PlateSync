@@ -3,7 +3,8 @@ import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
 import { db } from './db';
-import { users } from '@shared/schema';
+import { users, planningCenterTokens } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 // Extend Express.User interface to include properties we need
 declare global {
