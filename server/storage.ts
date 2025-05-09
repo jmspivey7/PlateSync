@@ -2155,6 +2155,23 @@ PlateSync Reporting System
       throw error;
     }
   }
+  
+  async updatePlanningCenterLastSync(userId: string, churchId: string): Promise<void> {
+    try {
+      await db
+        .update(planningCenterTokens)
+        .set({
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(planningCenterTokens.userId, userId),
+          eq(planningCenterTokens.churchId, churchId)
+        ));
+    } catch (error) {
+      console.error("Error in updatePlanningCenterLastSync:", error);
+      throw error;
+    }
+  }
 
   async bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number> {
     try {
