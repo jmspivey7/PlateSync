@@ -426,4 +426,5 @@ const BatchSummaryPage = () => {
   );
 };
 
+// Export the BatchSummaryPage component
 export default BatchSummaryPage;
