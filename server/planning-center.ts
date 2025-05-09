@@ -54,12 +54,23 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Exchange the authorization code for an access token
       // Using URLSearchParams for exact format required by Planning Center OAuth2
-      // Using the host from the current request to build our callback URL
-      // This should match what's registered in Planning Center Developer dashboard
-      const host = req.get('host');
+      // Get the registered callback URL that's registered in Planning Center
+      // First try to use a configured callback URL if set in environment
+      // Otherwise fall back to the dynamic host, but this may not work with Planning Center
+      // which requires pre-registered callback URLs
+      let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
       console.log('Current callback host:', host);
       const protocol = req.protocol || 'https';
-      const redirectUri = `${protocol}://${host}/api/planning-center/callback`;
+      
+      // Use a fixed callback URL if provided in environment
+      let redirectUri;
+      if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+        redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
+        console.log('Using fixed callback URL from env:', redirectUri);
+      } else {
+        redirectUri = `${protocol}://${host}/api/planning-center/callback`;
+        console.log('Using dynamic callback URL:', redirectUri);
+      }
       
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
@@ -130,12 +141,23 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Redirect to Planning Center's authorization page with all required parameters
     // Documentation: https://developer.planning.center/docs/#/overview/authentication
-    // Using the host from the current request to build our callback URL
-    // This should match what's registered in Planning Center Developer dashboard
-    const host = req.get('host');
+    // Get the registered callback URL that's registered in Planning Center
+    // First try to use a configured callback URL if set in environment
+    // Otherwise fall back to the dynamic host, but this may not work with Planning Center
+    // which requires pre-registered callback URLs
+    let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
     console.log('Current host:', host);
     const protocol = req.protocol || 'https';
-    const redirectUri = `${protocol}://${host}/api/planning-center/callback`;
+    
+    // Use a fixed callback URL if provided in environment
+    let redirectUri;
+    if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+      redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
+      console.log('Using fixed callback URL from env:', redirectUri);
+    } else {
+      redirectUri = `${protocol}://${host}/api/planning-center/callback`;
+      console.log('Using dynamic callback URL:', redirectUri);
+    }
     console.log('Redirect URI:', redirectUri);
     
     // Make sure we're following Planning Center OAuth spec exactly
