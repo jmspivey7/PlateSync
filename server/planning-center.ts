@@ -2,9 +2,6 @@ import axios from 'axios';
 import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
-import { db, pool } from './db';
-import { users, planningCenterTokens } from '@shared/schema';
-import { eq } from 'drizzle-orm';
 
 // Extend Express.User interface to include properties we need
 declare global {
@@ -20,15 +17,6 @@ declare global {
 declare module 'express-session' {
   interface SessionData {
     planningCenterState?: string;
-    passport?: {
-      user?: {
-        claims?: {
-          sub: string;
-          [key: string]: any;
-        };
-        [key: string]: any;
-      };
-    };
   }
 }
 
@@ -49,35 +37,13 @@ const PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET 
 export function setupPlanningCenterRoutes(app: Express) {
   // OAuth callback endpoint
   app.get('/api/planning-center/callback', async (req: Request, res: Response) => {
-    console.log('=== Planning Center Callback Received ===');
     const { code, state } = req.query;
     
-    console.log('Received Planning Center callback with code:', code ? 'present' : 'missing');
-    console.log('Received Planning Center callback with state:', state);
-    
     if (!code || !state) {
-      console.error('Missing code or state parameter in callback');
       return res.status(400).send('Missing code or state parameter');
     }
     
     try {
-      // Debug session information
-      console.log('Session exists:', req.session ? 'YES' : 'NO');
-      if (req.session) {
-        console.log('Session ID:', req.session.id);
-        console.log('Session cookie:', req.session.cookie ? 'exists' : 'missing');
-        console.log('Session planningCenterState:', req.session.planningCenterState);
-        
-        if (req.session.passport?.user) {
-          console.log('User in session:', 'present');
-          if (req.session.passport.user.claims?.sub) {
-            console.log('User ID from session claims:', req.session.passport.user.claims.sub);
-          }
-        } else {
-          console.log('User in session: missing');
-        }
-      }
-      
       // Verify state parameter to prevent CSRF attacks
       // State should match a value we stored in the user's session
       if (req.session && req.session.planningCenterState !== state) {
@@ -85,11 +51,7 @@ export function setupPlanningCenterRoutes(app: Express) {
           expected: req.session.planningCenterState, 
           received: state 
         });
-        
-        // We'll continue anyway for debugging purposes, but log the error
-        console.warn('Proceeding despite state mismatch for debugging purposes');
-      } else {
-        console.log('State parameter verified successfully');
+        return res.status(403).send('Invalid state parameter');
       }
       
       // Exchange the authorization code for an access token
@@ -135,104 +97,15 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       const { access_token, refresh_token, expires_in } = tokenResponse.data;
       
-      console.log('Received tokens from Planning Center, now saving...');
-      console.log('req.user object:', req.user ? 'exists' : 'undefined');
-      console.log('req.isAuthenticated():', req.isAuthenticated ? req.isAuthenticated() : 'method not available');
-      
       // Store the tokens in the database
-      // Extract user ID from req.user OR from the session claims
-      const userId = req.user?.id || req.session?.passport?.user?.claims?.sub;
-      const churchId = req.user?.churchId || userId; // Fallback to userId if churchId not set
-      
-      console.log('Using userId for token storage:', userId);
-      console.log('Using churchId for token storage:', churchId);
-      
-      if (userId) {
-        // Type casting to handle req.user properties
-        const user = req.user as any;
-        console.log('User ID from session:', user.id);
-        console.log('Church ID from session:', user.churchId);
-        
-        try {
-          await storage.savePlanningCenterTokens({
-            userId: userId,
-            churchId: churchId,
-            accessToken: access_token,
-            refreshToken: refresh_token,
-            expiresAt: new Date(Date.now() + expires_in * 1000),
-          });
-          console.log('Planning Center tokens saved successfully');
-        } catch (dbError) {
-          console.error('Error saving Planning Center tokens:', dbError);
-          throw dbError; // Re-throw to be caught by the outer catch block
-        }
-      } else {
-        console.error('User not authenticated in callback - cannot save tokens');
-        
-        // First try from session claims
-        if (req.session?.passport?.user?.claims?.sub) {
-          const userIdFromSession = req.session.passport.user.claims.sub;
-          console.log('Found user ID in session claims:', userIdFromSession);
-          
-          try {
-            // Attempt to get user details from database
-            const dbUser = await storage.getUser(userIdFromSession);
-            console.log('User details from database:', dbUser ? 'found' : 'not found');
-            
-            if (dbUser) {
-              await storage.savePlanningCenterTokens({
-                userId: dbUser.id,
-                churchId: dbUser.churchId || dbUser.id, // Fallback to user ID if churchId not set
-                accessToken: access_token,
-                refreshToken: refresh_token,
-                expiresAt: new Date(Date.now() + expires_in * 1000),
-              });
-              console.log('Planning Center tokens saved using session user ID');
-            } else {
-              console.error('User not found in database');
-            }
-          } catch (altError) {
-            console.error('Error getting user or saving tokens with alternative approach:', altError);
-          }
-        } else {
-          // LAST RESORT: Attempt to retrieve the last user from the database
-          try {
-            // Query all users in the database
-            const allUsers = await db.select().from(users).limit(10);
-            console.log(`Found ${allUsers.length} users in database`);
-            
-            // Find admin users first, as they're more likely to be the ones connecting Planning Center
-            const adminUsers = allUsers.filter((u: {role: string}) => u.role === 'ADMIN');
-            
-            if (adminUsers.length > 0) {
-              console.log('Found admin users, using first admin for Planning Center tokens');
-              const firstAdmin = adminUsers[0];
-              await storage.savePlanningCenterTokens({
-                userId: firstAdmin.id,
-                churchId: firstAdmin.churchId || firstAdmin.id,
-                accessToken: access_token,
-                refreshToken: refresh_token,
-                expiresAt: new Date(Date.now() + expires_in * 1000),
-              });
-              console.log('Planning Center tokens saved using admin user:', firstAdmin.id);
-            } else if (allUsers.length > 0) {
-              console.log('No admin users found, using first user for Planning Center tokens');
-              const firstUser = allUsers[0];
-              await storage.savePlanningCenterTokens({
-                userId: firstUser.id,
-                churchId: firstUser.churchId || firstUser.id,
-                accessToken: access_token,
-                refreshToken: refresh_token,
-                expiresAt: new Date(Date.now() + expires_in * 1000),
-              });
-              console.log('Planning Center tokens saved using first user:', firstUser.id);
-            } else {
-              console.error('No users found in database, cannot save Planning Center tokens');
-            }
-          } catch (dbError) {
-            console.error('Database error in last resort token saving:', dbError);
-          }
-        }
+      if (req.user?.id) {
+        await storage.savePlanningCenterTokens({
+          userId: req.user.id,
+          churchId: req.user.churchId,
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          expiresAt: new Date(Date.now() + expires_in * 1000),
+        });
       }
       
       // Redirect back to the settings page with success message
@@ -243,10 +116,10 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
   });
   
-  // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
-  app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
+  // Endpoint to initiate the OAuth flow
+  app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).send('Authentication required');
     }
     
     // Generate and store a random state parameter to prevent CSRF attacks
@@ -268,7 +141,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    // Generate Planning Center's authorization URL with all required parameters
+    // Redirect to Planning Center's authorization page with all required parameters
     // Documentation: https://developer.planning.center/docs/#/overview/authentication
     // Get the registered callback URL that's registered in Planning Center
     // First try to use a configured callback URL if set in environment
@@ -305,51 +178,7 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Print full URL for troubleshooting
     console.log('Full Planning Center Auth URL:', authUrl.toString());
-    
-    // Return the URL instead of redirecting
-    res.json({ url: authUrl.toString() });
-  });
-  
-  // Endpoint to initiate the OAuth flow via redirect (keep this for backwards compatibility)
-  app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
-    if (!req.user) {
-      return res.status(401).send('Authentication required');
-    }
-    
-    // Generate and store a random state parameter to prevent CSRF attacks
-    const state = Math.random().toString(36).substring(2, 15);
-    
-    if (req.session) {
-      req.session.planningCenterState = state;
-      // Save session to ensure state is properly stored
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-    }
-    
-    // Redirect to Planning Center's authorization page with all required parameters
-    let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
-    const protocol = req.protocol || 'https';
-    
-    // Use a fixed callback URL if provided in environment
-    let redirectUri;
-    if (process.env.PLANNING_CENTER_CALLBACK_URL) {
-      redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
-    } else {
-      redirectUri = `${protocol}://${host}/api/planning-center/callback`;
-    }
-    
-    // Make sure we're following Planning Center OAuth spec exactly
-    const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
-    authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
-    authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('scope', 'people');
-    authUrl.searchParams.append('state', state);
-    
+
     console.log('Planning Center Auth URL:', authUrl.toString());
     
     res.redirect(authUrl.toString());
@@ -361,11 +190,8 @@ export function setupPlanningCenterRoutes(app: Express) {
       return res.status(401).send('Authentication required');
     }
     
-    // Type casting to handle req.user properties
-    const user = req.user as any;
-    
     try {
-      const tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
+      const tokens = await storage.getPlanningCenterTokens(req.user.id, req.user.churchId);
       
       if (!tokens) {
         return res.status(403).send('Planning Center not connected');
@@ -373,7 +199,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Check if token is expired and refresh if needed
       if (tokens.expiresAt < new Date()) {
-        await refreshPlanningCenterToken(tokens, user.id, user.churchId);
+        await refreshPlanningCenterToken(tokens, req.user.id, req.user.churchId);
       }
       
       // Make API request to get people
@@ -404,31 +230,6 @@ export function setupPlanningCenterRoutes(app: Express) {
       const tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
       
       console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
-      
-      // Add detailed debugging for token retrieval
-      console.log('Token retrieval params: user.id =', user.id, ', user.churchId =', user.churchId);
-      
-      // Use raw SQL query to check if tokens exist in database
-      try {
-        // Use the raw pool to execute SQL directly
-        const { rows: allTokens } = await pool.query(`
-          SELECT * FROM planning_center_tokens
-        `);
-        
-        console.log('All Planning Center tokens in database:', allTokens.length);
-        
-        if (allTokens.length > 0) {
-          allTokens.forEach(token => {
-            console.log('Token:', { 
-              userId: token.user_id, 
-              churchId: token.church_id,
-              expiresAt: token.expires_at
-            });
-          });
-        }
-      } catch (dbError) {
-        console.error('Error querying tokens directly:', dbError);
-      }
       
       if (!tokens) {
         // Show more details in the 'false' response
@@ -559,17 +360,17 @@ export function setupPlanningCenterRoutes(app: Express) {
           email: emails.length > 0 ? emails[0] : null,
           phone: phones.length > 0 ? phones[0] : null,
           isVisitor: false,
-          churchId: user.churchId,
+          churchId: req.user.churchId,
           externalId: personId,
           externalSystem: 'PLANNING_CENTER'
         };
       });
       
       // Import members into the database
-      const importedCount = await storage.bulkImportMembers(members, user.churchId);
+      const importedCount = await storage.bulkImportMembers(members, req.user.churchId);
       
       // Update last sync date
-      await storage.updatePlanningCenterLastSync(user.id, user.churchId);
+      await storage.updatePlanningCenterLastSync(req.user.id, req.user.churchId);
       
       res.json({ success: true, importedCount });
     } catch (error) {
@@ -584,12 +385,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       return res.status(401).send('Authentication required');
     }
     
-    // Type casting to handle req.user properties
-    const user = req.user as any;
-    
     try {
       // Remove the tokens from the database
-      await storage.deletePlanningCenterTokens(user.id, user.churchId);
+      await storage.deletePlanningCenterTokens(req.user.id, req.user.churchId);
       
       res.json({ success: true });
     } catch (error) {
