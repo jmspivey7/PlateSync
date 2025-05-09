@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   Card,
   CardContent,
@@ -108,12 +108,14 @@ const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isAdmin, isMasterAdmin } = useAuth();
+  const search = useSearch();
   // Removed showSuccessToast state to eliminate duplicate notifications
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [sendgridTestMessage, setSendgridTestMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoRemoving, setLogoRemoving] = useState(false);
+  const [claimingTokens, setClaimingTokens] = useState(false);
   
   // Report recipient state
   const [isAddRecipientDialogOpen, setIsAddRecipientDialogOpen] = useState(false);
@@ -415,6 +417,49 @@ const Settings = () => {
       });
     }
   });
+  
+  // Planning Center token claim mutation
+  const claimTokensMutation = useMutation({
+    mutationFn: async (tempKey: string) => {
+      setClaimingTokens(true);
+      const response = await apiRequest(`/api/planning-center/claim-temp-tokens/${tempKey}`, 'GET');
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
+      toast({
+        title: "Connection Successful",
+        description: "Successfully connected to Planning Center!",
+        className: "bg-[#69ad4c] text-white",
+      });
+      setClaimingTokens(false);
+      
+      // Remove the tempKey from the URL to clean it up
+      window.history.replaceState({}, document.title, window.location.pathname);
+    },
+    onError: (error) => {
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : "Failed to connect to Planning Center. Please try again.",
+        variant: "destructive",
+      });
+      setClaimingTokens(false);
+    }
+  });
+  
+  // Check for temp tokens in URL
+  useEffect(() => {
+    // Check if there's a token in the URL query string
+    // The format is ?pc_temp_key=<key>
+    if (search && search.includes('pc_temp_key=')) {
+      const tempKey = new URLSearchParams(search).get('pc_temp_key');
+      
+      if (tempKey && !claimingTokens) {
+        console.log("Found temporary Planning Center token key, claiming tokens...");
+        claimTokensMutation.mutate(tempKey);
+      }
+    }
+  }, [search, claimingTokens]);
   
   // Helper functions for recipient management
   const openAddRecipientDialog = () => {
