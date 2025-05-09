@@ -924,8 +924,8 @@ export function setupPlanningCenterRoutes(app: Express) {
   });
 }
 
-// Helper function to refresh an expired token
-async function refreshPlanningCenterToken(
+// Helper function to refresh an expired token - exported for use in planning-center-auth.ts
+export async function refreshPlanningCenterToken(
   tokens: { refreshToken: string; expiresAt?: Date; createdAt?: Date; updatedAt?: Date },
   userId: string,
   churchId: string

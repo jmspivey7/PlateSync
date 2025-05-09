@@ -2,6 +2,7 @@ import { Express } from "express";
 import axios from "axios";
 import { storage } from "./storage";
 import session from "express-session";
+import { refreshPlanningCenterToken } from "./planning-center";
 
 // Define session interface extension for passport
 declare module "express-session" {
@@ -158,7 +159,7 @@ export function setupPlanningCenterAuth(app: Express) {
 
       // Check if token is expired and refresh if needed
       if (new Date() >= credentials.expiresAt) {
-        await refreshPlanningCenterToken(credentials);
+        await refreshPlanningCenterToken(credentials, user.id, user.churchId);
       }
 
       // Fetch members from Planning Center
@@ -199,75 +200,4 @@ export function setupPlanningCenterAuth(app: Express) {
       res.status(500).json({ message: "Failed to import members" });
     }
   });
-}
-
-// Helper to refresh an expired token
-async function refreshPlanningCenterToken(credentials: any): Promise<void> {
-  try {
-    console.log("Refreshing Planning Center token for user:", credentials.userId, "church:", credentials.churchId);
-    
-    // Check if refresh token is older than 90 days (Planning Center tokens expire after 90 days)
-    const refreshTokenAge = credentials.updatedAt || credentials.createdAt;
-    if (refreshTokenAge) {
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      
-      if (refreshTokenAge < ninetyDaysAgo) {
-        console.warn('Refresh token is older than 90 days, cannot refresh automatically. User needs to re-authorize.');
-        throw new Error('Refresh token expired. User needs to re-authorize with Planning Center.');
-      }
-    }
-    
-    // Using URLSearchParams for form data as required by Planning Center API
-    const params = new URLSearchParams();
-    params.append('grant_type', 'refresh_token');
-    params.append('refresh_token', credentials.refreshToken);
-    params.append('client_id', PLANNING_CENTER_CLIENT_ID);
-    params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
-    
-    console.log("Planning Center refresh token params:", {
-      grant_type: 'refresh_token',
-      refresh_token: credentials.refreshToken ? "Present (value hidden)" : "MISSING",
-      client_id: PLANNING_CENTER_CLIENT_ID ? "Present (value hidden)" : "MISSING",
-    });
-    
-    const response = await axios.post(`${PC_OAUTH_BASE_URL}/token`, params.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-
-    console.log("Planning Center refresh token response received:", response.status);
-    const tokens: PlanningCenterTokens = response.data;
-    
-    // Calculate new expiration
-    const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + tokens.expires_in);
-
-    console.log("Planning Center tokens refreshed successfully, saving to database");
-    
-    // Update stored credentials
-    await storage.savePlanningCenterTokens({
-      userId: credentials.userId,
-      churchId: credentials.churchId,
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiresAt
-    });
-    
-    console.log("Planning Center tokens updated successfully");
-  } catch (error: any) {
-    console.error("Error refreshing Planning Center token:", error.message);
-    
-    if (axios.isAxiosError(error)) {
-      console.error("Axios error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers
-      });
-    }
-    
-    throw new Error(`Failed to refresh Planning Center token: ${error.message}`);
-  }
 }
