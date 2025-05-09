@@ -52,8 +52,8 @@ const AttestBatchPage = () => {
       description: "Count attestation completed successfully",
     });
     
-    // Navigate directly to the counts summary page
-    setLocation('/counts');
+    // Navigate directly to the count detail page
+    setLocation(`/batch/${batchId}`);
   };
 
   if (isLoading) {

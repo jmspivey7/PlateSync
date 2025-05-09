@@ -962,6 +962,8 @@ PlateSync Reporting System
     
     // Add both PDF and CSV attachments if they were generated
     const attachments = [];
+    let pdfAttachment: any = null; // Define the variable to avoid TypeScript errors
+    let csvAttachment: any = null; // Define the variable to avoid TypeScript errors
     if (pdfAttachment) attachments.push(pdfAttachment);
     if (csvAttachment) attachments.push(csvAttachment);
     
