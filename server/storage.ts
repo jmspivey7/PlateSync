@@ -2103,6 +2103,24 @@ PlateSync Reporting System
       return undefined;
     }
   }
+  
+  async clearPlanningCenterTokens(userId: string, churchId: string): Promise<void> {
+    try {
+      console.log(`Clearing Planning Center tokens for user ${userId} and church ${churchId}`);
+      
+      // Delete tokens from the database
+      await db.delete(planningCenterTokens)
+        .where(and(
+          eq(planningCenterTokens.userId, userId),
+          eq(planningCenterTokens.churchId, churchId)
+        ));
+        
+      console.log('Planning Center tokens cleared successfully');
+    } catch (error) {
+      console.error('Error clearing Planning Center tokens:', error);
+      throw error;
+    }
+  }
 
   async savePlanningCenterTokens(data: InsertPlanningCenterTokens): Promise<PlanningCenterTokens> {
     try {

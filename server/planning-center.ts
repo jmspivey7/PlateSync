@@ -35,6 +35,31 @@ const PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET 
 
 // Export the setup function to be called from routes.ts
 export function setupPlanningCenterRoutes(app: Express) {
+  // Add a special debugging endpoint to clear all Planning Center tokens
+  app.post('/api/planning-center/clear-tokens', async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    try {
+      // Determine the churchId (using fallback if needed)
+      const churchId = req.user.churchId || req.user.id;
+      
+      // Clear tokens from the database
+      await storage.deletePlanningCenterTokens(req.user.id, churchId);
+      
+      // Clear any temporary tokens stored in memory
+      if (app.locals.tempPlanningCenterTokens) {
+        app.locals.tempPlanningCenterTokens = {};
+      }
+      
+      console.log('Planning Center tokens cleared for user:', req.user.id);
+      res.json({ success: true, message: 'Planning Center tokens cleared successfully' });
+    } catch (error) {
+      console.error('Error clearing Planning Center tokens:', error);
+      res.status(500).json({ error: 'Failed to clear Planning Center tokens' });
+    }
+  });
   // OAuth callback endpoint
   app.get('/api/planning-center/callback', async (req: Request, res: Response) => {
     const { code, state } = req.query;

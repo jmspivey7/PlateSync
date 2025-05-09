@@ -17,6 +17,7 @@ const PlanningCenterIntegration = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isImporting, setIsImporting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   // Get Planning Center connection status
   const { data: status, isLoading } = useQuery<PlanningCenterStatus>({
