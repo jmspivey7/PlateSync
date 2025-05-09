@@ -422,29 +422,53 @@ const Settings = () => {
   const claimTokensMutation = useMutation({
     mutationFn: async (tempKey: string) => {
       setClaimingTokens(true);
+      console.log("Claiming token with key:", tempKey);
       const response = await apiRequest(`/api/planning-center/claim-temp-tokens/${tempKey}`, 'GET');
       return response;
     },
     onSuccess: () => {
+      console.log("Planning Center token claim successful, refreshing status...");
+      // First invalidate queries
       queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
-      toast({
-        title: "Connection Successful",
-        description: "Successfully connected to Planning Center!",
-        className: "bg-[#69ad4c] text-white",
-      });
+      
+      // Then explicitly refetch the current status
+      queryClient.fetchQuery({ queryKey: ['/api/planning-center/status'] })
+        .then((newStatus: any) => {
+          console.log("New Planning Center status after token claim:", newStatus);
+          if (newStatus?.connected) {
+            toast({
+              title: "Connection Successful",
+              description: "Successfully connected to Planning Center!",
+              className: "bg-[#69ad4c] text-white",
+            });
+          } else {
+            // If still not connected, show a warning
+            toast({
+              title: "Connection Partial",
+              description: "Tokens were claimed but connection status is still pending. Try refreshing the page.",
+              variant: "default",
+            });
+          }
+        })
+        .catch(err => {
+          console.error("Failed to refresh Planning Center status:", err);
+        });
+      
       setClaimingTokens(false);
       
       // Remove the tempKey from the URL to clean it up
       window.history.replaceState({}, document.title, window.location.pathname);
     },
     onError: (error) => {
+      console.error("Planning Center token claim failed:", error);
       toast({
         title: "Connection Failed",
         description: error instanceof Error ? error.message : "Failed to connect to Planning Center. Please try again.",
         variant: "destructive",
       });
       setClaimingTokens(false);
-    }
+    },
+    retry: 2, // Retry up to 2 times if the claim fails
   });
   
   // Check for temp tokens in URL
@@ -454,12 +478,15 @@ const Settings = () => {
     if (search && search.includes('pc_temp_key=')) {
       const tempKey = new URLSearchParams(search).get('pc_temp_key');
       
-      if (tempKey && !claimingTokens) {
+      if (tempKey && !claimingTokens && !claimTokensMutation.isPending) {
         console.log("Found temporary Planning Center token key, claiming tokens...");
-        claimTokensMutation.mutate(tempKey);
+        // Short delay to ensure the page is fully loaded
+        setTimeout(() => {
+          claimTokensMutation.mutate(tempKey);
+        }, 500);
       }
     }
-  }, [search, claimingTokens]);
+  }, [search, claimingTokens, claimTokensMutation.isPending]);
   
   // Helper functions for recipient management
   const openAddRecipientDialog = () => {

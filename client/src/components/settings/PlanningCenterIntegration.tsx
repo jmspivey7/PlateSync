@@ -131,10 +131,16 @@ const PlanningCenterIntegration = () => {
             <div className="flex justify-center">
               <button 
                 onClick={() => {
-                  // Store a flag in localStorage to indicate we're doing a Planning Center redirect
+                  // Clear existing state first
+                  localStorage.removeItem('planningCenterRedirect');
+                  sessionStorage.removeItem('pc_auth_url');
+                  
+                  // Then set fresh flag
                   localStorage.setItem('planningCenterRedirect', 'true');
+                  
                   // Navigate directly to the redirect page in the same window
-                  window.location.href = planningCenterRedirectUrl;
+                  // Using an additional timestamp parameter to avoid browser cache
+                  window.location.href = `${planningCenterRedirectUrl}?t=${Date.now()}`;
                 }}
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
               >

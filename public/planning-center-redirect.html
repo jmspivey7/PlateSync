@@ -67,6 +67,13 @@
     // Fetch the auth URL when the page loads
     window.addEventListener('DOMContentLoaded', async () => {
       try {
+        // Clear any existing PC related flags
+        localStorage.removeItem('planningCenterRedirect');
+        
+        // Clear any cached Planning Center URLs that might have outdated state parameters
+        sessionStorage.removeItem('pc_auth_url');
+        
+        // Get a fresh auth URL from the server
         const response = await fetch('/api/planning-center/auth-url');
         
         if (!response.ok) {
@@ -79,6 +86,9 @@
           // Update the manual redirect button
           const redirectButton = document.getElementById('redirect-button');
           redirectButton.href = data.url;
+          
+          // Store current URL for later tracking
+          sessionStorage.setItem('pc_auth_url', data.url);
           
           // Redirect in the same window instead of a popup
           // This ensures the session is maintained throughout the auth flow

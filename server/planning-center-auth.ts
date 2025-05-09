@@ -7,8 +7,8 @@ import { storage } from "./storage";
 const PLANNING_CENTER_CLIENT_ID = process.env.PLANNING_CENTER_CLIENT_ID || "";
 const PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET || "";
 
-// API base URLs
-const PC_OAUTH_BASE_URL = "https://api.planningcenteronline.com/oauth";
+// API base URLs - Updated to use login.planningcenteronline.com for OAuth
+const PC_OAUTH_BASE_URL = "https://login.planningcenteronline.com/oauth";
 const PC_PEOPLE_API_URL = "https://api.planningcenteronline.com/people/v2";
 
 // Type definitions for tokens
