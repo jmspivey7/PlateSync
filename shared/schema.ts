@@ -69,6 +69,9 @@ export const members = pgTable("members", {
   updatedAt: timestamp("updated_at").defaultNow(),
   notes: text("notes"),
   churchId: varchar("church_id").references(() => users.id),
+  // Fields for external system integration
+  externalId: varchar("external_id", { length: 100 }),
+  externalSystem: varchar("external_system", { length: 50 }),
 });
 
 // Donation types enum
@@ -309,3 +312,26 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).pick
 
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
+
+// Planning Center Tokens table
+export const planningCenterTokens = pgTable("planning_center_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  churchId: varchar("church_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPlanningCenterTokensSchema = createInsertSchema(planningCenterTokens).pick({
+  userId: true,
+  churchId: true,
+  accessToken: true,
+  refreshToken: true,
+  expiresAt: true,
+});
+
+export type InsertPlanningCenterTokens = z.infer<typeof insertPlanningCenterTokensSchema>;
+export type PlanningCenterTokens = typeof planningCenterTokens.$inferSelect;
