@@ -1128,12 +1128,12 @@ const Settings = () => {
             
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Import Members</CardTitle>
+            <CardTitle>Manage Members</CardTitle>
           </CardHeader>
           <CardContent className="pt-1 pb-4">
             <div className="mb-4">
               <p className="text-sm text-gray-600 max-w-[90%]">
-                You can import members in bulk using a CSV file or connect directly to Planning Center Online. To see a list of the most recent member import <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
+                You can manage your members by importing them in bulk using a CSV file or connecting directly to Planning Center Online. To see a list of all members <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
               </p>
             </div>
             
