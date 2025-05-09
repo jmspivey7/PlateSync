@@ -99,11 +99,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Store the tokens in the database
       if (req.user?.id) {
-        // Type casting to handle req.user properties
-        const user = req.user as any;
         await storage.savePlanningCenterTokens({
-          userId: user.id,
-          churchId: user.churchId,
+          userId: req.user.id,
+          churchId: req.user.churchId,
           accessToken: access_token,
           refreshToken: refresh_token,
           expiresAt: new Date(Date.now() + expires_in * 1000),
@@ -192,11 +190,8 @@ export function setupPlanningCenterRoutes(app: Express) {
       return res.status(401).send('Authentication required');
     }
     
-    // Type casting to handle req.user properties
-    const user = req.user as any;
-    
     try {
-      const tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
+      const tokens = await storage.getPlanningCenterTokens(req.user.id, req.user.churchId);
       
       if (!tokens) {
         return res.status(403).send('Planning Center not connected');
@@ -204,7 +199,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Check if token is expired and refresh if needed
       if (tokens.expiresAt < new Date()) {
-        await refreshPlanningCenterToken(tokens, user.id, user.churchId);
+        await refreshPlanningCenterToken(tokens, req.user.id, req.user.churchId);
       }
       
       // Make API request to get people
@@ -365,17 +360,17 @@ export function setupPlanningCenterRoutes(app: Express) {
           email: emails.length > 0 ? emails[0] : null,
           phone: phones.length > 0 ? phones[0] : null,
           isVisitor: false,
-          churchId: user.churchId,
+          churchId: req.user.churchId,
           externalId: personId,
           externalSystem: 'PLANNING_CENTER'
         };
       });
       
       // Import members into the database
-      const importedCount = await storage.bulkImportMembers(members, user.churchId);
+      const importedCount = await storage.bulkImportMembers(members, req.user.churchId);
       
       // Update last sync date
-      await storage.updatePlanningCenterLastSync(user.id, user.churchId);
+      await storage.updatePlanningCenterLastSync(req.user.id, req.user.churchId);
       
       res.json({ success: true, importedCount });
     } catch (error) {
@@ -390,12 +385,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       return res.status(401).send('Authentication required');
     }
     
-    // Type casting to handle req.user properties
-    const user = req.user as any;
-    
     try {
       // Remove the tokens from the database
-      await storage.deletePlanningCenterTokens(user.id, user.churchId);
+      await storage.deletePlanningCenterTokens(req.user.id, req.user.churchId);
       
       res.json({ success: true });
     } catch (error) {
