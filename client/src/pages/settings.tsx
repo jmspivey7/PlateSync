@@ -1133,10 +1133,21 @@ const Settings = () => {
           <CardContent className="pt-1 pb-4">
             <div className="mb-4">
               <p className="text-sm text-gray-600 max-w-[90%]">
-                Upload a CSV file to import members in bulk to the database. Subsequent imports will overwrite the member list. To see a list of the most recent member import <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
+                You can import members in bulk using a CSV file or connect directly to Planning Center Online. To see a list of the most recent member import <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
               </p>
             </div>
-            <CsvImporter />
+            
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-md font-medium mb-3">CSV Import</h3>
+                <CsvImporter />
+              </div>
+              
+              <div className="mt-6">
+                <h3 className="text-md font-medium mb-3">Planning Center Integration</h3>
+                <PlanningCenterIntegration />
+              </div>
+            </div>
           </CardContent>
         </Card>
         

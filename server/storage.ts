@@ -117,6 +117,7 @@ export interface IStorage {
   getPlanningCenterTokens(userId: string, churchId: string): Promise<PlanningCenterTokens | undefined>;
   savePlanningCenterTokens(data: InsertPlanningCenterTokens): Promise<PlanningCenterTokens>;
   deletePlanningCenterTokens(userId: string, churchId: string): Promise<void>;
+  updatePlanningCenterLastSync(userId: string, churchId: string): Promise<void>;
   bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number>;
 }
 

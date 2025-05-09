@@ -126,7 +126,47 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
   });
   
-  // Endpoint to import Planning Center members
+  // Endpoint to get Planning Center connection status
+  app.get('/api/planning-center/status', async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).send('Authentication required');
+    }
+    
+    try {
+      const tokens = await storage.getPlanningCenterTokens(req.user.id, req.user.churchId);
+      
+      if (!tokens) {
+        return res.status(403).json({ connected: false });
+      }
+      
+      // Check if token is expired and refresh if needed
+      if (tokens.expiresAt < new Date()) {
+        await refreshPlanningCenterToken(tokens, req.user.id, req.user.churchId);
+      }
+      
+      // Make API request to get people count
+      const peopleResponse = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people`, {
+        headers: {
+          Authorization: `Bearer ${tokens.accessToken}`
+        },
+        params: {
+          per_page: 1
+        }
+      });
+      
+      // Return connection status with people count if available
+      res.json({
+        connected: true,
+        lastSyncDate: tokens.updatedAt?.toISOString(),
+        peopleCount: peopleResponse.data.meta?.total_count || 0
+      });
+    } catch (error) {
+      console.error('Error fetching Planning Center status:', error);
+      // Still return a valid response structure, just with connected: false
+      res.status(403).json({ connected: false });
+    }
+  });
+
   app.post('/api/planning-center/import', async (req: Request, res: Response) => {
     if (!req.user) {
       return res.status(401).send('Authentication required');
@@ -183,10 +223,30 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Import members into the database
       const importedCount = await storage.bulkImportMembers(members, req.user.churchId);
       
+      // Update last sync date
+      await storage.updatePlanningCenterLastSync(req.user.id, req.user.churchId);
+      
       res.json({ success: true, importedCount });
     } catch (error) {
       console.error('Error importing Planning Center members:', error);
       res.status(500).send('Error importing Planning Center members');
+    }
+  });
+  
+  // Endpoint to disconnect from Planning Center
+  app.post('/api/planning-center/disconnect', async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).send('Authentication required');
+    }
+    
+    try {
+      // Remove the tokens from the database
+      await storage.deletePlanningCenterTokens(req.user.id, req.user.churchId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error disconnecting from Planning Center:', error);
+      res.status(500).send('Error disconnecting from Planning Center');
     }
   });
   
