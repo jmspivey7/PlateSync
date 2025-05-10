@@ -419,8 +419,12 @@ export function setupPlanningCenterRoutes(app: Express) {
           console.log(`Cleaned up ${expiredCount} expired temporary tokens`);
         }
         
-        // Redirect with temporary key for client-side token claiming
-        return res.redirect(`/settings?pc_temp_key=${tempKey}`);
+        // Redirect with temporary key for client-side token claiming and include churchId if available
+        if (churchId) {
+          return res.redirect(`/public/planning-center-redirect.html?success=true&tempKey=${tempKey}&churchId=${churchId}`);
+        } else {
+          return res.redirect(`/public/planning-center-redirect.html?success=true&tempKey=${tempKey}`);
+        }
       }
     } catch (error) {
       // Comprehensive error handling with detailed logging
