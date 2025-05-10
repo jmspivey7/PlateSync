@@ -1217,6 +1217,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSV Import endpoint
+  // Remove duplicate members that have the same first and last name but no contact info
+  app.post('/api/members/remove-duplicates', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const churchId = req.user?.churchId;
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      // Remove duplicates
+      const removedCount = await storage.removeDuplicateMembers(churchId);
+      
+      return res.status(200).json({ 
+        success: true, 
+        message: `Successfully removed ${removedCount} duplicate member records`,
+        removedCount
+      });
+    } catch (error) {
+      console.error('Error removing duplicate members:', error);
+      return res.status(500).json({ message: 'Error removing duplicate members' });
+    }
+  });
+  
   app.post('/api/members/import', isAuthenticated, upload.single('csvFile'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
