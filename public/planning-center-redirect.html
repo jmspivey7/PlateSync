@@ -273,6 +273,18 @@
         // Store the URL
         authUrl = data.url;
         
+        // Store churchId if available
+        const churchId = data.churchId;
+        if (churchId) {
+          console.log('Storing churchId for Planning Center connection:', churchId);
+          sessionStorage.setItem('pc_church_id', churchId);
+          
+          // Add to debug info
+          const churchIdDebug = document.createElement('div');
+          churchIdDebug.textContent = 'ChurchId received: ' + churchId;
+          debugInfo.appendChild(churchIdDebug);
+        }
+        
         // Update the UI
         updateUI('redirecting');
         

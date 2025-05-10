@@ -633,10 +633,14 @@ export function setupPlanningCenterRoutes(app: Express) {
       const logUrl = authUrl.toString().replace(/state=([^&]+)/, 'state=REDACTED');
       console.log('Planning Center Auth URL generated:', logUrl);
       
-      // Return the URL to the client
+      // Get the churchId to include in the response
+      const churchId = user.churchId || user.id;
+      
+      // Return the URL to the client with churchId
       res.json({ 
         url: authUrl.toString(),
-        state: state.substring(0, 8) + '...' // Return partial state for debugging
+        state: state.substring(0, 8) + '...', // Return partial state for debugging
+        churchId: churchId // Include churchId in the response
       });
     } catch (error) {
       console.error('Error generating Planning Center auth URL:', error);
