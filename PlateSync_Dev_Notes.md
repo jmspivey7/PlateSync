@@ -100,13 +100,34 @@ If users experience issues with Planning Center integration, try the following:
    - Click "Disconnect" for PlateSync, then try connecting again
    - This forces Planning Center to treat it as a new authorization request
    
-3. **Important Notes:**
+3. **Mobile Device Authentication Issues:**
+   - Mobile browsers handle redirect flows differently than desktop browsers
+   - If users see raw JSON or "Please wait..." messages:
+     - They should use the "Continue to PlateSync" button on the redirect page
+     - Check browser cache settings - try clearing browser cache if persistent
+     - Try using different mobile browsers (Chrome works well)
+   - Common mobile-specific issues:
+     - Redirect flow gets stuck in a loop
+     - Authorization completes but shows JSON response instead of redirecting
+     - Auth flow appears successful but tokens aren't claimed properly
+     - Authorization page displays but doesn't show as connected in settings
+   - Our solution includes multiple fallback mechanisms:
+     - Form-based redirects (more reliable than location.href on mobile)
+     - Manual "Continue to PlateSync" button with timeout
+     - Fetch API preloading to prime connections
+     - URL/form parameter duplication for cache-busting
+     - Redundant churchId storage in both localStorage and sessionStorage
+
+4. **Technical Implementation Details:**
    - Device-specific handling is essential:
      - Desktop: Use spawned tab approach (`target="_blank"`) for authorization
      - Mobile: Use direct navigation to avoid iframe and window.open issues
    - OAuth token revocation must use proper form URL-encoded format
    - Include client_id AND client_secret when revoking tokens
-   - Always check both client and server logs when debugging connection issues
+   - Always check both client and server logs when debugging connection
+   - Aggressive OAuth parameters used (prompt=login, max_age=0, nonce) to force re-authentication
+   - 2-second delay implemented between disconnect and reconnect attempts
+   - Multiple timestamp parameters added to beat aggressive mobile browser cachingissues
 
 4. **Known Issues and Solutions:**
    - **Authentication Persistence**: Planning Center may maintain login session cookies across disconnects

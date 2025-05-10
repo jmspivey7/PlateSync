@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Planning Center Authorization</title>
   <style>
     body {
@@ -135,6 +138,7 @@
       console.log('Device detection from user agent:', isMobileUserAgent ? 'mobile' : 'desktop');
       
       if (success && tempKey) {
+        // Build the base redirect URL
         let redirectUrl;
         
         // Include churchId in the redirect if available
@@ -144,58 +148,95 @@
           redirectUrl = `/settings?pc_temp_key=${tempKey}`;
         }
         
-        // For mobile devices, add a special parameter to help with mobile-specific handling
-        if (isMobile || isMobileUserAgent) {
-          redirectUrl += '&mobile=true';
-          console.log('Adding mobile=true parameter for mobile-specific handling');
+        // Add timestamp parameter to bust cache regardless of device type
+        const timestamp = Date.now();
+        redirectUrl += `&t=${timestamp}`;
+        
+        // For mobile devices, use a special approach for redirection
+        const finalIsMobile = isMobile || isMobileUserAgent;
+        
+        if (finalIsMobile) {
+          console.log('Using mobile-specific redirect approach');
+          redirectUrl += '&mobile=true'; // Add mobile=true flag
           
-          // Mobile browsers can sometimes display the JSON response directly
-          // Use a more aggressive approach by submitting a form instead of changing location
-          // This approach helps overcome mobile browser quirks with redirects
-          const form = document.createElement('form');
-          form.method = 'get';
-          form.action = '/settings';
-          
-          // Add the temp key as a hidden field
-          const keyInput = document.createElement('input');
-          keyInput.type = 'hidden';
-          keyInput.name = 'pc_temp_key';
-          keyInput.value = tempKey;
-          form.appendChild(keyInput);
-          
-          // Add churchId if available
-          if (churchId) {
-            const churchInput = document.createElement('input');
-            churchInput.type = 'hidden';
-            churchInput.name = 'churchId';
-            churchInput.value = churchId;
-            form.appendChild(churchInput);
+          try {
+            // Try first approach: use fetch() API to preload the destination
+            // This forces the browser to make an HTTP request before changing location
+            console.log('Attempting fetch preload approach...');
+            
+            // The fetch will be canceled when we change location, but it helps "prime" the connection
+            fetch(redirectUrl, { 
+              method: 'GET',
+              headers: { 'Cache-Control': 'no-cache' },
+              mode: 'same-origin'
+            }).then(() => {
+              console.log('Fetch completed, proceeding with form redirect');
+            }).catch(err => {
+              console.log('Fetch preload failed, continuing with form redirect anyway');
+            });
+            
+            // Slight delay after fetch
+            setTimeout(() => {
+              // Use form submission approach which is more reliable on mobile
+              console.log('Using form submission approach for mobile redirect');
+              
+              const form = document.createElement('form');
+              form.method = 'get';
+              form.action = '/settings';
+              
+              // Add all parameters from the redirectUrl
+              const urlParams = new URLSearchParams(redirectUrl.split('?')[1]);
+              for (const [key, value] of urlParams.entries()) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+              }
+              
+              // Add mobile flag again to be certain
+              const mobileInput = document.createElement('input');
+              mobileInput.type = 'hidden';
+              mobileInput.name = 'mobile';
+              mobileInput.value = 'true';
+              form.appendChild(mobileInput);
+              
+              // Add another timestamp to be absolutely certain of uniqueness
+              const timeInput = document.createElement('input');
+              timeInput.type = 'hidden';
+              timeInput.name = 'ts';
+              timeInput.value = (Date.now() + 1).toString(); // +1 to ensure uniqueness from the URL param
+              form.appendChild(timeInput);
+              
+              document.body.appendChild(form);
+              form.submit();
+            }, 200);
+          } catch (error) {
+            console.error('Advanced mobile redirect failed:', error);
+            
+            // Fallback to standard approach if our fancy approach fails
+            console.log('Falling back to standard location.href redirect');
+            redirectUrl += '&fallback=true'; // Add a fallback marker so we know which method was used
+            window.location.href = redirectUrl;
           }
           
-          // Add mobile flag
-          const mobileInput = document.createElement('input');
-          mobileInput.type = 'hidden';
-          mobileInput.name = 'mobile';
-          mobileInput.value = 'true';
-          form.appendChild(mobileInput);
-          
-          // Add timestamp to prevent cache issues
-          const timeInput = document.createElement('input');
-          timeInput.type = 'hidden';
-          timeInput.name = 't';
-          timeInput.value = Date.now().toString();
-          form.appendChild(timeInput);
-          
-          document.body.appendChild(form);
-          console.log('Using form submit approach for mobile redirection');
-          form.submit();
-          return; // Important: don't continue with the regular redirect
+          return; // Don't proceed with standard redirect
         }
         
+        // For desktop, use standard location redirect
         console.log('Redirecting to:', redirectUrl);
         window.location.href = redirectUrl;
       } else {
-        window.location.href = '/settings?planningCenterError=auth_failed';
+        // Error case - no success or tempKey
+        const errorRedirect = '/settings?planningCenterError=auth_failed';
+        const isMobileFallback = isMobile || isMobileUserAgent;
+        
+        // Add mobile flag for error redirect too if needed
+        if (isMobileFallback) {
+          window.location.href = `${errorRedirect}&mobile=true&t=${Date.now()}`;
+        } else {
+          window.location.href = errorRedirect;
+        }
       }
     }
 
