@@ -1,0 +1,16 @@
+{
+  "name": "PlateSync",
+  "short_name": "PlateSync",
+  "description": "Church donation management system",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#69ad4c",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
