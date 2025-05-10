@@ -897,7 +897,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Check if token is expired and refresh if needed
       if (tokens.expiresAt < new Date()) {
         console.log('Token is expired, refreshing...');
-        await refreshPlanningCenterToken(tokens, user.id, user.churchId);
+        await refreshPlanningCenterToken(tokens, statusUser.id, statusUser.churchId);
       }
       
       // Make API request to get people count
@@ -985,9 +985,9 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log(`Fetching Planning Center people page ${pageCount}...`);
         
         // Extract the path from the next page URL
-        const apiPath = nextPageUrl.replace(PLANNING_CENTER_API_BASE, '');
+        const apiPath: string = nextPageUrl.replace(PLANNING_CENTER_API_BASE, '');
         
-        const peopleResponse = await axios.get(`${PLANNING_CENTER_API_BASE}${apiPath}`, {
+        const peopleResponse: any = await axios.get(`${PLANNING_CENTER_API_BASE}${apiPath}`, {
           headers: {
             Authorization: `Bearer ${tokens.accessToken}`
           }
