@@ -82,10 +82,6 @@ export default function Login() {
     setShowPassword(!showPassword);
   };
   
-  const handleLoginWithReplit = () => {
-    window.location.href = "/api/login";
-  };
-  
   // If still loading auth status, show spinner
   if (authLoading) {
     return (
@@ -182,24 +178,6 @@ export default function Login() {
                   Forgot password?
                 </a>
               </div>
-              
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or</span>
-                </div>
-              </div>
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full"
-                onClick={handleLoginWithReplit}
-              >
-                Sign In with Replit (jspivey@spiveyco.com)
-              </Button>
             </form>
           </CardContent>
         </Card>
