@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DuplicateCandidatesList } from "./DuplicateCandidatesList";
 import {
   Table,
   TableBody,

@@ -153,3 +153,106 @@ export async function removeDuplicateMembers(churchId: string): Promise<number> 
   
   return deletedCount;
 }
+
+export type DuplicateCandidateGroup = {
+  name: string;
+  count: number;
+  members: Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+    externalId: string | null;
+    externalSystem: string | null;
+    createdAt: Date;
+  }>;
+};
+
+// Function to find potential duplicate members based on name similarity
+export async function findPotentialDuplicates(churchId: string): Promise<DuplicateCandidateGroup[]> {
+  try {
+    // Find groups of members with the same first and last name
+    const query = sql`
+      WITH name_groups AS (
+        SELECT 
+          "first_name",
+          "last_name",
+          COUNT(*) as member_count
+        FROM 
+          members
+        WHERE 
+          "church_id" = ${churchId}
+        GROUP BY 
+          "first_name", "last_name"
+        HAVING 
+          COUNT(*) > 1
+      )
+      SELECT 
+        m.id, 
+        m.first_name as "firstName", 
+        m.last_name as "lastName", 
+        m.email, 
+        m.phone,
+        m.external_id as "externalId",
+        m.external_system as "externalSystem",
+        m.created_at as "createdAt",
+        ng.member_count as "groupCount"
+      FROM 
+        members m
+      JOIN 
+        name_groups ng 
+        ON m.first_name = ng.first_name 
+        AND m.last_name = ng.last_name
+      WHERE 
+        m.church_id = ${churchId}
+      ORDER BY 
+        m.last_name, 
+        m.first_name, 
+        m.created_at;
+    `;
+    
+    const results = await db.execute(query);
+    
+    if (!Array.isArray(results) || results.length === 0) {
+      return [];
+    }
+    
+    // Group the results by name
+    const duplicateGroups: DuplicateCandidateGroup[] = [];
+    const nameGroups = new Map<string, any[]>();
+    
+    for (const member of results) {
+      const nameKey = `${member.lastName}, ${member.firstName}`;
+      if (!nameGroups.has(nameKey)) {
+        nameGroups.set(nameKey, []);
+      }
+      nameGroups.get(nameKey)?.push(member);
+    }
+    
+    // Convert the map to the expected format
+    for (const [name, members] of nameGroups.entries()) {
+      if (members.length > 1) {
+        duplicateGroups.push({
+          name,
+          count: members.length,
+          members: members.map(m => ({
+            id: m.id,
+            firstName: m.firstName,
+            lastName: m.lastName,
+            email: m.email,
+            phone: m.phone,
+            externalId: m.externalId,
+            externalSystem: m.externalSystem,
+            createdAt: m.createdAt
+          }))
+        });
+      }
+    }
+    
+    return duplicateGroups;
+  } catch (error) {
+    console.error("Error in findPotentialDuplicates:", error);
+    throw error;
+  }
+}

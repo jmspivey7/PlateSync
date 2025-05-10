@@ -1217,6 +1217,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSV Import endpoint
+  // Find potential duplicate members based on name similarity
+  app.get('/api/members/potential-duplicates', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      console.log(`[DUPLICATE FINDER] Finding potential duplicates for churchId ${churchId}`);
+      
+      // Import the function from duplicate-methods.ts
+      const { findPotentialDuplicates } = await import('./duplicate-methods');
+      
+      // Find potential duplicates
+      const duplicateGroups = await findPotentialDuplicates(churchId);
+      
+      console.log(`[DUPLICATE FINDER] Found ${duplicateGroups.length} potential duplicate groups for churchId ${churchId}`);
+      
+      return res.status(200).json({ 
+        success: true, 
+        duplicateGroups
+      });
+    } catch (error) {
+      console.error('Error finding potential duplicate members:', error);
+      return res.status(500).json({ message: 'Error finding potential duplicate members' });
+    }
+  });
+
   // Remove duplicate members that have the same first and last name but no contact info
   app.post('/api/members/remove-duplicates', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
