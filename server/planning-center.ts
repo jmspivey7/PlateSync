@@ -547,20 +547,37 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Explicitly cast req.user to get TypeScript to recognize the properties
     const user = req.user as any;
-    console.log('Checking Planning Center status for user:', user.id, 'church:', user.churchId);
     
     // Debug user object to see what properties are available
     console.log('Full req.user object in status check:', JSON.stringify(req.user, null, 2));
     
-    // Validate and handle missing user ID
-    if (!user.id) {
-      console.error('Missing user ID in request');
+    // Extract user ID from req.user which might be in different formats based on auth method
+    let userId = '';
+    
+    // Check for Replit Auth structure (claims.sub)
+    if (user.claims && user.claims.sub) {
+      userId = user.claims.sub;
+      console.log('Found userId in claims.sub:', userId);
+    } 
+    // Check for local auth structure (id)
+    else if (user.id) {
+      userId = user.id;
+      console.log('Found userId in user.id:', userId);
+    }
+    // If we can't find a user ID, we have a problem
+    else {
+      console.error('Could not extract user ID from user object');
       return res.status(400).json({
         connected: false,
         error: 'invalid_user',
-        message: 'Invalid user data'
+        message: 'Could not determine user identity'
       });
     }
+    
+    // Assign the extracted ID to user.id for consistent usage
+    user.id = userId;
+    
+    console.log('Using user ID:', user.id);
     
     // If churchId is missing, fall back to using userId as churchId
     if (!user.churchId) {
