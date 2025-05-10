@@ -46,19 +46,31 @@ const PlanningCenterIntegration = () => {
           console.log('Stored churchId in storage mechanisms:', response.churchId);
         }
         
-        // Detect if we're on a mobile device
+        // Detect if we're on a mobile device (client-side)
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        // Store device type in session storage for use later in the flow
-        sessionStorage.setItem('planningCenterDeviceType', isMobileDevice ? 'mobile' : 'desktop');
-        console.log('Stored device type in session storage:', isMobileDevice ? 'mobile' : 'desktop');
+        // Use server-provided device detection as a backup/verification
+        const serverDetectedMobile = response.deviceType === 'mobile';
         
-        // Add a timestamp to help with cache-busting
-        const timeStamp = Date.now();
+        // Log both device detections for troubleshooting
+        console.log('Device detection:', {
+          clientSide: isMobileDevice ? 'mobile' : 'desktop',
+          serverSide: response.deviceType || 'unknown'
+        });
+        
+        // Final determination - use client detection primarily, but consider server detection
+        const finalIsMobile = isMobileDevice || serverDetectedMobile;
+        
+        // Store device type in session storage for use later in the flow
+        sessionStorage.setItem('planningCenterDeviceType', finalIsMobile ? 'mobile' : 'desktop');
+        console.log('Final device determination:', finalIsMobile ? 'mobile' : 'desktop');
+        
+        // Add a timestamp to help with cache-busting (use server timestamp if available)
+        const timeStamp = response.timestamp || Date.now();
         localStorage.setItem('planningCenterAuthTimestamp', timeStamp.toString());
         
-        if (isMobileDevice) {
-          console.log('Mobile device detected, using direct navigation');
+        if (finalIsMobile) {
+          console.log('Mobile device detected, using direct navigation approach');
           
           // On mobile, we need to use a different approach
           // First, show the user a toast to indicate we're proceeding

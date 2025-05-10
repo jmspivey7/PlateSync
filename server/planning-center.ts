@@ -701,11 +701,19 @@ export function setupPlanningCenterRoutes(app: Express) {
       const logUrl = authUrl.toString().replace(/state=([^&]+)/, 'state=REDACTED');
       console.log('Planning Center Auth URL generated with churchId:', logUrl);
       
-      // Return the URL to the client with churchId
+      // Check if request is from a mobile device via the user agent
+      const userAgent = req.get('user-agent') || '';
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      
+      console.log('Device detection from user agent:', isMobileDevice ? 'mobile' : 'desktop');
+      
+      // Return the URL to the client with churchId and device type info
       res.json({ 
         url: authUrl.toString(),
         state: state.substring(0, 8) + '...', // Return partial state for debugging
-        churchId: churchId // Include churchId in the response
+        churchId: churchId, // Include churchId in the response
+        deviceType: isMobileDevice ? 'mobile' : 'desktop', // Add device type detection result
+        timestamp: Date.now() // Add timestamp for cache prevention
       });
     } catch (error) {
       console.error('Error generating Planning Center auth URL:', error);
