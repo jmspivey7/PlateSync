@@ -260,10 +260,6 @@ const PlanningCenterIntegration = () => {
                   </>
                 )}
               </Button>
-              
-              <div className="mt-2 text-xs text-gray-500 text-center">
-                Will open Planning Center login in a new tab
-              </div>
             </div>
             
             {/* Troubleshooting section removed */}
