@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Mail, Phone, Trash2 } from "lucide-react";
+import { Loader2, Search, Mail, Phone, Trash2, AlertCircle } from "lucide-react";
 import { Member } from "@shared/schema";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
@@ -48,6 +48,7 @@ const MembersList = ({}: MembersListProps) => {
   const [sortOption, setSortOption] = useState("lastNameAsc");
   const [_, setLocation] = useLocation();
   const [showRemoveDuplicatesConfirm, setShowRemoveDuplicatesConfirm] = useState(false);
+  const [showDuplicateCandidates, setShowDuplicateCandidates] = useState(false);
   const queryClient = useQueryClient();
   
   // Fetch members data
@@ -156,6 +157,15 @@ const MembersList = ({}: MembersListProps) => {
                   <SelectItem value="nameDesc">First Name (Z-A)</SelectItem>
                 </SelectContent>
               </Select>
+              <Button 
+                variant="outline"
+                size="icon"
+                className="text-amber-500 border-amber-500 hover:bg-amber-500/10"
+                onClick={() => setShowDuplicateCandidates(true)}
+                title="View potential duplicate members"
+              >
+                <AlertCircle className="h-4 w-4" />
+              </Button>
               <Button 
                 variant="outline"
                 size="icon"
