@@ -541,16 +541,23 @@ const Settings = () => {
   // Check for temp tokens in URL
   useEffect(() => {
     // Check if there's a token in the URL query string
-    // The format is ?pc_temp_key=<key> possibly with &pc_church_id=<churchId>
+    // The format is ?pc_temp_key=<key> possibly with &churchId=<churchId>
     if (search && search.includes('pc_temp_key=')) {
       const params = new URLSearchParams(search);
       const tempKey = params.get('pc_temp_key');
-      const churchId = params.get('pc_church_id');
+      
+      // Try to get churchId from URL parameter or localStorage (set by the redirect page)
+      const urlChurchId = params.get('churchId');
+      const storedChurchId = localStorage.getItem('planningCenterChurchId');
+      const churchId = urlChurchId || storedChurchId || undefined;
       
       if (tempKey && !claimingTokens && !claimTokensMutation.isPending) {
         console.log("Found temporary Planning Center token key in URL:", tempKey);
         if (churchId) {
-          console.log("Found churchId in URL:", churchId);
+          console.log("Using churchId for token claim:", churchId, 
+            `(source: ${urlChurchId ? 'URL parameter' : 'localStorage'})`);
+        } else {
+          console.log("No churchId found for token claim, will use server defaults");
         }
         
         // Show a toast to inform the user
@@ -574,10 +581,16 @@ const Settings = () => {
               tempKey
             });
           }
+          
+          // Clear the stored churchId from localStorage after using it
+          if (storedChurchId) {
+            localStorage.removeItem('planningCenterChurchId');
+            console.log("Cleared planningCenterChurchId from localStorage");
+          }
         }, 1000);
       }
     }
-  }, [search, claimingTokens, claimTokensMutation.isPending]);
+  }, [search, claimingTokens, claimTokensMutation.isPending, toast]);
   
   // Helper functions for recipient management
   const openAddRecipientDialog = () => {
