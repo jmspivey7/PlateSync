@@ -37,6 +37,140 @@ const PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET 
 
 // Export the setup function to be called from routes.ts
 export function setupPlanningCenterRoutes(app: Express) {
+  // Search for Testerly Jones specifically
+  app.get('/api/planning-center/find-testerly', async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    
+    const user = req.user as any;
+    
+    try {
+      const userId = identifyUser(req.user);
+      const churchId = user.churchId || userId;
+      
+      const tokens = await storage.getPlanningCenterTokens(userId, churchId);
+      
+      if (!tokens) {
+        return res.status(403).json({ success: false, error: 'Planning Center not connected' });
+      }
+      
+      console.log('Searching Planning Center specifically for Testerly Jones...');
+      
+      try {
+        // Directly search for Testerly Jones
+        const searchResponse = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people`, {
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          },
+          params: {
+            'where[search_name]': 'testerly',
+            include: 'emails,phone_numbers'
+          }
+        });
+        
+        console.log('Search response from Planning Center:', 
+          JSON.stringify(searchResponse.data).substring(0, 500) + '...');
+        
+        if (searchResponse.data.data && searchResponse.data.data.length > 0) {
+          console.log(`Found ${searchResponse.data.data.length} people matching "testerly"`);
+          
+          // Process included data (emails, phones)
+          const included = searchResponse.data.included || [];
+          const emailsByOwnerId = new Map();
+          const phonesByOwnerId = new Map();
+          
+          included.forEach((item: any) => {
+            if (item.type === 'Email') {
+              const ownerId = item.relationships?.person?.data?.id;
+              if (ownerId && item.attributes?.address) {
+                if (!emailsByOwnerId.has(ownerId)) {
+                  emailsByOwnerId.set(ownerId, []);
+                }
+                emailsByOwnerId.get(ownerId).push(item.attributes.address);
+              }
+            } else if (item.type === 'PhoneNumber') {
+              const ownerId = item.relationships?.person?.data?.id;
+              if (ownerId && item.attributes?.number) {
+                if (!phonesByOwnerId.has(ownerId)) {
+                  phonesByOwnerId.set(ownerId, []);
+                }
+                phonesByOwnerId.get(ownerId).push(item.attributes.number);
+              }
+            }
+          });
+          
+          // Format results and log details
+          const people = searchResponse.data.data.map((person: any) => {
+            const personId = person.id;
+            const attrs = person.attributes;
+            const emails = emailsByOwnerId.get(personId) || [];
+            const phones = phonesByOwnerId.get(personId) || [];
+            
+            console.log(`Person details: ${attrs.first_name} ${attrs.last_name} (ID: ${personId})`);
+            if (emails.length > 0) console.log(`Email: ${emails[0]}`);
+            if (phones.length > 0) console.log(`Phone: ${phones[0]}`);
+            
+            return {
+              id: personId,
+              firstName: attrs.first_name || '',
+              lastName: attrs.last_name || '',
+              email: emails.length > 0 ? emails[0] : null,
+              phone: phones.length > 0 ? phones[0] : null
+            };
+          });
+          
+          // Import specifically this person
+          const members = people.map((person: any) => ({
+            firstName: person.firstName,
+            lastName: person.lastName,
+            email: person.email,
+            phone: person.phone,
+            isVisitor: false,
+            churchId: churchId,
+            externalId: person.id,
+            externalSystem: 'PLANNING_CENTER'
+          }));
+          
+          // Force import
+          const importedCount = await storage.bulkImportMembers(members, churchId);
+          
+          if (importedCount > 0) {
+            return res.json({
+              success: true,
+              message: `Found and imported ${importedCount} people matching "testerly"!`,
+              people: people
+            });
+          } else {
+            return res.json({
+              success: false,
+              message: 'Found people but import failed',
+              people: people
+            });
+          }
+        } else {
+          return res.json({
+            success: false,
+            message: 'Testerly Jones was not found in Planning Center',
+            people: []
+          });
+        }
+      } catch (searchError) {
+        console.error('Error searching for Testerly Jones:', searchError);
+        return res.status(500).json({
+          success: false,
+          error: searchError instanceof Error ? searchError.message : 'Unknown error'
+        });
+      }
+    } catch (error) {
+      console.error('Error in Testerly search:', error);
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Add a special debugging endpoint to clear all Planning Center tokens
   app.post('/api/planning-center/clear-tokens', async (req: Request, res: Response) => {
     if (!req.user) {
@@ -858,8 +992,8 @@ export function setupPlanningCenterRoutes(app: Express) {
           break;
         }
         
-        // For testing purposes, if we're searching for Testerly, we'll look at all pages
-        if (req.query.debug !== 'true' && pageCount >= 1) {
+        // Always search for Testerly Jones regardless of debug mode
+        if (testerlyInThisBatch.length === 0 && pageCount >= 1 && req.query.debug !== 'true' && req.query.findTesterly !== 'true') {
           console.log('Only importing first page of members for performance');
           break;
         }
