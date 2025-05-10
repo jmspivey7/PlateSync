@@ -187,6 +187,16 @@ const PlanningCenterIntegration = () => {
   // Handle disconnect from Planning Center
   const disconnectMutation = useMutation({
     mutationFn: async () => {
+      // Clear any stored connectionIds from previous sessions
+      try {
+        localStorage.removeItem('planningCenterChurchId');
+        sessionStorage.removeItem('planningCenterChurchId');
+        console.log('Cleared Planning Center storage');
+      } catch (e) {
+        console.error('Error clearing local storage:', e);
+      }
+      
+      // Send the disconnect request
       const response = await apiRequest('/api/planning-center/disconnect', 'POST');
       return response;
     },
@@ -196,7 +206,13 @@ const PlanningCenterIntegration = () => {
         description: "Successfully disconnected from Planning Center.",
         className: "bg-[#69ad4c] text-white",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
+      
+      // Force a delay before allowing reconnection to ensure token revocation completes
+      setIsConnecting(true);
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
+        setIsConnecting(false);
+      }, 2000);
     },
     onError: (error) => {
       toast({

@@ -670,9 +670,19 @@ export function setupPlanningCenterRoutes(app: Express) {
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('response_type', 'code');
       
-      // Force re-authentication by adding the prompt=login parameter
-      // This prevents automatic reconnection without user interaction
+      // Force re-authentication with multiple parameters
+      // prompt=login forces the login screen
       authUrl.searchParams.append('prompt', 'login');
+      
+      // max_age=0 requires re-authentication regardless of session state
+      authUrl.searchParams.append('max_age', '0');
+      
+      // Add a unique nonce to prevent caching
+      const nonce = crypto.randomBytes(16).toString('hex');
+      authUrl.searchParams.append('nonce', nonce);
+      
+      // Add timestamp to prevent caching (most OAuth servers ignore this, but helps with some)
+      authUrl.searchParams.append('t', Date.now().toString());
       
       // For People API access, we need the 'people' scope
       authUrl.searchParams.append('scope', 'people');
@@ -1255,11 +1265,21 @@ export function setupPlanningCenterRoutes(app: Express) {
           // Revoke token with Planning Center
           const revokeUrl = 'https://api.planningcenteronline.com/oauth/revoke';
           try {
+            // Revoke the access token
             await axios.post(revokeUrl, {
               client_id: PLANNING_CENTER_CLIENT_ID,
               token: tokens.accessToken
             });
-            console.log('Successfully revoked token with Planning Center API');
+            console.log('Successfully revoked access token with Planning Center API');
+            
+            // Also revoke the refresh token if available
+            if (tokens.refreshToken) {
+              await axios.post(revokeUrl, {
+                client_id: PLANNING_CENTER_CLIENT_ID, 
+                token: tokens.refreshToken
+              });
+              console.log('Successfully revoked refresh token with Planning Center API');
+            }
           } catch (revokeError) {
             console.error('Error revoking token with Planning Center:', revokeError);
             // Continue with local token deletion even if revoke fails
