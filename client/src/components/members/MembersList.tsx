@@ -58,25 +58,9 @@ const MembersList = ({}: MembersListProps) => {
   const removeDuplicatesMutation = useMutation({
     mutationFn: async () => {
       try {
-        // apiRequest function automatically adds credentials and development headers
-        // The function throws an error if the response is not OK (including 401 Unauthorized)
-        // Use the signature that takes method and URL in correct order
-        const response = await fetch('/api/members/remove-duplicates', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // For development mode, include a special header for authentication bypass
-            ...(import.meta.env.MODE === 'development' ? { 'X-Development-Auth': 'true' } : {})
-          },
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to remove duplicate members');
-        }
-        
-        return await response.json();
+        // Use the apiRequest helper which handles auth credentials automatically
+        const result = await apiRequest('/api/members/remove-duplicates', 'POST');
+        return result;
       } catch (error) {
         console.error("Error in removeDuplicates API request:", error);
         throw error; // Re-throw to trigger onError
