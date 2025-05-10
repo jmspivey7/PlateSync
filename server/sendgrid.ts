@@ -1034,8 +1034,42 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
         html
       });
     } else {
-      // If no custom template found, use default template as fallback
-      console.log('⚠️ No custom password reset template found, using fallback template');
+      // If no custom template found, use the default template with logo (ID 2) first
+      console.log('⚠️ No custom password reset template found, looking for system default template (ID 2)');
+      
+      // Try to get default template ID 2 first
+      const defaultTemplate = await storage.getEmailTemplateById(2);
+      
+      if (defaultTemplate) {
+        console.log('📧 Using default password reset template with ID 2 (with logo)');
+        
+        // Replace template variables with actual values
+        let subject = defaultTemplate.subject || `PlateSync Password Reset Request`;
+        let text = defaultTemplate.bodyText || '';
+        let html = defaultTemplate.bodyHtml || '';
+        
+        // Replace resetUrl placeholder with actual URL
+        const replacements: Record<string, string> = {
+          '{{resetUrl}}': params.resetUrl
+        };
+        
+        Object.entries(replacements).forEach(([key, value]) => {
+          subject = subject.replace(new RegExp(key, 'g'), value);
+          text = text.replace(new RegExp(key, 'g'), value);
+          html = html.replace(new RegExp(key, 'g'), value);
+        });
+        
+        return await sendEmail({
+          to: params.to,
+          from: fromEmail,
+          subject,
+          text,
+          html
+        });
+      }
+      
+      // If template ID 2 wasn't found either, use hardcoded fallback
+      console.log('⚠️ Template ID 2 not found, using hardcoded fallback template');
       
       const subject = `PlateSync Password Reset Request`;
       
@@ -1056,17 +1090,15 @@ Sincerely,
 The PlateSync Team
       `;
       
-      // HTML version that matches the app's UI - using green header
+      // HTML version with PlateSync logo (matching the app's design)
       const html = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Logo and Title -->
-  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+  <div style="padding: 20px; text-align: center;">
+    <img src="https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/739cc76d-9a1c-49b8-81d4-debf5f1bb208/PlateSync+Logo.png" alt="PlateSync Logo" style="width: 270px; margin: 0 auto;">
   </div>
   
   <!-- Main Content -->
-  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+  <div style="padding: 0 30px 30px;">
     <p style="margin-top: 0;">Hello,</p>
     
     <p>We received a request to reset the password for your PlateSync account.</p>
@@ -1086,12 +1118,6 @@ The PlateSync Team
     
     <p style="margin-bottom: 0;">Sincerely,<br>
     <strong>The PlateSync Team</strong></p>
-  </div>
-  
-  <!-- Footer -->
-  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p style="margin: 0;">This is an automated message from PlateSync.</p>
-    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
   </div>
 </div>
       `;
