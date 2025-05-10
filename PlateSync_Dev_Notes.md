@@ -164,8 +164,85 @@ PlateSync uses a PostgreSQL database with the following key tables:
 - `donations`: Individual donation records
 - `batches`: Groups of donations collected during a service
 - `planningCenterTokens`: Stores OAuth tokens for Planning Center integration
+- `emailTemplates`: Customizable email templates for various notifications
 
 See `shared/schema.ts` for complete database schema definitions.
+
+---
+
+## Email Templates
+
+PlateSync uses an email template system that allows for both system-wide default templates and church-specific customized templates. Templates are stored in the database and used by the SendGrid email integration.
+
+### Email Template Types
+
+PlateSync supports the following email template types:
+
+1. **WELCOME_EMAIL**: Sent to new users when they are invited to the system
+   - Template ID 1: System default with PlateSync logo (church_id: 40829937)
+   - Template ID 5: Alternative version with text logo (church_id: 40829937)
+
+2. **PASSWORD_RESET**: Sent when a user requests a password reset
+   - Template ID 2: Professional design with PlateSync logo (church_id: 644128517)
+
+3. **DONATION_CONFIRMATION**: Sent to donors after their donation is recorded
+   - Template ID 3: Receipt template with church logo (church_id: 40829937)
+
+4. **COUNT_REPORT**: Sent to designated recipients when a donation batch is finalized
+   - Template ID 4: Report template with church logo (church_id: 40829937)
+
+### Template Structure
+
+Each email template contains:
+
+- `id`: Unique identifier in the database
+- `template_type`: Type of email (e.g., 'WELCOME_EMAIL', 'PASSWORD_RESET', etc.)
+- `subject`: Email subject line with optional variable placeholders
+- `body_text`: Plain text version of the email content
+- `body_html`: HTML version of the email with styling
+- `church_id`: Associated church ID (determines which template is used)
+
+### Template Assignment and Usage
+
+Templates are assigned to specific churches through the `church_id` field:
+
+1. **Template Lookup Process**:
+   - When sending an email, PlateSync first searches for a template matching the required type AND the specific church_id
+   - If no church-specific template is found, it falls back to a system default template
+   - If no template is found at all, it uses hardcoded fallback templates in the code
+
+2. **Logo Usage**:
+   - Templates with IDs 1 and 2 use the PlateSync logo (`https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/739cc76d-9a1c-49b8-81d4-debf5f1bb208/PlateSync+Logo.png`)
+   - Template 5 uses the text-based version of the logo (`https://platesync.replit.app/logo-with-text.png`)
+   - Donation and count report templates can display the church's own logo
+
+### Password Reset Email Flow
+
+When a user requests a password reset:
+
+1. The system looks for a PASSWORD_RESET template in the user's church (church_id from user record)
+2. If found, it uses that template (with the church's custom design)
+3. If not found, it uses template ID 2 (with the PlateSync logo)
+4. The template variables (like `{{resetUrl}}`) are populated with real values
+5. The email is sent via SendGrid from the configured sender email
+
+### Email Template Management
+
+Templates can be managed through the API:
+
+- `GET /api/email-templates`: List all templates for the church
+- `GET /api/email-templates/:id`: Get a specific template
+- `POST /api/email-templates`: Create a new template
+- `PATCH /api/email-templates/:id`: Update an existing template
+- `GET /api/email-templates/type/:type`: Get template by type
+
+Only ADMIN users can manage email templates for their church.
+
+### Important Notes
+
+1. The template with ID 2 (PASSWORD_RESET) is specifically assigned to church_id 644128517 to ensure all users receive a professional password reset email with the PlateSync logo
+2. Template customization should preserve the variables (enclosed in double curly braces) to ensure dynamic content works correctly
+3. To test email templates, use the `/api/test-email` endpoint which sends a test email without affecting real data
 
 ---
 
