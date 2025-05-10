@@ -1264,24 +1264,50 @@ export function setupPlanningCenterRoutes(app: Express) {
           
           // Revoke token with Planning Center
           const revokeUrl = 'https://api.planningcenteronline.com/oauth/revoke';
+          
           try {
-            // Revoke the access token
-            await axios.post(revokeUrl, {
-              client_id: PLANNING_CENTER_CLIENT_ID,
-              token: tokens.accessToken
+            // Correctly format token revocation data
+            // Planning Center requires the token as form data, not JSON
+            const formDataAccess = new URLSearchParams();
+            formDataAccess.append('client_id', PLANNING_CENTER_CLIENT_ID);
+            formDataAccess.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+            formDataAccess.append('token', tokens.accessToken);
+            
+            // Make request with proper Content-Type
+            console.log('Revoking access token with Planning Center...');
+            const accessResponse = await axios.post(revokeUrl, formDataAccess, {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              }
             });
+            
+            console.log('Access token revocation response:', accessResponse.status, accessResponse.statusText);
             console.log('Successfully revoked access token with Planning Center API');
             
             // Also revoke the refresh token if available
             if (tokens.refreshToken) {
-              await axios.post(revokeUrl, {
-                client_id: PLANNING_CENTER_CLIENT_ID, 
-                token: tokens.refreshToken
+              // Create new form data for refresh token
+              const formDataRefresh = new URLSearchParams();
+              formDataRefresh.append('client_id', PLANNING_CENTER_CLIENT_ID);
+              formDataRefresh.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+              formDataRefresh.append('token', tokens.refreshToken);
+              
+              console.log('Revoking refresh token with Planning Center...');
+              const refreshResponse = await axios.post(revokeUrl, formDataRefresh, {
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                }
               });
+              
+              console.log('Refresh token revocation response:', refreshResponse.status, refreshResponse.statusText);
               console.log('Successfully revoked refresh token with Planning Center API');
             }
           } catch (revokeError) {
-            console.error('Error revoking token with Planning Center:', revokeError);
+            console.error('Error revoking token with Planning Center:', revokeError.message);
+            if (revokeError.response) {
+              console.error('Response status:', revokeError.response.status);
+              console.error('Response data:', revokeError.response.data);
+            }
             // Continue with local token deletion even if revoke fails
           }
         }
