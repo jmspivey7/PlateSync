@@ -35,44 +35,13 @@ const MembersList = ({}: MembersListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("lastNameAsc");
   const [_, setLocation] = useLocation();
-  const [showRemoveDuplicatesConfirm, setShowRemoveDuplicatesConfirm] = useState(false);
-  const [showDuplicateCandidates, setShowDuplicateCandidates] = useState(false);
-  const queryClient = useQueryClient();
   
   // Fetch members data
   const { data: members, isLoading, isError } = useQuery<Member[]>({
     queryKey: ['/api/members'],
   });
   
-  // Remove duplicates mutation
-  const removeDuplicatesMutation = useMutation({
-    mutationFn: async () => {
-      try {
-        // Use the apiRequest helper which handles auth credentials automatically
-        const result = await apiRequest('/api/members/remove-duplicates', 'POST');
-        return result;
-      } catch (error) {
-        console.error("Error in removeDuplicates API request:", error);
-        throw error; // Re-throw to trigger onError
-      }
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Success",
-        description: `Successfully removed ${data.removedCount} duplicate member records`,
-        variant: "default",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/members'] });
-    },
-    onError: (error) => {
-      console.error('Error in removeDuplicatesMutation:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to remove duplicate members",
-        variant: "destructive",
-      });
-    }
-  });
+  // No longer needed - duplicate removal is now done automatically
   
   if (isError) {
     toast({
@@ -150,39 +119,7 @@ const MembersList = ({}: MembersListProps) => {
         </CardContent>
       </Card>
       
-      {/* Alert dialog for confirmation */}
-      <AlertDialog open={showRemoveDuplicatesConfirm} onOpenChange={setShowRemoveDuplicatesConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Duplicate Members</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will identify and remove duplicate members that have the same name but no contact information (email/phone).
-              Only duplicates will be removed, keeping one record for each unique person.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                removeDuplicatesMutation.mutate();
-              }}
-              disabled={removeDuplicatesMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {removeDuplicatesMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Remove Duplicates"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
+
 
       
       {/* Members List */}
@@ -255,11 +192,7 @@ const MembersList = ({}: MembersListProps) => {
 
         </>
       )}
-      {/* Duplicate Candidates Dialog */}
-      <DuplicateCandidatesList 
-        open={showDuplicateCandidates} 
-        onOpenChange={setShowDuplicateCandidates} 
-      />
+
     </div>
   );
 };
