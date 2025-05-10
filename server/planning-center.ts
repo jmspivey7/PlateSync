@@ -19,6 +19,7 @@ declare module 'express-session' {
   interface SessionData {
     planningCenterState?: string;
     planningCenterChurchId?: string;
+    planningCenterUserId?: string;
   }
 }
 
@@ -615,17 +616,20 @@ export function setupPlanningCenterRoutes(app: Express) {
       userId = user.claims.sub;
       console.log('Found userId in claims.sub:', userId);
     } 
-    // Try alternatives for username-based auth
-    else if (user.username) {
-      // Try to look up user ID by username
+    // Try alternatives for username/email-based auth
+    else if (user.username || user.email) {
+      // Use email if available, otherwise try username
+      const emailToCheck = user.email || user.username;
+      
+      // Try to look up user by email
       try {
-        const foundUser = await storage.getUserByUsername(user.username);
+        const foundUser = await storage.getUserByEmail(emailToCheck);
         if (foundUser && foundUser.id) {
           userId = foundUser.id;
-          console.log('Found userId by looking up username:', userId);
+          console.log('Found userId by looking up email:', userId);
         }
       } catch (err) {
-        console.error('Error looking up user by username:', err);
+        console.error('Error looking up user by email:', err);
       }
     }
     // Check for local auth structure (id)
