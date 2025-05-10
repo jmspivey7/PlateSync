@@ -657,7 +657,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       authUrl.searchParams.append('state', state);
       
       // Get the churchId to include in both the URL and response
-      const churchId = user.churchId || user.id;
+      const churchId = authUrlUser.churchId || authUrlUser.id;
       
       // Add churchId as a custom parameter to be passed through the OAuth flow
       // Planning Center will include this in the callback
@@ -805,14 +805,14 @@ export function setupPlanningCenterRoutes(app: Express) {
     let userId = '';
     
     // Check for Replit Auth structure (claims.sub)
-    if (user.claims && user.claims.sub) {
-      userId = user.claims.sub;
+    if (statusUser.claims && statusUser.claims.sub) {
+      userId = statusUser.claims.sub;
       console.log('Found userId in claims.sub:', userId);
     } 
     // Try alternatives for username/email-based auth
-    else if (user.username || user.email) {
+    else if (statusUser.username || statusUser.email) {
       // Use email if available, otherwise try username
-      const emailToCheck = user.email || user.username;
+      const emailToCheck = statusUser.email || statusUser.username;
       
       // Try to look up user by email
       try {
@@ -826,8 +826,8 @@ export function setupPlanningCenterRoutes(app: Express) {
       }
     }
     // Check for local auth structure (id)
-    else if (user.id) {
-      userId = user.id;
+    else if (statusUser.id) {
+      userId = statusUser.id;
       console.log('Found userId in user.id:', userId);
     }
     // If we can't find a user ID, we have a problem
@@ -841,20 +841,20 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    // Assign the extracted ID to user.id for consistent usage
-    user.id = userId;
+    // Assign the extracted ID to statusUser.id for consistent usage
+    statusUser.id = userId;
     console.log('Successfully identified user with ID:', userId);
     
-    console.log('Using user ID:', user.id);
+    console.log('Using user ID:', statusUser.id);
     
     // If churchId is missing, fall back to using userId as churchId
-    if (!user.churchId) {
+    if (!statusUser.churchId) {
       console.log('No churchId found in user object, using user ID as fallback');
-      user.churchId = user.id;
-      console.log(`User ${user.id} has churchId ${user.churchId} directly assigned`);
+      statusUser.churchId = statusUser.id;
+      console.log(`User ${statusUser.id} has churchId ${statusUser.churchId} directly assigned`);
     }
     
-    console.log('Using churchId for token lookup:', user.churchId);
+    console.log('Using churchId for token lookup:', statusUser.churchId);
     
     try {
       // Try to get tokens with churchId first (preferred)
