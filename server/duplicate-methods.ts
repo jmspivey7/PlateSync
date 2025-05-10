@@ -123,16 +123,16 @@ export async function removeDuplicateMembers(churchId: string): Promise<number> 
         SELECT 
           id,
           ROW_NUMBER() OVER (
-            PARTITION BY "firstName", "lastName", "churchId" 
+            PARTITION BY "first_name", "last_name", "church_id" 
             ORDER BY 
-              CASE WHEN "externalId" IS NOT NULL THEN 0 ELSE 1 END,
+              CASE WHEN "external_id" IS NOT NULL THEN 0 ELSE 1 END,
               CASE WHEN "email" IS NOT NULL OR "phone" IS NOT NULL THEN 0 ELSE 1 END,
-              "createdAt"
+              "created_at"
           ) as row_num
         FROM 
           members
         WHERE 
-          "churchId" = ${churchId}
+          "church_id" = ${churchId}
           AND ("email" IS NULL OR "email" = '')
           AND ("phone" IS NULL OR "phone" = '')
       )
@@ -144,7 +144,8 @@ export async function removeDuplicateMembers(churchId: string): Promise<number> 
     `;
     
     const result = await db.execute(query);
-    deletedCount = result.length;
+    // The result will be an array of objects with the deleted IDs
+    deletedCount = Array.isArray(result) ? result.length : 0;
   } catch (error) {
     console.error("Error in removeDuplicateMembers:", error);
     throw error;
