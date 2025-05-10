@@ -37,6 +37,15 @@ export function DuplicateCandidatesList({ open, onOpenChange }: DuplicateCandida
 
   const { data, isLoading, error } = useQuery<{ success: boolean; duplicateGroups: DuplicateCandidateGroup[] }>({
     queryKey: ['/api/members/potential-duplicates'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('/api/members/potential-duplicates', 'GET');
+        return response;
+      } catch (error) {
+        console.error('Error fetching duplicate candidates:', error);
+        throw error;
+      }
+    },
     enabled: open,
     refetchOnWindowFocus: false,
   });
