@@ -108,13 +108,34 @@
 
     // Function to redirect to settings page
     function redirectToSettings() {
+      // Get device type from URL parameters
+      const deviceType = params.get('deviceType') || 'desktop';
+      const isMobile = deviceType === 'mobile';
+      
+      console.log('Device type from URL:', deviceType);
+      
+      // Also detect device type from user agent as a fallback
+      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log('Device detection from user agent:', isMobileUserAgent ? 'mobile' : 'desktop');
+      
       if (success && tempKey) {
+        let redirectUrl;
+        
         // Include churchId in the redirect if available
         if (churchId) {
-          window.location.href = `/settings?pc_temp_key=${tempKey}&churchId=${churchId}`;
+          redirectUrl = `/settings?pc_temp_key=${tempKey}&churchId=${churchId}`;
         } else {
-          window.location.href = `/settings?pc_temp_key=${tempKey}`;
+          redirectUrl = `/settings?pc_temp_key=${tempKey}`;
         }
+        
+        // For mobile devices, add a special parameter to help with mobile-specific handling
+        if (isMobile || isMobileUserAgent) {
+          redirectUrl += '&mobile=true';
+          console.log('Adding mobile=true parameter for mobile-specific handling');
+        }
+        
+        console.log('Redirecting to:', redirectUrl);
+        window.location.href = redirectUrl;
       } else {
         window.location.href = '/settings?planningCenterError=auth_failed';
       }

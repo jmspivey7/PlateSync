@@ -455,11 +455,19 @@ export function setupPlanningCenterRoutes(app: Express) {
         }
         
         // Redirect with temporary key for client-side token claiming and include churchId if available
+        // Also account for mobile devices with a device type parameter
+        let redirectUrl = `/planning-center-redirect.html?success=true&tempKey=${tempKey}`;
+        
+        // Add churchId if available
         if (churchId) {
-          return res.redirect(`/planning-center-redirect.html?success=true&tempKey=${tempKey}&churchId=${churchId}`);
-        } else {
-          return res.redirect(`/planning-center-redirect.html?success=true&tempKey=${tempKey}`);
+          redirectUrl += `&churchId=${churchId}`;
         }
+        
+        // Add device type for specialized handling
+        redirectUrl += `&deviceType=${isMobileDevice ? 'mobile' : 'desktop'}`;
+        
+        console.log(`Redirecting to: ${redirectUrl} (${isMobileDevice ? 'mobile' : 'desktop'} device)`);
+        return res.redirect(redirectUrl);
       }
     } catch (error) {
       // Comprehensive error handling with detailed logging

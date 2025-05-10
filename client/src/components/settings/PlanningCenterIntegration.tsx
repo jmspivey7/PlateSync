@@ -89,8 +89,25 @@ const PlanningCenterIntegration = () => {
   // Check URL parameters for connection status
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    
+    // Check if the request is coming from a mobile device
+    const isMobileParam = params.has('mobile') && params.get('mobile') === 'true';
+    
+    // Also detect mobile device directly using user agent as fallback
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Log device detection for debugging
+    console.log('Device detection:', {
+      fromUrlParam: isMobileParam ? 'mobile' : 'desktop', 
+      fromUserAgent: isMobileUserAgent ? 'mobile' : 'desktop'
+    });
+    
+    // Process connection status
     if (params.has('planningCenterConnected')) {
       setConnectionStatus('success');
+      
+      // Refresh connection status to ensure we have the latest data
+      queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
       
       // Clear the URL parameter after 5 seconds
       setTimeout(() => {
@@ -100,6 +117,17 @@ const PlanningCenterIntegration = () => {
       }, 5000);
     } else if (params.has('planningCenterError')) {
       setConnectionStatus('error');
+      
+      // Get error details if available
+      const errorType = params.get('planningCenterError');
+      const errorDescription = params.get('error_description');
+      
+      if (errorType || errorDescription) {
+        console.error('Planning Center connection error:', { 
+          type: errorType, 
+          description: errorDescription 
+        });
+      }
       
       // Clear the URL parameter after 5 seconds
       setTimeout(() => {
