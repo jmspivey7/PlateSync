@@ -1230,18 +1230,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DUPLICATE FINDER] Finding potential duplicates for churchId ${churchId}`);
       
-      // Import the function from duplicate-methods.ts
-      const { findPotentialDuplicates } = await import('./duplicate-methods');
-      
-      // Find potential duplicates
-      const duplicateGroups = await findPotentialDuplicates(churchId);
-      
-      console.log(`[DUPLICATE FINDER] Found ${duplicateGroups.length} potential duplicate groups for churchId ${churchId}`);
-      
-      return res.status(200).json({ 
-        success: true, 
-        duplicateGroups
-      });
+      try {
+        // Load the function directly to avoid dynamic import issues
+        const { findPotentialDuplicates } = require('./duplicate-methods');
+        
+        // Find potential duplicates
+        const duplicateGroups = await findPotentialDuplicates(churchId);
+        
+        console.log(`[DUPLICATE FINDER] Found ${duplicateGroups.length} potential duplicate groups for churchId ${churchId}`);
+        
+        return res.status(200).json({ 
+          success: true, 
+          duplicateGroups
+        });
+      } catch (importError) {
+        console.error("Error loading duplicate-methods module:", importError);
+        return res.status(500).json({ message: 'Error loading duplicate detection module' });
+      }
     } catch (error) {
       console.error('Error finding potential duplicate members:', error);
       return res.status(500).json({ message: 'Error finding potential duplicate members' });
