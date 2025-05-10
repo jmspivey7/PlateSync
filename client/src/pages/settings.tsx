@@ -420,9 +420,9 @@ const Settings = () => {
   
   // Planning Center token claim mutation
   const claimTokensMutation = useMutation({
-    mutationFn: async (tempKey: string) => {
+    mutationFn: async ({ tempKey, churchId }: { tempKey: string, churchId?: string }) => {
       setClaimingTokens(true);
-      console.log("Claiming token with key:", tempKey);
+      console.log("Claiming token with key:", tempKey, churchId ? `and churchId: ${churchId}` : '');
       
       // Add retry logic directly in the mutation function to improve reliability
       let retries = 0;
@@ -437,7 +437,13 @@ const Settings = () => {
             await new Promise(resolve => setTimeout(resolve, 1000 * retries));
           }
           
-          const response = await apiRequest(`/api/planning-center/claim-temp-tokens/${tempKey}`, 'GET');
+          // Build the URL with churchId parameter if available
+          let url = `/api/planning-center/claim-temp-tokens/${tempKey}`;
+          if (churchId) {
+            url += `?churchId=${encodeURIComponent(churchId)}`;
+          }
+          
+          const response = await apiRequest(url, 'GET');
           console.log("Token claim API response:", response);
           return response;
         } catch (error) {
@@ -535,13 +541,17 @@ const Settings = () => {
   // Check for temp tokens in URL
   useEffect(() => {
     // Check if there's a token in the URL query string
-    // The format is ?pc_temp_key=<key>
+    // The format is ?pc_temp_key=<key> possibly with &pc_church_id=<churchId>
     if (search && search.includes('pc_temp_key=')) {
       const params = new URLSearchParams(search);
       const tempKey = params.get('pc_temp_key');
+      const churchId = params.get('pc_church_id');
       
       if (tempKey && !claimingTokens && !claimTokensMutation.isPending) {
         console.log("Found temporary Planning Center token key in URL:", tempKey);
+        if (churchId) {
+          console.log("Found churchId in URL:", churchId);
+        }
         
         // Show a toast to inform the user
         toast({
@@ -552,7 +562,18 @@ const Settings = () => {
         // Short delay to ensure the page is fully loaded and auth is established
         setTimeout(() => {
           console.log("Claiming tokens now...");
-          claimTokensMutation.mutate(tempKey);
+          
+          // Call the claim token mutation with or without churchId
+          if (churchId) {
+            claimTokensMutation.mutate({
+              tempKey,
+              churchId
+            });
+          } else {
+            claimTokensMutation.mutate({
+              tempKey
+            });
+          }
         }, 1000);
       }
     }

@@ -1219,9 +1219,14 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
     
     const { tempKey } = req.params;
+    // Extract churchId from query parameter if it's present
+    const queryChurchId = req.query.churchId as string | undefined;
     
     // Log more details about the temporary token request
     console.log(`Attempting to claim Planning Center token with key: ${tempKey}`);
+    if (queryChurchId) {
+      console.log(`ChurchId from query parameter: ${queryChurchId}`);
+    }
     console.log(`Temporary tokens available: ${app.locals.tempPlanningCenterTokens ? 'YES' : 'NO'}`);
     
     if (app.locals.tempPlanningCenterTokens) {
@@ -1264,9 +1269,14 @@ export function setupPlanningCenterRoutes(app: Express) {
       const storedChurchId = app.locals.tempPlanningCenterTokens[tempKey].churchId;
       console.log(`Found churchId in temporary token: ${storedChurchId || 'none'}`);
       
-      // Determine churchId (prioritize stored token churchId, then user.churchId, then fallback to user.id)
-      const churchId = storedChurchId || user.churchId || user.id;
-      console.log(`Using churchId for token storage: ${churchId}`);
+      // Determine churchId (prioritize query param, then stored token churchId, then user.churchId, then fallback to user.id)
+      const churchId = queryChurchId || storedChurchId || user.churchId || user.id;
+      console.log(`Using churchId for token storage: ${churchId} (source: ${
+        queryChurchId ? 'query parameter' : 
+        storedChurchId ? 'temporary token' : 
+        user.churchId ? 'user profile' : 
+        'user ID fallback'
+      })`);
       
       // First verify that the tokens are valid by making a test request
       try {
