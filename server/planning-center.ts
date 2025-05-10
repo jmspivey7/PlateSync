@@ -217,6 +217,11 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Extract all query parameters for detailed logging
       const { code, state, error, error_description, churchId } = req.query;
       
+      // Detect if we're being accessed from a mobile device
+      const userAgent = req.get('user-agent') || '';
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      console.log('Device type detected in callback:', isMobileDevice ? 'Mobile' : 'Desktop');
+      
       // Store churchId from the request in the session for token claim step
       if (churchId && req.session) {
         req.session.planningCenterChurchId = String(churchId);
@@ -385,8 +390,15 @@ export function setupPlanningCenterRoutes(app: Express) {
             return res.redirect('/settings?planningCenterError=token_storage_failed');
           }
           
-          // Successfully saved tokens - redirect to success page
-          return res.redirect('/settings?planningCenterConnected=true');
+          // Successfully saved tokens - redirect based on device type
+          // Mobile devices need a more reliable redirect
+          if (isMobileDevice) {
+            // For mobile devices, use a simpler and more reliable redirect
+            return res.redirect('/settings?planningCenterConnected=true&mobile=true');
+          } else {
+            // Desktop devices work fine with the standard redirect
+            return res.redirect('/settings?planningCenterConnected=true');
+          }
         } catch (tokenSaveError) {
           console.error('Error saving Planning Center tokens:', tokenSaveError);
           return res.redirect('/settings?planningCenterError=token_save_failed');
