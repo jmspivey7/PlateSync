@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
   Card,
@@ -21,11 +21,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Mail, Phone } from "lucide-react";
+import { Loader2, Search, Mail, Phone, Trash2 } from "lucide-react";
 import { Member } from "@shared/schema";
 import { format } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
 
 interface MembersListProps {}
 
@@ -34,10 +46,35 @@ const MembersList = ({}: MembersListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("lastNameAsc");
   const [_, setLocation] = useLocation();
+  const [showRemoveDuplicatesConfirm, setShowRemoveDuplicatesConfirm] = useState(false);
+  const queryClient = useQueryClient();
   
   // Fetch members data
   const { data: members, isLoading, isError } = useQuery<Member[]>({
     queryKey: ['/api/members'],
+  });
+  
+  // Remove duplicates mutation
+  const removeDuplicatesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('/api/members/remove-duplicates', 'POST');
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: `Successfully removed ${data.removedCount} duplicate member records`,
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/members'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove duplicate members",
+        variant: "destructive",
+      });
+    }
   });
   
   if (isError) {
@@ -96,12 +133,12 @@ const MembersList = ({}: MembersListProps) => {
                 />
               </div>
             </div>
-            <div>
+            <div className="flex justify-between items-center gap-2">
               <Select
                 value={sortOption}
                 onValueChange={setSortOption}
               >
-                <SelectTrigger>
+                <SelectTrigger className="flex-grow">
                   <SelectValue placeholder="Sort By" />
                 </SelectTrigger>
                 <SelectContent>
@@ -111,10 +148,52 @@ const MembersList = ({}: MembersListProps) => {
                   <SelectItem value="nameDesc">First Name (Z-A)</SelectItem>
                 </SelectContent>
               </Select>
+              <Button 
+                variant="outline"
+                size="icon"
+                className="text-destructive border-destructive hover:bg-destructive/10"
+                onClick={() => setShowRemoveDuplicatesConfirm(true)}
+                title="Clean up duplicate members"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+      
+      {/* Alert dialog for confirmation */}
+      <AlertDialog open={showRemoveDuplicatesConfirm} onOpenChange={setShowRemoveDuplicatesConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Duplicate Members</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will identify and remove duplicate members that have the same name but no contact information (email/phone).
+              Only duplicates will be removed, keeping one record for each unique person.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                removeDuplicatesMutation.mutate();
+              }}
+              disabled={removeDuplicatesMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removeDuplicatesMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Remove Duplicates"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
 
       
