@@ -68,13 +68,27 @@
     </div>
     
     <!-- Mobile instructions - shown only on mobile devices -->
-    <div id="mobileInstructions" style="display: none; margin-top: 25px; padding: 15px; background-color: #f7f7f7; border-radius: 6px; text-align: left;">
+    <div id="mobileInstructions" style="display: none; margin-top: 25px; padding: 15px; background-color: #f7f7f7; border-radius: 6px; text-align: left; border: 1px solid #e0e0e0;">
       <p style="font-weight: bold; margin-top: 0;">Instructions for mobile devices:</p>
-      <p>If automatic redirection doesn't work:</p>
-      <ol style="padding-left: 20px; margin-bottom: 0;">
-        <li>Tap the button below</li>
-        <li>If that doesn't work, close this window and return to the PlateSync app</li>
-      </ol>
+      
+      <!-- Standard instructions - hidden when advanced flow is active -->
+      <div id="standardInstructions">
+        <p>If automatic redirection doesn't work:</p>
+        <ol style="padding-left: 20px; margin-bottom: 0;">
+          <li>Tap the button below</li>
+          <li>If that doesn't work, close this window and return to the PlateSync app</li>
+        </ol>
+      </div>
+      
+      <!-- Advanced instructions - shown only for advanced mobile flow -->
+      <div id="advancedInstructions" style="display: none;">
+        <p>Your device needs additional help to return to PlateSync:</p>
+        <ol style="padding-left: 20px; margin-bottom: 0;">
+          <li>Tap the blue "Continue to PlateSync" button when it appears</li>
+          <li>If that doesn't work, copy any churchId number you see in this window</li>
+          <li>Then close this window and paste the number in the PlateSync app settings</li>
+        </ol>
+      </div>
     </div>
     
     <!-- Manual redirect button - shown after a delay and only on mobile -->
@@ -249,16 +263,72 @@
     const isMobileDevice = deviceType === 'mobile' || 
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
+    // Check for advanced mobile flow parameter
+    const isAdvancedMobileFlow = params.get('mobileFlow') === 'advanced';
+    
+    // Get timestamp for logging
+    const urlTimestamp = params.get('t') || 'none';
+    const cachebustValue = params.get('cachebust') || 'none';
+    
+    console.log('URL parameters:', {
+      deviceType,
+      userAgentIsMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+      timestamp: urlTimestamp,
+      cachebust: cachebustValue,
+      advancedFlow: isAdvancedMobileFlow ? 'yes' : 'no'
+    });
+    
     if (isMobileDevice) {
       console.log('Mobile device detected, showing manual redirect options');
       
-      // Show mobile instructions
-      document.getElementById('mobileInstructions').style.display = 'block';
+      // Show mobile instructions - make them more prominent for advanced flows
+      const mobileInstructions = document.getElementById('mobileInstructions');
+      mobileInstructions.style.display = 'block';
+      
+      // For advanced mobile flow, make the instructions more prominent
+      // and show the advanced instructions instead of standard
+      if (isAdvancedMobileFlow) {
+        // Style changes
+        mobileInstructions.style.backgroundColor = '#e6f7ff';
+        mobileInstructions.style.borderColor = '#1890ff';
+        mobileInstructions.style.borderWidth = '2px';
+        
+        // Show advanced instructions instead of standard
+        document.getElementById('standardInstructions').style.display = 'none';
+        document.getElementById('advancedInstructions').style.display = 'block';
+        
+        // Display churchId information to help with manual entry if needed
+        if (churchId) {
+          const churchIdElement = document.createElement('div');
+          churchIdElement.style.marginTop = '15px';
+          churchIdElement.style.padding = '10px';
+          churchIdElement.style.backgroundColor = '#fff';
+          churchIdElement.style.border = '1px dashed #ccc';
+          churchIdElement.style.borderRadius = '4px';
+          churchIdElement.innerHTML = `
+            <p style="margin: 0; font-size: 0.9rem;">Your Church ID: <strong>${churchId}</strong></p>
+            <p style="margin: 5px 0 0; font-size: 0.8rem; color: #666;">
+              Copy this ID if you need to manually reconnect
+            </p>
+          `;
+          mobileInstructions.appendChild(churchIdElement);
+        }
+      }
       
       // Show manual button after a delay
+      // Use shorter delay for advanced mobile flow
+      const buttonDelay = isAdvancedMobileFlow ? 2000 : 4000;
       setTimeout(() => {
         const button = document.getElementById('manualRedirectButton');
         button.style.display = 'inline-block';
+        
+        // For advanced mobile flow, make the button more prominent
+        if (isAdvancedMobileFlow) {
+          button.style.fontSize = '1.2rem';
+          button.style.padding = '14px 28px';
+          button.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+          button.style.backgroundColor = '#1890ff';
+        }
         
         // Add click handler for manual redirection
         button.addEventListener('click', () => {
@@ -307,7 +377,7 @@
             window.location.href = redirectUrl;
           }
         });
-      }, 4000); // Show after 4 seconds to give automatic redirect time to work
+      }, buttonDelay); // Use adaptive delay based on device type
     }
   </script>
 </body>

@@ -456,6 +456,7 @@ export function setupPlanningCenterRoutes(app: Express) {
         
         // Redirect with temporary key for client-side token claiming and include churchId if available
         // Also account for mobile devices with a device type parameter
+        const timestamp = Date.now(); // Generate timestamp for cache-busting
         let redirectUrl = `/planning-center-redirect.html?success=true&tempKey=${tempKey}`;
         
         // Add churchId if available
@@ -466,7 +467,25 @@ export function setupPlanningCenterRoutes(app: Express) {
         // Add device type for specialized handling
         redirectUrl += `&deviceType=${isMobileDevice ? 'mobile' : 'desktop'}`;
         
+        // Add cache-busting timestamp
+        redirectUrl += `&t=${timestamp}`;
+        
+        // For mobile devices, add extra parameters to help with redirection issues
+        if (isMobileDevice) {
+          // Add cachebust parameter (different name for cache prevention)
+          redirectUrl += `&cachebust=${Math.floor(Math.random() * 1000000)}`;
+          
+          // Add a special flag for the HTML page to know this is a high-sensitivity mobile flow
+          redirectUrl += '&mobileFlow=advanced';
+        }
+        
         console.log(`Redirecting to: ${redirectUrl} (${isMobileDevice ? 'mobile' : 'desktop'} device)`);
+        
+        // Use custom headers to prevent caching for this specific response
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
         return res.redirect(redirectUrl);
       }
     } catch (error) {
