@@ -650,6 +650,10 @@ export function setupPlanningCenterRoutes(app: Express) {
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('response_type', 'code');
       
+      // Force re-authentication by adding the prompt=login parameter
+      // This prevents automatic reconnection without user interaction
+      authUrl.searchParams.append('prompt', 'login');
+      
       // For People API access, we need the 'people' scope
       authUrl.searchParams.append('scope', 'people');
       
@@ -1220,6 +1224,33 @@ export function setupPlanningCenterRoutes(app: Express) {
       const churchId = user.churchId || user.id;
       
       console.log(`Removing Planning Center tokens for user: ${user.id}, church: ${churchId}`);
+      
+      try {
+        // First, revoke the tokens with Planning Center to fully disconnect
+        const tokens = await storage.getPlanningCenterTokens(user.id, churchId);
+        
+        if (tokens && tokens.accessToken) {
+          console.log('Attempting to revoke token with Planning Center');
+          
+          // Revoke token with Planning Center
+          const revokeUrl = 'https://api.planningcenteronline.com/oauth/revoke';
+          try {
+            await axios.post(revokeUrl, {
+              client_id: PLANNING_CENTER_CLIENT_ID,
+              token: tokens.accessToken
+            });
+            console.log('Successfully revoked token with Planning Center API');
+          } catch (revokeError) {
+            console.error('Error revoking token with Planning Center:', revokeError);
+            // Continue with local token deletion even if revoke fails
+          }
+        }
+      } catch (error) {
+        console.error('Error retrieving tokens for revocation:', error);
+        // Continue with local token deletion
+      }
+      
+      // Then delete locally stored tokens
       await storage.deletePlanningCenterTokens(user.id, churchId);
       
       // Also try to clear with user ID as churchId in case that's how they were stored

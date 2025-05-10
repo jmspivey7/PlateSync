@@ -46,20 +46,32 @@ const PlanningCenterIntegration = () => {
           console.log('Stored churchId in storage mechanisms:', response.churchId);
         }
         
-        // Open Planning Center OAuth page in a new browser tab instead of redirecting
-        const newTab = window.open(response.url, '_blank');
+        // Detect if we're on a mobile device
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        // If popup was blocked, fall back to informing the user
-        if (!newTab) {
-          toast({
-            title: "Popup Blocked",
-            description: "Please allow popups for this site to connect with Planning Center.",
-            variant: "destructive",
-          });
+        if (isMobileDevice) {
+          console.log('Mobile device detected, using direct navigation');
+          // On mobile, directly navigate to the auth URL
+          // This works better than popups on mobile devices
+          window.location.href = response.url;
+          // Note: We won't reset isConnecting here since we're leaving the page
+        } else {
+          // On desktop, open in a new tab as before
+          console.log('Desktop device detected, opening in new tab');
+          const newTab = window.open(response.url, '_blank');
+          
+          // If popup was blocked, fall back to informing the user
+          if (!newTab) {
+            toast({
+              title: "Popup Blocked",
+              description: "Please allow popups for this site to connect with Planning Center.",
+              variant: "destructive",
+            });
+          }
+          
+          // Reset the connecting state since we're not actually leaving the page on desktop
+          setIsConnecting(false);
         }
-        
-        // Reset the connecting state since we're not actually leaving the page
-        setIsConnecting(false);
       } else {
         throw new Error('Failed to get Planning Center authorization URL');
       }
