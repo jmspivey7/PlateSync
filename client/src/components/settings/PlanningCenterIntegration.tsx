@@ -171,7 +171,7 @@ const PlanningCenterIntegration = () => {
         {status?.connected ? (
           <Badge style={{ backgroundColor: PLANNING_CENTER_BLUE, color: "white" }}>Connected</Badge>
         ) : (
-          <Badge variant="outline" className="border-gray-300 text-gray-500">Not Connected</Badge>
+          <Badge variant="outline" className="border-gray-300 text-gray-500 w-24 text-center">Not Connected</Badge>
         )}
       </div>
       
