@@ -13,9 +13,15 @@ export async function bulkImportMembers(membersToImport: Array<Partial<InsertMem
   try {
     // Process each member one by one
     for (const memberData of membersToImport) {
-      // If the member has an externalId, check if they already exist
+      // Skip if missing required data
+      if (!memberData.firstName || !memberData.lastName) {
+        console.log('Skipping member - missing first or last name');
+        continue;
+      }
+      
+      // First, try to find by external ID if available
       if (memberData.externalId && memberData.externalSystem) {
-        const [existingMember] = await db
+        const [existingByExternalId] = await db
           .select()
           .from(members)
           .where(and(
@@ -25,86 +31,123 @@ export async function bulkImportMembers(membersToImport: Array<Partial<InsertMem
           ))
           .limit(1);
         
-        if (existingMember) {
+        if (existingByExternalId) {
           // Update existing member
           await db
             .update(members)
             .set({
-              firstName: memberData.firstName || existingMember.firstName,
-              lastName: memberData.lastName || existingMember.lastName,
-              email: memberData.email || existingMember.email,
-              phone: memberData.phone || existingMember.phone,
-              notes: memberData.notes || existingMember.notes,
+              firstName: memberData.firstName || existingByExternalId.firstName,
+              lastName: memberData.lastName || existingByExternalId.lastName,
+              email: memberData.email || existingByExternalId.email,
+              phone: memberData.phone || existingByExternalId.phone,
+              notes: memberData.notes || existingByExternalId.notes,
               updatedAt: new Date()
             })
-            .where(eq(members.id, existingMember.id));
+            .where(eq(members.id, existingByExternalId.id));
             
           importedCount++;
           continue;
         }
       }
       
-      // If no external ID or member not found, check by name and email/phone if available
-      // Or just by name if no contact info is available
-      let existingMemberQuery = db
+      // Next, check if there's a matching member by name
+      const [existingByName] = await db
         .select()
         .from(members)
         .where(and(
-          eq(members.firstName, memberData.firstName || ''),
-          eq(members.lastName, memberData.lastName || ''),
+          eq(sql`LOWER(${members.firstName})`, memberData.firstName.toLowerCase()),
+          eq(sql`LOWER(${members.lastName})`, memberData.lastName.toLowerCase()),
           eq(members.churchId, churchId)
-        ));
-          
-      // If we have email or phone, make the match more specific
-      if (memberData.email || memberData.phone) {
-        if (memberData.email) {
-          existingMemberQuery = existingMemberQuery.where(eq(members.email, memberData.email));
-        }
-        if (memberData.phone) {
-          existingMemberQuery = existingMemberQuery.where(eq(members.phone, memberData.phone || ''));
-        }
-      }
+        ))
+        .limit(1);
       
-      const [existingMember] = await existingMemberQuery.limit(1);
+      if (existingByName) {
+        // We have an existing member with the same name
         
-      if (existingMember) {
-        // Update existing member and add the external IDs
-        await db
-          .update(members)
-          .set({
-            externalId: memberData.externalId || existingMember.externalId,
-            externalSystem: memberData.externalSystem || existingMember.externalSystem,
-            phone: memberData.phone || existingMember.phone,
-            notes: memberData.notes || existingMember.notes,
-            updatedAt: new Date()
-          })
-          .where(eq(members.id, existingMember.id));
+        // If the existing member has contact info or external ID, update it
+        if (existingByName.email || existingByName.phone || existingByName.externalId) {
+          // Set external ID if not already set
+          if (memberData.externalId && !existingByName.externalId) {
+            await db
+              .update(members)
+              .set({
+                externalId: memberData.externalId,
+                externalSystem: memberData.externalSystem,
+                // Only update contact info if it's missing
+                email: existingByName.email || memberData.email,
+                phone: existingByName.phone || memberData.phone,
+                notes: existingByName.notes || memberData.notes,
+                updatedAt: new Date()
+              })
+              .where(eq(members.id, existingByName.id));
+            
+            console.log(`Updated existing member: ${existingByName.firstName} ${existingByName.lastName} with external ID`);
+          }
           
-        importedCount++;
-        continue;
+          importedCount++;
+          continue;
+        } 
+        // If both members don't have contact info, just update with any new info
+        else if (!memberData.email && !memberData.phone) {
+          await db
+            .update(members)
+            .set({
+              externalId: memberData.externalId || existingByName.externalId,
+              externalSystem: memberData.externalSystem || existingByName.externalSystem,
+              updatedAt: new Date()
+            })
+            .where(eq(members.id, existingByName.id));
+            
+          importedCount++;
+          continue;
+        }
+        // If new data has contact info but existing doesn't, update existing
+        else if ((memberData.email || memberData.phone) && 
+                 (!existingByName.email && !existingByName.phone)) {
+          await db
+            .update(members)
+            .set({
+              email: memberData.email,
+              phone: memberData.phone,
+              externalId: memberData.externalId || existingByName.externalId,
+              externalSystem: memberData.externalSystem || existingByName.externalSystem,
+              updatedAt: new Date()
+            })
+            .where(eq(members.id, existingByName.id));
+            
+          console.log(`Added contact info to existing member: ${existingByName.firstName} ${existingByName.lastName}`);
+          importedCount++;
+          continue;
+        }
       }
       
       // If we reach here, we need to create a new member
-      if (memberData.firstName && memberData.lastName) {
-        await db
-          .insert(members)
-          .values({
-            firstName: memberData.firstName,
-            lastName: memberData.lastName,
-            email: memberData.email,
-            phone: memberData.phone,
-            notes: memberData.notes,
-            isVisitor: memberData.isVisitor || false,
-            externalId: memberData.externalId,
-            externalSystem: memberData.externalSystem,
-            churchId: churchId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-          
-        importedCount++;
-      }
+      await db
+        .insert(members)
+        .values({
+          firstName: memberData.firstName,
+          lastName: memberData.lastName,
+          email: memberData.email,
+          phone: memberData.phone,
+          notes: memberData.notes,
+          isVisitor: memberData.isVisitor || false,
+          externalId: memberData.externalId,
+          externalSystem: memberData.externalSystem,
+          churchId: churchId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        
+      console.log(`Created new member: ${memberData.firstName} ${memberData.lastName}`);
+      importedCount++;
     }
+    
+    // After import, check for and remove any duplicates
+    const cleanupCount = await removeDuplicateMembers(churchId);
+    if (cleanupCount > 0) {
+      console.log(`Auto-cleaned ${cleanupCount} duplicate members after import`);
+    }
+    
   } catch (error) {
     console.error("Error in bulkImportMembers:", error);
     throw error;
