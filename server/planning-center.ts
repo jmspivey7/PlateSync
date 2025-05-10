@@ -843,11 +843,57 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
     
     try {
-      // Remove the tokens from the database
       const user = req.user as any;
+      
+      // First get the tokens that we'll need to revoke
+      const tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
+      
+      if (tokens && tokens.accessToken) {
+        console.log('Attempting to revoke Planning Center tokens via API');
+        
+        try {
+          // Try to revoke tokens via Planning Center API
+          const revokeResponse = await axios.post('https://api.planningcenteronline.com/oauth/revoke', {
+            client_id: process.env.PLANNING_CENTER_CLIENT_ID,
+            client_secret: process.env.PLANNING_CENTER_CLIENT_SECRET,
+            token: tokens.accessToken,
+          }, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('Planning Center token revocation response:', revokeResponse.status);
+          
+          if (tokens.refreshToken) {
+            // Also try to revoke the refresh token
+            const refreshRevokeResponse = await axios.post('https://api.planningcenteronline.com/oauth/revoke', {
+              client_id: process.env.PLANNING_CENTER_CLIENT_ID,
+              client_secret: process.env.PLANNING_CENTER_CLIENT_SECRET,
+              token: tokens.refreshToken,
+            }, {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            console.log('Planning Center refresh token revocation response:', refreshRevokeResponse.status);
+          }
+        } catch (revokeError) {
+          // Continue even if revocation fails - we'll still remove the tokens from our database
+          console.error('Error revoking Planning Center tokens:', revokeError);
+          console.log('Continuing with local token removal despite revocation error');
+        }
+      }
+      
+      // Remove tokens from our database regardless of API revocation outcome
       await storage.deletePlanningCenterTokens(user.id, user.churchId);
       
-      res.json({ success: true, message: 'Successfully disconnected from Planning Center' });
+      res.json({ 
+        success: true, 
+        message: 'Successfully disconnected from Planning Center',
+        note: 'Tokens have been removed locally and revocation attempt was sent to Planning Center API'
+      });
     } catch (error) {
       console.error('Error disconnecting from Planning Center:', error);
       res.status(500).json({ 
