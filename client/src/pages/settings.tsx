@@ -1286,7 +1286,7 @@ const Settings = () => {
               </div>
               
               <div className="mt-6">
-                <h3 className="text-md font-medium mb-1">Planning Center Integration</h3>
+                {/* Removed "Planning Center Integration" heading as the logo itself is sufficient */}
                 <PlanningCenterIntegration />
               </div>
             </div>

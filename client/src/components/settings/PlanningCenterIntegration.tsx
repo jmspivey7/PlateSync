@@ -129,7 +129,7 @@ const PlanningCenterIntegration = () => {
           />
         </div>
         {status?.connected ? (
-          <Badge style={{ backgroundColor: PLANNING_CENTER_BLUE }}>Connected</Badge>
+          <Badge style={{ backgroundColor: PLANNING_CENTER_BLUE, color: "white" }}>Connected</Badge>
         ) : (
           <Badge variant="outline" className="border-gray-300 text-gray-500">Not Connected</Badge>
         )}
@@ -216,7 +216,8 @@ const PlanningCenterIntegration = () => {
               variant="outline" 
               onClick={() => disconnectMutation.mutate()}
               disabled={disconnectMutation.isPending}
-              className="w-64 border-gray-400"
+              className="w-64 text-white hover:opacity-90"
+              style={{ backgroundColor: `${PLANNING_CENTER_BLUE}80`, borderColor: PLANNING_CENTER_BLUE }}
             >
               {disconnectMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
