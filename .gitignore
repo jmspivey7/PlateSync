@@ -4,6 +4,9 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
-# Allow database backups
+# Database backup handling
 !database_backups/
-!database_backups/*.sql
+!database_backups/README.md
+!database_backups/platesync_backup_sanitized_*.sql
+database_backups/platesync_backup_*.sql
+!database_backups/.gitkeep
