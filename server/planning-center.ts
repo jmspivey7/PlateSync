@@ -215,7 +215,7 @@ export function setupPlanningCenterRoutes(app: Express) {
   app.get('/api/planning-center/callback', async (req: Request, res: Response) => {
     try {
       // Extract all query parameters for detailed logging
-      const { code, state, error, error_description } = req.query;
+      const { code, state, error, error_description, churchId } = req.query;
       
       // Log the callback details for debugging (redacting sensitive parts)
       console.log('Planning Center callback received with params:', {
@@ -223,6 +223,7 @@ export function setupPlanningCenterRoutes(app: Express) {
         state: state ? `${String(state).substring(0, 4)}...` : 'undefined',
         error: error || 'none',
         error_description: error_description || 'none',
+        churchId: churchId || 'none',
         host: req.get('host'),
         'x-forwarded-host': req.get('x-forwarded-host'),
         'user-agent': req.get('user-agent')
@@ -378,12 +379,17 @@ export function setupPlanningCenterRoutes(app: Express) {
         // Initialize the temporary token storage if it doesn't exist
         app.locals.tempPlanningCenterTokens = app.locals.tempPlanningCenterTokens || {};
         
+        // Extract churchId from query parameter (if available)
+        const churchId = req.query.churchId ? String(req.query.churchId) : undefined;
+        console.log('Temp token churchId from query:', churchId || 'not provided');
+        
         // Store token with detailed metadata for debugging
         app.locals.tempPlanningCenterTokens[tempKey] = {
           accessToken: access_token,
           refreshToken: refresh_token,
           expiresAt: new Date(Date.now() + expires_in * 1000),
           created: new Date(),
+          churchId: churchId, // Store the churchId with the token
           meta: {
             userAgent: req.get('user-agent') || 'unknown',
             ipAddress: req.ip || 'unknown',
@@ -1250,8 +1256,12 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Debug - log user information
       console.log(`Claiming tokens for user: ${user.id}, church: ${user.churchId || 'not specified'}`);
       
-      // Determine churchId (using fallback if needed)
-      const churchId = user.churchId || user.id;
+      // Check if we have a stored churchId in the temporary token
+      const storedChurchId = app.locals.tempPlanningCenterTokens[tempKey].churchId;
+      console.log(`Found churchId in temporary token: ${storedChurchId || 'none'}`);
+      
+      // Determine churchId (prioritize stored token churchId, then user.churchId, then fallback to user.id)
+      const churchId = storedChurchId || user.churchId || user.id;
       console.log(`Using churchId for token storage: ${churchId}`);
       
       // First verify that the tokens are valid by making a test request
