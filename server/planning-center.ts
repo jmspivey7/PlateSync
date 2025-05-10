@@ -1302,12 +1302,26 @@ export function setupPlanningCenterRoutes(app: Express) {
               console.log('Refresh token revocation response:', refreshResponse.status, refreshResponse.statusText);
               console.log('Successfully revoked refresh token with Planning Center API');
             }
-          } catch (revokeError) {
-            console.error('Error revoking token with Planning Center:', revokeError.message);
-            if (revokeError.response) {
-              console.error('Response status:', revokeError.response.status);
-              console.error('Response data:', revokeError.response.data);
+          } catch (error) {
+            // Safely log error details without making assumptions about error structure
+            console.error('Error revoking token with Planning Center');
+            
+            try {
+              // Attempt to log error details if available
+              if (error instanceof Error) {
+                console.error('Error message:', error.message);
+              }
+              
+              // Try to access axios error response properties if they exist
+              const axiosError = error as { response?: { status?: number; data?: any } };
+              if (axiosError.response) {
+                console.error('Response status:', axiosError.response.status);
+                console.error('Response data:', JSON.stringify(axiosError.response.data));
+              }
+            } catch (logError) {
+              console.error('Error while logging details:', logError);
             }
+            
             // Continue with local token deletion even if revoke fails
           }
         }

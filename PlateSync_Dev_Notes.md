@@ -90,8 +90,9 @@ Planning Center access tokens expire after 2 hours, while refresh tokens are val
 If users experience issues with Planning Center integration, try the following:
 
 1. **From PlateSync side:**
-   - Use the "Clear Planning Center Connection" button to remove tokens from PlateSync
-   - Check server logs for OAuth flow issues or API errors
+   - Use the "Disconnect" button to properly revoke tokens with Planning Center
+   - Wait for the 2-second delay to complete before attempting to reconnect
+   - Check server logs for OAuth flow issues or token revocation errors
    - Verify user permissions (must be ADMIN)
 
 2. **From Planning Center side:**
@@ -100,13 +101,22 @@ If users experience issues with Planning Center integration, try the following:
    - This forces Planning Center to treat it as a new authorization request
    
 3. **Important Notes:**
-   - The spawned tab approach is necessary due to how Planning Center handles OAuth redirects
-   - Direct navigation doesn't work due to cross-origin restrictions
+   - Device-specific handling is essential:
+     - Desktop: Use spawned tab approach (`target="_blank"`) for authorization
+     - Mobile: Use direct navigation to avoid iframe and window.open issues
+   - OAuth token revocation must use proper form URL-encoded format
+   - Include client_id AND client_secret when revoking tokens
    - Always check both client and server logs when debugging connection issues
 
-4. **Known Issues:**
-   - If a user sees "Connection Partial" error, it typically means tokens were created but not properly stored or verified
-   - "Refused to connect" errors typically indicate cross-origin or networking issues with Planning Center's domains
+4. **Known Issues and Solutions:**
+   - **Authentication Persistence**: Planning Center may maintain login session cookies across disconnects
+     - Solution: Use `prompt=login`, `max_age=0` and `nonce` OAuth parameters to force re-authentication
+   - **Mobile Browser Redirection**: Mobile browsers handle new windows/tabs differently
+     - Solution: Detect mobile devices and use direct navigation instead of window.open
+   - **Token Revocation Failures**: Incorrect format in revocation requests
+     - Solution: Use form URL-encoded content type with all required parameters
+   - **Lost Context Between Domains**: churchId may be lost during redirects
+     - Solution: Store churchId in multiple places (URL, session, localStorage)
 
 ---
 
@@ -137,5 +147,40 @@ PlateSync uses a PostgreSQL database with the following key tables:
 See `shared/schema.ts` for complete database schema definitions.
 
 ---
+
+## Planning Center Mobile Authentication Flow
+
+For a proper mobile authentication experience with Planning Center, the following workflow was implemented:
+
+1. **Device Detection:**
+   ```javascript
+   // On the client side
+   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+   
+   // Pass device type to server
+   const response = await fetch(`/api/planning-center/auth-url?device=${isMobile ? 'mobile' : 'desktop'}`);
+   ```
+
+2. **Device-Specific Navigation:**
+   ```javascript
+   // Handle navigation based on device type
+   if (isMobile) {
+     // Mobile: Direct navigation in current window
+     window.location.href = data.url;
+   } else {
+     // Desktop: Open in new tab
+     window.open(data.url, '_blank');
+   }
+   ```
+
+3. **Context Preservation:**
+   - Store churchId in multiple storage mechanisms to ensure it's not lost
+   - Include deviceType in callback URL for appropriate post-authentication handling
+   - Use different redirect strategies based on the device type
+
+4. **Mobile-Specific Callback Handling:**
+   - Detect device type in callback handler
+   - Use a different redirect strategy for mobile devices
+   - Implement a bridge page that handles both device types
 
 *Last updated: May 10, 2025*
