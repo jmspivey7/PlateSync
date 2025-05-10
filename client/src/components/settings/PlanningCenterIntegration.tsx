@@ -7,6 +7,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+// Planning Center brand color
+const PLANNING_CENTER_BLUE = "#2176FF";
+
 interface PlanningCenterStatus {
   connected: boolean;
   lastSyncDate?: string;
@@ -116,9 +119,17 @@ const PlanningCenterIntegration = () => {
 
   return (
     <div className="w-full">
-      <div className="flex justify-end mb-2">
+      {/* Planning Center Logo Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <img 
+            src="/planning-center-logo.png" 
+            alt="Planning Center Logo" 
+            className="h-8 mr-2" 
+          />
+        </div>
         {status?.connected ? (
-          <Badge className="bg-[#69ad4c]">Connected</Badge>
+          <Badge style={{ backgroundColor: PLANNING_CENTER_BLUE }}>Connected</Badge>
         ) : (
           <Badge variant="outline" className="border-gray-300 text-gray-500">Not Connected</Badge>
         )}
@@ -127,9 +138,9 @@ const PlanningCenterIntegration = () => {
       {connectionStatus && (
         <div className="mb-4">
           {connectionStatus === 'success' ? (
-            <Alert className="bg-[#69ad4c]/10 border-[#69ad4c]">
-              <CheckCircle className="h-4 w-4 text-[#69ad4c]" />
-              <AlertTitle className="text-[#69ad4c]">Connection Successful</AlertTitle>
+            <Alert style={{ backgroundColor: `${PLANNING_CENTER_BLUE}10`, borderColor: PLANNING_CENTER_BLUE }}>
+              <CheckCircle className="h-4 w-4" style={{ color: PLANNING_CENTER_BLUE }} />
+              <AlertTitle style={{ color: PLANNING_CENTER_BLUE }}>Connection Successful</AlertTitle>
               <AlertDescription>
                 Your Planning Center account has been successfully connected to PlateSync.
               </AlertDescription>
@@ -149,7 +160,7 @@ const PlanningCenterIntegration = () => {
       <div className="mb-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-24">
-            <Loader2 className="h-8 w-8 animate-spin text-[#69ad4c]" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: PLANNING_CENTER_BLUE }} />
           </div>
         ) : status?.connected ? (
           <div className="space-y-2">
@@ -185,7 +196,8 @@ const PlanningCenterIntegration = () => {
                 href="/api/planning-center/authorize"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white h-10 px-4 py-2 w-64 hover:opacity-90"
+                style={{ backgroundColor: PLANNING_CENTER_BLUE }}
               >
                 <LinkIcon className="mr-2 h-4 w-4" />
                 Connect to Planning Center
@@ -204,7 +216,7 @@ const PlanningCenterIntegration = () => {
               variant="outline" 
               onClick={() => disconnectMutation.mutate()}
               disabled={disconnectMutation.isPending}
-              className="w-64"
+              className="w-64 border-gray-400"
             >
               {disconnectMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -215,9 +227,10 @@ const PlanningCenterIntegration = () => {
             </Button>
             <div className="flex flex-col">
               <Button 
-                className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
                 onClick={() => importMembersMutation.mutate()}
                 disabled={isImporting || importMembersMutation.isPending}
+                className="text-white w-64"
+                style={{ backgroundColor: PLANNING_CENTER_BLUE }}
               >
                 {isImporting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
