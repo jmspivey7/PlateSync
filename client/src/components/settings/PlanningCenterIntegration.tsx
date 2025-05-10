@@ -46,8 +46,20 @@ const PlanningCenterIntegration = () => {
           console.log('Stored churchId in storage mechanisms:', response.churchId);
         }
         
-        // Redirect to Planning Center OAuth page
-        window.location.href = response.url;
+        // Open Planning Center OAuth page in a new browser tab instead of redirecting
+        const newTab = window.open(response.url, '_blank');
+        
+        // If popup was blocked, fall back to informing the user
+        if (!newTab) {
+          toast({
+            title: "Popup Blocked",
+            description: "Please allow popups for this site to connect with Planning Center.",
+            variant: "destructive",
+          });
+        }
+        
+        // Reset the connecting state since we're not actually leaving the page
+        setIsConnecting(false);
       } else {
         throw new Error('Failed to get Planning Center authorization URL');
       }
@@ -248,6 +260,10 @@ const PlanningCenterIntegration = () => {
                   </>
                 )}
               </Button>
+              
+              <div className="mt-2 text-xs text-gray-500 text-center">
+                Will open Planning Center login in a new tab
+              </div>
             </div>
             
             {/* Troubleshooting section removed */}
