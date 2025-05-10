@@ -2191,12 +2191,12 @@ PlateSync Reporting System
     }
   }
 
-  async bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number> {
+  async bulkImportMembers(membersToImport: Array<Partial<InsertMember>>, churchId: string): Promise<number> {
     try {
       let importedCount = 0;
       
       // Process each member one by one
-      for (const memberData of members) {
+      for (const memberData of membersToImport) {
         // If the member has an externalId, check if they already exist
         if (memberData.externalId && memberData.externalSystem) {
           const [existingMember] = await db
