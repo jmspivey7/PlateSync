@@ -353,7 +353,11 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                     <FormItem>
                       <FormLabel className="font-bold">Date:</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <Input 
+                          {...field} 
+                          type="date" 
+                          className="text-left w-full" 
+                        />
                       </FormControl>
 
                       <FormMessage />

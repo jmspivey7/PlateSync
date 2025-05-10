@@ -114,6 +114,19 @@
   p, span, div {
     @apply font-lato;
   }
+  /* Fix date input alignment */
+  input[type="date"] {
+    text-align: left !important;
+    direction: ltr;
+    /* Force date text to align left */
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  /* Fix date input appearance on mobile */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    margin-left: auto;
+  }
 }
 
 @layer utilities {
