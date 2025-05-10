@@ -160,18 +160,16 @@ const PlanningCenterIntegration = () => {
   return (
     <div className="w-full">
       {/* Planning Center Logo Header */}
-      <div className="flex items-center justify-between mb-4 gap-8">
-        <div className="flex-1 flex items-start">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
           <img 
             src="/planning-center-logo.png" 
             alt="Planning Center Logo" 
-            className="h-8" 
+            className="h-8 mr-2" 
           />
         </div>
-        {status?.connected ? (
+        {status?.connected && (
           <Badge style={{ backgroundColor: PLANNING_CENTER_BLUE, color: "white" }}>Connected</Badge>
-        ) : (
-          <Badge variant="outline" className="border-gray-300 text-gray-500 w-20 text-center">Not Connected</Badge>
         )}
       </div>
       
