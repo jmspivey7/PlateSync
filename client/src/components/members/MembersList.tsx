@@ -285,6 +285,11 @@ const MembersList = ({}: MembersListProps) => {
 
         </>
       )}
+      {/* Duplicate Candidates Dialog */}
+      <DuplicateCandidatesList 
+        open={showDuplicateCandidates} 
+        onOpenChange={setShowDuplicateCandidates} 
+      />
     </div>
   );
 };
