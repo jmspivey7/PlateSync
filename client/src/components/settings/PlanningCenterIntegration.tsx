@@ -39,10 +39,11 @@ const PlanningCenterIntegration = () => {
       if (response?.url) {
         console.log('Got Planning Center auth URL with churchId:', response.churchId);
         
-        // Store churchId in localStorage as a backup method
+        // Store churchId in both localStorage and sessionStorage for redundancy
         if (response.churchId) {
           localStorage.setItem('planningCenterChurchId', response.churchId);
-          console.log('Stored churchId in localStorage:', response.churchId);
+          sessionStorage.setItem('planningCenterChurchId', response.churchId);
+          console.log('Stored churchId in storage mechanisms:', response.churchId);
         }
         
         // Redirect to Planning Center OAuth page

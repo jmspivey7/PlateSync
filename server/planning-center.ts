@@ -275,9 +275,26 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Prefer the environment-configured redirect URI if available
       let redirectUri;
       if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+        // Always use the environment variable if available, but ensure we don't add duplicate params
         redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
         console.log('Using fixed callback URL from env:', redirectUri);
+        
+        // Extract churchId from query parameter or session, prioritizing query
+        const churchId = req.query.churchId as string || 
+                         (req.session && req.session.planningCenterChurchId);
+        
+        // If we have a churchId, make sure it's included in the callback URL
+        if (churchId) {
+          console.log('Adding churchId to callback URL:', churchId);
+          // If URL already has parameters, add churchId as another parameter
+          if (redirectUri.includes('?')) {
+            redirectUri += `&churchId=${encodeURIComponent(churchId)}`;
+          } else {
+            redirectUri += `?churchId=${encodeURIComponent(churchId)}`;
+          }
+        }
       } else {
+        // If no fixed URL, build our own with proper query parameters
         redirectUri = `${protocol}://${host}/api/planning-center/callback`;
         console.log('Using dynamic callback URL:', redirectUri);
       }
@@ -427,9 +444,9 @@ export function setupPlanningCenterRoutes(app: Express) {
         
         // Redirect with temporary key for client-side token claiming and include churchId if available
         if (churchId) {
-          return res.redirect(`/public/planning-center-redirect.html?success=true&tempKey=${tempKey}&churchId=${churchId}`);
+          return res.redirect(`/planning-center-redirect.html?success=true&tempKey=${tempKey}&churchId=${churchId}`);
         } else {
-          return res.redirect(`/public/planning-center-redirect.html?success=true&tempKey=${tempKey}`);
+          return res.redirect(`/planning-center-redirect.html?success=true&tempKey=${tempKey}`);
         }
       }
     } catch (error) {
@@ -725,7 +742,10 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Instead of directly redirecting to Planning Center, we'll redirect to our
       // intermediate page that handles the flow more elegantly
       console.log('Redirecting to Planning Center redirect page');
-      res.redirect('/planning-center-redirect.html');
+      // Include churchId in redirect URL if available
+      const authUser = req.user as any;
+      const userChurchId = authUser.churchId || authUser.id;
+      res.redirect(`/planning-center-redirect.html${userChurchId ? `?churchId=${userChurchId}` : ''}`);
       
     } catch (error) {
       console.error('Error starting Planning Center authorization flow:', error);

@@ -70,12 +70,40 @@
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success') === 'true';
     const tempKey = params.get('tempKey');
-    const churchId = params.get('churchId');
+    const urlChurchId = params.get('churchId');
+    
+    // Try to get churchId from multiple sources
+    // 1. URL parameter (highest priority)
+    // 2. sessionStorage (stored during authorization initiation)
+    // 3. localStorage (persistent storage)
+    const sessionChurchId = sessionStorage.getItem('planningCenterChurchId');
+    const localChurchId = localStorage.getItem('planningCenterChurchId');
+    
+    // Use the first available churchId, in priority order
+    const churchId = urlChurchId || sessionChurchId || localChurchId;
+    
+    console.log('Church ID sources:', {
+      url: urlChurchId || '(none)',
+      session: sessionChurchId || '(none)',
+      local: localChurchId || '(none)'
+    });
+    
+    // Log which source we're using
+    if (churchId) {
+      console.log('Using churchId:', churchId, 'from', 
+        urlChurchId ? 'URL parameter' : 
+        sessionChurchId ? 'sessionStorage' : 
+        'localStorage'
+      );
+    } else {
+      console.log('No churchId found from any source');
+    }
 
-    // Store churchId in localStorage if available
+    // Store churchId in both storage types for redundancy
     if (churchId) {
       localStorage.setItem('planningCenterChurchId', churchId);
-      console.log('Stored Planning Center churchId in localStorage:', churchId);
+      sessionStorage.setItem('planningCenterChurchId', churchId);
+      console.log('Stored Planning Center churchId in both localStorage and sessionStorage');
     }
 
     // Function to redirect to settings page
