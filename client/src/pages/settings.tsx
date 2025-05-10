@@ -422,11 +422,33 @@ const Settings = () => {
   const claimTokensMutation = useMutation({
     mutationFn: async ({ tempKey, churchId }: { tempKey: string, churchId?: string }) => {
       setClaimingTokens(true);
-      console.log("Claiming token with key:", tempKey, churchId ? `and churchId: ${churchId}` : '');
+      
+      // Check if this is a mobile device - try multiple detection methods
+      const isMobileSession = sessionStorage.getItem('planningCenterMobileDevice') === 'true';
+      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = isMobileSession || isMobileUserAgent;
+      
+      console.log("Claiming Planning Center token", {
+        tempKey: tempKey.substring(0, 6) + '...',
+        hasChurchId: !!churchId,
+        churchId: churchId ? churchId.substring(0, 6) + '...' : 'not provided',
+        deviceType: isMobile ? 'mobile' : 'desktop',
+        detectionSource: isMobileSession ? 'session' : (isMobileUserAgent ? 'user-agent' : 'none')
+      });
+      
+      // Add additional metadata to API calls for mobile
+      const deviceMetadata = {
+        deviceType: isMobile ? 'mobile' : 'desktop',
+        viewportWidth: window.innerWidth,
+        userAgent: navigator.userAgent.substring(0, 50) + '...',
+        timestamp: Date.now()
+      };
+      
+      console.log("Device metadata for token claim:", deviceMetadata);
       
       // Add retry logic directly in the mutation function to improve reliability
       let retries = 0;
-      const maxRetries = 3;
+      const maxRetries = isMobile ? 5 : 3; // More retries for mobile devices
       let lastError: Error | null = null;
       
       while (retries < maxRetries) {
@@ -434,16 +456,34 @@ const Settings = () => {
           // Add a small delay between retries to allow server to stabilize
           if (retries > 0) {
             console.log(`Retry attempt ${retries} for claiming token...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+            // Progressive backoff with longer delays for mobile
+            const backoffTime = isMobile ? (1500 * retries) : (1000 * retries);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
           }
           
           // Build the URL with churchId parameter if available
           let url = `/api/planning-center/claim-temp-tokens/${tempKey}`;
+          
+          // Add params as query string parameters
+          const params = new URLSearchParams();
+          
           if (churchId) {
-            url += `?churchId=${encodeURIComponent(churchId)}`;
+            params.append('churchId', churchId);
           }
           
-          const response = await apiRequest(url, 'GET');
+          // Add mobile flag if detected
+          if (isMobile) {
+            params.append('deviceType', 'mobile');
+          }
+          
+          // Add timestamp for cache-busting
+          params.append('t', Date.now().toString());
+          
+          // Combine URL with params
+          const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+          
+          console.log("Making token claim request to:", fullUrl);
+          const response = await apiRequest(fullUrl, 'GET');
           console.log("Token claim API response:", response);
           return response;
         } catch (error) {
@@ -463,27 +503,55 @@ const Settings = () => {
     },
     onSuccess: (response) => {
       console.log("Planning Center token claim successful, refreshing status...");
-      toast({
-        title: "Tokens Claimed",
-        description: "Successfully claimed Planning Center tokens. Verifying connection...",
-        className: "bg-[#69ad4c] text-white",
-      });
+      
+      // Check if this is a mobile device for special handling
+      const isMobileDevice = sessionStorage.getItem('planningCenterMobileDevice') === 'true';
+      
+      // For mobile devices, we need to show more prominent and longer-lasting notifications
+      if (isMobileDevice) {
+        console.log("Using mobile-specific success handling");
+        toast({
+          title: "Planning Center Link Started",
+          description: "Successfully claimed tokens. Setting up connection...",
+          className: "bg-[#69ad4c] text-white",
+          duration: 5000, // Longer duration for mobile
+        });
+      } else {
+        toast({
+          title: "Tokens Claimed",
+          description: "Successfully claimed Planning Center tokens. Verifying connection...",
+          className: "bg-[#69ad4c] text-white",
+        });
+      }
       
       // First invalidate queries
       queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
       
       // Allow a small delay for the server to process the token claim
+      // Use longer delay for mobile devices
+      const verificationDelay = isMobileDevice ? 2500 : 1000;
+      
       setTimeout(() => {
         // Then explicitly refetch the current status
         queryClient.fetchQuery({ queryKey: ['/api/planning-center/status'] })
           .then((newStatus: any) => {
             console.log("New Planning Center status after token claim:", newStatus);
             if (newStatus?.connected) {
-              toast({
-                title: "Connection Successful",
-                description: "Successfully connected to Planning Center!",
-                className: "bg-[#69ad4c] text-white",
-              });
+              // Special handling for mobile success
+              if (isMobileDevice) {
+                toast({
+                  title: "Planning Center Connected! 🎉",
+                  description: "Your Planning Center account is now linked with PlateSync.",
+                  className: "bg-[#69ad4c] text-white font-medium",
+                  duration: 7000, // Even longer for success confirmation on mobile
+                });
+              } else {
+                toast({
+                  title: "Connection Successful",
+                  description: "Successfully connected to Planning Center!",
+                  className: "bg-[#69ad4c] text-white",
+                });
+              }
             } else {
               // If still not connected, show a warning with more specific info
               toast({
@@ -540,10 +608,39 @@ const Settings = () => {
   
   // Check for temp tokens in URL
   useEffect(() => {
+    // Safeguard against null search param
+    if (!search) return;
+    
+    const params = new URLSearchParams(search);
+    
+    // Check for Planning Center errors first
+    const planningCenterError = params.get('planningCenterError');
+    if (planningCenterError) {
+      const errorDescription = params.get('error_description') || 'Unknown error occurred';
+      const errorSource = params.get('mobile') === 'true' ? 'mobile device' : 'browser';
+      console.error(`Planning Center error detected (${errorSource}):`, planningCenterError, errorDescription);
+      
+      // Clean URL parameters immediately to prevent showing the error again on refresh
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {
+        console.error("Failed to clean up URL error parameters:", e);
+      }
+      
+      // Show more detailed error toast
+      toast({
+        title: "Planning Center Connection Failed",
+        description: `Error: ${errorDescription}. Please try again or contact support if the issue persists.`,
+        variant: "destructive",
+        duration: 6000, // Longer duration for errors
+      });
+      
+      return; // Exit early on error
+    }
+    
     // Check if there's a token in the URL query string
     // The format is ?pc_temp_key=<key> possibly with &churchId=<churchId>
-    if (search && search.includes('pc_temp_key=')) {
-      const params = new URLSearchParams(search);
+    if (search.includes('pc_temp_key=')) {
       const tempKey = params.get('pc_temp_key');
       
       // Try to get churchId from URL parameter or localStorage (set by the redirect page)
@@ -553,6 +650,19 @@ const Settings = () => {
       
       // Check if this is from a mobile device
       const isMobileRedirect = params.get('mobile') === 'true';
+      
+      // Get additional debugging parameters
+      const timeParam = params.get('t') || 'none';
+      const tsParam = params.get('ts') || 'none';
+      
+      // Log details for troubleshooting
+      console.log('Planning Center redirect details:', {
+        hasToken: !!tempKey,
+        churchIdSource: urlChurchId ? 'URL' : (storedChurchId ? 'localStorage' : 'none'),
+        isMobile: isMobileRedirect,
+        timestamp: timeParam,
+        extraTimestamp: tsParam
+      });
       
       if (tempKey && !claimingTokens && !claimTokensMutation.isPending) {
         console.log("Found temporary Planning Center token key in URL:", tempKey);
