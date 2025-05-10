@@ -4,6 +4,21 @@ import type { Express, Request, Response } from 'express';
 import session from 'express-session';
 import crypto from 'crypto';
 
+// Helper function to identify user from request.user
+function identifyUser(user: any): string {
+  if (user?.claims?.sub) {
+    console.log('Found userId in claims.sub:', user.claims.sub);
+    return user.claims.sub;
+  }
+  
+  if (user?.id) {
+    console.log('Successfully identified user with ID:', user.id);
+    return user.id;
+  }
+  
+  throw new Error('Unable to identify user');
+}
+
 // Extend Express.User interface to include properties we need
 declare global {
   namespace Express {

@@ -18,6 +18,7 @@ const PlanningCenterIntegration = () => {
   const queryClient = useQueryClient();
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isSearchingTesterly, setIsSearchingTesterly] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'success' | 'error' | null>(null);
 
   // Check URL parameters for connection status
@@ -135,6 +136,44 @@ const PlanningCenterIntegration = () => {
         variant: "destructive",
       });
       setIsClearing(false);
+    },
+  });
+  
+  // Handle searching for Testerly Jones
+  const searchTesterlyMutation = useMutation({
+    mutationFn: async () => {
+      setIsSearchingTesterly(true);
+      const response = await fetch('/api/planning-center/find-testerly');
+      if (!response.ok) {
+        throw new Error(`Failed to search: ${response.statusText}`);
+      }
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Testerly Jones Found!",
+          description: data.message,
+          className: "bg-[#69ad4c] text-white",
+        });
+        // Refresh members list
+        queryClient.invalidateQueries({ queryKey: ['/api/members'] });
+      } else {
+        toast({
+          title: "Search Result",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+      setIsSearchingTesterly(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Search Failed",
+        description: error instanceof Error ? error.message : "Failed to search for Testerly Jones.",
+        variant: "destructive",
+      });
+      setIsSearchingTesterly(false);
     },
   });
 
@@ -274,21 +313,38 @@ const PlanningCenterIntegration = () => {
             <div className="text-sm text-gray-500 mb-2">
               <strong>Troubleshooting:</strong> If you're having connection issues, try clearing the tokens to force a fresh connection.
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => clearTokensMutation.mutate()}
-              disabled={isClearing || clearTokensMutation.isPending}
-              className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
-            >
-              {isClearing || clearTokensMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4">
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                </svg>
-              )}
-              Clear Planning Center Connection (Debug)
-            </Button>
+            
+            <div className="flex flex-col space-y-2">
+              <Button 
+                variant="outline" 
+                onClick={() => searchTesterlyMutation.mutate()}
+                disabled={isSearchingTesterly || searchTesterlyMutation.isPending}
+                className="w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+              >
+                {isSearchingTesterly || searchTesterlyMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Users className="mr-2 h-4 w-4" />
+                )}
+                Find Testerly Jones (Special Search)
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => clearTokensMutation.mutate()}
+                disabled={isClearing || clearTokensMutation.isPending}
+                className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+              >
+                {isClearing || clearTokensMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                )}
+                Clear Planning Center Connection (Debug)
+              </Button>
+            </div>
           </div>
         </div>
       )}
