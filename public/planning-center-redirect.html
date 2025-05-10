@@ -400,7 +400,21 @@
         statusText.textContent = 'Authorization successful. You will be redirected in a moment.';
         loader.classList.add('hidden');
         redirectButton.textContent = 'Go to Settings';
-        redirectButton.href = `/settings?pc_temp_key=${tempKey}`;
+        
+        // Get churchId from sessionStorage if available
+        const storedChurchId = sessionStorage.getItem('pc_church_id');
+        if (storedChurchId) {
+          console.log('Including churchId in redirect:', storedChurchId);
+          redirectButton.href = `/settings?pc_temp_key=${tempKey}&pc_church_id=${storedChurchId}`;
+          
+          // Add to debug info
+          const churchIdDebug = document.createElement('div');
+          churchIdDebug.textContent = 'Using churchId: ' + storedChurchId;
+          debugInfo.appendChild(churchIdDebug);
+        } else {
+          redirectButton.href = `/settings?pc_temp_key=${tempKey}`;
+        }
+        
         debugButton.classList.remove('hidden');
         
         // Add detailed debug info
@@ -413,7 +427,14 @@
         
         // Automatically redirect after 2 seconds
         setTimeout(() => {
-          window.location.href = `/settings?pc_temp_key=${tempKey}`;
+          // Get churchId from sessionStorage if available for automatic redirect
+          const storedChurchId = sessionStorage.getItem('pc_church_id');
+          if (storedChurchId) {
+            console.log('Including churchId in automatic redirect:', storedChurchId);
+            window.location.href = `/settings?pc_temp_key=${tempKey}&pc_church_id=${storedChurchId}`;
+          } else {
+            window.location.href = `/settings?pc_temp_key=${tempKey}`;
+          }
         }, 2000);
       }
       // Case 2: OAuth callback with code/state - should never happen in this page directly
