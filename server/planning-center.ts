@@ -357,7 +357,63 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Log user details for debugging
       const user = req.user as any;
-      console.log(`Auth URL request from user: ${user.id}, church: ${user.churchId || 'not set'}`);
+      console.log('Full req.user object in auth URL generation:', JSON.stringify(user, null, 2));
+      
+      // Extract user ID from req.user which might be in different formats based on auth method
+      let userId = '';
+      
+      // Check for Replit Auth structure (claims.sub)
+      if (user.claims && user.claims.sub) {
+        userId = user.claims.sub;
+        console.log('Found userId in claims.sub:', userId);
+      } 
+      // Try alternatives for username/email-based auth
+      else if (user.username || user.email) {
+        // Use email if available, otherwise try username
+        const emailToCheck = user.email || user.username;
+        
+        // Try to look up user by email
+        try {
+          const foundUser = await storage.getUserByEmail(emailToCheck);
+          if (foundUser && foundUser.id) {
+            userId = foundUser.id;
+            console.log('Found userId by looking up email:', userId);
+          }
+        } catch (err) {
+          console.error('Error looking up user by email:', err);
+        }
+      }
+      // Check for local auth structure (id)
+      else if (user.id) {
+        userId = user.id;
+        console.log('Found userId in user.id:', userId);
+      }
+      
+      // If we can't find a user ID, we have a problem
+      if (!userId) {
+        console.error('Could not extract user ID from user object for auth URL generation');
+        return res.status(400).json({
+          error: 'invalid_user',
+          message: 'Could not determine user identity'
+        });
+      }
+      
+      // Assign the extracted ID to user.id for consistent usage
+      user.id = userId;
+      console.log(`Auth URL request from user: ${user.id}, church: ${user.churchId || user.id}`);
+      
+      // If churchId is missing, fall back to using userId as churchId
+      if (!user.churchId) {
+        user.churchId = user.id;
+        console.log('No churchId found, using user.id as churchId:', user.churchId);
+      }
+      
+      // Store the properly identified user.id and churchId in the session for later use
+      if (req.session) {
+        req.session.planningCenterUserId = user.id;
+        req.session.planningCenterChurchId = user.churchId;
+        console.log('Stored user.id and churchId in session for Planning Center auth');
+      }
       
       // Log what host Replit thinks we are for debugging network problems
       console.log('Debug - Host details:');
@@ -559,13 +615,27 @@ export function setupPlanningCenterRoutes(app: Express) {
       userId = user.claims.sub;
       console.log('Found userId in claims.sub:', userId);
     } 
+    // Try alternatives for username-based auth
+    else if (user.username) {
+      // Try to look up user ID by username
+      try {
+        const foundUser = await storage.getUserByUsername(user.username);
+        if (foundUser && foundUser.id) {
+          userId = foundUser.id;
+          console.log('Found userId by looking up username:', userId);
+        }
+      } catch (err) {
+        console.error('Error looking up user by username:', err);
+      }
+    }
     // Check for local auth structure (id)
     else if (user.id) {
       userId = user.id;
       console.log('Found userId in user.id:', userId);
     }
     // If we can't find a user ID, we have a problem
-    else {
+    
+    if (!userId) {
       console.error('Could not extract user ID from user object');
       return res.status(400).json({
         connected: false,
@@ -576,6 +646,7 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Assign the extracted ID to user.id for consistent usage
     user.id = userId;
+    console.log('Successfully identified user with ID:', userId);
     
     console.log('Using user ID:', user.id);
     

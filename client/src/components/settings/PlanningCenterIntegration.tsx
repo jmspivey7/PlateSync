@@ -205,15 +205,35 @@ const PlanningCenterIntegration = () => {
               storing your credentials.
             </p>
             <div className="flex justify-center">
-              <a
-                href="/api/planning-center/authorize"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white h-10 px-4 py-2 w-64"
+              <Button
+                onClick={async () => {
+                  try {
+                    // Request the auth URL from the backend
+                    const response = await fetch('/api/planning-center/auth-url');
+                    const data = await response.json();
+                    
+                    if (data.url) {
+                      console.log('Opening Planning Center auth URL in same window');
+                      
+                      // Use window.location to navigate to the auth URL in the same window
+                      window.location.href = data.url;
+                    } else {
+                      throw new Error('No auth URL returned from server');
+                    }
+                  } catch (error) {
+                    console.error('Error getting auth URL:', error);
+                    toast({
+                      title: "Connection Failed",
+                      description: "Could not initiate Planning Center connection. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
               >
                 <LinkIcon className="mr-2 h-4 w-4" />
                 Connect to Planning Center
-              </a>
+              </Button>
             </div>
             
             <div className="border-t mt-4 pt-4">
