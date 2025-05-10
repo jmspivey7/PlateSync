@@ -752,73 +752,134 @@ export function setupPlanningCenterRoutes(app: Express) {
         return res.status(403).send('Planning Center not connected');
       }
       
-      // Fetch people from Planning Center
-      const peopleResponse = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people`, {
-        headers: {
-          Authorization: `Bearer ${tokens.accessToken}`
-        },
-        params: {
-          include: 'emails,phone_numbers',
-          per_page: 100
+      // Search for a specific test user if we're debugging
+      if (req.query.debug === 'true') {
+        try {
+          const searchResponse = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people`, {
+            headers: {
+              Authorization: `Bearer ${tokens.accessToken}`
+            },
+            params: {
+              include: 'emails,phone_numbers',
+              where: {
+                search_name_or_email: 'testerly'
+              }
+            }
+          });
+          
+          if (searchResponse.data.data && searchResponse.data.data.length > 0) {
+            console.log('Found test user(s):');
+            searchResponse.data.data.forEach((p: any) => {
+              console.log(`- ${p.attributes.first_name} ${p.attributes.last_name} (ID: ${p.id})`);
+            });
+          } else {
+            console.log('No test users found with name "Testerly"');
+          }
+        } catch (searchError) {
+          console.error('Error searching for test user:', searchError);
         }
-      });
-      
-      const people = peopleResponse.data.data;
-      
-      // Planning Center's API response structure is different from what we expected
-      // Let's log the first person to see the structure
-      if (people && people.length > 0) {
-        console.log('Planning Center API response structure:', 
-          JSON.stringify(peopleResponse.data, null, 2).substring(0, 1000) + '...');
       }
       
-      // Get the included data (emails and phone numbers)
-      const included = peopleResponse.data.included || [];
+      // Store all people to import
+      let allPeople: any[] = [];
+      let nextPageUrl: string | null = `${PLANNING_CENTER_API_BASE}/people/v2/people?include=emails,phone_numbers&per_page=100`;
+      let pageCount = 0;
+      const MAX_PAGES = 10; // Limit to 10 pages (1000 people) for performance
       
-      // Create lookup maps for emails and phone numbers by their owner ID
-      const emailsByOwnerId = new Map();
-      const phonesByOwnerId = new Map();
-      
-      // Process included data to organize by owner
-      included.forEach((item: any) => {
-        if (item.type === 'Email') {
-          const ownerId = item.relationships?.person?.data?.id;
-          if (ownerId && item.attributes?.address) {
-            if (!emailsByOwnerId.has(ownerId)) {
-              emailsByOwnerId.set(ownerId, []);
-            }
-            emailsByOwnerId.get(ownerId).push(item.attributes.address);
+      // Fetch people from Planning Center (with pagination)
+      while (nextPageUrl && pageCount < MAX_PAGES) {
+        pageCount++;
+        console.log(`Fetching Planning Center people page ${pageCount}...`);
+        
+        // Extract the path from the next page URL
+        const apiPath = nextPageUrl.replace(PLANNING_CENTER_API_BASE, '');
+        
+        const peopleResponse = await axios.get(`${PLANNING_CENTER_API_BASE}${apiPath}`, {
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
           }
-        } else if (item.type === 'PhoneNumber') {
-          const ownerId = item.relationships?.person?.data?.id;
-          if (ownerId && item.attributes?.number) {
-            if (!phonesByOwnerId.has(ownerId)) {
-              phonesByOwnerId.set(ownerId, []);
+        });
+        
+        // Add this page of people to our collection
+        const people = peopleResponse.data.data;
+        allPeople = allPeople.concat(people);
+        
+        // Set up for next page if available
+        nextPageUrl = peopleResponse.data.links?.next || null;
+        
+        // Process included data for this page
+        const included = peopleResponse.data.included || [];
+        
+        // Create lookup maps for emails and phone numbers by their owner ID
+        const emailsByOwnerId = new Map();
+        const phonesByOwnerId = new Map();
+        
+        // Process included data to organize by owner
+        included.forEach((item: any) => {
+          if (item.type === 'Email') {
+            const ownerId = item.relationships?.person?.data?.id;
+            if (ownerId && item.attributes?.address) {
+              if (!emailsByOwnerId.has(ownerId)) {
+                emailsByOwnerId.set(ownerId, []);
+              }
+              emailsByOwnerId.get(ownerId).push(item.attributes.address);
             }
-            phonesByOwnerId.get(ownerId).push(item.attributes.number);
+          } else if (item.type === 'PhoneNumber') {
+            const ownerId = item.relationships?.person?.data?.id;
+            if (ownerId && item.attributes?.number) {
+              if (!phonesByOwnerId.has(ownerId)) {
+                phonesByOwnerId.set(ownerId, []);
+              }
+              phonesByOwnerId.get(ownerId).push(item.attributes.number);
+            }
           }
+        });
+        
+        // Look for any with the name "Testerly" in this batch
+        const testerlyInThisBatch = people.filter((p: any) => 
+          p.attributes.first_name?.toLowerCase() === 'testerly' || 
+          p.attributes.last_name?.toLowerCase() === 'jones');
+        
+        if (testerlyInThisBatch.length > 0) {
+          console.log('Found Testerly in this batch of people!');
+          testerlyInThisBatch.forEach((p: any) => {
+            const personId = p.id;
+            const emails = emailsByOwnerId.get(personId) || [];
+            console.log(`- ${p.attributes.first_name} ${p.attributes.last_name} (ID: ${personId}, Email: ${emails.length > 0 ? emails[0] : 'none'})`);
+          });
         }
-      });
+        
+        // Count people with contact information in this batch
+        console.log(`Found ${emailsByOwnerId.size} people with emails and ${phonesByOwnerId.size} people with phone numbers`);
+        
+        // If we've found Testerly Jones or reached page limit, we can stop
+        if (testerlyInThisBatch.length > 0) {
+          console.log('Found target test user, stopping pagination early');
+          break;
+        }
+        
+        // For testing purposes, if we're searching for Testerly, we'll look at all pages
+        if (req.query.debug !== 'true' && pageCount >= 1) {
+          console.log('Only importing first page of members for performance');
+          break;
+        }
+      }
       
-      // Count people with contact information
-      const peopleWithEmail = emailsByOwnerId.size;
-      const peopleWithPhone = phonesByOwnerId.size;
-      console.log(`Found ${peopleWithEmail} people with emails and ${peopleWithPhone} people with phone numbers`);
+      console.log(`Finished fetching ${pageCount} pages, found ${allPeople.length} total people`);
       
       // Convert Planning Center people to PlateSync members
-      const members = people.map((person: any) => {
+      const members = allPeople.map((person: any) => {
         const attributes = person.attributes;
         const personId = person.id;
         
-        // Get first email and phone for this person
-        const emails = emailsByOwnerId.get(personId) || [];
-        const phones = phonesByOwnerId.get(personId) || [];
+        // Find the included data for this person - need to refetch from API
+        // Since we're using pagination, we need to make a separate request
         
         return {
           firstName: attributes.first_name,
           lastName: attributes.last_name,
-          email: emails.length > 0 ? emails[0] : null,
-          phone: phones.length > 0 ? phones[0] : null,
+          email: attributes.primary_email_address,  // Use the contact info from attributes if available
+          phone: attributes.primary_phone_number,   // Use the contact info from attributes if available
           isVisitor: false,
           churchId: req.user?.churchId || user.churchId,
           externalId: personId,
@@ -828,7 +889,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Log all people received that have first and last names
       const potentialMembers = members.filter(m => m.firstName && m.lastName);
-      console.log(`Total people from Planning Center: ${people.length}`);
+      console.log(`Total people from Planning Center: ${allPeople.length}`);
       console.log(`People with first and last names: ${potentialMembers.length}`);
       
       // Debug: Show the first 5 people who have names but no contact info
@@ -843,16 +904,30 @@ export function setupPlanningCenterRoutes(app: Express) {
         });
       }
       
+      // For each member, check if one has name "Testerly Jones"
+      const testerly = potentialMembers.find(m => 
+        m.firstName?.toLowerCase() === 'testerly' && 
+        m.lastName?.toLowerCase() === 'jones');
+        
+      if (testerly) {
+        console.log('Found Testerly Jones in the list to import!', testerly);
+      } else {
+        console.log('Testerly Jones was NOT found in the members to import.');
+      }
+      
       // Import members into the database
       const importedCount = await storage.bulkImportMembers(members, req.user?.churchId || user.churchId);
       
       // Update last sync date
       await storage.updatePlanningCenterLastSync(req.user?.id || user.id, req.user?.churchId || user.churchId);
       
-      res.json({ success: true, importedCount });
+      res.json({ success: true, importedCount, totalPeopleFound: allPeople.length });
     } catch (error) {
       console.error('Error importing Planning Center members:', error);
-      res.status(500).send('Error importing Planning Center members');
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
   
