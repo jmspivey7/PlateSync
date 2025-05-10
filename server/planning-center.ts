@@ -858,12 +858,12 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     try {
       // Try to get tokens with churchId first (preferred)
-      let tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
+      let tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.churchId);
       
       // If that fails, try with userId as churchId
-      if (!tokens && user.churchId !== user.id) {
+      if (!tokens && statusUser.churchId !== statusUser.id) {
         console.log('No tokens found with churchId, trying with userId as churchId...');
-        tokens = await storage.getPlanningCenterTokens(user.id, user.id);
+        tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.id);
       }
       
       console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
@@ -873,8 +873,8 @@ export function setupPlanningCenterRoutes(app: Express) {
         return res.status(200).json({ 
           connected: false,
           message: 'No Planning Center tokens found in database',
-          userId: user.id,
-          churchId: user.churchId
+          userId: statusUser.id,
+          churchId: statusUser.churchId
         });
       }
       
