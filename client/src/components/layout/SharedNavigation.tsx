@@ -185,7 +185,18 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                     <span>Users</span>
                   </Button>
                   
-
+                  {/* Members */}
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
+                    onClick={() => {
+                      setLocation("/members");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <UserPlus className="mr-4 h-5 w-5" />
+                    <span>Members</span>
+                  </Button>
                   
                   {/* Settings */}
                   <Button 
