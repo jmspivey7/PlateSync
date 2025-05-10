@@ -76,7 +76,8 @@ const PlanningCenterIntegration = () => {
       toast({
         title: "Members Imported",
         description: `Successfully imported ${data.importedCount} members from Planning Center.`,
-        className: "bg-[#69ad4c] text-white",
+        className: "text-white",
+        style: { backgroundColor: PLANNING_CENTER_BLUE },
       });
       queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
       queryClient.invalidateQueries({ queryKey: ['/api/members'] });
