@@ -1001,13 +1001,10 @@ export function setupPlanningCenterRoutes(app: Express) {
         // Count people with contact information in this batch
         console.log(`Found ${emailsByOwnerId.size} people with emails and ${phonesByOwnerId.size} people with phone numbers`);
         
-        // If we've found Testerly Jones or reached page limit, we can stop
-        if (testerlyInThisBatch.length > 0) {
-          console.log('Found target test user, stopping pagination early');
-          break;
-        }
+        // We want to import all members - don't stop for test users
+        // Log the Testerly findings but continue with all pages
         
-        // We no longer limit to first page, import all members
+        // No longer limiting to first page, import all members
         // Set a reasonable upper limit to prevent infinite loops
         if (pageCount >= 20) { // This would be 2000 members at 100 per page
           console.log('Reached maximum page limit (20 pages / ~2000 members)');
