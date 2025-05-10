@@ -539,21 +539,21 @@ export function setupPlanningCenterRoutes(app: Express) {
       const state = crypto.randomBytes(24).toString('hex');
       
       // Log user details for debugging
-      const user = req.user as any;
-      console.log('Full req.user object in auth URL generation:', JSON.stringify(user, null, 2));
+      const authUrlUser = req.user as any;
+      console.log('Full req.user object in auth URL generation:', JSON.stringify(authUrlUser, null, 2));
       
       // Extract user ID from req.user which might be in different formats based on auth method
       let userId = '';
       
       // Check for Replit Auth structure (claims.sub)
-      if (user.claims && user.claims.sub) {
-        userId = user.claims.sub;
+      if (authUrlUser.claims && authUrlUser.claims.sub) {
+        userId = authUrlUser.claims.sub;
         console.log('Found userId in claims.sub:', userId);
       } 
       // Try alternatives for username/email-based auth
-      else if (user.username || user.email) {
+      else if (authUrlUser.username || authUrlUser.email) {
         // Use email if available, otherwise try username
-        const emailToCheck = user.email || user.username;
+        const emailToCheck = authUrlUser.email || authUrlUser.username;
         
         // Try to look up user by email
         try {
@@ -567,8 +567,8 @@ export function setupPlanningCenterRoutes(app: Express) {
         }
       }
       // Check for local auth structure (id)
-      else if (user.id) {
-        userId = user.id;
+      else if (authUrlUser.id) {
+        userId = authUrlUser.id;
         console.log('Found userId in user.id:', userId);
       }
       
@@ -581,20 +581,20 @@ export function setupPlanningCenterRoutes(app: Express) {
         });
       }
       
-      // Assign the extracted ID to user.id for consistent usage
-      user.id = userId;
-      console.log(`Auth URL request from user: ${user.id}, church: ${user.churchId || user.id}`);
+      // Assign the extracted ID to authUrlUser.id for consistent usage
+      authUrlUser.id = userId;
+      console.log(`Auth URL request from user: ${authUrlUser.id}, church: ${authUrlUser.churchId || authUrlUser.id}`);
       
       // If churchId is missing, fall back to using userId as churchId
-      if (!user.churchId) {
-        user.churchId = user.id;
-        console.log('No churchId found, using user.id as churchId:', user.churchId);
+      if (!authUrlUser.churchId) {
+        authUrlUser.churchId = authUrlUser.id;
+        console.log('No churchId found, using user.id as churchId:', authUrlUser.churchId);
       }
       
-      // Store the properly identified user.id and churchId in the session for later use
+      // Store the properly identified authUrlUser.id and churchId in the session for later use
       if (req.session) {
-        req.session.planningCenterUserId = user.id;
-        req.session.planningCenterChurchId = user.churchId;
+        req.session.planningCenterUserId = authUrlUser.id;
+        req.session.planningCenterChurchId = authUrlUser.churchId;
         console.log('Stored user.id and churchId in session for Planning Center auth');
       }
       
@@ -708,8 +708,8 @@ export function setupPlanningCenterRoutes(app: Express) {
       const state = crypto.randomBytes(24).toString('hex');
       
       // Log user details for debugging
-      const user = req.user as any;
-      console.log(`Authorize request from user: ${user.id}, church: ${user.churchId || 'not set'}`);
+      const authorizeUser = req.user as any;
+      console.log(`Authorize request from user: ${authorizeUser.id}, church: ${authorizeUser.churchId || 'not set'}`);
       
       // Log what host Replit thinks we are for debugging network problems
       console.log('Debug - Host details:');
@@ -796,7 +796,7 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
     
     // Explicitly cast req.user to get TypeScript to recognize the properties
-    const user = req.user as any;
+    const statusUser = req.user as any;
     
     // Debug user object to see what properties are available
     console.log('Full req.user object in status check:', JSON.stringify(req.user, null, 2));
