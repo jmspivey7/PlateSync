@@ -21,31 +21,46 @@ PlateSync integrates with Planning Center Online (PCO) to import member data. Th
 The Planning Center integration requires careful handling of the OAuth flow:
 
 1. **Essential Requirements:**
-   - Use a spawned tab approach (`target="_blank"`) for the initial authorization
-   - Configure the correct callback URL in both the Planning Center application settings and in PlateSync's environment variables
+   - Use a spawned tab approach (`target="_blank"`) for desktop browsers
+   - Use direct navigation for mobile browsers to avoid iframe issues
+   - Include special OAuth parameters to force re-authentication when needed
+   - Store a churchId parameter throughout the flow to maintain context
+   - Configure the correct callback URL in both Planning Center application settings and PlateSync's environment variables
    - Store the OAuth state parameter in the user session for security validation
 
 2. **Implementation Details:**
    ```tsx
-   // Example of correct implementation in React component
-   <a
-     href="/api/planning-center/authorize"
-     target="_blank"
-     rel="noopener noreferrer"
-     className="inline-flex items-center justify-center rounded-md text-sm font-medium..."
-   >
-     <LinkIcon className="mr-2 h-4 w-4" />
-     Connect to Planning Center
-   </a>
+   // Example of correct implementation with device detection
+   const connectToPlanningCenter = async () => {
+     // Detect device type
+     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+     
+     // Get auth URL from server
+     const response = await fetch('/api/planning-center/auth-url?device=' + 
+       (isMobile ? 'mobile' : 'desktop'));
+     const data = await response.json();
+     
+     if (isMobile) {
+       // Mobile: use direct navigation
+       window.location.href = data.url;
+     } else {
+       // Desktop: use spawned tab
+       window.open(data.url, '_blank');
+     }
+   };
    ```
 
 3. **Flow Sequence:**
-   - User clicks "Connect to Planning Center" which opens a new tab
-   - The server generates a secure state parameter and stores it in the session
-   - Planning Center displays the authorization screen to the user
-   - Upon approval, Planning Center redirects to our callback URL with an authorization code
-   - The server exchanges the code for access and refresh tokens
-   - The server then redirects and closes the popup
+   - User clicks "Connect to Planning Center"
+   - Client detects device type and stores churchId in localStorage/sessionStorage
+   - Server generates a secure OAuth URL with multiple parameters:
+     - `prompt=login` to force login dialog
+     - `max_age=0` to require fresh authentication
+     - Unique `nonce` and timestamp to prevent caching
+   - Planning Center displays the authorization screen
+   - Upon approval, Planning Center redirects to our callback URL with code
+   - The server exchanges the code for tokens
+   - The callback page sends a message to the opener window (desktop) or redirects (mobile)
 
 ### Token Management
 
@@ -55,11 +70,20 @@ Planning Center access tokens expire after 2 hours, while refresh tokens are val
   - Store both access and refresh tokens securely in the database
   - Associate tokens with both user ID and church ID
   - Include expiration timestamp to know when to refresh
+  - Store churchId in multiple places for redundancy (URL parameters, session, localStorage)
 
 - **Token Refresh:**
   - Check token expiration before making API calls
   - Automatically refresh when tokens are expired
   - Handle refresh token failures gracefully with clear user feedback
+  
+- **Token Revocation (Disconnect):**
+  - Revoke both access token AND refresh token with Planning Center
+  - Use proper OAuth token revocation format (application/x-www-form-urlencoded)
+  - Include client_id, client_secret and token parameters in revocation request
+  - Clean up all temporary and permanent token storage after revocation
+  - Clear client-side storage (localStorage, sessionStorage) during disconnect
+  - Implement a short delay (2 seconds) after disconnect before allowing reconnect
 
 ### Troubleshooting Planning Center Integration
 
