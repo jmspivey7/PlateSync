@@ -146,6 +146,9 @@ export async function bulkImportMembers(membersToImport: Array<Partial<InsertMem
     const cleanupCount = await removeDuplicateMembers(churchId);
     if (cleanupCount > 0) {
       console.log(`Auto-cleaned ${cleanupCount} duplicate members after import`);
+      // Important: adjust importedCount to reflect actual net additions
+      importedCount = importedCount - cleanupCount;
+      console.log(`Adjusted importedCount to ${importedCount} after duplicate cleanup`);
     }
     
   } catch (error) {
