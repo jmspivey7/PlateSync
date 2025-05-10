@@ -9,6 +9,12 @@ This document contains essential information for developers working on the Plate
    - [Troubleshooting](#troubleshooting-planning-center-integration)
 2. [Authentication](#authentication)
 3. [Database Structure](#database-structure)
+4. [Email Templates](#email-templates)
+   - [Email Template Types](#email-template-types)
+   - [Template Structure](#template-structure)
+   - [Template Assignment and Usage](#template-assignment-and-usage)
+   - [Password Reset Email Flow](#password-reset-email-flow)
+   - [Email Template Management](#email-template-management)
 
 ---
 
