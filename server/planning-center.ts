@@ -783,24 +783,27 @@ export function setupPlanningCenterRoutes(app: Express) {
       included.forEach((item: any) => {
         if (item.type === 'Email') {
           const ownerId = item.relationships?.person?.data?.id;
-          if (ownerId) {
+          if (ownerId && item.attributes?.address) {
             if (!emailsByOwnerId.has(ownerId)) {
               emailsByOwnerId.set(ownerId, []);
             }
-            emailsByOwnerId.get(ownerId).push(item.attributes?.address);
+            emailsByOwnerId.get(ownerId).push(item.attributes.address);
           }
         } else if (item.type === 'PhoneNumber') {
           const ownerId = item.relationships?.person?.data?.id;
-          if (ownerId) {
+          if (ownerId && item.attributes?.number) {
             if (!phonesByOwnerId.has(ownerId)) {
               phonesByOwnerId.set(ownerId, []);
             }
-            phonesByOwnerId.get(ownerId).push(item.attributes?.number);
+            phonesByOwnerId.get(ownerId).push(item.attributes.number);
           }
         }
       });
       
-      console.log(`Found ${emailsByOwnerId.size} people with emails and ${phonesByOwnerId.size} people with phone numbers`);
+      // Count people with contact information
+      const peopleWithEmail = emailsByOwnerId.size;
+      const peopleWithPhone = phonesByOwnerId.size;
+      console.log(`Found ${peopleWithEmail} people with emails and ${peopleWithPhone} people with phone numbers`);
       
       // Convert Planning Center people to PlateSync members
       const members = people.map((person: any) => {
@@ -822,6 +825,23 @@ export function setupPlanningCenterRoutes(app: Express) {
           externalSystem: 'PLANNING_CENTER'
         };
       });
+      
+      // Log all people received that have first and last names
+      const potentialMembers = members.filter(m => m.firstName && m.lastName);
+      console.log(`Total people from Planning Center: ${people.length}`);
+      console.log(`People with first and last names: ${potentialMembers.length}`);
+      
+      // Debug: Show the first 5 people who have names but no contact info
+      const peopleWithoutContactInfo = potentialMembers
+        .filter(m => !m.email && !m.phone)
+        .slice(0, 5);
+      
+      if (peopleWithoutContactInfo.length > 0) {
+        console.log('Examples of people with names but no contact info:');
+        peopleWithoutContactInfo.forEach(p => {
+          console.log(`- ${p.firstName} ${p.lastName} (ID: ${p.externalId})`);
+        });
+      }
       
       // Import members into the database
       const importedCount = await storage.bulkImportMembers(members, req.user?.churchId || user.churchId);
