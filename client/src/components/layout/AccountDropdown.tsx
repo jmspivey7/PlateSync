@@ -15,6 +15,7 @@ import {
   HelpCircle, 
   Settings, 
   Users, 
+  UserPlus, 
   LogOut
 } from "lucide-react";
 import { useLocation } from "wouter";
@@ -87,7 +88,10 @@ const AccountDropdown = () => {
                 <span>Users</span>
               </DropdownMenuItem>
               
-
+              <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/members")}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                <span>Members</span>
+              </DropdownMenuItem>
               
               <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/settings")}>
                 <Settings className="mr-2 h-4 w-4" />

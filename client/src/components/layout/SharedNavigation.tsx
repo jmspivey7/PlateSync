@@ -8,6 +8,7 @@ import {
   HelpCircle, 
   Settings, 
   Users, 
+  UserPlus,
   LogOut,
   ChevronDown 
 } from "lucide-react";
