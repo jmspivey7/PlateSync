@@ -405,7 +405,9 @@ const PlanningCenterIntegration = () => {
                 Import All Members
               </Button>
               <span className="text-xs text-gray-500 mt-1 text-center">
-                Imports up to 2,000 members
+                {status.lastSyncDate 
+                  ? `Last import: ${new Date(status.lastSyncDate).toLocaleDateString()} at ${new Date(status.lastSyncDate).toLocaleTimeString()}`
+                  : "No members imported yet"}
               </span>
             </div>
           </div>
