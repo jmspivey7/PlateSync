@@ -1220,15 +1220,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Remove duplicate members that have the same first and last name but no contact info
   app.post('/api/members/remove-duplicates', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
-      const churchId = req.user?.churchId;
+      const userId = req.user.claims.sub;
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
       
       if (!churchId) {
         return res.status(400).json({ message: 'Church ID is required' });
       }
       
+      console.log(`[DUPLICATE REMOVAL] Starting duplicate removal for churchId ${churchId}`);
+      
       // Remove duplicates
       const removedCount = await storage.removeDuplicateMembers(churchId);
+      
+      console.log(`[DUPLICATE REMOVAL] Removed ${removedCount} duplicate members for churchId ${churchId}`);
       
       return res.status(200).json({ 
         success: true, 
