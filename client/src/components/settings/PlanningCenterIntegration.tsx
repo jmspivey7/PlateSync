@@ -295,18 +295,23 @@ const PlanningCenterIntegration = () => {
               )}
               Disconnect
             </Button>
-            <Button 
-              className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
-              onClick={() => importMembersMutation.mutate()}
-              disabled={isImporting || importMembersMutation.isPending}
-            >
-              {isImporting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <UserPlus className="mr-2 h-4 w-4" />
-              )}
-              Import Members
-            </Button>
+            <div className="flex flex-col">
+              <Button 
+                className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white w-64"
+                onClick={() => importMembersMutation.mutate()}
+                disabled={isImporting || importMembersMutation.isPending}
+              >
+                {isImporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="mr-2 h-4 w-4" />
+                )}
+                Import All Members
+              </Button>
+              <span className="text-xs text-gray-500 mt-1 text-center">
+                Imports up to 2,000 members
+              </span>
+            </div>
           </div>
           
           <div className="border-t pt-4">

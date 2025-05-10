@@ -1007,14 +1007,25 @@ export function setupPlanningCenterRoutes(app: Express) {
           break;
         }
         
-        // Always search for Testerly Jones regardless of debug mode
-        if (testerlyInThisBatch.length === 0 && pageCount >= 1 && req.query.debug !== 'true' && req.query.findTesterly !== 'true') {
-          console.log('Only importing first page of members for performance');
+        // We no longer limit to first page, import all members
+        // Set a reasonable upper limit to prevent infinite loops
+        if (pageCount >= 20) { // This would be 2000 members at 100 per page
+          console.log('Reached maximum page limit (20 pages / ~2000 members)');
           break;
         }
       }
       
       console.log(`Finished fetching ${pageCount} pages, found ${allPeople.length} total people`);
+      
+      // Check if we found Testerly Jones
+      const foundTesterly = allPeople.some(person => 
+        person.attributes.first_name?.toLowerCase() === 'testerly' || 
+        person.attributes.last_name?.toLowerCase() === 'jones'
+      );
+      
+      if (foundTesterly) {
+        console.log('Successfully found Testerly Jones in the imported data!');
+      }
       
       // Convert Planning Center people to PlateSync members
       const members = allPeople.map((person: any) => {
