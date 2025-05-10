@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#ffffff" rx="20" ry="20"/>
+  <!-- Bowl shape -->
+  <ellipse cx="100" cy="100" rx="70" ry="45" fill="none" stroke="#1a202c" stroke-width="12"/>
+  <!-- Bottom curve of bowl -->
+  <path d="M45,110 Q100,150 155,110" fill="none" stroke="#1a202c" stroke-width="12"/>
+  <!-- Dollar sign -->
+  <circle cx="85" cy="95" r="25" fill="#69ad4c"/>
+  <path d="M85,75 V115 M75,80 L95,80 M75,110 L95,110" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <!-- Bill stack -->
+  <rect x="110" y="85" width="30" height="15" fill="#9cc6f5" stroke="#1a202c" stroke-width="2" transform="rotate(-15, 110, 85)"/>
+  <rect x="115" y="90" width="30" height="15" fill="#7ea2f5" stroke="#1a202c" stroke-width="2" transform="rotate(-15, 115, 90)"/>
+  <rect x="120" y="95" width="30" height="15" fill="#5e8ef5" stroke="#1a202c" stroke-width="2" transform="rotate(-15, 120, 95)"/>
+</svg>
