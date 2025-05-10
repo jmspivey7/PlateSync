@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/hooks/useAuth";
 
 // Planning Center brand color
 const PLANNING_CENTER_BLUE = "#2176FF";
@@ -20,8 +21,45 @@ const PlanningCenterIntegration = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isImporting, setIsImporting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   // Removed unused state variables for troubleshooting features
   const [connectionStatus, setConnectionStatus] = useState<'success' | 'error' | null>(null);
+  
+  // Hook to get current user and access church information
+  const { user } = useAuth();
+
+  // Function to handle Planning Center connection
+  const handleConnectPlanningCenter = async () => {
+    try {
+      setIsConnecting(true);
+      
+      // Get auth URL from our backend with churchId parameter
+      const response = await apiRequest('/api/planning-center/auth-url', 'GET');
+      
+      if (response?.url) {
+        console.log('Got Planning Center auth URL with churchId:', response.churchId);
+        
+        // Store churchId in localStorage as a backup method
+        if (response.churchId) {
+          localStorage.setItem('planningCenterChurchId', response.churchId);
+          console.log('Stored churchId in localStorage:', response.churchId);
+        }
+        
+        // Redirect to Planning Center OAuth page
+        window.location.href = response.url;
+      } else {
+        throw new Error('Failed to get Planning Center authorization URL');
+      }
+    } catch (error) {
+      console.error('Error connecting to Planning Center:', error);
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : "Failed to start Planning Center connection.",
+        variant: "destructive",
+      });
+      setIsConnecting(false);
+    }
+  };
 
   // Check URL parameters for connection status
   useEffect(() => {
@@ -193,16 +231,24 @@ const PlanningCenterIntegration = () => {
               storing your credentials.
             </p>
             <div className="flex justify-center">
-              <a
-                href="/api/planning-center/authorize"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Button
+                onClick={handleConnectPlanningCenter}
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white h-10 px-4 py-2 w-full md:w-64 hover:opacity-90"
                 style={{ backgroundColor: PLANNING_CENTER_BLUE }}
+                disabled={isConnecting}
               >
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Connect to Planning Center
-              </a>
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Connect to Planning Center
+                  </>
+                )}
+              </Button>
             </div>
             
             {/* Troubleshooting section removed */}
