@@ -49,16 +49,54 @@ const PlanningCenterIntegration = () => {
         // Detect if we're on a mobile device
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
+        // Store device type in session storage for use later in the flow
+        sessionStorage.setItem('planningCenterDeviceType', isMobileDevice ? 'mobile' : 'desktop');
+        console.log('Stored device type in session storage:', isMobileDevice ? 'mobile' : 'desktop');
+        
+        // Add a timestamp to help with cache-busting
+        const timeStamp = Date.now();
+        localStorage.setItem('planningCenterAuthTimestamp', timeStamp.toString());
+        
         if (isMobileDevice) {
           console.log('Mobile device detected, using direct navigation');
-          // On mobile, directly navigate to the auth URL
-          // This works better than popups on mobile devices
-          window.location.href = response.url;
-          // Note: We won't reset isConnecting here since we're leaving the page
+          
+          // On mobile, we need to use a different approach
+          // First, show the user a toast to indicate we're proceeding
+          toast({
+            title: "Connecting to Planning Center",
+            description: "You'll be redirected to authenticate with Planning Center. After authentication, you'll be returned to PlateSync.",
+            duration: 5000,
+          });
+          
+          // Create the auth URL with device type parameter for better handling
+          let authUrl = response.url;
+          // Append deviceType=mobile to the auth URL if it doesn't already have query params
+          if (authUrl.includes('?')) {
+            authUrl += '&deviceType=mobile';
+          } else {
+            authUrl += '?deviceType=mobile';
+          }
+          
+          // Add a short delay to ensure the toast is shown before redirect
+          setTimeout(() => {
+            // On mobile, directly navigate to the auth URL
+            // This works better than popups on mobile devices
+            window.location.href = authUrl;
+            // Note: We won't reset isConnecting here since we're leaving the page
+          }, 1000);
         } else {
-          // On desktop, open in a new tab as before
+          // On desktop, open in a new tab with deviceType parameter
           console.log('Desktop device detected, opening in new tab');
-          const newTab = window.open(response.url, '_blank');
+          
+          // Create the auth URL with device type parameter
+          let authUrl = response.url;
+          if (authUrl.includes('?')) {
+            authUrl += '&deviceType=desktop';
+          } else {
+            authUrl += '?deviceType=desktop';
+          }
+          
+          const newTab = window.open(authUrl, '_blank');
           
           // If popup was blocked, fall back to informing the user
           if (!newTab) {

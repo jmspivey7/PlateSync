@@ -551,6 +551,9 @@ const Settings = () => {
       const storedChurchId = localStorage.getItem('planningCenterChurchId');
       const churchId = urlChurchId || storedChurchId || undefined;
       
+      // Check if this is from a mobile device
+      const isMobileRedirect = params.get('mobile') === 'true';
+      
       if (tempKey && !claimingTokens && !claimTokensMutation.isPending) {
         console.log("Found temporary Planning Center token key in URL:", tempKey);
         if (churchId) {
@@ -560,34 +563,66 @@ const Settings = () => {
           console.log("No churchId found for token claim, will use server defaults");
         }
         
+        // Record that this was from a mobile device if applicable
+        if (isMobileRedirect) {
+          console.log("Detected mobile device redirection");
+          // Store this in sessionStorage to help with device-specific handling later
+          sessionStorage.setItem('planningCenterMobileDevice', 'true');
+        }
+        
         // Show a toast to inform the user
         toast({
           title: "Processing Connection",
           description: "Completing Planning Center connection...",
+          // On mobile, make the toast display longer
+          duration: isMobileRedirect ? 5000 : 3000,
         });
         
+        // Set claiming tokens state to prevent duplicate claims
+        setClaimingTokens(true);
+        
         // Short delay to ensure the page is fully loaded and auth is established
+        // Use a longer delay for mobile devices
+        const delayTime = isMobileRedirect ? 1500 : 1000;
+        
         setTimeout(() => {
           console.log("Claiming tokens now...");
           
-          // Call the claim token mutation with or without churchId
-          if (churchId) {
-            claimTokensMutation.mutate({
-              tempKey,
-              churchId
-            });
-          } else {
-            claimTokensMutation.mutate({
-              tempKey
+          try {
+            // Call the claim token mutation with or without churchId
+            if (churchId) {
+              claimTokensMutation.mutate({
+                tempKey,
+                churchId
+              });
+            } else {
+              claimTokensMutation.mutate({
+                tempKey
+              });
+            }
+            
+            // Clear the stored churchId from localStorage after using it
+            if (storedChurchId) {
+              localStorage.removeItem('planningCenterChurchId');
+              console.log("Cleared planningCenterChurchId from localStorage");
+            }
+          } catch (error) {
+            console.error("Error initiating token claim:", error);
+            setClaimingTokens(false);
+            toast({
+              title: "Connection Error",
+              description: "Failed to process Planning Center connection. Please try again.",
+              variant: "destructive",
             });
           }
-          
-          // Clear the stored churchId from localStorage after using it
-          if (storedChurchId) {
-            localStorage.removeItem('planningCenterChurchId');
-            console.log("Cleared planningCenterChurchId from localStorage");
-          }
-        }, 1000);
+        }, delayTime);
+        
+        // Clean up URL parameters more aggressively to prevent issues with browser back/forward
+        try {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {
+          console.error("Failed to clean up URL parameters:", e);
+        }
       }
     }
   }, [search, claimingTokens, claimTokensMutation.isPending, toast]);
