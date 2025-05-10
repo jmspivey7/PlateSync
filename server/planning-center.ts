@@ -217,6 +217,12 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Extract all query parameters for detailed logging
       const { code, state, error, error_description, churchId } = req.query;
       
+      // Store churchId from the request in the session for token claim step
+      if (churchId && req.session) {
+        req.session.planningCenterChurchId = String(churchId);
+        console.log('Stored churchId from callback in session:', churchId);
+      }
+      
       // Log the callback details for debugging (redacting sensitive parts)
       console.log('Planning Center callback received with params:', {
         code: code ? `${String(code).substring(0, 4)}...` : 'undefined',
@@ -633,12 +639,16 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Add state for CSRF protection
       authUrl.searchParams.append('state', state);
       
+      // Get the churchId to include in both the URL and response
+      const churchId = user.churchId || user.id;
+      
+      // Add churchId as a custom parameter to be passed through the OAuth flow
+      // Planning Center will include this in the callback
+      authUrl.searchParams.append('churchId', churchId);
+      
       // Log URL for troubleshooting (redact sensitive parts)
       const logUrl = authUrl.toString().replace(/state=([^&]+)/, 'state=REDACTED');
-      console.log('Planning Center Auth URL generated:', logUrl);
-      
-      // Get the churchId to include in the response
-      const churchId = user.churchId || user.id;
+      console.log('Planning Center Auth URL generated with churchId:', logUrl);
       
       // Return the URL to the client with churchId
       res.json({ 
