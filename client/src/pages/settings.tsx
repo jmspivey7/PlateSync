@@ -573,7 +573,7 @@ const Settings = () => {
           .finally(() => {
             setClaimingTokens(false);
           });
-      }, 1000);
+      }, verificationDelay);
       
       // Remove the tempKey from the URL to clean it up
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -581,8 +581,15 @@ const Settings = () => {
     onError: (error) => {
       console.error("Planning Center token claim failed:", error);
       
+      // Check if this is a mobile device for special handling
+      const isMobileDevice = sessionStorage.getItem('planningCenterMobileDevice') === 'true';
+      const deviceType = isMobileDevice ? 'mobile' : 'desktop';
+      
+      console.log(`Planning Center token claim failed on ${deviceType} device:`, error);
+      
       // Detailed error message based on the specific error
       let errorMessage = "Failed to connect to Planning Center.";
+      let errorTitle = "Connection Failed";
       
       if (error instanceof Error) {
         // Parse error details if available in the message
@@ -590,16 +597,41 @@ const Settings = () => {
           errorMessage = "The connection tokens have expired. Please clear the connection and try again.";
         } else if (error.message.includes("Authentication required")) {
           errorMessage = "You need to be logged in to connect to Planning Center. Please refresh the page and try again.";
+        } else if (error.message.includes("timeout") || error.message.includes("network")) {
+          errorMessage = "Network issue occurred. Make sure you have a stable internet connection and try again.";
         } else {
-          errorMessage = error.message;
+          // Include device type in detailed error messages
+          errorMessage = `${error.message}. Please try again.`;
         }
       }
       
+      // For mobile devices, add extra help text
+      if (isMobileDevice) {
+        errorTitle = "Mobile Connection Failed";
+        errorMessage += " Ensure you're using the same device throughout the process.";
+      }
+      
       toast({
-        title: "Connection Failed",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
+        duration: isMobileDevice ? 8000 : 5000, // Longer duration for mobile errors
       });
+      
+      // For mobile devices, try to clear session/local storage to prevent issues with future attempts
+      if (isMobileDevice) {
+        try {
+          // Clear all Planning Center related items from storage
+          sessionStorage.removeItem('planningCenterDeviceType');
+          sessionStorage.removeItem('planningCenterMobileDevice');
+          localStorage.removeItem('planningCenterChurchId');
+          sessionStorage.removeItem('planningCenterChurchId');
+          localStorage.removeItem('planningCenterAuthTimestamp');
+          console.log('Cleared all Planning Center storage items for clean slate');
+        } catch (e) {
+          console.error('Error clearing Planning Center storage during error recovery:', e);
+        }
+      }
       
       setClaimingTokens(false);
     },

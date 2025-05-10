@@ -173,35 +173,175 @@ See `shared/schema.ts` for complete database schema definitions.
 
 For a proper mobile authentication experience with Planning Center, the following workflow was implemented:
 
-1. **Device Detection:**
+### Enhanced Device Detection and Context Persistence
+
+1. **Dual Device Detection:**
    ```javascript
-   // On the client side
-   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+   // Client-side detection
+   const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
    
-   // Pass device type to server
-   const response = await fetch(`/api/planning-center/auth-url?device=${isMobile ? 'mobile' : 'desktop'}`);
+   // Server-side detection (from response)
+   const serverDetectedMobile = response.deviceType === 'mobile';
+   
+   // Final determination using both sources
+   const finalIsMobile = isMobileUserAgent || serverDetectedMobile;
    ```
 
-2. **Device-Specific Navigation:**
+2. **Multiple Storage Mechanisms:**
    ```javascript
-   // Handle navigation based on device type
-   if (isMobile) {
-     // Mobile: Direct navigation in current window
-     window.location.href = data.url;
+   // Store churchId in both localStorage and sessionStorage for redundancy
+   localStorage.setItem('planningCenterChurchId', churchId);
+   sessionStorage.setItem('planningCenterChurchId', churchId);
+   
+   // Store device type in session
+   sessionStorage.setItem('planningCenterDeviceType', isMobile ? 'mobile' : 'desktop');
+   
+   // Add timestamp for cache-busting
+   localStorage.setItem('planningCenterAuthTimestamp', Date.now().toString());
+   ```
+
+3. **Device-Specific Navigation:**
+   ```javascript
+   if (finalIsMobile) {
+     // Mobile: Use form-based redirect with additional parameters
+     // Form submission is more reliable than direct window.location on mobile
+     const form = document.createElement('form');
+     form.method = 'get';
+     form.action = '/settings';
+     // Add all parameters as hidden form fields
+     // ...
+     document.body.appendChild(form);
+     form.submit();
    } else {
-     // Desktop: Open in new tab
+     // Desktop: Open in new tab with simpler parameters
      window.open(data.url, '_blank');
    }
    ```
 
-3. **Context Preservation:**
-   - Store churchId in multiple storage mechanisms to ensure it's not lost
-   - Include deviceType in callback URL for appropriate post-authentication handling
-   - Use different redirect strategies based on the device type
+### Preventing Cache Issues
 
-4. **Mobile-Specific Callback Handling:**
-   - Detect device type in callback handler
-   - Use a different redirect strategy for mobile devices
-   - Implement a bridge page that handles both device types
+1. **Multiple Cache-Busting Techniques:**
+   ```javascript
+   // Add timestamp parameter to URL
+   redirectUrl += `&t=${Date.now()}`;
+   
+   // Add random cache-busting parameter for mobile
+   redirectUrl += `&cachebust=${Math.floor(Math.random() * 1000000)}`;
+   
+   // Use different parameter names to avoid collisions
+   const extraTimestamp = Date.now() + 1;
+   redirectUrl += `&ts=${extraTimestamp}`;
+   ```
+
+2. **Explicit Cache Control Headers:**
+   ```javascript
+   // Server-side cache prevention headers
+   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+   res.setHeader('Pragma', 'no-cache');
+   res.setHeader('Expires', '0');
+   ```
+
+### Advanced Mobile Flow
+
+1. **Form-Based Redirection:**
+   Instead of using `window.location.href` for redirection, we use a form submission approach which is more reliable on mobile devices:
+   ```javascript
+   // Create and submit a form
+   const form = document.createElement('form');
+   form.method = 'get';
+   form.action = '/settings';
+   
+   // Add parameters as hidden form fields
+   for (const [key, value] of urlParams.entries()) {
+     const input = document.createElement('input');
+     input.type = 'hidden';
+     input.name = key;
+     input.value = value;
+     form.appendChild(input);
+   }
+   
+   document.body.appendChild(form);
+   form.submit();
+   ```
+
+2. **Fetch API Preloading:**
+   ```javascript
+   // "Prime" the connection using fetch API before actual navigation
+   fetch(redirectUrl, { 
+     method: 'GET',
+     headers: { 'Cache-Control': 'no-cache' },
+     mode: 'same-origin'
+   }).then(() => {
+     // Proceed with form redirect after fetch completes or fails
+     // ...
+   });
+   ```
+
+3. **Manual Fallback Button:**
+   For cases where automatic redirection fails, we show a manual redirect button after a delay:
+   ```javascript
+   // Show manual redirect button after delay (shorter for advanced mobile flow)
+   const buttonDelay = isAdvancedMobileFlow ? 2000 : 4000;
+   setTimeout(() => {
+     const button = document.getElementById('manualRedirectButton');
+     button.style.display = 'block';
+     
+     // Make button more prominent for advanced mobile flow
+     if (isAdvancedMobileFlow) {
+       button.style.fontSize = '1.2rem';
+       button.style.padding = '14px 28px';
+       button.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+     }
+   }, buttonDelay);
+   ```
+
+### Error Handling and Recovery
+
+1. **Extended Token Claim Retries:**
+   ```javascript
+   // More retries for mobile devices with longer backoff
+   const maxRetries = isMobile ? 5 : 3;
+   let retries = 0;
+   
+   while (retries < maxRetries) {
+     try {
+       // Attempt the operation
+       // ...
+     } catch (error) {
+       // Progressive backoff with longer delays for mobile
+       const backoffTime = isMobile ? (1500 * retries) : (1000 * retries);
+       await new Promise(resolve => setTimeout(resolve, backoffTime));
+       retries++;
+     }
+   }
+   ```
+
+2. **Device-Specific Error Messages:**
+   ```javascript
+   // For mobile devices, add extra help text and longer toast duration
+   if (isMobileDevice) {
+     errorTitle = "Mobile Connection Failed";
+     errorMessage += " Ensure you're using the same device throughout the process.";
+     
+     toast({
+       title: errorTitle,
+       description: errorMessage,
+       variant: "destructive",
+       duration: 8000, // Longer for mobile
+     });
+   }
+   ```
+
+3. **Storage Cleanup on Error:**
+   ```javascript
+   // Clear all Planning Center related items from storage on error
+   if (isMobileDevice) {
+     sessionStorage.removeItem('planningCenterDeviceType');
+     sessionStorage.removeItem('planningCenterMobileDevice');
+     localStorage.removeItem('planningCenterChurchId');
+     sessionStorage.removeItem('planningCenterChurchId');
+     localStorage.removeItem('planningCenterAuthTimestamp');
+   }
+   ```
 
 *Last updated: May 10, 2025*
