@@ -114,10 +114,11 @@ export default function LoginLocal() {
       setFirstName("");
       setLastName("");
       
-      // Automatically switch to login tab after 3 seconds
+      // Redirect to onboarding with church info
       setTimeout(() => {
-        setActiveTab("signin");
-      }, 3000);
+        const churchId = data.user.churchId;
+        window.location.href = `/onboarding?churchId=${churchId}&churchName=${encodeURIComponent(churchName)}&email=${encodeURIComponent(email)}`;
+      }, 1500);
       
     } catch (error) {
       setRegisterError(error instanceof Error ? error.message : "Registration failed");

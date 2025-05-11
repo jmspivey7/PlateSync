@@ -75,6 +75,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/login-local');
   });
   
+  // Onboarding page route
+  app.get('/onboarding', (req, res, next) => {
+    // This will be rendered by the frontend router
+    next();
+  });
+  
+  // Logo upload endpoint for onboarding (no authentication required)
+  app.post('/api/upload-logo', async (req, res) => {
+    try {
+      // Ensure the logos directory exists
+      const logosDir = path.join('public', 'logos');
+      if (!fs.existsSync(logosDir)) {
+        fs.mkdirSync(logosDir, { recursive: true });
+      }
+      
+      // Set up multer for logo uploads during onboarding
+      const onboardingLogoUpload = multer({
+        storage: multer.diskStorage({
+          destination: (_req, _file, cb) => {
+            cb(null, logosDir);
+          },
+          filename: (_req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = path.extname(file.originalname);
+            cb(null, 'church-logo-' + uniqueSuffix + ext);
+          }
+        }),
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        fileFilter: (_req, file, cb) => {
+          // Accept only image files
+          if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+          } else {
+            cb(null, false);
+          }
+        }
+      }).single('logo');
+      
+      // Process the upload
+      onboardingLogoUpload(req, res, async (err) => {
+        if (err) {
+          console.error("Error uploading logo:", err);
+          return res.status(400).json({ 
+            message: "Upload failed", 
+            error: err.message 
+          });
+        }
+        
+        if (!req.file) {
+          return res.status(400).json({ message: "No logo file provided" });
+        }
+        
+        const { churchId } = req.body;
+        
+        if (!churchId) {
+          return res.status(400).json({ message: "Church ID is required" });
+        }
+        
+        // Construct the logo URL
+        const logoUrl = `/logos/${req.file.filename}`;
+        
+        try {
+          // Update church settings in the database
+          await db
+            .update(users)
+            .set({
+              logoUrl: logoUrl,
+              updatedAt: new Date()
+            })
+            .where(
+              and(
+                eq(users.churchId, churchId),
+                eq(users.isMasterAdmin, true)
+              )
+            );
+          
+          console.log(`Logo updated for church ID ${churchId}: ${logoUrl}`);
+          
+          res.status(200).json({ 
+            message: "Logo uploaded successfully", 
+            logoUrl 
+          });
+        } catch (dbError) {
+          console.error("Database error while updating logo:", dbError);
+          res.status(500).json({ 
+            message: "Failed to update logo in database",
+            error: dbError instanceof Error ? dbError.message : "Unknown error"
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Error in logo upload endpoint:", error);
+      res.status(500).json({ 
+        message: "Server error during logo upload",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
   // Church registration endpoint
   app.post('/api/register-church', async (req, res) => {
     try {
