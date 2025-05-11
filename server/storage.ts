@@ -381,26 +381,26 @@ export class DatabaseStorage implements IStorage {
         return batch.churchId;
       }
       
-      // If we can't determine the church from batches, find the Master Admin
-      const [masterAdmin] = await db
+      // If we can't determine the church from batches, find the Account Owner
+      const [accountOwner] = await db
         .select()
         .from(users)
         .where(and(
           eq(users.role, 'ADMIN'),
-          eq(users.isMasterAdmin, true)
+          eq(users.isAccountOwner, true)
         ))
         .limit(1);
       
-      if (masterAdmin) {
-        console.log(`Found Master Admin ${masterAdmin.id} as churchId for USHER ${userId}`);
+      if (accountOwner) {
+        console.log(`Found Account Owner ${accountOwner.id} as churchId for Standard User ${userId}`);
         
         // Update the user with this churchId for future reference
         await db
           .update(users)
-          .set({ churchId: masterAdmin.id })
+          .set({ churchId: accountOwner.id })
           .where(eq(users.id, userId));
           
-        return masterAdmin.id;
+        return accountOwner.id;
       }
       
       // If no Master Admin is found, find any ADMIN user
