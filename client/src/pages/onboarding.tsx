@@ -4,16 +4,18 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight } from "lucide-react";
+import { Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight, X, Plus, ChevronLeft } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 import plateSyncLogo from "../assets/platesync-logo.png";
 
 // Onboarding Steps
 enum OnboardingStep {
   CREATING_ACCOUNT = 0,
   UPLOAD_LOGO = 1,
-  // We'll add more steps later
+  SERVICE_OPTIONS = 2,
+  COMPLETE = 3
 }
 
 interface OnboardingParams {
@@ -31,6 +33,11 @@ export default function Onboarding() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  
+  // Service options states
+  const [serviceOptions, setServiceOptions] = useState<string[]>([]);
+  const [newServiceOption, setNewServiceOption] = useState('');
+  const [isAddingService, setIsAddingService] = useState(false);
   
   // Get parameters from URL query
   const params = new URLSearchParams(window.location.search);
@@ -157,11 +164,165 @@ export default function Onboarding() {
   
   // Handle next step
   const handleNextStep = () => {
-    // For now, we only have the logo upload step
-    // In the future, we'll navigate to the next step
-    // Current implementation redirects to login page
-    setLocation("/login-local");
+    if (currentStep === OnboardingStep.UPLOAD_LOGO) {
+      setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
+    } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
+      setCurrentStep(OnboardingStep.COMPLETE);
+    } else if (currentStep === OnboardingStep.COMPLETE) {
+      // Redirect to login page after completing onboarding
+      setLocation("/login-local");
+    }
   };
+  
+  // Handle back step
+  const handleBackStep = () => {
+    if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
+      setCurrentStep(OnboardingStep.UPLOAD_LOGO);
+    } else if (currentStep === OnboardingStep.COMPLETE) {
+      setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
+    }
+  };
+  
+  // Handle adding a new service option
+  const handleAddServiceOption = async () => {
+    if (!newServiceOption.trim()) {
+      toast({
+        title: "Invalid service name",
+        description: "Please enter a valid service name",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (serviceOptions.includes(newServiceOption.trim())) {
+      toast({
+        title: "Duplicate service",
+        description: "This service option already exists",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsAddingService(true);
+    
+    try {
+      // Add to API
+      if (churchId) {
+        const response = await fetch('/api/service-options', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: newServiceOption.trim(),
+            churchId: churchId,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to add service option');
+        }
+        
+        const data = await response.json();
+        
+        // Update local state
+        setServiceOptions([...serviceOptions, newServiceOption.trim()]);
+        setNewServiceOption('');
+        
+        toast({
+          title: "Service option added",
+          description: `"${newServiceOption.trim()}" has been added`,
+          variant: "default"
+        });
+      } else {
+        // If no churchId is available, just add to local state
+        setServiceOptions([...serviceOptions, newServiceOption.trim()]);
+        setNewServiceOption('');
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to add service option",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAddingService(false);
+    }
+  };
+  
+  // Handle removing a service option
+  const handleRemoveServiceOption = async (option: string) => {
+    try {
+      if (churchId) {
+        const response = await fetch(`/api/service-options?name=${encodeURIComponent(option)}&churchId=${churchId}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to remove service option');
+        }
+      }
+      
+      // Update local state
+      setServiceOptions(serviceOptions.filter(service => service !== option));
+      
+      toast({
+        title: "Service option removed",
+        description: `"${option}" has been removed`,
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to remove service option",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Load existing service options when entering the service options step
+  useEffect(() => {
+    if (currentStep === OnboardingStep.SERVICE_OPTIONS && churchId) {
+      // Fetch service options from API
+      const fetchServiceOptions = async () => {
+        try {
+          const response = await fetch(`/api/service-options?churchId=${churchId}`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch service options');
+          }
+          
+          const data = await response.json();
+          if (data && Array.isArray(data)) {
+            setServiceOptions(data.map(option => option.name));
+          }
+        } catch (error) {
+          console.error('Error fetching service options:', error);
+          // Don't show toast for fetch error, just log it
+        }
+      };
+      
+      fetchServiceOptions();
+    }
+  }, [currentStep, churchId]);
+  
+  // Update progress bar based on current step
+  useEffect(() => {
+    switch (currentStep) {
+      case OnboardingStep.CREATING_ACCOUNT:
+        // Progress is handled by the animation
+        break;
+      case OnboardingStep.UPLOAD_LOGO:
+        setProgress(25);
+        break;
+      case OnboardingStep.SERVICE_OPTIONS:
+        setProgress(50);
+        break;
+      case OnboardingStep.COMPLETE:
+        setProgress(100);
+        break;
+    }
+  }, [currentStep]);
   
   // Render different content based on current step
   const renderStepContent = () => {
@@ -278,6 +439,162 @@ export default function Onboarding() {
                 </Button>
               </div>
             </div>
+          </div>
+        );
+      
+      case OnboardingStep.SERVICE_OPTIONS:
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Step 2: Add Service Options</h2>
+              <div className="text-sm text-gray-500">Step 2 of 4</div>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              Set up your service types for donation tracking. Add options like "Sunday Morning", "Wednesday Night", "Special Events", etc.
+              <br />
+              <span className="text-sm italic">You can add or modify these options later in Settings.</span>
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="text"
+                  placeholder="Enter a service name (e.g., Sunday Morning)"
+                  value={newServiceOption}
+                  onChange={(e) => setNewServiceOption(e.target.value)}
+                  className="flex-1"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !isAddingService) {
+                      e.preventDefault();
+                      handleAddServiceOption();
+                    }
+                  }}
+                />
+                
+                <Button
+                  onClick={handleAddServiceOption}
+                  disabled={isAddingService}
+                  className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
+                >
+                  {isAddingService ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">Add</span>
+                </Button>
+              </div>
+              
+              {/* List of service options */}
+              <div className="bg-gray-50 rounded-lg p-4 min-h-[200px]">
+                <div className="flex justify-between mb-2">
+                  <h3 className="font-medium text-gray-900">Your Service Options</h3>
+                  <span className="text-sm text-gray-500">{serviceOptions.length} options</span>
+                </div>
+                
+                {serviceOptions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                    <p>No service options added yet</p>
+                    <p className="text-sm">Add some options above to get started</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {serviceOptions.map((option, index) => (
+                      <li 
+                        key={index} 
+                        className="flex justify-between items-center p-3 bg-white rounded-md border border-gray-200"
+                      >
+                        <span>{option}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveServiceOption(option)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              
+              {/* Suggested services */}
+              <div className="mt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Suggested services:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {["Sunday Morning", "Sunday Evening", "Wednesday Night", "Special Event"].map(
+                    (suggestion) => {
+                      // Only show if not already added
+                      if (serviceOptions.includes(suggestion)) return null;
+                      
+                      return (
+                        <Button
+                          key={suggestion}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setNewServiceOption(suggestion);
+                          }}
+                          className="bg-gray-100"
+                        >
+                          {suggestion}
+                        </Button>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between mt-8">
+              <div className="space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={handleBackStep}
+                  className="space-x-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span>Back</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={handleSkip}
+                >
+                  Skip for Now
+                </Button>
+              </div>
+              
+              <Button
+                variant="default"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={handleNextStep}
+              >
+                Next Step <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+      
+      case OnboardingStep.COMPLETE:
+        return (
+          <div className="flex flex-col items-center justify-center space-y-6 p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-[#69ad4c]" />
+            </div>
+            <h2 className="text-2xl font-bold">Setup Complete!</h2>
+            <p className="text-gray-600 max-w-md">
+              Congratulations! Your PlateSync account is ready to use. Click the button below to sign in and start managing your donations.
+            </p>
+            <Button
+              variant="default"
+              className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white mt-4"
+              onClick={handleNextStep}
+            >
+              Go to Sign In <ChevronsRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         );
         
