@@ -107,9 +107,6 @@ export default function LoginLocal() {
         throw new Error(data.message || "Failed to register");
       }
       
-      // Registration successful
-      setRegisterSuccess("Registration successful! Redirecting to account setup...");
-      
       // Clear form
       setRegisterEmail("");
       setRegisterPassword("");
@@ -118,13 +115,10 @@ export default function LoginLocal() {
       setFirstName("");
       setLastName("");
       
-      // Use onboarding data from the response to redirect to onboarding
-      setTimeout(() => {
-        // Get onboarding data from the response
-        const { churchId, churchName, email } = data.onboarding;
-        // Redirect to onboarding page with query parameters
-        window.location.href = `/onboarding?churchId=${churchId}&churchName=${encodeURIComponent(churchName)}&email=${encodeURIComponent(email)}`;
-      }, 1500);
+      // Immediately redirect to onboarding without showing toast
+      const { churchId, churchName, email } = data.onboarding;
+      // Redirect to onboarding page with query parameters
+      window.location.href = `/onboarding?churchId=${churchId}&churchName=${encodeURIComponent(churchName)}&email=${encodeURIComponent(email)}`;
       
     } catch (error) {
       setRegisterError(error instanceof Error ? error.message : "Registration failed");

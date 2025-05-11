@@ -79,8 +79,9 @@ export default function Onboarding() {
   // Mutation for saving donor notification settings
   const donorNotificationMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
-      return await apiRequest("POST", "/api/settings/email-notifications", { 
-        enabled 
+      return await apiRequest("/api/settings/email-notifications", {
+        method: "POST",
+        body: { enabled }
       });
     },
     onSuccess: () => {
@@ -352,6 +353,9 @@ export default function Onboarding() {
     }
   };
   
+  // State for the account creation spinner screen
+  const [isAccountCreating, setIsAccountCreating] = useState(false);
+  
   // Verify the email verification code
   const verifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6 || !email || !churchId) {
@@ -402,8 +406,14 @@ export default function Onboarding() {
         variant: "default"
       });
       
-      // Move to the next step
-      setCurrentStep(OnboardingStep.UPLOAD_LOGO);
+      // Show the account creation spinner screen
+      setIsAccountCreating(true);
+      
+      // Move to the next step after a short delay
+      setTimeout(() => {
+        setIsAccountCreating(false);
+        setCurrentStep(OnboardingStep.UPLOAD_LOGO);
+      }, 2000);
       
     } catch (error) {
       setVerificationError(error instanceof Error ? error.message : "Invalid verification code");
@@ -1528,6 +1538,44 @@ export default function Onboarding() {
     }
   };
   
+  // Show spinner screen while creating account
+  if (isAccountCreating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
+        <div className="flex flex-col items-center justify-center max-w-md text-center">
+          <img 
+            src={plateSyncLogo} 
+            alt="PlateSync Logo" 
+            className="h-[5.25rem] mb-8"
+          />
+          
+          <div className="w-16 h-16 mb-6">
+            <svg className="animate-spin w-full h-full text-[#69ad4c]" viewBox="0 0 24 24">
+              <circle 
+                className="opacity-25" 
+                cx="12" 
+                cy="12" 
+                r="10" 
+                stroke="currentColor" 
+                strokeWidth="4"
+                fill="none"
+              />
+              <path 
+                className="opacity-75" 
+                fill="currentColor" 
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Hold tight while we create your Church organization</h2>
+          <p className="text-gray-500">Setting up your account...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Regular onboarding steps
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-3xl border shadow-lg">
