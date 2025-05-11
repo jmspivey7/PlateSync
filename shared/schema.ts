@@ -243,7 +243,7 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect & {
   // Add runtime properties (not in database schema)
   isActive?: boolean;
-  isMasterAdmin?: boolean;
+  isAccountOwner?: boolean;
 };
 
 // Types for our application

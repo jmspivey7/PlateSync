@@ -623,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: req.user.claims.last_name || "Spivey",
           bio: null,
           profileImageUrl: "/avatars/john-spivey.png", // Hardcoded profile image URL
-          role: "ADMIN",
+          role: "ACCOUNT_OWNER",
           churchId: userId,
           churchName: "Redeemer Presbyterian Church",
           emailNotificationsEnabled: true,
