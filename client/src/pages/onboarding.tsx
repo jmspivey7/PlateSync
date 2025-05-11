@@ -1232,13 +1232,15 @@ export default function Onboarding() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Switch 
-                    id="donor-notifications"
-                    checked={donorNotificationsEnabled}
-                    onCheckedChange={setDonorNotificationsEnabled}
-                    className={donorNotificationsEnabled ? "bg-[#69ad4c] h-6 w-11" : "h-6 w-11"}
-                  />
-                  <span className="font-medium text-base">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
+                  <div className="relative inline-flex">
+                    <Switch 
+                      id="donor-notifications"
+                      checked={donorNotificationsEnabled}
+                      onCheckedChange={setDonorNotificationsEnabled}
+                      className={`${donorNotificationsEnabled ? "bg-[#69ad4c]" : "bg-gray-300"} relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
+                    />
+                  </div>
+                  <span className="font-semibold text-base">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
                 </div>
               </div>
               

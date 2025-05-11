@@ -1121,47 +1121,49 @@ const Settings = () => {
                       </div>
                     </div>
                     <div className="flex items-center pl-4">
-                      <Switch
-                        checked={form.watch("emailNotificationsEnabled")}
-                        onCheckedChange={(checked) => {
-                          // Update the form value
-                          form.setValue("emailNotificationsEnabled", checked);
-                          
-                          // Save the change immediately
-                          fetch("/api/settings", {
-                            method: "PATCH",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                              churchName: form.getValues("churchName"),
-                              emailNotificationsEnabled: checked
+                      <div className="relative inline-flex">
+                        <Switch
+                          checked={form.watch("emailNotificationsEnabled")}
+                          onCheckedChange={(checked) => {
+                            // Update the form value
+                            form.setValue("emailNotificationsEnabled", checked);
+                            
+                            // Save the change immediately
+                            fetch("/api/settings", {
+                              method: "PATCH",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({
+                                churchName: form.getValues("churchName"),
+                                emailNotificationsEnabled: checked
+                              })
                             })
-                          })
-                          .then(response => {
-                            if (!response.ok) throw new Error("Failed to update settings");
-                            return response.json();
-                          })
-                          .then(() => {
-                            queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-                            toast({
-                              title: "Notification Setting Updated",
-                              description: `Email notifications have been turned ${checked ? 'ON' : 'OFF'}.`,
-                              className: "bg-[#69ad4c] text-white",
+                            .then(response => {
+                              if (!response.ok) throw new Error("Failed to update settings");
+                              return response.json();
+                            })
+                            .then(() => {
+                              queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                              toast({
+                                title: "Notification Setting Updated",
+                                description: `Email notifications have been turned ${checked ? 'ON' : 'OFF'}.`,
+                                className: "bg-[#69ad4c] text-white",
+                              });
+                            })
+                            .catch(error => {
+                              toast({
+                                title: "Error",
+                                description: `Failed to update setting: ${error.message}`,
+                                variant: "destructive",
+                                className: "bg-white border-red-600",
+                              });
                             });
-                          })
-                          .catch(error => {
-                            toast({
-                              title: "Error",
-                              description: `Failed to update setting: ${error.message}`,
-                              variant: "destructive",
-                              className: "bg-white border-red-600",
-                            });
-                          });
-                        }}
-                        className="enhanced-switch"
-                      />
-                      <span className="ml-2 text-base font-bold">
+                          }}
+                          className={`${form.watch("emailNotificationsEnabled") ? "bg-[#69ad4c]" : "bg-gray-300"} relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
+                        />
+                      </div>
+                      <span className="ml-2 text-base font-semibold">
                         {form.watch("emailNotificationsEnabled") ? 'ON' : 'OFF'}
                       </span>
                     </div>
