@@ -271,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .where(
               and(
                 eq(users.churchId, churchId),
-                eq(users.isMasterAdmin, true)
+                eq(users.isAccountOwner, true)
               )
             );
           
@@ -352,9 +352,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         password: hashedPassword,
         churchName,
-        role: "ADMIN", // Make the user an admin by default
+        role: "ACCOUNT_OWNER", // Make the user an Account Owner
         churchId: churchId, // Use the generated church ID
-        isMasterAdmin: true, // Make this user the master admin
+        isAccountOwner: true, // Mark as Account Owner
         isVerified: false // User needs to verify email
       });
       
@@ -567,18 +567,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Use the explicitly assigned churchId if available
               const churchId = user.churchId;
               
-              // Get the Master Admin or any Admin for this church to inherit settings from
-              const masterAdminQuery = await db.execute(
+              // Get the Account Owner or any Admin for this church to inherit settings from
+              const accountOwnerQuery = await db.execute(
                 sql`SELECT * FROM users 
                     WHERE id = ${churchId}
-                    OR (role = 'ADMIN' AND is_master_admin = true AND id IN (
+                    OR (role = 'ACCOUNT_OWNER' AND is_account_owner = true AND id IN (
                       SELECT DISTINCT church_id FROM users WHERE church_id IS NOT NULL
                     ))
                     LIMIT 1`
               );
               
-              if (masterAdminQuery.rows.length > 0) {
-                const adminUser = masterAdminQuery.rows[0];
+              if (accountOwnerQuery.rows.length > 0) {
+                const adminUser = accountOwnerQuery.rows[0];
                 
                 // Copy church settings from the admin
                 if (adminUser.church_name) {
