@@ -325,13 +325,56 @@ export default function Onboarding() {
   };
   
   // Handle next step
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (currentStep === OnboardingStep.VERIFY_EMAIL) {
       // For verification step, we need to verify the code
       verifyCode();
     } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
+      // Before completing onboarding, try to save service options if they weren't saved already
+      const storedUserId = localStorage.getItem('userId');
+      const idToUse = churchId || storedUserId;
+      const userVerified = localStorage.getItem('userVerified') === 'true';
+      
+      if (idToUse && userVerified) {
+        try {
+          // Check if we have any unsaved service options in localStorage
+          const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+          
+          // Get existing options from database
+          const getResponse = await fetch(`/api/service-options?churchId=${idToUse}`);
+          
+          if (getResponse.ok) {
+            const existingOptions = await getResponse.json();
+            const existingNames = existingOptions.map((opt: any) => opt.name);
+            
+            // Filter out options that already exist in the database
+            const optionsToSave = storedOptions.filter((opt: string) => !existingNames.includes(opt));
+            
+            // Save any remaining options to the database
+            for (const option of optionsToSave) {
+              try {
+                await fetch('/api/service-options', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    name: option,
+                    churchId: idToUse
+                  }),
+                });
+              } catch (error) {
+                console.error('Error saving service option:', error);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error syncing service options:', error);
+        }
+      }
+      
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
       // Redirect to login page after completing onboarding
@@ -355,7 +398,7 @@ export default function Onboarding() {
   };
   
   // Handle adding a new service option
-  const handleAddServiceOption = () => {
+  const handleAddServiceOption = async () => {
     if (!newServiceOption.trim()) {
       toast({
         title: "Invalid service name",
@@ -377,21 +420,54 @@ export default function Onboarding() {
     setIsAddingService(true);
     
     try {
-      // During onboarding, we'll just add to local state
-      // These options will be properly saved when the user logs in
       const trimmedOption = newServiceOption.trim();
       setServiceOptions([...serviceOptions, trimmedOption]);
       setNewServiceOption('');
+      
+      // Get userId from localStorage if available (saved during verification)
+      const storedUserId = localStorage.getItem('userId');
+      const idToUse = churchId || storedUserId;
+      
+      // If we have a user ID and they've been verified, try to save directly to the database
+      const userVerified = localStorage.getItem('userVerified') === 'true';
+      
+      if (idToUse && userVerified) {
+        // Save directly to the database
+        try {
+          const response = await fetch('/api/service-options', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: trimmedOption,
+              churchId: idToUse
+            }),
+          });
+          
+          if (!response.ok) {
+            // If API call fails, still store in localStorage as fallback
+            console.warn('Failed to save service option to database, falling back to localStorage');
+            const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+            localStorage.setItem('onboardingServiceOptions', JSON.stringify([...storedOptions, trimmedOption]));
+          }
+        } catch (error) {
+          console.error('Error saving service option to database:', error);
+          // Fall back to localStorage
+          const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+          localStorage.setItem('onboardingServiceOptions', JSON.stringify([...storedOptions, trimmedOption]));
+        }
+      } else {
+        // Store in localStorage to persist during onboarding
+        const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+        localStorage.setItem('onboardingServiceOptions', JSON.stringify([...storedOptions, trimmedOption]));
+      }
       
       toast({
         title: "Service option added",
         description: `"${trimmedOption}" has been added`,
         variant: "default"
       });
-      
-      // Store in localStorage to persist during onboarding
-      const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
-      localStorage.setItem('onboardingServiceOptions', JSON.stringify([...storedOptions, trimmedOption]));
       
     } catch (error) {
       toast({
@@ -405,12 +481,43 @@ export default function Onboarding() {
   };
   
   // Handle removing a service option
-  const handleRemoveServiceOption = (option: string) => {
+  const handleRemoveServiceOption = async (option: string) => {
     try {
       // Update local state
       setServiceOptions(serviceOptions.filter(service => service !== option));
       
-      // Update localStorage
+      // Get userId from localStorage if available (saved during verification)
+      const storedUserId = localStorage.getItem('userId');
+      const idToUse = churchId || storedUserId;
+      const userVerified = localStorage.getItem('userVerified') === 'true';
+      
+      // If user is verified and we have an ID, try to remove from database
+      if (idToUse && userVerified) {
+        try {
+          // First try to find the service option ID (if it exists in the database)
+          const getResponse = await fetch(`/api/service-options?churchId=${idToUse}`);
+          
+          if (getResponse.ok) {
+            const serviceOptionsList = await getResponse.json();
+            const serviceToDelete = serviceOptionsList.find((s: any) => s.name === option);
+            
+            if (serviceToDelete) {
+              // If found in database, delete it
+              const deleteResponse = await fetch(`/api/service-options/${serviceToDelete.id}`, {
+                method: 'DELETE',
+              });
+              
+              if (!deleteResponse.ok) {
+                console.warn('Failed to delete service option from database, updating localStorage only');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error removing service option from database:', error);
+        }
+      }
+      
+      // Always update localStorage (even if database update succeeds)
       const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
       localStorage.setItem(
         'onboardingServiceOptions', 
