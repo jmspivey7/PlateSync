@@ -28,11 +28,37 @@ async function scryptHash(password: string): Promise<string> {
 // Password verification function
 async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    const [key, salt] = hashedPassword.split(':');
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
-      if (err) reject(err);
-      resolve(key === derivedKey.toString('hex'));
-    });
+    try {
+      console.log("Verifying password...");
+      console.log("Hashed password format:", hashedPassword);
+      
+      const [key, salt] = hashedPassword.split(':');
+      console.log("Split key:", key);
+      console.log("Split salt:", salt);
+      
+      if (!salt) {
+        console.error("Invalid hash format - no salt found");
+        resolve(false);
+        return;
+      }
+      
+      crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+        if (err) {
+          console.error("Scrypt error:", err);
+          reject(err);
+          return;
+        }
+        
+        const derivedKeyHex = derivedKey.toString('hex');
+        console.log("Generated key:", derivedKeyHex);
+        console.log("Keys match:", key === derivedKeyHex);
+        
+        resolve(key === derivedKeyHex);
+      });
+    } catch (error) {
+      console.error("Error in verifyPassword:", error);
+      resolve(false);
+    }
   });
 }
 import { hasRole } from "./middleware/roleMiddleware";
@@ -436,8 +462,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials or unverified account" });
       }
       
+      // Add debugging
+      console.log("Login attempt for:", username);
+      console.log("Stored hashed password:", user.password);
+      
       // Verify password
       const passwordValid = await verifyPassword(password, user.password);
+      console.log("Password valid:", passwordValid);
       
       if (!passwordValid) {
         return res.status(401).json({ message: "Invalid credentials" });
