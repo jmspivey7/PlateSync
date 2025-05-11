@@ -16,7 +16,7 @@ const checkAuthentication = (req: Request, res: Response): boolean => {
 // Development bypass for testing (should be false in production)
 const ALLOW_DEV_BYPASS = process.env.NODE_ENV === 'development';
 
-// Middleware to check if the user has admin role
+// Middleware to check if the user has admin role (ACCOUNT_OWNER or ADMIN)
 export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
   // Development mode bypass
   if (ALLOW_DEV_BYPASS && process.env.NODE_ENV === 'development') {
@@ -43,8 +43,8 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
     
     const dbUser = userQuery.rows[0];
     
-    // Check for ADMIN role
-    if (dbUser.role !== 'ADMIN') {
+    // Check for ACCOUNT_OWNER or ADMIN role
+    if (dbUser.role !== 'ACCOUNT_OWNER' && dbUser.role !== 'ADMIN') {
       return res.status(403).json({ message: 'Forbidden: Admin access required' });
     }
 
@@ -55,11 +55,11 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
-// Middleware to check if the user is a Master Admin
-export const isMasterAdmin = async (req: Request, res: Response, next: NextFunction) => {
+// Middleware to check if the user is an Account Owner
+export const isAccountOwner = async (req: Request, res: Response, next: NextFunction) => {
   // Development mode bypass
   if (ALLOW_DEV_BYPASS && process.env.NODE_ENV === 'development') {
-    console.log('Using development auth bypass for MASTER ADMIN check');
+    console.log('Using development auth bypass for ACCOUNT OWNER check');
     return next();
   }
 
@@ -71,28 +71,31 @@ export const isMasterAdmin = async (req: Request, res: Response, next: NextFunct
     const user = req.user as any;
     const userId = user.claims.sub;
     
-    // Get the user with their role and master admin status directly from database
+    // Get the user with their role and account owner status directly from database
     const userQuery = await db.execute(
       sql`SELECT * FROM users WHERE id = ${userId} LIMIT 1`
     );
     
     if (userQuery.rows.length === 0) {
-      return res.status(403).json({ message: 'Forbidden: Master Admin access required' });
+      return res.status(403).json({ message: 'Forbidden: Account Owner access required' });
     }
     
     const dbUser = userQuery.rows[0];
     
-    // Check for ADMIN role and Master Admin status
-    if (dbUser.role !== 'ADMIN' || !dbUser.is_master_admin) {
-      return res.status(403).json({ message: 'Forbidden: Master Admin access required' });
+    // Check if user is an Account Owner (either by role or flag)
+    if (dbUser.role !== 'ACCOUNT_OWNER' && !dbUser.is_account_owner) {
+      return res.status(403).json({ message: 'Forbidden: Account Owner access required' });
     }
 
     next();
   } catch (error) {
-    console.error('Error checking master admin status:', error);
+    console.error('Error checking account owner status:', error);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
+// Keep the old name for backward compatibility, but using the new implementation
+export const isMasterAdmin = isAccountOwner;
 
 // Middleware to check if user has a specific role
 export const hasRole = (allowedRoles: UserRole[]) => {
@@ -174,8 +177,8 @@ export const isSameChurch = async (req: Request, res: Response, next: NextFuncti
     
     const dbUser = userQuery.rows[0];
     
-    // ADMIN users who are Master Admins can access all churches
-    if (dbUser.role === 'ADMIN' && dbUser.is_master_admin) {
+    // Account Owners can access all churches they own
+    if (dbUser.role === 'ACCOUNT_OWNER' || dbUser.is_account_owner) {
       return next();
     }
     

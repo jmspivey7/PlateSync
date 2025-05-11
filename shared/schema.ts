@@ -28,7 +28,7 @@ export const sessions = pgTable(
 );
 
 // Define user roles enum
-export const userRoleEnum = z.enum(["ADMIN", "USHER"]);
+export const userRoleEnum = z.enum(["ACCOUNT_OWNER", "ADMIN", "STANDARD"]);
 export type UserRole = z.infer<typeof userRoleEnum>;
 
 // User storage table for Replit Auth
@@ -40,7 +40,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   bio: text("bio"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").default("USHER").notNull(),
+  role: varchar("role").default("STANDARD").notNull(),
   // Password and verification fields
   password: varchar("password"),
   isVerified: boolean("is_verified").default(false),
@@ -52,7 +52,7 @@ export const users = pgTable("users", {
   churchLogoUrl: varchar("church_logo_url"),
   emailNotificationsEnabled: boolean("email_notifications_enabled").default(false),
   churchId: varchar("church_id"),
-  isMasterAdmin: boolean("is_master_admin").default(false),
+  isAccountOwner: boolean("is_account_owner").default(false), // Renamed from isMasterAdmin
   // Temporarily commented out until migration can be run
   // isActive: boolean("is_active").default(true).notNull(),
 });
