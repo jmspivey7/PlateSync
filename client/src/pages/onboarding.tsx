@@ -258,6 +258,12 @@ export default function Onboarding() {
       // Successful verification means user is now authenticated
       const data = await response.json();
       
+      // Store the userId in localStorage if provided in the response
+      if (data.userId) {
+        localStorage.setItem('userId', data.userId);
+        console.log('User ID stored during verification:', data.userId);
+      }
+      
       toast({
         title: "Email verified",
         description: "Your email has been verified successfully",

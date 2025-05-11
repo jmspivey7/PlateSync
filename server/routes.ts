@@ -118,18 +118,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValid = await verifyCode(email, churchId, code);
       
       if (isValid) {
-        // Update user verification status
-        await db
-          .update(users)
-          .set({
-            isVerified: true
-          })
-          .where(and(
-            eq(users.email, email),
-            eq(users.churchId, churchId)
-          ));
+        // Find the user(s) with this email
+        const usersWithEmail = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, email));
+        
+        if (usersWithEmail.length > 0) {
+          // If the user has a churchId that matches, update that user
+          const userToUpdate = usersWithEmail.find(u => u.churchId === churchId) || usersWithEmail[0];
           
-        return res.status(200).json({ message: 'Verification successful', verified: true });
+          // Update user verification status
+          await db
+            .update(users)
+            .set({
+              isVerified: true
+            })
+            .where(eq(users.id, userToUpdate.id));
+            
+          return res.status(200).json({ 
+            message: 'Verification successful', 
+            verified: true,
+            userId: userToUpdate.id 
+          });
+        } else {
+          // No user found with this email - this is unusual but we'll still return success
+          // since the code was valid
+          console.warn(`Verification code was valid but no user found with email: ${email}`);
+          return res.status(200).json({ message: 'Verification successful', verified: true });
+        }
       } else {
         return res.status(400).json({ message: 'Invalid or expired verification code', verified: false });
       }
