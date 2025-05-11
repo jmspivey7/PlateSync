@@ -418,13 +418,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
       
-      // Find user by email
-      const users_result = await db.execute(
-        sql`SELECT * FROM users WHERE email = ${username} AND is_verified = true`
-      );
+      // Find user by email - using Drizzle's query builder instead of raw SQL
+      const usersResult = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.email, username),
+            eq(users.isVerified, true)
+          )
+        );
       
-      const users = users_result.rows;
-      const user = users.length > 0 ? users[0] : null;
+      const user = usersResult.length > 0 ? usersResult[0] : null;
       
       if (!user || !user.password) {
         return res.status(401).json({ message: "Invalid credentials or unverified account" });
