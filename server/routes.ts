@@ -273,28 +273,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(users.id, newUser.id));
       
-      // Build verification URL
-      const appUrl = `${req.protocol}://${req.get('host')}`;
-      const verificationUrl = `${appUrl}/verify?token=${resetToken}`;
+      // We'll no longer send the welcome email with verification link here
+      // Instead, we'll return the data needed for the onboarding flow with 6-digit code verification
       
-      // Send welcome email
-      await sendWelcomeEmail({
-        to: email,
-        firstName: firstName || '',
-        lastName: lastName || '',
-        churchName: churchName || 'PlateSync',
-        churchId: churchId,
-        verificationToken: resetToken,
-        verificationUrl
-      });
-      
-      // Return success response (don't include sensitive data)
+      // Return success response with onboarding information
       res.status(201).json({
         message: "Church account created successfully",
         user: {
           id: newUser.id,
           email: newUser.email,
           churchName: newUser.churchName
+        },
+        // Include the information needed for the onboarding flow with 6-digit verification
+        onboarding: {
+          churchId: churchId,
+          churchName: churchName || 'PlateSync',
+          email: email
         }
       });
     } catch (error) {

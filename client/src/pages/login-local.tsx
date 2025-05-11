@@ -104,7 +104,7 @@ export default function LoginLocal() {
       }
       
       // Registration successful
-      setRegisterSuccess("Registration successful! Please check your email to verify your account.");
+      setRegisterSuccess("Registration successful! Redirecting to account setup...");
       
       // Clear form
       setRegisterEmail("");
@@ -114,9 +114,11 @@ export default function LoginLocal() {
       setFirstName("");
       setLastName("");
       
-      // Redirect to onboarding with church info
+      // Use onboarding data from the response to redirect to onboarding
       setTimeout(() => {
-        const churchId = data.user.churchId;
+        // Get onboarding data from the response
+        const { churchId, churchName, email } = data.onboarding;
+        // Redirect to onboarding page with query parameters
         window.location.href = `/onboarding?churchId=${churchId}&churchName=${encodeURIComponent(churchName)}&email=${encodeURIComponent(email)}`;
       }, 1500);
       
