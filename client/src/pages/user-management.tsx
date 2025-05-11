@@ -482,8 +482,8 @@ const UserManagement = () => {
                             <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback className="bg-gray-100 text-gray-800">
                               {user.role === "ACCOUNT_OWNER" || 
-                                (user.role === "ADMIN" && user.isAccountOwner) || 
-                                (user.role === "ADMIN" && user.isMasterAdmin) 
+                                user.isAccountOwner || 
+                                user.isMasterAdmin
                                 ? "O" 
                                 : user.role === "ADMIN" 
                                   ? "A" 

@@ -1170,7 +1170,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdAt: user.created_at,
             updatedAt: user.updated_at,
             isVerified: user.is_verified === true || user.is_verified === 't',
-            isMasterAdmin: user.is_master_admin
+            isMasterAdmin: user.is_master_admin === true || user.is_master_admin === 't',
+            isAccountOwner: user.is_account_owner === true || user.is_account_owner === 't'
           }));
         console.log(`Found ${usersList.length} active users via test endpoint`);
       }
@@ -1184,7 +1185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: "John",
             lastName: "Spivey",
             role: "ADMIN",
-            isMasterAdmin: true
+            isMasterAdmin: true,
+            isAccountOwner: true
           }
           // Removed hardcoded USHER user since we want to show how deletion works
         ];
