@@ -79,10 +79,9 @@ export default function Onboarding() {
   // Mutation for saving donor notification settings
   const donorNotificationMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
-      const response = await apiRequest("POST", "/api/settings/email-notifications", { 
+      return await apiRequest("POST", "/api/settings/email-notifications", { 
         enabled 
       });
-      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -1179,6 +1178,105 @@ export default function Onboarding() {
           </div>
         );
       
+      case OnboardingStep.EMAIL_NOTIFICATIONS:
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Step 5: Donor Notifications</h2>
+              <div className="text-sm text-gray-500">Step 5 of 6</div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <BellRing className="h-5 w-5 text-[#69ad4c]" />
+                    <h3 className="text-lg font-medium">Donor Email Notifications</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    When enabled, PlateSync will automatically send email notifications to donors after each 
+                    count is finalized. This helps keep your congregation informed about their contributions.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="donor-notifications" className={donorNotificationsEnabled ? "text-[#69ad4c]" : "text-gray-500"}>
+                    {donorNotificationsEnabled ? "Enabled" : "Disabled"}
+                  </Label>
+                  <Switch 
+                    id="donor-notifications"
+                    checked={donorNotificationsEnabled}
+                    onCheckedChange={setDonorNotificationsEnabled}
+                    className={donorNotificationsEnabled ? "bg-[#69ad4c]" : ""}
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="font-medium text-sm">Important Information</h4>
+                    <p className="text-xs text-gray-600">
+                      Email notifications will only be sent to members who have valid email addresses in the system.
+                      You can edit member email addresses or notification preferences any time in Settings after setup.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-4 rounded-md border bg-blue-50 border-blue-100">
+                <div className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-medium">Email Preview</h4>
+                    <p className="text-sm text-gray-700">
+                      Members will receive a professional email notification with your church's logo
+                      that includes their donation amount, date, and type for their records.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={handleBackStep}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              
+              <div className="space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSkip}
+                >
+                  Skip for now
+                </Button>
+                
+                <Button 
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                  onClick={() => donorNotificationMutation.mutate(donorNotificationsEnabled)}
+                  disabled={donorNotificationMutation.isPending}
+                >
+                  {donorNotificationMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+        
       case OnboardingStep.IMPORT_MEMBERS:
         return (
           <div className="space-y-6 p-6">
