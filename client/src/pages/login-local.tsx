@@ -267,7 +267,7 @@ export default function LoginLocal() {
                       <Input
                         id="churchName"
                         type="text"
-                        placeholder="Enter your church name"
+                        placeholder=""
                         className="pl-10"
                         value={churchName}
                         onChange={(e) => setChurchName(e.target.value)}
@@ -286,7 +286,7 @@ export default function LoginLocal() {
                         <Input
                           id="firstName"
                           type="text"
-                          placeholder="First name"
+                          placeholder=""
                           className="pl-10"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
@@ -304,7 +304,7 @@ export default function LoginLocal() {
                         <Input
                           id="lastName"
                           type="text"
-                          placeholder="Last name"
+                          placeholder=""
                           className="pl-10"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
@@ -323,7 +323,7 @@ export default function LoginLocal() {
                       <Input
                         id="registerEmail"
                         type="email"
-                        placeholder="church@example.com"
+                        placeholder=""
                         className="pl-10"
                         value={registerEmail}
                         onChange={(e) => setRegisterEmail(e.target.value)}
@@ -341,7 +341,7 @@ export default function LoginLocal() {
                       <Input
                         id="registerPassword"
                         type={showRegisterPassword ? "text" : "password"}
-                        placeholder="Minimum 8 characters"
+                        placeholder=""
                         className="pl-10 pr-10"
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
@@ -371,7 +371,7 @@ export default function LoginLocal() {
                       <Input
                         id="confirmPassword"
                         type="password"
-                        placeholder="Confirm your password"
+                        placeholder=""
                         className="pl-10"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
