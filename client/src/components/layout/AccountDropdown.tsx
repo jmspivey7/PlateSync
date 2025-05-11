@@ -65,7 +65,7 @@ const AccountDropdown = () => {
       
       <DropdownMenuContent className="bg-white w-56" align="end">
         <DropdownMenuLabel className="text-[1.1rem] font-semibold">
-          {isMasterAdmin ? "Master Admin" : isAdmin ? "Administrator" : "Usher"}
+          {isAccountOwner ? "Account Owner" : isAdmin ? "Administrator" : "Standard User"}
         </DropdownMenuLabel>
         
         <DropdownMenuGroup>

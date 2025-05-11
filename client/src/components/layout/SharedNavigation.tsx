@@ -32,7 +32,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
   const [_, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { user, isAdmin, isMasterAdmin } = useAuth();
+  const { user, isAdmin, isAccountOwner } = useAuth();
   
   // Toggle mobile menu
   const toggleMobileMenu = () => {
@@ -115,7 +115,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                 {user?.profileImageUrl ? (
                   <AvatarImage src={user.profileImageUrl} alt={user?.firstName || "User"} />
                 ) : (
-                  <AvatarFallback>{isMasterAdmin ? "M" : isAdmin ? "A" : "U"}</AvatarFallback>
+                  <AvatarFallback>{isAccountOwner ? "O" : isAdmin ? "A" : "S"}</AvatarFallback>
                 )}
               </Avatar>
               <div>
@@ -132,12 +132,12 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
           <div className="flex-1 flex flex-col p-0">
             {/* Administrator Label */}
             <div className="py-2 px-6 font-semibold text-xl text-center">
-              {isMasterAdmin ? (
+              {isAccountOwner ? (
                 <div className="flex items-center justify-center">
-                  <span className="mr-2">Master Admin</span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#69ad4c] text-white">M</span>
+                  <span className="mr-2">Account Owner</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#69ad4c] text-white">O</span>
                 </div>
-              ) : isAdmin ? "Administrator" : "Usher"}
+              ) : isAdmin ? "Administrator" : "Standard User"}
             </div>
             
             <div className="flex flex-col items-center justify-start">
