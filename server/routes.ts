@@ -51,6 +51,7 @@ import {
   createUserSchema,
   userRoleEnum,
   insertEmailTemplateSchema,
+  registerChurchSchema,
   users
 } from "@shared/schema";
 
@@ -72,6 +73,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Root path handler to redirect to login-local
   app.get('/', (req, res) => {
     res.redirect('/login-local');
+  });
+  
+  // Church registration endpoint
+  app.post('/api/register-church', async (req, res) => {
+    try {
+      // Validate request data
+      const registerData = registerChurchSchema.parse(req.body);
+      const { email, password, churchName, firstName, lastName } = registerData;
+      
+      // Check if email already exists
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (existingUser.length > 0) {
+        return res.status(409).json({ message: "A user with this email already exists" });
+      }
+      
+      // Generate a unique ID for the church
+      const churchId = crypto.randomBytes(8).toString('hex');
+      
+      // Hash the password
+      const hashedPassword = await scryptHash(password);
+      
+      // Create the church admin user (as Master Admin)
+      const newUser = await storage.createUser({
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        churchName,
+        role: "ADMIN", // Make the user an admin by default
+        churchId: churchId, // Use the generated church ID
+        isMasterAdmin: true, // Make this user the master admin
+        isVerified: false // User needs to verify email
+      });
+      
+      // Generate verification token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      
+      // Set token expiration (48 hours)
+      const resetExpires = new Date();
+      resetExpires.setHours(resetExpires.getHours() + 48);
+      
+      // Update user with verification token
+      await db
+        .update(users)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpires: resetExpires,
+        })
+        .where(eq(users.id, newUser.id));
+      
+      // Build verification URL
+      const appUrl = `${req.protocol}://${req.get('host')}`;
+      const verificationUrl = `${appUrl}/verify?token=${resetToken}`;
+      
+      // Send welcome email
+      await sendWelcomeEmail({
+        to: email,
+        firstName: firstName || '',
+        lastName: lastName || '',
+        churchName: churchName || 'PlateSync',
+        churchId: churchId,
+        verificationToken: resetToken,
+        verificationUrl
+      });
+      
+      // Return success response (don't include sensitive data)
+      res.status(201).json({
+        message: "Church account created successfully",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          churchName: newUser.churchName
+        }
+      });
+    } catch (error) {
+      console.error("Error registering church:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid registration data", 
+          errors: error.errors 
+        });
+      }
+      
+      // Check for specific database error messages
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      
+      if (errorMsg.includes("duplicate key") && errorMsg.includes("users_email_unique")) {
+        return res.status(409).json({ 
+          message: "A user with this email already exists" 
+        });
+      }
+      
+      res.status(500).json({ message: "Registration failed. Please try again." });
+    }
   });
 
   // Set up multer for file uploads
