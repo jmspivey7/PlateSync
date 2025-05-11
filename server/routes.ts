@@ -118,6 +118,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValid = await verifyCode(email, churchId, code);
       
       if (isValid) {
+        // Update user verification status
+        await db
+          .update(users)
+          .set({
+            isVerified: true
+          })
+          .where(and(
+            eq(users.email, email),
+            eq(users.churchId, churchId)
+          ));
+          
         return res.status(200).json({ message: 'Verification successful', verified: true });
       } else {
         return res.status(400).json({ message: 'Invalid or expired verification code', verified: false });
