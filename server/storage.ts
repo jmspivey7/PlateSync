@@ -701,53 +701,79 @@ export class DatabaseStorage implements IStorage {
   // Transfer Master Admin status from one user to another
   async transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
     try {
-      // Verify both users exist and are admins
+      // Verify both users exist
       const fromUser = await this.getUser(fromUserId);
       const toUser = await this.getUser(toUserId);
       
       if (!fromUser || !toUser) {
-        console.error(`Cannot transfer Master Admin - one or both users not found`);
+        console.error(`Cannot transfer Account Ownership - one or both users not found`);
         return false;
       }
       
-      if (fromUser.role !== 'ADMIN' || toUser.role !== 'ADMIN') {
-        console.error(`Cannot transfer Master Admin - both users must be admins`);
-        return false;
-      }
-      
-      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
-      
-      // Get all users who have the old Master Admin as their churchId
-      const usersToUpdate = await db
-        .select()
-        .from(users)
-        .where(eq(users.churchId, fromUserId));
+      // Verify the current user is an Account Owner / Master Admin
+      const isFromUserOwner = 
+        fromUser.role === 'ACCOUNT_OWNER' || 
+        (fromUser.role === 'ADMIN' && (fromUser.isAccountOwner || fromUser.isMasterAdmin));
         
-      console.log(`Found ${usersToUpdate.length} users to update from old Master Admin ${fromUserId} to new Master Admin ${toUserId}`);
+      if (!isFromUserOwner) {
+        console.error(`Cannot transfer Account Ownership - source user is not an Account Owner`);
+        return false;
+      }
       
-      // Update all these users to point to the new Master Admin
-      for (const userToUpdate of usersToUpdate) {
-        if (userToUpdate.id !== toUserId) {  // Don't update the new Master Admin yet
-          await db
-            .update(users)
-            .set({ 
-              churchId: toUserId,
-              updatedAt: new Date()
-            })
-            .where(eq(users.id, userToUpdate.id));
+      // Start transaction
+      await db.transaction(async (tx) => {
+        // 1. Remove Account Owner status from the current Account Owner
+        await tx
+          .update(users)
+          .set({ 
+            role: 'ADMIN', // Demote to regular admin
+            isAccountOwner: false,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, fromUserId));
+          
+        // 2. Promote the target user to Account Owner
+        await tx
+          .update(users)
+          .set({ 
+            role: 'ACCOUNT_OWNER',
+            isAccountOwner: true,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, toUserId));
+        
+        // 3. Get all users who have the old Account Owner as their churchId
+        const usersToUpdate = await tx
+          .select()
+          .from(users)
+          .where(eq(users.churchId, fromUserId));
+          
+        console.log(`Found ${usersToUpdate.length} users to update from old Account Owner ${fromUserId} to new Account Owner ${toUserId}`);
+        
+        // 4. Update all these users to point to the new Account Owner
+        for (const userToUpdate of usersToUpdate) {
+          if (userToUpdate.id !== toUserId) {  // Don't update the new Account Owner yet
+            await tx
+              .update(users)
+              .set({ 
+                churchId: toUserId,
+                updatedAt: new Date()
+              })
+              .where(eq(users.id, userToUpdate.id));
+          }
         }
-      }
-      
-      // Make sure the new Master Admin points to themselves
-      await db
-        .update(users)
-        .set({
-          churchId: toUserId,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, toUserId));
         
-      console.log(`Transferred Master Admin from ${fromUserId} to ${toUserId} for church ${churchId}`);
+        // 5. Make sure the new Account Owner points to themselves
+        await tx
+          .update(users)
+          .set({
+            churchId: toUserId,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, toUserId));
+      });
+        
+      console.log(`Transferred Account Ownership from ${fromUserId} to ${toUserId} for church ${churchId}`);
       
       return true;
     } catch (error) {
@@ -785,14 +811,38 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateUserRole(id: string, role: string): Promise<User> {
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+    
+    // Handle legacy role mapping and set isAccountOwner flag appropriately
+    if (role === "ACCOUNT_OWNER") {
+      updateData.role = role;
+      updateData.isAccountOwner = true;
+    } else if (role === "ADMIN") {
+      updateData.role = role;
+      updateData.isAccountOwner = false;
+    } else if (role === "STANDARD") {
+      // Map STANDARD to USHER for backwards compatibility
+      updateData.role = "USHER"; 
+      updateData.isAccountOwner = false;
+    } else {
+      // For any other role, just set it directly
+      updateData.role = role;
+      updateData.isAccountOwner = false;
+    }
+    
     const [updatedUser] = await db
       .update(users)
-      .set({
-        role,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
+    
+    // For backwards compatibility, set isMasterAdmin based on isAccountOwner
+    if (updatedUser) {
+      updatedUser.isMasterAdmin = !!updatedUser.isAccountOwner;
+    }
     
     return updatedUser;
   }

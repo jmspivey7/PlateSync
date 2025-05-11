@@ -244,6 +244,8 @@ export type User = typeof users.$inferSelect & {
   // Add runtime properties (not in database schema)
   isActive?: boolean;
   isAccountOwner?: boolean;
+  // Legacy property for backwards compatibility
+  isMasterAdmin?: boolean;
 };
 
 // Types for our application
