@@ -139,11 +139,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Found user to update: ${userToUpdate.id} (${userToUpdate.email})`);
           
-          // Update user verification status
+          // Update user verification status but keep any existing password
           await db
             .update(users)
             .set({
-              isVerified: true
+              isVerified: true,
+              // Note: We leave password unchanged as it should already be set during registration
             })
             .where(eq(users.id, userToUpdate.id));
             
