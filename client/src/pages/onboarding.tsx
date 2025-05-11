@@ -1211,7 +1211,7 @@ export default function Onboarding() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Label htmlFor="donor-notifications" className={donorNotificationsEnabled ? "text-[#69ad4c]" : "text-gray-500"}>
-                    {donorNotificationsEnabled ? "Enabled" : "Disabled"}
+                    {donorNotificationsEnabled ? "ON" : "OFF"}
                   </Label>
                   <Switch 
                     id="donor-notifications"
