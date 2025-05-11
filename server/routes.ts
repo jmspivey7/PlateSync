@@ -4048,6 +4048,69 @@ PlateSync Reporting System`;
       });
     }
   });
+  
+  // Temporary endpoint to explicitly set a church logo URL
+  app.get('/api/set-church-logo', async (req, res) => {
+    try {
+      const { churchId, logoUrl } = req.query;
+      
+      if (!churchId || typeof churchId !== 'string') {
+        return res.status(400).json({ message: 'Missing or invalid churchId parameter', success: false });
+      }
+      
+      if (!logoUrl || typeof logoUrl !== 'string') {
+        return res.status(400).json({ message: 'Missing or invalid logoUrl parameter', success: false });
+      }
+      
+      console.log(`Setting logo URL for church ID: ${churchId}`);
+      console.log(`New logo URL: ${logoUrl}`);
+      
+      // First check if the logo file exists
+      const localPath = path.join('public', logoUrl.replace(/^\/logos\//, 'logos/'));
+      const fileExists = fs.existsSync(localPath);
+      
+      if (!fileExists) {
+        return res.status(404).json({ 
+          message: `Logo file not found at path: ${localPath}`, 
+          success: false 
+        });
+      }
+      
+      // Update all users with this church ID
+      const updateResult = await db
+        .update(users)
+        .set({ churchLogoUrl: logoUrl })
+        .where(eq(users.churchId, churchId));
+      
+      console.log(`Church logo update result:`, updateResult);
+      
+      // Also update any master admin records
+      const updateMasterResult = await db
+        .update(users)
+        .set({ churchLogoUrl: logoUrl })
+        .where(
+          and(
+            eq(users.id, churchId),
+            eq(users.isMasterAdmin, true)
+          )
+        );
+      
+      console.log(`Master admin logo update result:`, updateMasterResult);
+      
+      return res.status(200).json({ 
+        message: 'Church logo URL updated successfully',
+        logoUrl: logoUrl,
+        success: true 
+      });
+    } catch (error) {
+      console.error('Error setting church logo:', error);
+      res.status(500).json({ 
+        message: 'Error setting church logo', 
+        error: error instanceof Error ? error.message : String(error), 
+        success: false 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
