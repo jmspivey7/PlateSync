@@ -26,7 +26,7 @@ export async function fixOnboardingSettings(userId: string) {
       email: user.email,
       role: user.role,
       churchId: user.churchId,
-      isMasterAdmin: user.isMasterAdmin,
+      isAccountOwner: user.isAccountOwner,
       churchLogoUrl: user.churchLogoUrl
     });
     
