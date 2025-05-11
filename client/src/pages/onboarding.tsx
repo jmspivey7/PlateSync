@@ -70,7 +70,7 @@ export default function Onboarding() {
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   
   // Email notification state
-  const [donorNotificationsEnabled, setDonorNotificationsEnabled] = useState(true);
+  const [donorNotificationsEnabled, setDonorNotificationsEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPlanningCenterConnecting, setIsPlanningCenterConnecting] = useState(false);
   const [isPlanningCenterConnected, setIsPlanningCenterConnected] = useState(false);
