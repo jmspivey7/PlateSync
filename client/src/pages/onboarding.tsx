@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight, X, 
-  Plus, ChevronLeft, Mail, FileUp, Users, Link as LinkIcon, UserPlus
+  Plus, ChevronLeft, Mail, FileUp, Users, Link as LinkIcon, UserPlus,
+  AlertCircle, AlertTriangle, BellRing
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import plateSyncLogo from "../assets/platesync-logo.png";
 
 // Onboarding Steps
@@ -25,7 +28,8 @@ enum OnboardingStep {
   UPLOAD_LOGO = 2,
   SERVICE_OPTIONS = 3,
   IMPORT_MEMBERS = 4,
-  COMPLETE = 5
+  EMAIL_NOTIFICATIONS = 5,
+  COMPLETE = 6
 }
 
 interface OnboardingParams {
@@ -63,12 +67,48 @@ export default function Onboarding() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
+  
+  // Email notification state
+  const [donorNotificationsEnabled, setDonorNotificationsEnabled] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPlanningCenterConnecting, setIsPlanningCenterConnecting] = useState(false);
   const [isPlanningCenterConnected, setIsPlanningCenterConnected] = useState(false);
   const [isImportingFromPlanningCenter, setIsImportingFromPlanningCenter] = useState(false);
   const queryClient = useQueryClient();
   
+  // Mutation for saving donor notification settings
+  const donorNotificationMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const response = await apiRequest('POST', '/api/settings/email-notifications', { 
+        enabled 
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Settings Saved',
+        description: donorNotificationsEnabled 
+          ? 'Donor notifications have been enabled' 
+          : 'Donor notifications have been disabled',
+        className: donorNotificationsEnabled 
+          ? 'bg-[#48BB78] text-white'
+          : 'bg-slate-800 text-white',
+      });
+      
+      // Move to next step after short delay
+      setTimeout(() => {
+        handleNextStep();
+      }, 1000);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save notification settings',
+        variant: 'destructive',
+      });
+    }
+  });
+
   // Create the importCsvMutation for handling CSV imports
   const importCsvMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -394,6 +434,8 @@ export default function Onboarding() {
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
       setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
+      setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
+    } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
       setCurrentStep(OnboardingStep.COMPLETE);
     } else {
       // If on last step or otherwise, redirect to login page
