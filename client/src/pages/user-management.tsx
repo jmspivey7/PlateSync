@@ -205,6 +205,8 @@ const UserManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
+  
+  // Transfer ownership dialog state
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [userToTransferTo, setUserToTransferTo] = useState<User | null>(null);
   
@@ -490,46 +492,28 @@ const UserManagement = () => {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium">
-                              {user.firstName} {user.lastName}
-                            </p>
+                            <div className="font-medium">{user.firstName} {user.lastName}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
                           </div>
                         </div>
                       </TableCell>
-                      
                       <TableCell>
-                        <Badge 
-                          className={
-                            user.role === "ACCOUNT_OWNER" || 
-                            (user.role === "ADMIN" && user.isAccountOwner) ||
-                            (user.role === "ADMIN" && user.isMasterAdmin)
-                              ? "bg-purple-100 text-purple-800"
-                              : user.role === "ADMIN" 
-                                ? "bg-blue-100 text-blue-800" 
-                                : "bg-green-100 text-green-800"
-                          }
-                        >
-                          {user.role === "ACCOUNT_OWNER" || 
-                            (user.role === "ADMIN" && user.isAccountOwner) ||
-                            (user.role === "ADMIN" && user.isMasterAdmin)
-                            ? "ACCOUNT OWNER" 
-                            : user.role === "ADMIN" 
-                              ? "ADMIN" 
-                              : user.role === "USHER" 
-                                ? "STANDARD" 
-                                : user.role || "STANDARD"}
-                        </Badge>
+                        {user.role === "ACCOUNT_OWNER" || 
+                         (user.role === "ADMIN" && user.isAccountOwner) || 
+                         (user.role === "ADMIN" && user.isMasterAdmin) ? (
+                          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
+                        ) : user.role === "ADMIN" ? (
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          className={
-                            user.isVerified 
-                              ? "bg-gray-100 text-gray-800"
-                              : "bg-amber-100 text-amber-800"
-                          }
-                        >
-                          {user.isVerified ? "Verified" : "Pending Verification"}
-                        </Badge>
+                        {user.isVerified ? (
+                          <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Verified</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Pending</Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -542,195 +526,213 @@ const UserManagement = () => {
       
       {/* User Details Dialog */}
       <Dialog open={userDetailsOpen} onOpenChange={setUserDetailsOpen}>
-        <DialogContent className="sm:max-w-md">
-          {selectedUserId && filteredUsers.find(u => u.id === selectedUserId) && (
-            <>
-              <DialogHeader>
-                <DialogTitle>User Details</DialogTitle>
-                <DialogDescription>
-                  View and edit detailed information about this user
-                </DialogDescription>
-              </DialogHeader>
-              
-              {(() => {
-                const user = filteredUsers.find(u => u.id === selectedUserId)!;
-                return (
-                  <div className="space-y-4 py-2">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
-                        <AvatarFallback className="bg-gray-100 text-gray-800 text-lg">
-                          {user.role === "ACCOUNT_OWNER" || 
-                            (user.role === "ADMIN" && user.isAccountOwner) || 
-                            (user.role === "ADMIN" && user.isMasterAdmin) 
-                            ? "O" 
-                            : user.role === "ADMIN" 
-                              ? "A" 
-                              : "S"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-lg font-semibold">
-                          {user.firstName} {user.lastName}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {user.email || "—"}
-                        </p>
-                      </div>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedUserId && (() => {
+            const selectedUser = users?.find(u => u.id === selectedUserId);
+            
+            if (!selectedUser) return <div>User not found</div>;
+            
+            const isCurrentUserAccountOwner = 
+              currentUser?.role === "ACCOUNT_OWNER" || 
+              (currentUser?.role === "ADMIN" && currentUser?.isAccountOwner) ||
+              (currentUser?.role === "ADMIN" && currentUser?.isMasterAdmin);
+            
+            const isSelectedUserAccountOwner = 
+              selectedUser.role === "ACCOUNT_OWNER" || 
+              (selectedUser.role === "ADMIN" && selectedUser.isAccountOwner) ||
+              (selectedUser.role === "ADMIN" && selectedUser.isMasterAdmin);
+            
+            return (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={selectedUser.profileImageUrl || ""} alt={`${selectedUser.firstName} ${selectedUser.lastName}`} />
+                    <AvatarFallback className="text-lg bg-gray-100 text-gray-800">
+                      {selectedUser.role === "ACCOUNT_OWNER" || 
+                        (selectedUser.role === "ADMIN" && selectedUser.isAccountOwner) || 
+                        (selectedUser.role === "ADMIN" && selectedUser.isMasterAdmin) 
+                        ? "O" 
+                        : selectedUser.role === "ADMIN" 
+                          ? "A" 
+                          : "S"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedUser.firstName} {selectedUser.lastName}</h3>
+                    <p className="text-gray-500">{selectedUser.email}</p>
+                    <div className="mt-1">
+                      {isSelectedUserAccountOwner ? (
+                        <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
+                      ) : selectedUser.role === "ADMIN" ? (
+                        <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
+                      )}
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Role</p>
-                        <Badge 
-                          className={
-                            user.role === "ACCOUNT_OWNER" || 
-                            (user.role === "ADMIN" && user.isAccountOwner) ||
-                            (user.role === "ADMIN" && user.isMasterAdmin)
-                              ? "bg-purple-100 text-purple-800 mt-1"
-                              : user.role === "ADMIN" 
-                                ? "bg-blue-100 text-blue-800 mt-1" 
-                                : "bg-green-100 text-green-800 mt-1"
-                          }
-                        >
-                          {user.role === "ACCOUNT_OWNER" || 
-                            (user.role === "ADMIN" && user.isAccountOwner) ||
-                            (user.role === "ADMIN" && user.isMasterAdmin)
-                            ? "ACCOUNT OWNER" 
-                            : user.role === "ADMIN" 
-                              ? "ADMIN" 
-                              : user.role === "USHER" 
-                                ? "STANDARD" 
-                                : user.role || "STANDARD"}
-                        </Badge>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Created</p>
-                        <p>
-                          {user.createdAt ? format(new Date(user.createdAt), "MM/dd/yyyy - hh:mm a") : "—"}
-                        </p>
-                      </div>
-                      
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-gray-500">Status</p>
-                        <Badge 
-                          className={
-                            user.isVerified 
-                              ? "bg-gray-100 text-gray-800 mt-1"
-                              : "bg-amber-100 text-amber-800 mt-1"
-                          }
-                        >
-                          {user.isVerified ? "Verified" : "Pending Verification"}
-                        </Badge>
-                        {!user.isVerified && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            User needs to verify their email to complete account setup
-                          </p>
-                        )}
-                      </div>
+                  </div>
+                </div>
+                
+                <div className="grid gap-4">
+                  {selectedUser.createdAt && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Member Since</h4>
+                      <p>{format(new Date(selectedUser.createdAt), "MMMM d, yyyy")}</p>
                     </div>
-                    
-                    <div className="border-t pt-4">
-                      <p className="text-sm font-medium text-gray-500 mb-2">Actions</p>
-                      <div className="flex items-center gap-2">
-                        {/* 
-                      Role selection dropdown has special rules:
-                      1. Account Owners can't reduce their role (can only transfer ownership)
-                      2. For regular users, they can be promoted or demoted
-                      3. Account Owner transfer requires confirmation and converts current Owner to Admin
-                    */}
-                    {user.role === "ACCOUNT_OWNER" || 
-                      (user.role === "ADMIN" && user.isAccountOwner) ||
-                      (user.role === "ADMIN" && user.isMasterAdmin) ? (
-                      <div className="flex flex-col gap-2">
-                        <Button
+                  )}
+                </div>
+                
+                {/* Role Management Section */}
+                {currentUser?.id !== selectedUser.id && isCurrentUserAccountOwner && (
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-3">Manage User Role</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {!isSelectedUserAccountOwner && (
+                        <Select
+                          value={selectedUser.role}
+                          onValueChange={(value) => handleRoleChange(selectedUser.id, value)}
+                          disabled={isPending}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ADMIN">Administrator</SelectItem>
+                            <SelectItem value="STANDARD">Standard User</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      
+                      {/* Transfer Account Ownership button - shown only if current user is account owner
+                          and the selected user is not already an account owner */}
+                      {isCurrentUserAccountOwner && !isSelectedUserAccountOwner && (
+                        <Button 
                           variant="outline"
-                          className="w-full"
+                          className="ml-2"
                           onClick={() => {
+                            setUserDetailsOpen(false);
+                            setUserToTransferTo(selectedUser);
                             setTransferDialogOpen(true);
-                            setUserToTransferTo(null);
                           }}
                         >
                           Transfer Ownership
                         </Button>
-                        <p className="text-xs text-gray-500 italic">
-                          Account Owners cannot change their role directly
-                        </p>
-                      </div>
-                    ) : (
-                      <Select 
-                        defaultValue={user.role === "USHER" ? "STANDARD" : (user.role || "STANDARD")}
-                        onValueChange={(value) => {
-                          handleRoleChange(user.id, value);
-                          setUserDetailsOpen(false);
-                        }}
-                        disabled={isPending}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Change Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ADMIN">Administrator</SelectItem>
-                          <SelectItem value="STANDARD">Standard User</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                        
-                        {/* 
-                          Account Owners cannot be deleted - they must transfer ownership first 
-                          Other users can be deleted by admins, but not themselves 
-                        */}
-                        {user.id !== currentUser?.id && 
-                         !(user.role === "ACCOUNT_OWNER" || 
-                           (user.role === "ADMIN" && user.isAccountOwner) || 
-                           (user.role === "ADMIN" && user.isMasterAdmin)) && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this user? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => {
-                                    deleteUser(user.id);
-                                    setUserDetailsOpen(false);
-                                  }}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                  {isDeleting ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Deleting...
-                                    </>
-                                  ) : (
-                                    "Delete"
-                                  )}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
-                );
-              })()}
-            </>
-          )}
+                )}
+                
+                {/* Delete User Button */}
+                {currentUser?.id !== selectedUser.id && 
+                 isCurrentUserAccountOwner && 
+                 !isSelectedUserAccountOwner && (
+                  <div className="border-t pt-4">
+                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="text-red-600">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete User
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete User</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete the user {selectedUser.firstName} {selectedUser.lastName}. 
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            className="bg-red-600 text-white hover:bg-red-700"
+                            onClick={handleDeleteUser}
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              <>Delete</>
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Transfer Ownership Dialog */}
+      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Transfer Account Ownership</DialogTitle>
+            <DialogDescription>
+              This will transfer your Account Owner role to another user. You will become a regular Admin user after the transfer.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <h3 className="text-sm font-semibold mb-2">Are you sure you want to transfer ownership to:</h3>
+            {userToTransferTo && (
+              <div className="flex items-center gap-3 p-3 border rounded-md">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={userToTransferTo.profileImageUrl || ""} alt={`${userToTransferTo.firstName} ${userToTransferTo.lastName}`} />
+                  <AvatarFallback className="bg-gray-100 text-gray-800">
+                    {userToTransferTo.role === "ADMIN" ? "A" : "S"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">
+                    {userToTransferTo.firstName} {userToTransferTo.lastName}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {userToTransferTo.email}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setTransferDialogOpen(false);
+                setUserToTransferTo(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (userToTransferTo) {
+                  transferOwnership(userToTransferTo.id);
+                }
+              }}
+              disabled={!userToTransferTo || isTransferring}
+              className="bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+            >
+              {isTransferring ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Transferring...
+                </>
+              ) : (
+                <>Confirm Transfer</>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageLayout>
