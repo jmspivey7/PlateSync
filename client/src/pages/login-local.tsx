@@ -243,7 +243,7 @@ export default function LoginLocal() {
             
             <TabsContent value="register">
               <CardContent className="py-4">
-                <p className="text-gray-600 mb-4">Create a new church account to start using PlateSync.</p>
+                <p className="text-gray-600 mb-4">Start your <strong>30-Day Free Trial</strong> of PlateSync Today! No credit card required. Complete the New Account form to get started.</p>
                 
                 <form onSubmit={handleRegister} className="space-y-4">
                   {registerError && (
