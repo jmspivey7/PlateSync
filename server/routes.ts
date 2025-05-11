@@ -8,7 +8,7 @@ import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, 
 import { sendVerificationEmail, verifyCode } from "./verification";
 import { setupTestEndpoints } from "./test-endpoints";
 import { setupPlanningCenterRoutes } from "./planning-center";
-import { eq, sql, and, or } from "drizzle-orm";
+import { eq, sql, and, or, inArray } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -3825,7 +3825,22 @@ PlateSync Reporting System`;
           .where(eq(emailTemplates.churchId, userId));
       }
       
-      // Finally, delete the users
+      // Handle users with church_id foreign key dependencies first
+      // Find all users that reference any of the userIds as their churchId
+      const usersWithChurchDependency = await db
+        .select()
+        .from(users)
+        .where(inArray(users.churchId, userIds));
+        
+      // For all dependent users, set their churchId to null to remove the dependency
+      for (const dependentUser of usersWithChurchDependency) {
+        await db
+          .update(users)
+          .set({ churchId: null })
+          .where(eq(users.id, dependentUser.id));
+      }
+      
+      // Now we can safely delete the users
       const deleteResult = await db
         .delete(users)
         .where(eq(users.email, email as string));
@@ -3833,7 +3848,8 @@ PlateSync Reporting System`;
       return res.status(200).json({ 
         message: 'Test user deleted successfully', 
         email: email,
-        deletedUserIds: userIds
+        deletedUserIds: userIds,
+        dependentUsersUpdated: usersWithChurchDependency.length
       });
     } catch (error) {
       console.error('Error deleting test user:', error);
