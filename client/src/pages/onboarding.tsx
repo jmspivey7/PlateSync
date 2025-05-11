@@ -4,18 +4,20 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight, X, Plus, ChevronLeft } from "lucide-react";
+import { Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight, X, Plus, ChevronLeft, Mail } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import plateSyncLogo from "../assets/platesync-logo.png";
 
 // Onboarding Steps
 enum OnboardingStep {
   CREATING_ACCOUNT = 0,
-  UPLOAD_LOGO = 1,
-  SERVICE_OPTIONS = 2,
-  COMPLETE = 3
+  VERIFY_EMAIL = 1,
+  UPLOAD_LOGO = 2,
+  SERVICE_OPTIONS = 3,
+  COMPLETE = 4
 }
 
 interface OnboardingParams {
@@ -38,6 +40,12 @@ export default function Onboarding() {
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
   const [newServiceOption, setNewServiceOption] = useState('');
   const [isAddingService, setIsAddingService] = useState(false);
+  
+  // Email verification states
+  const [verificationCode, setVerificationCode] = useState<string>('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   
   // Get parameters from URL query
   const params = new URLSearchParams(window.location.search);
@@ -156,9 +164,125 @@ export default function Onboarding() {
     }
   };
   
+  // Send email verification code
+  const sendVerificationCode = async () => {
+    if (!email || !churchId) {
+      toast({
+        title: "Error",
+        description: "Missing email or church ID",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsVerifying(true);
+    setVerificationError(null);
+    
+    try {
+      const response = await fetch('/api/send-verification-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          churchId
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send verification code');
+      }
+      
+      setVerificationSent(true);
+      
+      toast({
+        title: "Verification code sent",
+        description: `A 6-digit code has been sent to ${email}`,
+        variant: "default"
+      });
+    } catch (error) {
+      setVerificationError(error instanceof Error ? error.message : "Failed to send verification code");
+      
+      toast({
+        title: "Failed to send verification code",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+  
+  // Verify the email verification code
+  const verifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6 || !email || !churchId) {
+      toast({
+        title: "Invalid code",
+        description: "Please enter a valid 6-digit code",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsVerifying(true);
+    setVerificationError(null);
+    
+    try {
+      const response = await fetch('/api/verify-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: verificationCode,
+          email,
+          churchId
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Invalid verification code');
+      }
+      
+      // Successful verification means user is now authenticated
+      const data = await response.json();
+      
+      toast({
+        title: "Email verified",
+        description: "Your email has been verified successfully",
+        variant: "default"
+      });
+      
+      // Move to the next step
+      setCurrentStep(OnboardingStep.UPLOAD_LOGO);
+      
+    } catch (error) {
+      setVerificationError(error instanceof Error ? error.message : "Invalid verification code");
+      
+      toast({
+        title: "Verification failed",
+        description: error instanceof Error ? error.message : "Invalid verification code",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+  
   // Handle skip
   const handleSkip = () => {
-    if (currentStep === OnboardingStep.UPLOAD_LOGO) {
+    if (currentStep === OnboardingStep.VERIFY_EMAIL) {
+      // Cannot skip email verification
+      toast({
+        title: "Email verification required",
+        description: "You must verify your email to continue",
+        variant: "destructive"
+      });
+      return;
+    } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
       setCurrentStep(OnboardingStep.COMPLETE);
@@ -170,7 +294,10 @@ export default function Onboarding() {
   
   // Handle next step
   const handleNextStep = () => {
-    if (currentStep === OnboardingStep.UPLOAD_LOGO) {
+    if (currentStep === OnboardingStep.VERIFY_EMAIL) {
+      // For verification step, we need to verify the code
+      verifyCode();
+    } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
       setCurrentStep(OnboardingStep.COMPLETE);
@@ -182,7 +309,13 @@ export default function Onboarding() {
   
   // Handle back step
   const handleBackStep = () => {
-    if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
+    if (currentStep === OnboardingStep.VERIFY_EMAIL) {
+      // Cannot go back from email verification
+      return;
+    } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
+      // Cannot go back to verification once verified
+      return;
+    } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
       setCurrentStep(OnboardingStep.UPLOAD_LOGO);
     } else if (currentStep === OnboardingStep.COMPLETE) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
