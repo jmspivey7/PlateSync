@@ -7,7 +7,7 @@ import { isAdmin, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { setupTestEndpoints } from "./test-endpoints";
 import { setupPlanningCenterRoutes } from "./planning-center";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -141,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await db
             .update(users)
             .set({
-              logoUrl: logoUrl,
+              churchLogoUrl: logoUrl,
               updatedAt: new Date()
             })
             .where(

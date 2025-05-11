@@ -14,6 +14,7 @@ import LoginLocal from "@/pages/login-local";
 import Verify from "@/pages/verify";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
+import Onboarding from "@/pages/onboarding";
 import Counts from "@/pages/counts";
 import BatchDetail from "@/pages/batch-detail";
 import BatchSummary from "@/pages/batch-summary"; // New dedicated component
@@ -30,7 +31,7 @@ import EmailTemplateEditor from "@/pages/email-template-editor";
 import { useAuth } from "@/hooks/useAuth";
 
 // Public paths that don't require authentication
-const PUBLIC_PATHS = ["/login", "/login-local", "/verify", "/forgot-password", "/reset-password"];
+const PUBLIC_PATHS = ["/login", "/login-local", "/verify", "/forgot-password", "/reset-password", "/onboarding"];
 
 function isPublicPath(path: string) {
   return PUBLIC_PATHS.some(publicPath => path.startsWith(publicPath));
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/verify" component={Verify} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/onboarding" component={Onboarding} />
       
       {/* Protected routes */}
       <Route path="/" component={Dashboard} />
