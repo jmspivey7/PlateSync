@@ -269,6 +269,12 @@ export default function Onboarding() {
     // Use either churchId from params or userId from verification
     const idToUse = churchId || storedUserId;
     
+    console.log('Logo Upload - User info:', { 
+      idToUse, 
+      churchId, 
+      storedUserId
+    });
+    
     if (!idToUse) {
       toast({
         title: "Missing church ID",
@@ -286,6 +292,8 @@ export default function Onboarding() {
       formData.append('logo', logoFile);
       formData.append('churchId', idToUse);
       
+      console.log(`Uploading logo for churchId: ${idToUse}`);
+      
       // Send to server
       const response = await fetch('/api/upload-logo', {
         method: 'POST',
@@ -293,6 +301,7 @@ export default function Onboarding() {
       });
       
       if (!response.ok) {
+        console.error('Failed to upload logo:', await response.text());
         throw new Error('Failed to upload logo');
       }
       
@@ -615,25 +624,67 @@ export default function Onboarding() {
       const idToUse = churchId || storedUserId;
       const userVerified = localStorage.getItem('userVerified') === 'true';
       
+      console.log('Service Options Step - User info:', { 
+        idToUse, 
+        churchId, 
+        storedUserId, 
+        userVerified 
+      });
+      
       if (idToUse && userVerified) {
         try {
           // Check if we have any unsaved service options in localStorage
           const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+          console.log('Service Options to save from localStorage:', storedOptions);
           
-          // Get existing options from database
-          const getResponse = await fetch(`/api/service-options?churchId=${idToUse}`);
+          // Create default service options if none exist
+          if (storedOptions.length === 0) {
+            console.log('No service options found in localStorage, adding defaults');
+            const defaultOptions = ['Sunday Morning', 'Sunday Evening', 'Wednesday Night'];
+            localStorage.setItem('onboardingServiceOptions', JSON.stringify(defaultOptions));
+            setServiceOptions(defaultOptions);
+          }
+          
+          // First initialize default service options in database
+          try {
+            const initResponse = await fetch('/api/service-options/initialize', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ churchId: idToUse }),
+            });
+            
+            if (!initResponse.ok) {
+              console.error('Failed to initialize service options:', await initResponse.text());
+            } else {
+              console.log('Service options initialized successfully');
+            }
+          } catch (initError) {
+            console.error('Error initializing service options:', initError);
+          }
+          
+          // Now get existing options from database 
+          const getResponse = await fetch(`/api/service-options`);
           
           if (getResponse.ok) {
             const existingOptions = await getResponse.json();
+            console.log('Existing service options in database:', existingOptions);
             const existingNames = existingOptions.map((opt: any) => opt.name);
             
+            // Get options from localStorage
+            const currentStoredOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+            console.log('Current stored options in localStorage:', currentStoredOptions);
+            
             // Filter out options that already exist in the database
-            const optionsToSave = storedOptions.filter((opt: string) => !existingNames.includes(opt));
+            const optionsToSave = currentStoredOptions.filter((opt: string) => !existingNames.includes(opt));
+            console.log('Options to save to database:', optionsToSave);
             
             // Save any remaining options to the database
             for (const option of optionsToSave) {
               try {
-                await fetch('/api/service-options', {
+                console.log(`Attempting to save service option: ${option}`);
+                const saveResponse = await fetch('/api/service-options', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -643,14 +694,36 @@ export default function Onboarding() {
                     churchId: idToUse
                   }),
                 });
+                
+                if (saveResponse.ok) {
+                  const savedOption = await saveResponse.json();
+                  console.log(`Service option "${option}" saved successfully:`, savedOption);
+                } else {
+                  console.error(`Failed to save service option "${option}":`, await saveResponse.text());
+                }
               } catch (error) {
-                console.error('Error saving service option:', error);
+                console.error(`Error saving service option "${option}":`, error);
               }
             }
+            
+            // Verify options were saved by refreshing from server
+            try {
+              const verifyResponse = await fetch(`/api/service-options`);
+              if (verifyResponse.ok) {
+                const savedOptions = await verifyResponse.json();
+                console.log('Final service options in database after saving:', savedOptions);
+              }
+            } catch (verifyError) {
+              console.error('Error verifying saved service options:', verifyError);
+            }
+          } else {
+            console.error('Failed to get existing service options:', await getResponse.text());
           }
         } catch (error) {
           console.error('Error syncing service options:', error);
         }
+      } else {
+        console.warn('Cannot save service options - missing user ID or verification status');
       }
       
       // Now proceed to member import step

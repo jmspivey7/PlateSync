@@ -259,8 +259,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const logoUrl = `/logos/${req.file.filename}`;
         
         try {
-          // Update church settings in the database
-          await db
+          console.log(`Attempting to update logo for churchId: ${churchId}`);
+          
+          // First try to update master admin for this church
+          const updateResult1 = await db
             .update(users)
             .set({
               churchLogoUrl: logoUrl,
@@ -272,6 +274,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 eq(users.isMasterAdmin, true)
               )
             );
+          
+          console.log(`Master admin logo update result: ${JSON.stringify(updateResult1)}`);
+          
+          // Also update the user's own record if they are the church ID
+          const updateResult2 = await db
+            .update(users)
+            .set({
+              churchLogoUrl: logoUrl,
+              updatedAt: new Date()
+            })
+            .where(eq(users.id, churchId));
+          
+          console.log(`User's own logo update result: ${JSON.stringify(updateResult2)}`);
+          
+          // Additionally update all users associated with this church
+          const updateResult3 = await db
+            .update(users)
+            .set({
+              churchLogoUrl: logoUrl,
+              updatedAt: new Date()
+            })
+            .where(eq(users.churchId, churchId));
+          
+          console.log(`All church users logo update result: ${JSON.stringify(updateResult3)}`);
           
           console.log(`Logo updated for church ID ${churchId}: ${logoUrl}`);
           
