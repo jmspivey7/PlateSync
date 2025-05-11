@@ -454,7 +454,7 @@ const UserManagement = () => {
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback className="bg-gray-100 text-gray-800">
-                              {user.isMasterAdmin ? "M" : user.role === "ADMIN" ? "A" : "U"}
+                              {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) ? "O" : user.role === "ADMIN" ? "A" : "S"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -468,12 +468,16 @@ const UserManagement = () => {
                       <TableCell>
                         <Badge 
                           className={
-                            user.role === "ADMIN" 
-                              ? user.isMasterAdmin ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800" 
-                              : "bg-green-100 text-green-800"
+                            user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner)
+                              ? "bg-purple-100 text-purple-800"
+                              : user.role === "ADMIN" 
+                                ? "bg-blue-100 text-blue-800" 
+                                : "bg-green-100 text-green-800"
                           }
                         >
-                          {user.isMasterAdmin ? "MASTER ADMIN" : user.role || "USHER"}
+                          {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) 
+                            ? "ACCOUNT OWNER" 
+                            : user.role || "STANDARD"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -516,7 +520,7 @@ const UserManagement = () => {
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                         <AvatarFallback className="bg-gray-100 text-gray-800 text-lg">
-                          {user.isMasterAdmin ? "M" : user.role === "ADMIN" ? "A" : "U"}
+                          {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) ? "O" : user.role === "ADMIN" ? "A" : "S"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -534,12 +538,16 @@ const UserManagement = () => {
                         <p className="text-sm font-medium text-gray-500">Role</p>
                         <Badge 
                           className={
-                            user.role === "ADMIN" 
-                              ? user.isMasterAdmin ? "bg-purple-100 text-purple-800 mt-1" : "bg-blue-100 text-blue-800 mt-1" 
-                              : "bg-green-100 text-green-800 mt-1"
+                            user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner)
+                              ? "bg-purple-100 text-purple-800 mt-1"
+                              : user.role === "ADMIN" 
+                                ? "bg-blue-100 text-blue-800 mt-1" 
+                                : "bg-green-100 text-green-800 mt-1"
                           }
                         >
-                          {user.isMasterAdmin ? "MASTER ADMIN" : user.role || "USHER"}
+                          {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) 
+                            ? "ACCOUNT OWNER" 
+                            : user.role || "STANDARD"}
                         </Badge>
                       </div>
                       
@@ -572,25 +580,56 @@ const UserManagement = () => {
                     <div className="border-t pt-4">
                       <p className="text-sm font-medium text-gray-500 mb-2">Actions</p>
                       <div className="flex items-center gap-2">
-                        <Select 
-                          defaultValue={user.isMasterAdmin ? "MASTER_ADMIN" : (user.role || "USHER")}
-                          onValueChange={(value) => {
-                            handleRoleChange(user.id, value);
-                            setUserDetailsOpen(false);
+                        {/* 
+                      Role selection dropdown has special rules:
+                      1. Account Owners can't reduce their role (can only transfer ownership)
+                      2. For regular users, they can be promoted or demoted
+                      3. Account Owner transfer requires confirmation and converts current Owner to Admin
+                    */}
+                    {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) ? (
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            // Show transfer ownership dialog logic would go here
+                            toast({
+                              title: "Transfer ownership",
+                              description: "This feature will allow you to transfer your Account Owner role to another user",
+                            });
                           }}
-                          disabled={isPending}
                         >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Change Role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
-                            <SelectItem value="ADMIN">Administrator</SelectItem>
-                            <SelectItem value="USHER">Usher</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          Transfer Ownership
+                        </Button>
+                        <p className="text-xs text-gray-500 italic">
+                          Account Owners cannot change their role directly
+                        </p>
+                      </div>
+                    ) : (
+                      <Select 
+                        defaultValue={user.role || "STANDARD"}
+                        onValueChange={(value) => {
+                          handleRoleChange(user.id, value);
+                          setUserDetailsOpen(false);
+                        }}
+                        disabled={isPending}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Change Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ADMIN">Administrator</SelectItem>
+                          <SelectItem value="STANDARD">Standard User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                         
-                        {user.id !== currentUser?.id && (
+                        {/* 
+                          Account Owners cannot be deleted - they must transfer ownership first 
+                          Other users can be deleted by admins, but not themselves 
+                        */}
+                        {user.id !== currentUser?.id && 
+                         !(user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner)) && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
