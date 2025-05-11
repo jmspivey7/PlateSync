@@ -47,7 +47,7 @@ export default function Onboarding() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [isAccountCreating, setIsAccountCreating] = useState(true);
+  const [isAccountCreating, setIsAccountCreating] = useState(false);
   
   // Service options states
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
