@@ -433,6 +433,43 @@ export default function LoginLocal() {
                     {isRegistering ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>
+                
+                {/* TEMPORARY UTILITY: Button to clear test email */}
+                <div className="mt-6 border-t pt-4">
+                  <p className="text-xs text-gray-500 mb-2">Development Tools</p>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center justify-center space-x-2 border-dashed border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        disabled={isDeletingTestUser}
+                      >
+                        <Trash2Icon className="h-4 w-4" />
+                        <span>Clear Test Email (jmspivey@icloud.com)</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Test User</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the user with email jmspivey@icloud.com 
+                          and all associated data (church, service options, etc.) from the database.
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={deleteTestUser}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          disabled={isDeletingTestUser}
+                        >
+                          {isDeletingTestUser ? "Deleting..." : "Delete User"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardContent>
             </TabsContent>
           </Tabs>
