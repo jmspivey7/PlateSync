@@ -354,7 +354,7 @@ export default function Onboarding() {
     } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
-      // Before completing onboarding, try to save service options if they weren't saved already
+      // Before moving to member import, try to save service options if they weren't saved already
       const storedUserId = localStorage.getItem('userId');
       const idToUse = churchId || storedUserId;
       const userVerified = localStorage.getItem('userVerified') === 'true';
@@ -397,6 +397,10 @@ export default function Onboarding() {
         }
       }
       
+      // Now proceed to member import step
+      setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
+    } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
+      // Member import is complete or skipped, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
       // Redirect to login page after completing onboarding
@@ -414,8 +418,10 @@ export default function Onboarding() {
       return;
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
       setCurrentStep(OnboardingStep.UPLOAD_LOGO);
-    } else if (currentStep === OnboardingStep.COMPLETE) {
+    } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
+    } else if (currentStep === OnboardingStep.COMPLETE) {
+      setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
     }
   };
   
