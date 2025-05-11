@@ -134,16 +134,9 @@ export default function Onboarding() {
       
       toast({
         title: "Logo uploaded successfully",
-        description: "Your church logo has been saved",
+        description: "Your church logo has been saved. Please click Next to continue.",
         variant: "default"
       });
-      
-      // Move to next step after a short delay
-      setTimeout(() => {
-        // We'll add logic to move to the next step here later
-        // For now, just redirect to dashboard
-        setLocation("/dashboard");
-      }, 1500);
       
     } catch (error) {
       toast({
@@ -158,8 +151,16 @@ export default function Onboarding() {
   
   // Handle skip
   const handleSkip = () => {
-    // For now, redirect to dashboard
-    setLocation("/dashboard");
+    // For now, redirect to login page
+    setLocation("/login-local");
+  };
+  
+  // Handle next step
+  const handleNextStep = () => {
+    // For now, we only have the logo upload step
+    // In the future, we'll navigate to the next step
+    // Current implementation redirects to login page
+    setLocation("/login-local");
   };
   
   // Render different content based on current step
@@ -245,17 +246,22 @@ export default function Onboarding() {
               </Button>
               
               <div className="space-x-4">
-                {logoFile && !uploadSuccess && (
+                {logoFile && (
                   <Button
                     variant="default"
                     className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
                     onClick={handleLogoUpload}
-                    disabled={isUploading}
+                    disabled={isUploading || uploadSuccess}
                   >
                     {isUploading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Uploading...
+                      </>
+                    ) : uploadSuccess ? (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Saved
                       </>
                     ) : (
                       <>Save Logo</>
@@ -266,7 +272,7 @@ export default function Onboarding() {
                 <Button
                   variant="default"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={handleSkip}
+                  onClick={handleNextStep}
                 >
                   Next Step <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
