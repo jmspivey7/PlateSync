@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, ChurchIcon, UserIcon, BuildingIcon } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, ChurchIcon, UserIcon, BuildingIcon, Trash2Icon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import plateSyncLogo from "../assets/platesync-logo.png";
 
 export default function LoginLocal() {
@@ -28,9 +30,11 @@ export default function LoginLocal() {
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [registerSuccess, setRegisterSuccess] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isDeletingTestUser, setIsDeletingTestUser] = useState(false);
   
   const { user, isLoading: authLoading, login, loginStatus } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   
   // Active tab state
   const [activeTab, setActiveTab] = useState("signin");
@@ -135,6 +139,44 @@ export default function LoginLocal() {
   
   const toggleRegisterPasswordVisibility = () => {
     setShowRegisterPassword(!showRegisterPassword);
+  };
+  
+  // TEMPORARY UTILITY: Function to delete a test user (jmspivey@icloud.com)
+  const deleteTestUser = async () => {
+    setIsDeletingTestUser(true);
+    try {
+      const response = await fetch(`/api/dev/delete-test-user?email=jmspivey@icloud.com`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete test user');
+      }
+      
+      const data = await response.json();
+      toast({
+        title: "Test User Deleted",
+        description: `Successfully deleted jmspivey@icloud.com user and related data.`,
+        variant: "default"
+      });
+      
+      // If we're currently using this email in the form, clear it to avoid confusion
+      if (registerEmail === 'jmspivey@icloud.com') {
+        setRegisterEmail('');
+      }
+      
+      console.log('Deleted test user data:', data);
+    } catch (error) {
+      console.error('Error deleting test user:', error);
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "Failed to delete test user",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeletingTestUser(false);
+    }
   };
   
   // Show loading spinner while checking auth
