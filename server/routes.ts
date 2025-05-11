@@ -82,6 +82,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
   
+  // Verification code endpoints for onboarding (no authentication required)
+  app.post('/api/send-verification-code', async (req, res) => {
+    try {
+      const { email, churchId, churchName } = req.body;
+      
+      if (!email || !churchId) {
+        return res.status(400).json({ message: 'Email and churchId are required' });
+      }
+      
+      // Use church name from request or fall back to a default
+      const nameToUse = churchName || 'Your Church';
+      
+      const result = await sendVerificationEmail(email, churchId, nameToUse);
+      
+      if (result) {
+        return res.status(200).json({ message: 'Verification email sent successfully' });
+      } else {
+        return res.status(500).json({ message: 'Failed to send verification email' });
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  app.post('/api/verify-code', async (req, res) => {
+    try {
+      const { email, churchId, code } = req.body;
+      
+      if (!email || !churchId || !code) {
+        return res.status(400).json({ message: 'Email, churchId, and code are required' });
+      }
+      
+      const isValid = await verifyCode(email, churchId, code);
+      
+      if (isValid) {
+        return res.status(200).json({ message: 'Verification successful', verified: true });
+      } else {
+        return res.status(400).json({ message: 'Invalid or expired verification code', verified: false });
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Logo upload endpoint for onboarding (no authentication required)
   app.post('/api/upload-logo', async (req, res) => {
     try {

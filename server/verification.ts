@@ -33,8 +33,7 @@ export async function storeVerificationCode(email: string, churchId: string): Pr
       email,
       churchId,
       code,
-      expiresAt,
-      createdAt: new Date()
+      expiresAt
     });
   
   return code;
