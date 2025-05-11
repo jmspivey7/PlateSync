@@ -1,8 +1,9 @@
 // One-time fix to apply onboarding settings to existing users
 import { db } from './db';
 import { users, serviceOptions } from '@shared/schema';
-import { eq, isNull, and, sql } from 'drizzle-orm';
+import { eq, isNull, and, sql, not, like } from 'drizzle-orm';
 import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * This script fixes issues where onboarding settings weren't properly applied to user accounts
@@ -34,96 +35,142 @@ export async function fixOnboardingSettings(userId: string) {
     console.log(`Using churchId: ${churchId}`);
     
     // 2. Look for any logo URLs either in the user's own record or in other church members
+    // IMPORTANT: Skip default logos - we only want to use custom logos
     let logoUrl = user.churchLogoUrl;
     
+    // Check if current logo is a default logo and clear it if so
+    if (logoUrl && (logoUrl.includes('default-church-logo') || logoUrl === '')) {
+      console.log(`Found default logo: ${logoUrl}. Will search for a custom logo instead.`);
+      logoUrl = null;
+    }
+    
     if (!logoUrl) {
-      // Try to find logo from other church members
-      const [churchMember] = await db
+      // Try to find logo from other church members (excluding default logos)
+      const churchMembers = await db
         .select()
         .from(users)
         .where(
           and(
             eq(users.churchId, churchId),
-            sql`${users.churchLogoUrl} IS NOT NULL`
+            sql`${users.churchLogoUrl} IS NOT NULL`,
+            not(like(users.churchLogoUrl, '%default-church-logo%')), // exclude default logos
+            not(eq(users.churchLogoUrl, ''))
           )
         );
       
-      if (churchMember?.churchLogoUrl) {
-        logoUrl = churchMember.churchLogoUrl;
-        console.log(`Found logo URL from another church member: ${logoUrl}`);
+      if (churchMembers.length > 0) {
+        // Find the first non-default logo
+        const validMember = churchMembers.find(m => 
+          m.churchLogoUrl && 
+          !m.churchLogoUrl.includes('default-church-logo') && 
+          m.churchLogoUrl !== ''
+        );
+        
+        if (validMember?.churchLogoUrl) {
+          logoUrl = validMember.churchLogoUrl;
+          console.log(`Found custom logo URL from another church member: ${logoUrl}`);
+        }
       }
     }
     
     // 3. Update all church users with the logo if found
-    if (logoUrl) {
-      console.log(`Applying logo URL to all church members: ${logoUrl}`);
+    if (logoUrl && !logoUrl.includes('default-church-logo') && logoUrl !== '') {
+      console.log(`Applying custom logo URL to all church members: ${logoUrl}`);
       
-      // Update the user's own record
-      await db
-        .update(users)
-        .set({ churchLogoUrl: logoUrl })
-        .where(eq(users.id, userId));
+      // Check if the file exists
+      const localPath = path.join('public', logoUrl.replace(/^\/logos\//, 'logos/'));
+      const fileExists = fs.existsSync(localPath);
+      console.log(`Checking if logo file exists at ${localPath}: ${fileExists ? 'Yes' : 'No'}`);
       
-      // Update all users with the same churchId
-      await db
-        .update(users)
-        .set({ churchLogoUrl: logoUrl })
-        .where(eq(users.churchId, churchId));
-      
-      console.log("Logo URL updated for all church members");
+      if (fileExists) {
+        // Update the user's own record
+        await db
+          .update(users)
+          .set({ churchLogoUrl: logoUrl })
+          .where(eq(users.id, userId));
+        
+        // Update all users with the same churchId
+        await db
+          .update(users)
+          .set({ churchLogoUrl: logoUrl })
+          .where(eq(users.churchId, churchId));
+        
+        console.log("Custom logo URL updated for all church members");
+        return true;
+      } else {
+        console.log("Logo file doesn't exist on disk. Will search for another logo.");
+        logoUrl = null;
+      }
     } else {
-      console.log("No logo URL found in database. Looking for uploaded logo files from the same timeframe...");
-      
-      // Check if this user had a recent upload by looking at the creation time
-      // Find files that may have been uploaded within 15 minutes of user creation
+      console.log("No custom logo URL found in database. Looking for uploaded logo files...");
+    }
+    
+    // If we don't have a valid logo URL at this point, search for uploaded files
+    if (!logoUrl) {
+      // Check both by timestamp and any custom uploaded file
       const userCreatedAt = user.createdAt?.getTime() || Date.now();
       
-      // Search for logos uploaded 15 minutes before/after user creation
+      // Search for logos uploaded around user creation time
       const logoTimestampPrefix = Math.floor(userCreatedAt / 1000);
-      console.log(`Looking for logo files with timestamp around: ${logoTimestampPrefix} (user created: ${new Date(userCreatedAt).toISOString()})`);
+      console.log(`Looking for logo files uploaded around: ${logoTimestampPrefix} (user created: ${new Date(userCreatedAt).toISOString()})`);
       
-      // List the most recent logo files
       try {
-        // Get list of recent PNG files (these are likely to be uploads)
-        console.log("Looking for recently uploaded logo files in public/logos/");
-        const recentLogos = fs.readdirSync('public/logos/')
-          .filter(filename => filename.includes('church-logo-') && filename.endsWith('.png'))
+        // First look for church-specific logo files in the logos directory
+        console.log("Looking for custom uploaded logo files in public/logos/");
+        if (!fs.existsSync('public/logos/')) {
+          fs.mkdirSync('public/logos/', { recursive: true });
+        }
+        
+        const allLogos = fs.readdirSync('public/logos/')
+          .filter(filename => 
+            filename.includes('church-logo-') && 
+            filename.endsWith('.png') && 
+            !filename.includes('default')
+          )
           .map(filename => ({
             filename,
             path: `/logos/${filename}`,
-            timestamp: parseInt(filename.split('-')[2]) || 0
-          }))
-          .sort((a, b) => Math.abs(logoTimestampPrefix - a.timestamp) - Math.abs(logoTimestampPrefix - b.timestamp));
-          
-        console.log(`Found ${recentLogos.length} logo files, sorted by closest timestamp to user creation`);
+            timestamp: parseInt(filename.split('-')[2]) || 0,
+            stats: fs.statSync(`public/logos/${filename}`),
+            // Calculate timestamp difference from user creation
+            timeDiff: Math.abs(
+              (fs.statSync(`public/logos/${filename}`).mtimeMs / 1000) - 
+              (userCreatedAt / 1000)
+            )
+          }));
+
+        console.log(`Found ${allLogos.length} custom logo files`);
         
-        // If we found any logo files, use the one closest to user creation time
-        if (recentLogos.length > 0) {
-          const matchingLogo = recentLogos[0];
-          console.log(`Using logo with closest timestamp: ${matchingLogo.path}, created ${Math.abs(logoTimestampPrefix - matchingLogo.timestamp)} seconds from user creation`);
+        if (allLogos.length > 0) {
+          // Sort by closest upload time to user creation
+          const sortedLogos = [...allLogos].sort((a, b) => a.timeDiff - b.timeDiff);
           
-          // Update the user's own record with the logo we found
+          // Use the logo with closest timestamp to user creation
+          const bestMatchLogo = sortedLogos[0];
+          console.log(`Found best matching logo: ${bestMatchLogo.path} (upload time diff: ${bestMatchLogo.timeDiff.toFixed(2)} seconds)`);
+          
+          // Update the user record
           await db
             .update(users)
-            .set({ churchLogoUrl: matchingLogo.path })
+            .set({ churchLogoUrl: bestMatchLogo.path })
             .where(eq(users.id, userId));
           
-          // Update all users with the same churchId with this logo
+          // Update all users with this churchId
           if (churchId) {
             await db
               .update(users)
-              .set({ churchLogoUrl: matchingLogo.path })
+              .set({ churchLogoUrl: bestMatchLogo.path })
               .where(eq(users.churchId, churchId));
           }
           
-          console.log(`Restored likely original logo: ${matchingLogo.path}`);
+          console.log(`Applied best matching logo: ${bestMatchLogo.path} to all church members`);
           return true;
+        } else {
+          console.log("No custom logo files found. User will need to upload a logo in settings.");
         }
       } catch (fsError) {
         console.error("Error searching for logo files:", fsError);
       }
-      
-      console.log("No suitable logo file found. User will need to upload a logo in settings.");
     }
     
     // 4. Check for service options
