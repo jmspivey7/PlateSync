@@ -47,6 +47,7 @@ export default function Onboarding() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isAccountCreating, setIsAccountCreating] = useState(true);
   
   // Service options states
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
@@ -353,8 +354,8 @@ export default function Onboarding() {
     }
   };
   
-  // State for the account creation spinner screen
-  const [isAccountCreating, setIsAccountCreating] = useState(false);
+  // Update account creation spinner state based on verification step
+  // We already have this state declared higher in the file
   
   // Verify the email verification code
   const verifyCode = async () => {

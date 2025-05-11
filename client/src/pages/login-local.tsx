@@ -87,7 +87,8 @@ export default function LoginLocal() {
     try {
       setIsRegistering(true);
       
-      const response = await fetch('/api/register-church', {
+      // Define response type
+      const response: Response = await fetch('/api/register-church', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -95,13 +96,22 @@ export default function LoginLocal() {
         body: JSON.stringify({
           email: registerEmail,
           password: registerPassword,
-          churchName,
-          firstName,
-          lastName
+          churchName: churchName,
+          firstName: firstName,
+          lastName: lastName
         })
       });
       
-      const data = await response.json();
+      interface RegisterResponse {
+        message: string;
+        onboarding: {
+          churchId: string;
+          churchName: string;
+          email: string;
+        };
+      }
+      
+      const data: RegisterResponse = await response.json();
       
       if (!response.ok) {
         throw new Error(data.message || "Failed to register");
@@ -116,9 +126,9 @@ export default function LoginLocal() {
       setLastName("");
       
       // Immediately redirect to onboarding without showing toast
-      const { churchId, churchName, email } = data.onboarding;
+      const { churchId, churchName: churchNameFromResponse, email: emailFromResponse } = data.onboarding;
       // Redirect to onboarding page with query parameters
-      window.location.href = `/onboarding?churchId=${churchId}&churchName=${encodeURIComponent(churchName)}&email=${encodeURIComponent(email)}`;
+      window.location.href = `/onboarding?churchId=${churchId}&churchName=${encodeURIComponent(churchNameFromResponse)}&email=${encodeURIComponent(emailFromResponse)}`;
       
     } catch (error) {
       setRegisterError(error instanceof Error ? error.message : "Registration failed");
