@@ -193,7 +193,8 @@ export default function Onboarding() {
         },
         body: JSON.stringify({
           email,
-          churchId
+          churchId,
+          churchName
         }),
       });
       
