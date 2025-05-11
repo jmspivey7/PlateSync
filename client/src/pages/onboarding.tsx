@@ -1231,14 +1231,14 @@ export default function Onboarding() {
                     count is finalized. This helps keep your congregation informed about their contributions.
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <Switch 
                     id="donor-notifications"
                     checked={donorNotificationsEnabled}
                     onCheckedChange={setDonorNotificationsEnabled}
-                    className={donorNotificationsEnabled ? "bg-[#69ad4c]" : ""}
+                    className={donorNotificationsEnabled ? "bg-[#69ad4c] h-6 w-11" : "h-6 w-11"}
                   />
-                  <span className="font-medium">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
+                  <span className="font-medium text-base">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
                 </div>
               </div>
               
