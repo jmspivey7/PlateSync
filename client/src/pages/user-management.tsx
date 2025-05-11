@@ -265,11 +265,11 @@ const UserManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setCreateDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating user:", error);
       toast({
         title: "User creation failed",
-        description: "There was an error creating the user. Please try again.",
+        description: error.message || "There was an error creating the user. Please try again.",
         variant: "destructive",
       });
     },

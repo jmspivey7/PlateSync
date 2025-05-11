@@ -1383,7 +1383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "User has been reactivated with updated information."
           });
         } else {
-          return res.status(400).json({ message: "A user with this email already exists." });
+          return res.status(409).json({ message: "User with this email already exists." });
         }
       }
       
