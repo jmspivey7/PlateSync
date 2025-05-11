@@ -454,7 +454,13 @@ const UserManagement = () => {
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback className="bg-gray-100 text-gray-800">
-                              {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) ? "O" : user.role === "ADMIN" ? "A" : "S"}
+                              {user.role === "ACCOUNT_OWNER" || 
+                                (user.role === "ADMIN" && user.isAccountOwner) || 
+                                (user.role === "ADMIN" && user.isMasterAdmin) 
+                                ? "O" 
+                                : user.role === "ADMIN" 
+                                  ? "A" 
+                                  : "S"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -468,16 +474,24 @@ const UserManagement = () => {
                       <TableCell>
                         <Badge 
                           className={
-                            user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner)
+                            user.role === "ACCOUNT_OWNER" || 
+                            (user.role === "ADMIN" && user.isAccountOwner) ||
+                            (user.role === "ADMIN" && user.isMasterAdmin)
                               ? "bg-purple-100 text-purple-800"
                               : user.role === "ADMIN" 
                                 ? "bg-blue-100 text-blue-800" 
                                 : "bg-green-100 text-green-800"
                           }
                         >
-                          {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) 
+                          {user.role === "ACCOUNT_OWNER" || 
+                            (user.role === "ADMIN" && user.isAccountOwner) ||
+                            (user.role === "ADMIN" && user.isMasterAdmin)
                             ? "ACCOUNT OWNER" 
-                            : user.role || "STANDARD"}
+                            : user.role === "ADMIN" 
+                              ? "ADMIN" 
+                              : user.role === "USHER" 
+                                ? "STANDARD" 
+                                : user.role || "STANDARD"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -520,7 +534,13 @@ const UserManagement = () => {
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
                         <AvatarFallback className="bg-gray-100 text-gray-800 text-lg">
-                          {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) ? "O" : user.role === "ADMIN" ? "A" : "S"}
+                          {user.role === "ACCOUNT_OWNER" || 
+                            (user.role === "ADMIN" && user.isAccountOwner) || 
+                            (user.role === "ADMIN" && user.isMasterAdmin) 
+                            ? "O" 
+                            : user.role === "ADMIN" 
+                              ? "A" 
+                              : "S"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -538,16 +558,24 @@ const UserManagement = () => {
                         <p className="text-sm font-medium text-gray-500">Role</p>
                         <Badge 
                           className={
-                            user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner)
+                            user.role === "ACCOUNT_OWNER" || 
+                            (user.role === "ADMIN" && user.isAccountOwner) ||
+                            (user.role === "ADMIN" && user.isMasterAdmin)
                               ? "bg-purple-100 text-purple-800 mt-1"
                               : user.role === "ADMIN" 
                                 ? "bg-blue-100 text-blue-800 mt-1" 
                                 : "bg-green-100 text-green-800 mt-1"
                           }
                         >
-                          {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) 
+                          {user.role === "ACCOUNT_OWNER" || 
+                            (user.role === "ADMIN" && user.isAccountOwner) ||
+                            (user.role === "ADMIN" && user.isMasterAdmin)
                             ? "ACCOUNT OWNER" 
-                            : user.role || "STANDARD"}
+                            : user.role === "ADMIN" 
+                              ? "ADMIN" 
+                              : user.role === "USHER" 
+                                ? "STANDARD" 
+                                : user.role || "STANDARD"}
                         </Badge>
                       </div>
                       
@@ -586,7 +614,9 @@ const UserManagement = () => {
                       2. For regular users, they can be promoted or demoted
                       3. Account Owner transfer requires confirmation and converts current Owner to Admin
                     */}
-                    {user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner) ? (
+                    {user.role === "ACCOUNT_OWNER" || 
+                      (user.role === "ADMIN" && user.isAccountOwner) ||
+                      (user.role === "ADMIN" && user.isMasterAdmin) ? (
                       <div className="flex flex-col gap-2">
                         <Button
                           variant="outline"
@@ -607,7 +637,7 @@ const UserManagement = () => {
                       </div>
                     ) : (
                       <Select 
-                        defaultValue={user.role || "STANDARD"}
+                        defaultValue={user.role === "USHER" ? "STANDARD" : (user.role || "STANDARD")}
                         onValueChange={(value) => {
                           handleRoleChange(user.id, value);
                           setUserDetailsOpen(false);
@@ -629,7 +659,9 @@ const UserManagement = () => {
                           Other users can be deleted by admins, but not themselves 
                         */}
                         {user.id !== currentUser?.id && 
-                         !(user.role === "ACCOUNT_OWNER" || (user.role === "ADMIN" && user.isAccountOwner)) && (
+                         !(user.role === "ACCOUNT_OWNER" || 
+                           (user.role === "ADMIN" && user.isAccountOwner) || 
+                           (user.role === "ADMIN" && user.isMasterAdmin)) && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
