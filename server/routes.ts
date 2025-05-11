@@ -3957,7 +3957,6 @@ PlateSync Reporting System`;
     }
   });
 
-  const httpServer = createServer(app);
   // Temporary endpoint to fix onboarding settings (will be removed after use)
   app.get('/api/fix-onboarding-settings/:userId', async (req, res) => {
     try {
@@ -3994,5 +3993,62 @@ PlateSync Reporting System`;
     }
   });
 
+  // Temporary endpoint to update logo file extension
+  app.get('/api/update-church-logo-extension', async (req, res) => {
+    try {
+      const { userId, oldExtension, newExtension } = req.query;
+      
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: 'Missing or invalid userId parameter', success: false });
+      }
+      
+      console.log(`Updating logo extension for user ID: ${userId}`);
+      console.log(`Replacing ${oldExtension} with ${newExtension}`);
+      
+      // Find user
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found', success: false });
+      }
+      
+      // Get church ID (which might be the user's ID if they are a church admin)
+      const churchId = user.churchId || user.id;
+      
+      console.log(`Using churchId: ${churchId}`);
+      console.log(`Current logo URL: ${user.churchLogoUrl}`);
+      
+      if (!user.churchLogoUrl) {
+        return res.status(200).json({ message: 'No logo URL to update', success: true });
+      }
+      
+      // Replace file extension in the URL
+      const newLogoUrl = user.churchLogoUrl.replace(oldExtension as string, newExtension as string);
+      
+      console.log(`New logo URL: ${newLogoUrl}`);
+      
+      // Update all users with the same church ID
+      await db
+        .update(users)
+        .set({ churchLogoUrl: newLogoUrl })
+        .where(eq(users.churchId, churchId));
+      
+      return res.status(200).json({ 
+        message: 'Logo extension updated successfully',
+        oldUrl: user.churchLogoUrl,
+        newUrl: newLogoUrl,
+        success: true 
+      });
+    } catch (error) {
+      console.error('Error updating logo extension:', error);
+      res.status(500).json({ 
+        message: 'Error updating logo extension', 
+        error: error instanceof Error ? error.message : String(error), 
+        success: false 
+      });
+    }
+  });
+
+  const httpServer = createServer(app);
   return httpServer;
 }
