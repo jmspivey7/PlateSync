@@ -50,7 +50,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
   churchName: varchar("church_name"),
   churchLogoUrl: varchar("church_logo_url"),
-  emailNotificationsEnabled: boolean("email_notifications_enabled").default(true),
+  emailNotificationsEnabled: boolean("email_notifications_enabled").default(false),
   churchId: varchar("church_id"),
   isMasterAdmin: boolean("is_master_admin").default(false),
   // Temporarily commented out until migration can be run
