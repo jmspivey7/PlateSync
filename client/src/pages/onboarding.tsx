@@ -63,7 +63,7 @@ export default function Onboarding() {
             clearInterval(timer);
             // Move to next step after a small delay
             setTimeout(() => {
-              setCurrentStep(OnboardingStep.UPLOAD_LOGO);
+              setCurrentStep(OnboardingStep.VERIFY_EMAIL);
             }, 500);
             return 100;
           }
@@ -76,6 +76,13 @@ export default function Onboarding() {
       };
     }
   }, [currentStep]);
+  
+  // Auto-send verification code when on verification step
+  useEffect(() => {
+    if (currentStep === OnboardingStep.VERIFY_EMAIL && !verificationSent && email && churchId) {
+      sendVerificationCode();
+    }
+  }, [currentStep, verificationSent, email, churchId]);
   
   // Handle logo file selection
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -420,11 +427,14 @@ export default function Onboarding() {
       case OnboardingStep.CREATING_ACCOUNT:
         // Progress is handled by the animation
         break;
+      case OnboardingStep.VERIFY_EMAIL:
+        setProgress(20);
+        break;
       case OnboardingStep.UPLOAD_LOGO:
-        setProgress(25);
+        setProgress(40);
         break;
       case OnboardingStep.SERVICE_OPTIONS:
-        setProgress(50);
+        setProgress(60);
         break;
       case OnboardingStep.COMPLETE:
         setProgress(100);
@@ -444,13 +454,95 @@ export default function Onboarding() {
             <p className="text-gray-500">Setting up your account...</p>
           </div>
         );
+      
+      case OnboardingStep.VERIFY_EMAIL:
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Verify Your Email</h2>
+              <div className="text-sm text-gray-500">Step 1 of 4</div>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              We've sent a 6-digit verification code to <span className="font-medium">{email}</span>. 
+              Please enter the code below to continue with your account setup.
+            </p>
+            
+            <div className="flex flex-col items-center space-y-8 py-6">
+              <div className="bg-gray-50 p-8 rounded-lg w-full max-w-md flex flex-col items-center space-y-6">
+                <Mail className="h-12 w-12 text-[#69ad4c] mb-2" />
+                
+                <InputOTP 
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={setVerificationCode}
+                  disabled={isVerifying}
+                  className="gap-2"
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+                
+                {verificationError && (
+                  <p className="text-sm text-red-500 mt-2">{verificationError}</p>
+                )}
+                
+                <div className="flex items-center justify-center space-x-4 mt-4 w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isVerifying || !email}
+                    onClick={sendVerificationCode}
+                    className="w-full"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Resend Code'
+                    )}
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    disabled={isVerifying || verificationCode.length !== 6}
+                    onClick={verifyCode}
+                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify'
+                    )}
+                  </Button>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-500 max-w-md text-center">
+                Didn't receive a code? Check your spam folder or click the resend button above.
+                If you continue to have issues, please contact support.
+              </p>
+            </div>
+          </div>
+        );
         
       case OnboardingStep.UPLOAD_LOGO:
         return (
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Step 1: Upload Your Church Logo</h2>
-              <div className="text-sm text-gray-500">Step 1 of 4</div>
+              <h2 className="text-2xl font-bold">Step 2: Upload Your Church Logo</h2>
+              <div className="text-sm text-gray-500">Step 2 of 4</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -554,8 +646,8 @@ export default function Onboarding() {
         return (
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Step 2: Add Service Options</h2>
-              <div className="text-sm text-gray-500">Step 2 of 4</div>
+              <h2 className="text-2xl font-bold">Step 3: Add Service Options</h2>
+              <div className="text-sm text-gray-500">Step 3 of 4</div>
             </div>
             
             <p className="text-gray-600 mb-6">
