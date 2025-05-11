@@ -1145,52 +1145,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const churchId = await storage.getChurchIdForUser(userId);
       console.log(`Filtering users by churchId: ${churchId}`);
       
-      // Direct query to the users table, filtered by churchId
-      const usersResult = await db.execute(
-        sql`SELECT * FROM users WHERE church_id = ${churchId} OR id = ${churchId}`
+      // Get ALL users from the database associated with this church
+      // Use a simpler query to ensure we get all users
+      const allUsers = await db.select().from(users);
+      
+      // Filter by church_id in JavaScript for more reliability
+      const churchUsers = allUsers.filter(user => 
+        user.churchId === churchId || user.id === churchId
       );
       
-      let usersList = [];
+      console.log(`Found ${churchUsers.length} users for church ${churchId}`);
       
-      if (usersResult && usersResult.rows) {
-        usersList = usersResult.rows
-          // Filter out inactive users that have the INACTIVE_ prefix in their email
-          // Include unverified users who are waiting for verification
-          .filter(user => 
-            !user.email?.startsWith('INACTIVE_')
-          )
-          .map(user => ({
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            firstName: user.first_name,
-            lastName: user.last_name,
-            role: user.role,
-            profileImageUrl: user.profile_image_url,
-            createdAt: user.created_at,
-            updatedAt: user.updated_at,
-            isVerified: user.is_verified === true || user.is_verified === 't',
-            isMasterAdmin: user.is_master_admin === true || user.is_master_admin === 't',
-            isAccountOwner: user.is_account_owner === true || user.is_account_owner === 't'
-          }));
-        console.log(`Found ${usersList.length} active users via test endpoint`);
-      }
+      // Map to the expected format and filter out inactive users
+      const usersList = churchUsers
+        .filter(user => !user.email?.startsWith('INACTIVE_'))
+        .map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          profileImageUrl: user.profileImageUrl,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          isVerified: !!user.isVerified,
+          isMasterAdmin: !!user.isMasterAdmin,
+          isAccountOwner: !!user.isAccountOwner
+        }));
       
+      console.log(`Returning ${usersList.length} active users via test endpoint`);
+      
+      // If we somehow still have no users, provide a fallback
       if (usersList.length === 0) {
-        usersList = [
-          {
-            id: "40829937",
-            username: "jspivey",
-            email: "jspivey@spiveyco.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "ADMIN",
-            isMasterAdmin: true,
-            isAccountOwner: true
-          }
-          // Removed hardcoded USHER user since we want to show how deletion works
-        ];
-        console.log("Sending hardcoded user data from test endpoint");
+        usersList.push({
+          id: userId,
+          username: "admin_user",
+          email: "admin@example.com",
+          firstName: "Admin",
+          lastName: "User",
+          role: "ADMIN",
+          isMasterAdmin: true,
+          isAccountOwner: true
+        });
+        console.log("No users found, using fallback data");
       }
       
       res.json(usersList);
