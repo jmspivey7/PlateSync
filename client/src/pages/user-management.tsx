@@ -75,7 +75,7 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["MASTER_ADMIN", "ADMIN", "USHER"]),
+  role: z.enum(["ADMIN", "STANDARD"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -94,7 +94,7 @@ const CreateUserForm = ({
       email: "",
       firstName: "",
       lastName: "",
-      role: "USHER",
+      role: "STANDARD",
     },
   });
 
@@ -162,13 +162,12 @@ const CreateUserForm = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
                   <SelectItem value="ADMIN">Administrator</SelectItem>
-                  <SelectItem value="USHER">Usher</SelectItem>
+                  <SelectItem value="STANDARD">Standard User</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
-                Master Admins have full control over church settings shared with all users. Administrators can manage most aspects of the system. Ushers can only record donations.
+                Administrators can manage most aspects of the system. Standard Users can only record donations.
               </FormDescription>
               <FormMessage />
             </FormItem>
