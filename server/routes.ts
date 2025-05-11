@@ -1241,7 +1241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const churchId = await storage.getChurchIdForUser(userId);
-      const accountOwner = await storage.getMasterAdminForChurch(churchId);
+      const accountOwner = await storage.getAccountOwnerForChurch(churchId);
       
       res.json({
         accountOwnerId: accountOwner?.id,
@@ -1263,7 +1263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const churchId = await storage.getChurchIdForUser(userId);
-      const accountOwner = await storage.getMasterAdminForChurch(churchId);
+      const accountOwner = await storage.getAccountOwnerForChurch(churchId);
       
       res.json({
         masterAdminId: accountOwner?.id,
@@ -1290,14 +1290,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify current user is the account owner
       const churchId = await storage.getChurchIdForUser(userId);
-      const accountOwner = await storage.getMasterAdminForChurch(churchId);
+      const accountOwner = await storage.getAccountOwnerForChurch(churchId);
       
       if (!accountOwner || accountOwner.id !== userId) {
         return res.status(403).json({ message: "Forbidden - Only the Account Owner can transfer ownership" });
       }
       
       // Transfer account ownership
-      const success = await storage.transferMasterAdmin(userId, targetUserId, churchId);
+      const success = await storage.transferAccountOwnership(userId, targetUserId, churchId);
       
       if (success) {
         res.json({ message: "Account ownership transferred successfully" });
@@ -1325,13 +1325,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify current user is the account owner
       const churchId = await storage.getChurchIdForUser(userId);
-      const accountOwner = await storage.getMasterAdminForChurch(churchId);
+      const accountOwner = await storage.getAccountOwnerForChurch(churchId);
       
       if (!accountOwner || accountOwner.id !== userId) {
         return res.status(403).json({ message: "Forbidden - Only the Account Owner can transfer ownership" });
       }
       
-      // Transfer account ownership
+      // Transfer account ownership (using the backward compatibility method)
       const success = await storage.transferMasterAdmin(userId, targetUserId, churchId);
       
       if (success) {
