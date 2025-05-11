@@ -48,10 +48,13 @@ export interface IStorage {
   updateUserRole(id: string, role: string): Promise<User>;
   createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User>;
   deleteUser(id: string): Promise<void>;
-  // New Master Admin functions
-  getMasterAdminForChurch(churchId: string): Promise<User | undefined>;
-  setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined>;
-  transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>;
+  // Account Owner functions
+  getAccountOwnerForChurch(churchId: string): Promise<User | undefined>;
+  getMasterAdminForChurch(churchId: string): Promise<User | undefined>; // Backward compatibility
+  setUserAsAccountOwner(userId: string, churchId: string): Promise<User | undefined>;
+  setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined>; // Backward compatibility
+  transferAccountOwnership(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>;
+  transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>; // Backward compatibility
   
   // Member operations
   getMembers(churchId: string): Promise<Member[]>;
@@ -609,33 +612,54 @@ export class DatabaseStorage implements IStorage {
   
   // New Master Admin functions
   
-  // Get the Master Admin for a church
-  async getMasterAdminForChurch(churchId: string): Promise<User | undefined> {
+  // Get the Account Owner for a church
+  async getAccountOwnerForChurch(churchId: string): Promise<User | undefined> {
     try {
-      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
+      // First look for a user with ACCOUNT_OWNER role directly
+      const [accountOwner] = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.churchId, churchId),
+          eq(users.role, 'ACCOUNT_OWNER')
+        ))
+        .limit(1);
+        
+      if (accountOwner) {
+        console.log(`Found Account Owner ${accountOwner.id} with role ACCOUNT_OWNER for church ${churchId}`);
+        return accountOwner;
+      }
       
-      // First check if there's an Admin that matches the churchId - the church creator
+      // Next, look for an admin with isAccountOwner flag
+      const [adminOwner] = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.churchId, churchId),
+          eq(users.role, 'ADMIN'),
+          eq(users.isAccountOwner, true)
+        ))
+        .limit(1);
+        
+      if (adminOwner) {
+        console.log(`Found Account Owner ${adminOwner.id} with isAccountOwner flag for church ${churchId}`);
+        return adminOwner;
+      }
+      
+      // Then check if there's an Admin that matches the churchId - the church creator
       const originalAdmin = await this.getUser(churchId);
-      if (originalAdmin && originalAdmin.role === 'ADMIN') {
-        console.log(`Using original Admin ${originalAdmin.id} as Master Admin for church ${churchId}`);
-        // Virtually mark this user as the Master Admin
-        return {
-          ...originalAdmin,
-          isMasterAdmin: true
-        };
+      if (originalAdmin && (originalAdmin.role === 'ADMIN' || originalAdmin.role === 'ACCOUNT_OWNER')) {
+        console.log(`Using original Admin ${originalAdmin.id} as Account Owner for church ${churchId}`);
+        return originalAdmin;
       }
       
       // If we couldn't find the original admin, find the first admin associated with this church
       const churchUsers = await this.getUsersByChurchId(churchId);
-      const adminUsers = churchUsers.filter(user => user.role === 'ADMIN');
+      const adminUsers = churchUsers.filter(user => user.role === 'ADMIN' || user.role === 'ACCOUNT_OWNER');
       
       if (adminUsers.length > 0) {
-        console.log(`Using Admin ${adminUsers[0].id} as Master Admin for church ${churchId}`);
-        // Virtually mark this user as the Master Admin
-        return {
-          ...adminUsers[0],
-          isMasterAdmin: true
-        };
+        console.log(`Using Admin ${adminUsers[0].id} as Account Owner for church ${churchId}`);
+        return adminUsers[0];
       }
       
       // Last resort: just find any admin in the system
@@ -646,15 +670,31 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
         
       if (fallbackAdmin) {
-        console.log(`Using fallback Admin ${fallbackAdmin.id} as Master Admin (no church match found)`);
-        // Virtually mark this user as the Master Admin
+        console.log(`Using fallback Admin ${fallbackAdmin.id} as Account Owner (no church match found)`);
+        return fallbackAdmin;
+      }
+      
+      console.log(`Could not find any suitable Account Owner for church ${churchId}`);
+      return undefined;
+    } catch (error) {
+      console.error("Error in getAccountOwnerForChurch:", error);
+      return undefined;
+    }
+  }
+  
+  // Get the Master Admin for a church (backward compatibility)
+  async getMasterAdminForChurch(churchId: string): Promise<User | undefined> {
+    try {
+      const accountOwner = await this.getAccountOwnerForChurch(churchId);
+      
+      if (accountOwner) {
+        // Ensure backward compatibility with the isMasterAdmin virtual flag
         return {
-          ...fallbackAdmin,
+          ...accountOwner,
           isMasterAdmin: true
         };
       }
       
-      console.log(`Could not find any suitable Master Admin for church ${churchId}`);
       return undefined;
     } catch (error) {
       console.error("Error in getMasterAdminForChurch:", error);
@@ -662,36 +702,51 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // Set a user as the Master Admin for a church
-  async setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined> {
+  // Set a user as the Account Owner for a church
+  async setUserAsAccountOwner(userId: string, churchId: string): Promise<User | undefined> {
     try {
-      // First, verify this user is an ADMIN
+      // First, verify this user exists
       const user = await this.getUser(userId);
-      if (!user || user.role !== 'ADMIN') {
-        console.error(`Cannot set user ${userId} as Master Admin - user not found or not an ADMIN`);
+      if (!user) {
+        console.error(`Cannot set user ${userId} as Account Owner - user not found`);
         return undefined;
       }
       
-      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
-      // For now, we'll set the churchId field to mark a special relationship
-      
-      // Update the user to set the church relationship
+      // Update the user to set as Account Owner
       const [updatedUser] = await db
         .update(users)
         .set({
+          role: 'ACCOUNT_OWNER',
+          isAccountOwner: true,
           churchId: churchId,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId))
         .returning();
         
-      console.log(`Set user ${userId} as Master Admin for church ${churchId}`);
+      console.log(`Set user ${userId} as Account Owner for church ${churchId}`);
       
-      // Virtually add the isMasterAdmin flag
-      return {
-        ...updatedUser,
-        isMasterAdmin: true
-      };
+      return updatedUser;
+    } catch (error) {
+      console.error("Error in setUserAsAccountOwner:", error);
+      return undefined;
+    }
+  }
+  
+  // Set a user as the Master Admin for a church (backward compatibility)
+  async setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined> {
+    try {
+      const updatedUser = await this.setUserAsAccountOwner(userId, churchId);
+      
+      if (updatedUser) {
+        // Virtually add the isMasterAdmin flag for backward compatibility
+        return {
+          ...updatedUser,
+          isMasterAdmin: true
+        };
+      }
+      
+      return undefined;
     } catch (error) {
       console.error("Error in setUserAsMasterAdmin:", error);
       return undefined;
