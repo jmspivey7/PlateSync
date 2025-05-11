@@ -753,8 +753,8 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // Transfer Master Admin status from one user to another
-  async transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
+  // Transfer Account Ownership from one user to another
+  async transferAccountOwnership(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
     try {
       // Verify both users exist
       const fromUser = await this.getUser(fromUserId);
@@ -832,9 +832,14 @@ export class DatabaseStorage implements IStorage {
       
       return true;
     } catch (error) {
-      console.error("Error in transferMasterAdmin:", error);
+      console.error("Error in transferAccountOwnership:", error);
       return false;
     }
+  }
+  
+  // Backward compatibility method for transferring Master Admin status
+  async transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
+    return this.transferAccountOwnership(fromUserId, toUserId, churchId);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
