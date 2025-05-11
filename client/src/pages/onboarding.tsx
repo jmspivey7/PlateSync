@@ -39,7 +39,7 @@ interface OnboardingParams {
 }
 
 export default function Onboarding() {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingStep.CREATING_ACCOUNT);
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingStep.VERIFY_EMAIL);
   const [progress, setProgress] = useState(0);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
