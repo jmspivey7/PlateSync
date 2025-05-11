@@ -8,7 +8,7 @@ import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, 
 import { sendVerificationEmail, verifyCode } from "./verification";
 import { setupTestEndpoints } from "./test-endpoints";
 import { setupPlanningCenterRoutes } from "./planning-center";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, or } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -53,7 +53,15 @@ import {
   userRoleEnum,
   insertEmailTemplateSchema,
   registerChurchSchema,
-  users
+  users,
+  verificationCodes,
+  serviceOptions,
+  batches,
+  donations,
+  members,
+  reportRecipients,
+  planningCenterTokens,
+  emailTemplates
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -3711,6 +3719,130 @@ PlateSync Reporting System`;
 
   // Add test endpoints
   setupTestEndpoints(app);
+  
+  // TEMPORARY: Development endpoint to delete a test user for onboarding testing
+  app.delete('/api/dev/delete-test-user', async (req, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ message: 'This endpoint is only available in development mode' });
+    }
+    
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    try {
+      // Find users with this email
+      const usersToDelete = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email as string));
+        
+      if (usersToDelete.length === 0) {
+        return res.status(404).json({ message: 'No user found with this email' });
+      }
+      
+      // Get all user IDs to delete
+      const userIds = usersToDelete.map(user => user.id);
+      
+      // Delete verification codes for this email
+      await db
+        .delete(verificationCodes)
+        .where(eq(verificationCodes.email, email as string));
+        
+      // Delete service options for these users
+      for (const userId of userIds) {
+        await db
+          .delete(serviceOptions)
+          .where(eq(serviceOptions.churchId, userId));
+      }
+      
+      // Delete batches associated with these users
+      for (const userId of userIds) {
+        // Find all batches for this user
+        const batchesToDelete = await db
+          .select()
+          .from(batches)
+          .where(eq(batches.churchId, userId));
+        
+        // Delete all donations in those batches
+        for (const batch of batchesToDelete) {
+          await db
+            .delete(donations)
+            .where(eq(donations.batchId, batch.id));
+        }
+        
+        // Now delete the batches
+        await db
+          .delete(batches)
+          .where(eq(batches.churchId, userId));
+      }
+      
+      // Delete members associated with these users
+      for (const userId of userIds) {
+        // Delete donations for those members first
+        const membersToDelete = await db
+          .select()
+          .from(members)
+          .where(eq(members.churchId, userId));
+          
+        for (const member of membersToDelete) {
+          await db
+            .delete(donations)
+            .where(eq(donations.memberId, member.id));
+        }
+        
+        // Now delete the members
+        await db
+          .delete(members)
+          .where(eq(members.churchId, userId));
+      }
+      
+      // Delete report recipients
+      for (const userId of userIds) {
+        await db
+          .delete(reportRecipients)
+          .where(eq(reportRecipients.churchId, userId));
+      }
+      
+      // Delete planning center tokens
+      for (const userId of userIds) {
+        await db
+          .delete(planningCenterTokens)
+          .where(
+            or(
+              eq(planningCenterTokens.userId, userId),
+              eq(planningCenterTokens.churchId, userId)
+            )
+          );
+      }
+      
+      // Delete email templates
+      for (const userId of userIds) {
+        await db
+          .delete(emailTemplates)
+          .where(eq(emailTemplates.churchId, userId));
+      }
+      
+      // Finally, delete the users
+      const deleteResult = await db
+        .delete(users)
+        .where(eq(users.email, email as string));
+      
+      return res.status(200).json({ 
+        message: 'Test user deleted successfully', 
+        email: email,
+        deletedUserIds: userIds
+      });
+    } catch (error) {
+      console.error('Error deleting test user:', error);
+      return res.status(500).json({ 
+        message: 'Failed to delete test user', 
+        error: String(error) 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
