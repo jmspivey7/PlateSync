@@ -205,6 +205,8 @@ const UserManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [userToTransferTo, setUserToTransferTo] = useState<User | null>(null);
   
   // Fetch all users - using test endpoint for guaranteed results
   const { data: users, isLoading } = useQuery<User[]>({
@@ -330,6 +332,30 @@ const UserManagement = () => {
       toast({
         title: "Update failed",
         description: "Failed to update user role",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Transfer ownership mutation
+  const { mutate: transferOwnership, isPending: isTransferring } = useMutation({
+    mutationFn: async (targetUserId: string) => {
+      return await apiRequest<{ success: boolean }>(`/api/master-admin/transfer`, "POST", { targetUserId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Ownership transferred",
+        description: "Account ownership has been transferred successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/master-admin'] });
+      setTransferDialogOpen(false);
+    },
+    onError: (error) => {
+      console.error("Error transferring ownership:", error);
+      toast({
+        title: "Transfer failed",
+        description: "Failed to transfer account ownership. Please try again.",
         variant: "destructive",
       });
     },
@@ -622,11 +648,8 @@ const UserManagement = () => {
                           variant="outline"
                           className="w-full"
                           onClick={() => {
-                            // Show transfer ownership dialog logic would go here
-                            toast({
-                              title: "Transfer ownership",
-                              description: "This feature will allow you to transfer your Account Owner role to another user",
-                            });
+                            setTransferDialogOpen(true);
+                            setUserToTransferTo(null);
                           }}
                         >
                           Transfer Ownership
