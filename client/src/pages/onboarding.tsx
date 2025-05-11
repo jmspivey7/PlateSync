@@ -827,6 +827,15 @@ export default function Onboarding() {
     }
   };
   
+  // Clear service options in localStorage when a new user registers
+  useEffect(() => {
+    // Once the verification page is shown, clear any stored service options
+    // This ensures that new users start with a clean slate
+    if (currentStep === OnboardingStep.VERIFY_EMAIL) {
+      localStorage.removeItem('onboardingServiceOptions');
+    }
+  }, [currentStep]);
+
   // Load existing service options when entering the service options step
   useEffect(() => {
     if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
