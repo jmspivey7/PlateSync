@@ -1,14 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight, X, Plus, ChevronLeft, Mail } from "lucide-react";
+import { 
+  Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight, X, 
+  Plus, ChevronLeft, Mail, FileUp, Users, Link as LinkIcon, UserPlus
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import plateSyncLogo from "../assets/platesync-logo.png";
 
 // Onboarding Steps
@@ -17,7 +24,8 @@ enum OnboardingStep {
   VERIFY_EMAIL = 1,
   UPLOAD_LOGO = 2,
   SERVICE_OPTIONS = 3,
-  COMPLETE = 4
+  IMPORT_MEMBERS = 4,
+  COMPLETE = 5
 }
 
 interface OnboardingParams {
@@ -46,6 +54,20 @@ export default function Onboarding() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+  
+  // Member import states
+  const [activeImportTab, setActiveImportTab] = useState<string>("csv");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [importStatus, setImportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [previewData, setPreviewData] = useState<any[] | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isPlanningCenterConnecting, setIsPlanningCenterConnecting] = useState(false);
+  const [isPlanningCenterConnected, setIsPlanningCenterConnected] = useState(false);
+  const [isImportingFromPlanningCenter, setIsImportingFromPlanningCenter] = useState(false);
+  const queryClient = useQueryClient();
   
   // Get parameters from URL query
   const params = new URLSearchParams(window.location.search);
