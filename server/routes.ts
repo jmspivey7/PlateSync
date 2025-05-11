@@ -126,7 +126,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (usersWithEmail.length > 0) {
           // If the user has a churchId that matches, update that user
+          // Otherwise just update the first user with this email
           const userToUpdate = usersWithEmail.find(u => u.churchId === churchId) || usersWithEmail[0];
+          
+          console.log(`Found user to update: ${userToUpdate.id} (${userToUpdate.email})`);
           
           // Update user verification status
           await db
@@ -135,6 +138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               isVerified: true
             })
             .where(eq(users.id, userToUpdate.id));
+            
+          // Verify the update was successful
+          const updatedUser = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, userToUpdate.id))
+            .then(results => results[0]);
+            
+          console.log(`User verification status updated: ${updatedUser.isVerified}`);
             
           return res.status(200).json({ 
             message: 'Verification successful', 

@@ -125,10 +125,25 @@ export default function Onboarding() {
   
   // Handle logo upload
   const handleLogoUpload = async () => {
-    if (!logoFile || !churchId) {
+    if (!logoFile) {
       toast({
         title: "No logo selected",
         description: "Please select a logo to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Get userId from localStorage if available (might have been saved during verification)
+    const storedUserId = localStorage.getItem('userId');
+    
+    // Use either churchId from params or userId from verification
+    const idToUse = churchId || storedUserId;
+    
+    if (!idToUse) {
+      toast({
+        title: "Missing church ID",
+        description: "Church ID is required for logo upload",
         variant: "destructive"
       });
       return;
@@ -140,7 +155,7 @@ export default function Onboarding() {
       // Create form data
       const formData = new FormData();
       formData.append('logo', logoFile);
-      formData.append('churchId', churchId);
+      formData.append('churchId', idToUse);
       
       // Send to server
       const response = await fetch('/api/upload-logo', {
@@ -262,6 +277,9 @@ export default function Onboarding() {
       if (data.userId) {
         localStorage.setItem('userId', data.userId);
         console.log('User ID stored during verification:', data.userId);
+        
+        // Also store the verified status for this user
+        localStorage.setItem('userVerified', 'true');
       }
       
       toast({
