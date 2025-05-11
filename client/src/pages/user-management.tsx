@@ -498,8 +498,8 @@ const UserManagement = () => {
                       </TableCell>
                       <TableCell>
                         {user.role === "ACCOUNT_OWNER" || 
-                         (user.role === "ADMIN" && user.isAccountOwner) || 
-                         (user.role === "ADMIN" && user.isMasterAdmin) ? (
+                         user.isAccountOwner || 
+                         user.isMasterAdmin ? (
                           <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
                         ) : user.role === "ADMIN" ? (
                           <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
@@ -537,13 +537,13 @@ const UserManagement = () => {
             
             const isCurrentUserAccountOwner = 
               currentUser?.role === "ACCOUNT_OWNER" || 
-              (currentUser?.role === "ADMIN" && currentUser?.isAccountOwner) ||
-              (currentUser?.role === "ADMIN" && currentUser?.isMasterAdmin);
+              currentUser?.isAccountOwner ||
+              currentUser?.isMasterAdmin;
             
             const isSelectedUserAccountOwner = 
               selectedUser.role === "ACCOUNT_OWNER" || 
-              (selectedUser.role === "ADMIN" && selectedUser.isAccountOwner) ||
-              (selectedUser.role === "ADMIN" && selectedUser.isMasterAdmin);
+              selectedUser.isAccountOwner ||
+              selectedUser.isMasterAdmin;
             
             return (
               <div className="space-y-6">
@@ -552,8 +552,8 @@ const UserManagement = () => {
                     <AvatarImage src={selectedUser.profileImageUrl || ""} alt={`${selectedUser.firstName} ${selectedUser.lastName}`} />
                     <AvatarFallback className="text-lg bg-gray-100 text-gray-800">
                       {selectedUser.role === "ACCOUNT_OWNER" || 
-                        (selectedUser.role === "ADMIN" && selectedUser.isAccountOwner) || 
-                        (selectedUser.role === "ADMIN" && selectedUser.isMasterAdmin) 
+                        selectedUser.isAccountOwner || 
+                        selectedUser.isMasterAdmin
                         ? "O" 
                         : selectedUser.role === "ADMIN" 
                           ? "A" 
@@ -564,7 +564,9 @@ const UserManagement = () => {
                     <h3 className="text-lg font-semibold">{selectedUser.firstName} {selectedUser.lastName}</h3>
                     <p className="text-gray-500">{selectedUser.email}</p>
                     <div className="mt-1">
-                      {isSelectedUserAccountOwner ? (
+                      {selectedUser.role === "ACCOUNT_OWNER" || 
+                        selectedUser.isAccountOwner || 
+                        selectedUser.isMasterAdmin ? (
                         <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
                       ) : selectedUser.role === "ADMIN" ? (
                         <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
