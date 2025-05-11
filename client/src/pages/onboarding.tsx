@@ -80,10 +80,16 @@ export default function Onboarding() {
   // Mutation for saving donor notification settings
   const donorNotificationMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
-      return await apiRequest("/api/settings/email-notifications", {
-        method: "POST",
-        body: { enabled }
-      });
+      try {
+        const response = await apiRequest("/api/settings/email-notifications", {
+          method: "POST",
+          body: { enabled }
+        });
+        return response;
+      } catch (error) {
+        console.error("Error in notification settings API request:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -102,6 +108,7 @@ export default function Onboarding() {
       }, 1000);
     },
     onError: (error) => {
+      console.error("Error saving notification settings:", error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to save notification settings',

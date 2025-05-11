@@ -892,6 +892,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Church logo upload endpoint with improved error handling
+  app.post('/api/settings/email-notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { enabled } = req.body;
+      
+      // Update user settings
+      const updatedUser = await storage.updateUserSettings(userId, { 
+        emailNotificationsEnabled: enabled
+      });
+      
+      res.json({ 
+        message: "Email notification settings updated successfully",
+        enabled 
+      });
+    } catch (error) {
+      console.error("Error updating email notification settings:", error);
+      res.status(500).json({ message: "Failed to update email notification settings" });
+    }
+  });
+  
   app.post('/api/settings/logo', isAuthenticated, (req, res, next) => {
     console.log("Processing logo upload request");
     
