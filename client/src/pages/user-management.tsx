@@ -262,7 +262,7 @@ const UserManagement = () => {
         title: "User created",
         description: "New user has been created successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
       setCreateDialogOpen(false);
     },
     onError: (error: any) => {
@@ -291,7 +291,7 @@ const UserManagement = () => {
         title: "User deleted",
         description: "User has been deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
       setDeleteDialogOpen(false);
       setSelectedUserId(null);
     },
@@ -327,7 +327,7 @@ const UserManagement = () => {
         title: "User updated",
         description: "User role has been updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
     },
     onError: () => {
       toast({
@@ -348,7 +348,7 @@ const UserManagement = () => {
         title: "Ownership transferred",
         description: "Account ownership has been transferred successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/account-owner'] });
       setTransferDialogOpen(false);
     },
