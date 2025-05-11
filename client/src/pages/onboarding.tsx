@@ -79,7 +79,7 @@ export default function Onboarding() {
   // Mutation for saving donor notification settings
   const donorNotificationMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
-      const response = await apiRequest('POST', '/api/settings/email-notifications', { 
+      const response = await apiRequest("POST", "/api/settings/email-notifications", { 
         enabled 
       });
       return await response.json();
@@ -633,7 +633,10 @@ export default function Onboarding() {
       // Now proceed to member import step
       setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
-      // Member import is complete or skipped, move to completion
+      // Member import is complete or skipped, move to email notifications
+      setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
+    } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
+      // Email notifications configuration is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
       // Redirect to login page after completing onboarding
@@ -653,8 +656,10 @@ export default function Onboarding() {
       setCurrentStep(OnboardingStep.UPLOAD_LOGO);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
-    } else if (currentStep === OnboardingStep.COMPLETE) {
+    } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
       setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
+    } else if (currentStep === OnboardingStep.COMPLETE) {
+      setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     }
   };
   
@@ -1179,7 +1184,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Step 4: Import Members</h2>
-              <div className="text-sm text-gray-500">Step 4 of 5</div>
+              <div className="text-sm text-gray-500">Step 4 of 6</div>
             </div>
             
             <p className="text-gray-600 mb-6">
