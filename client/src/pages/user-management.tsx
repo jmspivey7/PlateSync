@@ -341,7 +341,7 @@ const UserManagement = () => {
   // Transfer ownership mutation
   const { mutate: transferOwnership, isPending: isTransferring } = useMutation({
     mutationFn: async (targetUserId: string) => {
-      return await apiRequest<{ success: boolean }>(`/api/master-admin/transfer`, "POST", { targetUserId });
+      return await apiRequest<{ success: boolean }>(`/api/account-owner/transfer`, "POST", { targetUserId });
     },
     onSuccess: () => {
       toast({
@@ -349,7 +349,7 @@ const UserManagement = () => {
         description: "Account ownership has been transferred successfully",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/master-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/account-owner'] });
       setTransferDialogOpen(false);
     },
     onError: (error) => {
@@ -690,7 +690,13 @@ const UserManagement = () => {
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={userToTransferTo.profileImageUrl || ""} alt={`${userToTransferTo.firstName} ${userToTransferTo.lastName}`} />
                   <AvatarFallback className="bg-gray-100 text-gray-800">
-                    {userToTransferTo.role === "ADMIN" ? "A" : "S"}
+                    {userToTransferTo.role === "ACCOUNT_OWNER" || 
+                      userToTransferTo.isAccountOwner || 
+                      userToTransferTo.isMasterAdmin
+                      ? "O" 
+                      : userToTransferTo.role === "ADMIN" 
+                        ? "A" 
+                        : "S"}
                   </AvatarFallback>
                 </Avatar>
                 <div>

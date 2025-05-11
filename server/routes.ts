@@ -1232,7 +1232,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Master Admin routes
+  // Account Owner routes
+  app.get('/api/account-owner', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const churchId = await storage.getChurchIdForUser(userId);
+      const accountOwner = await storage.getMasterAdminForChurch(churchId);
+      
+      res.json({
+        accountOwnerId: accountOwner?.id,
+        isAccountOwner: accountOwner?.id === userId,
+        accountOwnerName: accountOwner ? `${accountOwner.firstName || ''} ${accountOwner.lastName || ''}`.trim() || accountOwner.username : null
+      });
+    } catch (error) {
+      console.error("Error getting account owner status:", error);
+      res.status(500).json({ message: "Error getting account owner status" });
+    }
+  });
+  
+  // Keep the old endpoint for backward compatibility
   app.get('/api/master-admin', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1241,12 +1263,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const churchId = await storage.getChurchIdForUser(userId);
-      const masterAdmin = await storage.getMasterAdminForChurch(churchId);
+      const accountOwner = await storage.getMasterAdminForChurch(churchId);
       
       res.json({
-        masterAdminId: masterAdmin?.id,
-        isMasterAdmin: masterAdmin?.id === userId,
-        masterAdminName: masterAdmin ? `${masterAdmin.firstName || ''} ${masterAdmin.lastName || ''}`.trim() || masterAdmin.username : null
+        masterAdminId: accountOwner?.id,
+        isMasterAdmin: accountOwner?.id === userId,
+        masterAdminName: accountOwner ? `${accountOwner.firstName || ''} ${accountOwner.lastName || ''}`.trim() || accountOwner.username : null
       });
     } catch (error) {
       console.error("Error getting master admin status:", error);
