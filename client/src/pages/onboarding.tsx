@@ -596,6 +596,9 @@ export default function Onboarding() {
       case OnboardingStep.SERVICE_OPTIONS:
         setProgress(60);
         break;
+      case OnboardingStep.IMPORT_MEMBERS:
+        setProgress(80);
+        break;
       case OnboardingStep.COMPLETE:
         setProgress(100);
         break;
@@ -620,7 +623,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Verify Your Email</h2>
-              <div className="text-sm text-gray-500">Step 1 of 4</div>
+              <div className="text-sm text-gray-500">Step 1 of 5</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -702,7 +705,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Step 2: Upload Your Church Logo</h2>
-              <div className="text-sm text-gray-500">Step 2 of 4</div>
+              <div className="text-sm text-gray-500">Step 2 of 5</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -807,7 +810,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Step 3: Add Service Options</h2>
-              <div className="text-sm text-gray-500">Step 3 of 4</div>
+              <div className="text-sm text-gray-500">Step 3 of 5</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -933,6 +936,232 @@ export default function Onboarding() {
                 onClick={handleNextStep}
               >
                 Next Step <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+      
+      case OnboardingStep.IMPORT_MEMBERS:
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Step 4: Import Members</h2>
+              <div className="text-sm text-gray-500">Step 4 of 5</div>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              Import your church members to start tracking donations. You can import via CSV file or connect to Planning Center.
+            </p>
+            
+            <Tabs 
+              value={activeImportTab} 
+              onValueChange={setActiveImportTab} 
+              className="w-full mb-6"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="csv">CSV Import</TabsTrigger>
+                <TabsTrigger value="planning-center">Planning Center</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="csv" className="pt-4">
+                <div className="space-y-4">
+                  {/* CSV Import UI */}
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+                      ${isDragging ? 'border-[#4299E1] bg-[#4299E1]/10' : 'border-gray-300'}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={handleCsvClick}
+                  >
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept=".csv"
+                      onChange={handleCsvFileChange}
+                    />
+                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-sm text-gray-600 mb-2">
+                      {csvFile ? csvFile.name : 'Drag and drop a CSV file here, or click to browse'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Supported format: CSV with columns for First Name, Last Name, Email, and Mobile Phone Number
+                    </p>
+                  </div>
+
+                  {importStatus === 'loading' && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Importing members...</span>
+                        <span className="text-sm text-gray-500">{Math.round(importProgress)}%</span>
+                      </div>
+                      <Progress value={importProgress} className="h-2" />
+                    </div>
+                  )}
+
+                  {importStatus === 'success' && (
+                    <Alert className="mb-4 bg-green-50 border-green-200">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-800">Import Successful</AlertTitle>
+                      <AlertDescription className="text-green-700 text-sm">
+                        {statusMessage}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {importStatus === 'error' && (
+                    <Alert className="mb-4 bg-red-50 border-red-200">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <AlertTitle className="text-red-800">Import Failed</AlertTitle>
+                      <AlertDescription className="text-red-700 text-sm">
+                        {statusMessage || 'An error occurred during the import.'}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {previewData && previewData.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium mb-2">Preview of first 5 records:</h3>
+                      <div className="border rounded-md overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              {Object.keys(previewData[0]).map((header) => (
+                                <th key={header} className="px-3 py-2 text-left text-gray-600">{header}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {previewData.map((row, index) => (
+                              <tr key={index}>
+                                {Object.values(row).map((value: any, i) => (
+                                  <td key={i} className="px-3 py-2 text-gray-800">{value}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {csvFile && importStatus !== 'loading' && (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={handleCsvImport}
+                        className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6"
+                      >
+                        <FileUp className="mr-2 h-4 w-4" />
+                        Import Members
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="planning-center" className="pt-4">
+                <div className="space-y-4">
+                  {/* Planning Center Integration UI */}
+                  <div className="flex flex-col items-center justify-center p-4 space-y-6 rounded-lg border border-gray-300">
+                    <img 
+                      src="/planning-center-logo.png" 
+                      alt="Planning Center Logo" 
+                      className="h-12 mb-2" 
+                    />
+                    
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Connect your Planning Center Online account to import your members directly into PlateSync.
+                        This integration uses OAuth 2.0 to securely connect without storing your credentials.
+                      </p>
+                      
+                      {isPlanningCenterConnected ? (
+                        <div className="space-y-4">
+                          <Alert>
+                            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                            <AlertTitle className="flex items-center">
+                              <Users className="h-4 w-4 mr-2" />
+                              Planning Center Connected
+                            </AlertTitle>
+                            <AlertDescription>
+                              Your Planning Center account is connected and ready to import members.
+                            </AlertDescription>
+                          </Alert>
+                          
+                          <Button 
+                            onClick={() => {
+                              setIsImportingFromPlanningCenter(true);
+                              // Mock successful import after 2 seconds
+                              setTimeout(() => {
+                                setIsImportingFromPlanningCenter(false);
+                                setImportStatus('success');
+                                setStatusMessage('Successfully imported members from Planning Center.');
+                                toast({
+                                  title: 'Import Successful',
+                                  description: 'Members imported successfully from Planning Center.',
+                                  className: 'bg-[#48BB78] text-white',
+                                });
+                                
+                                // Auto advance to next step after 2 seconds
+                                setTimeout(() => {
+                                  handleNextStep();
+                                }, 2000);
+                              }, 2000);
+                            }}
+                            disabled={isImportingFromPlanningCenter}
+                            className="text-white w-full"
+                            style={{ backgroundColor: '#2176FF' }}
+                          >
+                            {isImportingFromPlanningCenter ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <UserPlus className="mr-2 h-4 w-4" />
+                            )}
+                            Import Members
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            setIsPlanningCenterConnecting(true);
+                            // Mock successful connection after 2 seconds
+                            setTimeout(() => {
+                              setIsPlanningCenterConnecting(false);
+                              setIsPlanningCenterConnected(true);
+                            }, 2000);
+                          }}
+                          className="w-full"
+                          style={{ backgroundColor: '#2176FF' }}
+                          disabled={isPlanningCenterConnecting}
+                        >
+                          {isPlanningCenterConnecting ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                          )}
+                          Connect to Planning Center
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+            
+            <div className="flex justify-between pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={handleBackStep}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              
+              <Button 
+                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                onClick={handleNextStep}
+              >
+                {importStatus === 'success' ? 'Next' : 'Skip for now'} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
