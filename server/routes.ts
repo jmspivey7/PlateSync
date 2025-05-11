@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { isAdmin, isMasterAdmin } from "./middleware/roleMiddleware";
+import { isAdmin, isAccountOwner, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { sendVerificationEmail, verifyCode } from "./verification";
 import { setupTestEndpoints } from "./test-endpoints";
@@ -556,13 +556,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             churchLogoUrl: dbUser.church_logo_url,
             emailNotificationsEnabled: dbUser.email_notifications_enabled,
             churchId: dbUser.church_id,
-            isMasterAdmin: dbUser.is_master_admin,
+            isAccountOwner: dbUser.is_account_owner,
             // Add virtual properties
             isActive: !dbUser.email?.startsWith('INACTIVE_')
           };
           
-          // If this is an USHER, we need to fetch church settings from their ADMIN
-          if (user.role === "USHER" && user.churchId && user.churchId !== user.id) {
+          // If this is a STANDARD user, we need to fetch church settings from their Account Owner
+          if (user.role === "STANDARD" && user.churchId && user.churchId !== user.id) {
             try {
               // Use the explicitly assigned churchId if available
               const churchId = user.churchId;
@@ -632,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           logoUrl: "/logos/logo.png",
           isActive: true,
           isVerified: true,
-          isMasterAdmin: true,
+          isAccountOwner: true,
           createdAt: new Date("2025-05-03T16:13:31.088Z"),
           updatedAt: new Date()
         };
@@ -3687,7 +3687,7 @@ PlateSync Reporting System`;
   });
   
   // RESET all email templates of a specific type (MASTER ADMIN only)
-  app.post('/api/email-templates/type/:type/reset-all', isAuthenticated, isMasterAdmin, async (req: any, res) => {
+  app.post('/api/email-templates/type/:type/reset-all', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const templateType = req.params.type;
       
