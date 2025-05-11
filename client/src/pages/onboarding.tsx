@@ -158,8 +158,14 @@ export default function Onboarding() {
   
   // Handle skip
   const handleSkip = () => {
-    // For now, redirect to login page
-    setLocation("/login-local");
+    if (currentStep === OnboardingStep.UPLOAD_LOGO) {
+      setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
+    } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
+      setCurrentStep(OnboardingStep.COMPLETE);
+    } else {
+      // If on last step or otherwise, redirect to login page
+      setLocation("/login-local");
+    }
   };
   
   // Handle next step
@@ -184,7 +190,7 @@ export default function Onboarding() {
   };
   
   // Handle adding a new service option
-  const handleAddServiceOption = async () => {
+  const handleAddServiceOption = () => {
     if (!newServiceOption.trim()) {
       toast({
         title: "Invalid service name",
@@ -206,39 +212,22 @@ export default function Onboarding() {
     setIsAddingService(true);
     
     try {
-      // Add to API
-      if (churchId) {
-        const response = await fetch('/api/service-options', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: newServiceOption.trim(),
-            churchId: churchId,
-          }),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to add service option');
-        }
-        
-        const data = await response.json();
-        
-        // Update local state
-        setServiceOptions([...serviceOptions, newServiceOption.trim()]);
-        setNewServiceOption('');
-        
-        toast({
-          title: "Service option added",
-          description: `"${newServiceOption.trim()}" has been added`,
-          variant: "default"
-        });
-      } else {
-        // If no churchId is available, just add to local state
-        setServiceOptions([...serviceOptions, newServiceOption.trim()]);
-        setNewServiceOption('');
-      }
+      // During onboarding, we'll just add to local state
+      // These options will be properly saved when the user logs in
+      const trimmedOption = newServiceOption.trim();
+      setServiceOptions([...serviceOptions, trimmedOption]);
+      setNewServiceOption('');
+      
+      toast({
+        title: "Service option added",
+        description: `"${trimmedOption}" has been added`,
+        variant: "default"
+      });
+      
+      // Store in localStorage to persist during onboarding
+      const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+      localStorage.setItem('onboardingServiceOptions', JSON.stringify([...storedOptions, trimmedOption]));
+      
     } catch (error) {
       toast({
         title: "Failed to add service option",
@@ -251,20 +240,17 @@ export default function Onboarding() {
   };
   
   // Handle removing a service option
-  const handleRemoveServiceOption = async (option: string) => {
+  const handleRemoveServiceOption = (option: string) => {
     try {
-      if (churchId) {
-        const response = await fetch(`/api/service-options?name=${encodeURIComponent(option)}&churchId=${churchId}`, {
-          method: 'DELETE',
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to remove service option');
-        }
-      }
-      
       // Update local state
       setServiceOptions(serviceOptions.filter(service => service !== option));
+      
+      // Update localStorage
+      const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+      localStorage.setItem(
+        'onboardingServiceOptions', 
+        JSON.stringify(storedOptions.filter((item: string) => item !== option))
+      );
       
       toast({
         title: "Service option removed",
@@ -282,29 +268,18 @@ export default function Onboarding() {
   
   // Load existing service options when entering the service options step
   useEffect(() => {
-    if (currentStep === OnboardingStep.SERVICE_OPTIONS && churchId) {
-      // Fetch service options from API
-      const fetchServiceOptions = async () => {
-        try {
-          const response = await fetch(`/api/service-options?churchId=${churchId}`);
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch service options');
-          }
-          
-          const data = await response.json();
-          if (data && Array.isArray(data)) {
-            setServiceOptions(data.map(option => option.name));
-          }
-        } catch (error) {
-          console.error('Error fetching service options:', error);
-          // Don't show toast for fetch error, just log it
-        }
-      };
-      
-      fetchServiceOptions();
+    if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
+      // Load from localStorage during onboarding
+      try {
+        const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+        setServiceOptions(storedOptions);
+      } catch (error) {
+        console.error('Error loading service options from localStorage:', error);
+        // Default options if there's an error loading from localStorage
+        setServiceOptions([]);
+      }
     }
-  }, [currentStep, churchId]);
+  }, [currentStep]);
   
   // Update progress bar based on current step
   useEffect(() => {
