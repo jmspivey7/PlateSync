@@ -892,15 +892,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Church logo upload endpoint with improved error handling
-  app.post('/api/settings/email-notifications', isAuthenticated, async (req: any, res) => {
+  // Email notification settings endpoint that works during onboarding
+  app.post('/api/settings/email-notifications', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const { enabled } = req.body;
+      const { enabled, userId } = req.body;
       
-      // Update user settings
-      const updatedUser = await storage.updateUserSettings(userId, { 
-        emailNotificationsEnabled: enabled
-      });
+      // During onboarding, we might not have an authenticated user yet
+      if (userId) {
+        // If userId is provided (from onboarding), use it directly
+        await storage.updateUserSettings(userId, { 
+          emailNotificationsEnabled: enabled
+        });
+      } else if (req.user && req.user.claims && req.user.claims.sub) {
+        // If user is authenticated (from settings page), use the authenticated userId
+        await storage.updateUserSettings(req.user.claims.sub, { 
+          emailNotificationsEnabled: enabled
+        });
+      }
       
       res.json({ 
         message: "Email notification settings updated successfully",

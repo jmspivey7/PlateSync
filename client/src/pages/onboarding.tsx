@@ -81,9 +81,15 @@ export default function Onboarding() {
   const donorNotificationMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
       try {
+        // Get the userId from localStorage that was stored during verification
+        const userId = localStorage.getItem('verifiedUserId');
+        
         const response = await apiRequest("/api/settings/email-notifications", {
           method: "POST",
-          body: { enabled }
+          body: { 
+            enabled,
+            userId
+          }
         });
         return response;
       } catch (error) {
@@ -1216,16 +1222,14 @@ export default function Onboarding() {
                     count is finalized. This helps keep your congregation informed about their contributions.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="donor-notifications" className={donorNotificationsEnabled ? "text-[#69ad4c]" : "text-gray-500"}>
-                    {donorNotificationsEnabled ? "ON" : "OFF"}
-                  </Label>
+                <div className="flex items-center gap-3">
                   <Switch 
                     id="donor-notifications"
                     checked={donorNotificationsEnabled}
                     onCheckedChange={setDonorNotificationsEnabled}
                     className={donorNotificationsEnabled ? "bg-[#69ad4c]" : ""}
                   />
+                  <span className="font-medium">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
                 </div>
               </div>
               
