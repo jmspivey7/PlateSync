@@ -959,6 +959,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date(),
           updatedAt: new Date(),
           churchName: userData.churchName || null,
+          churchId: churchId || null, // ADD CHURCH ID BACK!
           emailNotificationsEnabled: userData.emailNotificationsEnabled !== undefined ? userData.emailNotificationsEnabled : true,
           passwordResetToken: resetToken,
           passwordResetExpires: resetExpires,

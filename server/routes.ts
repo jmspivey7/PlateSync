@@ -717,7 +717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new user
-  app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+  app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { email, firstName, lastName, role, churchName } = req.body;
       
@@ -735,13 +735,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "User with this email already exists" });
       }
       
+      // Get the current user's church ID
+      const userId = req.user.claims.sub;
+      const churchId = await storage.getChurchIdForUser(userId);
+      console.log(`Creating new user with churchId: ${churchId}`);
+      
       // Create new user with verification token
       const newUser = await storage.createUser({
         email,
         firstName,
         lastName,
         role,
-        churchName
+        churchName,
+        churchId // Pass the churchId to associate the new user with the same church
       });
       
       // Get application URL from request for verification link
@@ -1145,16 +1151,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const churchId = await storage.getChurchIdForUser(userId);
       console.log(`Filtering users by churchId: ${churchId}`);
       
-      // Get ALL users from the database associated with this church
-      // Use a simpler query to ensure we get all users
+      // Get ALL users from the database for debugging
       const allUsers = await db.select().from(users);
       
-      // Filter by church_id in JavaScript for more reliability
-      const churchUsers = allUsers.filter(user => 
-        user.churchId === churchId || user.id === churchId
-      );
+      // Log each user with their church ID for debugging
+      console.log("DEBUG - All users in database:");
+      allUsers.forEach(user => {
+        console.log(`User ${user.id}: ${user.firstName} ${user.lastName} - churchId: ${user.churchId}, email: ${user.email}`);
+      });
       
-      console.log(`Found ${churchUsers.length} users for church ${churchId}`);
+      // Filter by church_id in JavaScript for more reliability
+      // TEMPORARY LOGGING: Don't filter for debugging
+      const churchUsers = allUsers;
+      
+      console.log(`Total users in database: ${allUsers.length}`);
       
       // Map to the expected format and filter out inactive users
       const usersList = churchUsers
@@ -1171,7 +1181,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updatedAt: user.updatedAt,
           isVerified: !!user.isVerified,
           isMasterAdmin: !!user.isMasterAdmin,
-          isAccountOwner: !!user.isAccountOwner
+          isAccountOwner: !!user.isAccountOwner,
+          churchId: user.churchId // Add churchId for debugging
         }));
       
       console.log(`Returning ${usersList.length} active users via test endpoint`);
