@@ -845,6 +845,7 @@ export class DatabaseStorage implements IStorage {
           bio: userData.bio || null,
           profileImageUrl: userData.profileImageUrl || null,
           role: userData.role || 'USHER',
+          password: userData.password || null, // Add password field here
           createdAt: new Date(),
           updatedAt: new Date(),
           churchName: userData.churchName || null,
