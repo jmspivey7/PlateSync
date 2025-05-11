@@ -3958,5 +3958,41 @@ PlateSync Reporting System`;
   });
 
   const httpServer = createServer(app);
+  // Temporary endpoint to fix onboarding settings (will be removed after use)
+  app.get('/api/fix-onboarding-settings/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      console.log(`Fixing onboarding settings for user ID: ${userId}`);
+      
+      // Import dynamically to avoid circular dependencies
+      const { fixOnboardingSettings } = await import('./fix-onboarding-settings');
+      
+      const result = await fixOnboardingSettings(userId);
+      
+      if (result) {
+        res.json({ 
+          message: "Onboarding settings applied successfully", 
+          success: true 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to apply onboarding settings", 
+          success: false 
+        });
+      }
+    } catch (error) {
+      console.error("Error in fix-onboarding-settings endpoint:", error);
+      res.status(500).json({ 
+        message: "Error fixing onboarding settings", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   return httpServer;
 }
