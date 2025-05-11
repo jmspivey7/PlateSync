@@ -71,7 +71,26 @@ export async function fixOnboardingSettings(userId: string) {
       
       console.log("Logo URL updated for all church members");
     } else {
-      console.log("No logo URL found to apply");
+      console.log("No logo URL found, applying default logo");
+      
+      // Use a default logo if none is found
+      const defaultLogo = "/logos/default-church-logo.svg";
+      
+      // Update the user's own record with default logo
+      await db
+        .update(users)
+        .set({ churchLogoUrl: defaultLogo })
+        .where(eq(users.id, userId));
+      
+      // Update all users with the same churchId with default logo
+      if (churchId) {
+        await db
+          .update(users)
+          .set({ churchLogoUrl: defaultLogo })
+          .where(eq(users.churchId, churchId));
+      }
+      
+      console.log("Default logo URL applied to all church members");
     }
     
     // 4. Check for service options
@@ -99,8 +118,8 @@ export async function fixOnboardingSettings(userId: string) {
         try {
           // Direct SQL insert to avoid schema issues
           await db.execute(sql`
-            INSERT INTO service_options (name, church_id, created_at, updated_at)
-            VALUES (${option}, ${churchId}, NOW(), NOW())
+            INSERT INTO service_options (name, value, church_id, created_at, updated_at)
+            VALUES (${option}, ${option}, ${churchId}, NOW(), NOW())
           `);
           console.log(`Service option '${option}' created successfully`);
         } catch (insertError) {
