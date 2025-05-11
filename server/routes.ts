@@ -5,6 +5,7 @@ import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { isAdmin, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
+import { sendVerificationEmail, verifyCode } from "./verification";
 import { setupTestEndpoints } from "./test-endpoints";
 import { setupPlanningCenterRoutes } from "./planning-center";
 import { eq, sql, and } from "drizzle-orm";

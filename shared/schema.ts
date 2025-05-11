@@ -344,3 +344,24 @@ export const insertPlanningCenterTokensSchema = createInsertSchema(planningCente
 
 export type InsertPlanningCenterTokens = z.infer<typeof insertPlanningCenterTokensSchema>;
 export type PlanningCenterTokens = typeof planningCenterTokens.$inferSelect;
+
+// Verification codes table for email verification during onboarding
+export const verificationCodes = pgTable("verification_codes", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").notNull(),
+  churchId: varchar("church_id").notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+});
+
+export const insertVerificationCodeSchema = createInsertSchema(verificationCodes).pick({
+  email: true,
+  churchId: true,
+  code: true,
+  expiresAt: true,
+});
+
+export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
+export type VerificationCode = typeof verificationCodes.$inferSelect;

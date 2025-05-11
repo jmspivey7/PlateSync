@@ -78,28 +78,44 @@ export async function sendVerificationEmail(email: string, churchId: string, chu
     // Generate and store verification code
     const code = await storeVerificationCode(email, churchId);
     
+    // Get sender email from environment variable with fallback
+    const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'verification@platesync.app';
+    
     // Send email with the code
-    const result = await sendEmail(
-      process.env.SENDGRID_API_KEY!,
-      {
-        to: email,
-        from: process.env.SENDGRID_FROM_EMAIL!,
-        subject: `PlateSync: Your Verification Code`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #69ad4c;">Welcome to PlateSync</h2>
-            <p>Hello from ${churchName},</p>
-            <p>To finish setting up your PlateSync account, please enter the following verification code in the verification page:</p>
-            <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-              ${code}
-            </div>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you didn't request this code, you can safely ignore this email.</p>
-            <p>Thank you,<br>The PlateSync Team</p>
+    const result = await sendEmail({
+      to: email,
+      from: fromEmail,
+      subject: `PlateSync: Your Verification Code`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #69ad4c;">Welcome to PlateSync</h2>
+          <p>Hello from ${churchName},</p>
+          <p>To finish setting up your PlateSync account, please enter the following verification code in the verification page:</p>
+          <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+            ${code}
           </div>
-        `,
-      }
-    );
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't request this code, you can safely ignore this email.</p>
+          <p>Thank you,<br>The PlateSync Team</p>
+        </div>
+      `,
+      text: `
+Welcome to PlateSync
+
+Hello from ${churchName},
+
+To finish setting up your PlateSync account, please enter the following verification code in the verification page:
+
+${code}
+
+This code will expire in 10 minutes.
+
+If you didn't request this code, you can safely ignore this email.
+
+Thank you,
+The PlateSync Team
+      `
+    });
     
     return result;
   } catch (error) {
