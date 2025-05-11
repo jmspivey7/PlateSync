@@ -1111,11 +1111,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // PUBLIC TESTING ENDPOINT - FOR DEBUGGING ONLY
-  app.get('/api/test-users', async (_req, res) => {
-    try {      
-      // Direct query to the users table
+  app.get('/api/test-users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get church ID to ensure proper data sharing between ADMIN and USHER roles
+      const churchId = await storage.getChurchIdForUser(userId);
+      console.log(`Filtering users by churchId: ${churchId}`);
+      
+      // Direct query to the users table, filtered by churchId
       const usersResult = await db.execute(
-        sql`SELECT * FROM users`
+        sql`SELECT * FROM users WHERE church_id = ${churchId} OR id = ${churchId}`
       );
       
       let usersList = [];
