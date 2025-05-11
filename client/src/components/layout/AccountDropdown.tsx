@@ -23,15 +23,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 const AccountDropdown = () => {
   const [_, setLocation] = useLocation();
-  const { user, isAdmin, isMasterAdmin } = useAuth();
+  const { user, isAdmin, isAccountOwner } = useAuth();
   
   // Get initials or use default fallback
   const getInitials = () => {
     if (!user) return "U";
     
-    // If master admin, show "M", if admin show "A", otherwise "U" for usher
-    if (isMasterAdmin) return "M";
-    return isAdmin ? "A" : "U";
+    // If account owner, show "O", if admin show "A", otherwise "S" for standard user
+    if (isAccountOwner) return "O";
+    return isAdmin ? "A" : "S";
   };
   
   // Get full name or fall back to username/email

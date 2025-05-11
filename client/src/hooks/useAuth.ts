@@ -79,9 +79,9 @@ export function useAuth() {
     isLoading,
     refetch,
     isAuthenticated: !!user,
-    isAdmin: user?.role === "ADMIN",
-    isUsher: user?.role === "USHER" || !user?.role,
-    isMasterAdmin: user?.role === "ADMIN" && user?.isMasterAdmin === true,
+    isAdmin: user?.role === "ADMIN" || user?.role === "ACCOUNT_OWNER",
+    isStandard: user?.role === "STANDARD" || !user?.role,
+    isAccountOwner: user?.role === "ACCOUNT_OWNER" || (user?.role === "ADMIN" && user?.isAccountOwner === true),
     login: loginMutation.mutate,
     logout: logoutMutation.mutate,
     loginStatus: {

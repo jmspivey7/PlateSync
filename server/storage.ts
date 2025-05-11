@@ -266,13 +266,13 @@ export class DatabaseStorage implements IStorage {
       
       // Virtual properties
       const isActive = !row.email?.startsWith('INACTIVE_');
-      let isMasterAdmin = false;
+      let isAccountOwner = false;
       
-      // Calculate virtual isMasterAdmin if this is an admin user
-      if (row.role === 'ADMIN') {
+      // Calculate virtual isAccountOwner status
+      if (row.role === 'ACCOUNT_OWNER' || row.role === 'ADMIN') {
         try {
           // Check if this is the first/original admin of the church
-          // If their ID is used as the churchId for other users, they're the Master Admin
+          // If their ID is used as the churchId for other users, they're the Account Owner
           const otherUsers = await db.execute(
             sql`SELECT count(*) as count 
                 FROM users 
@@ -280,25 +280,25 @@ export class DatabaseStorage implements IStorage {
           );
             
           if (otherUsers.rows.length > 0 && parseInt(otherUsers.rows[0].count) > 0) {
-            isMasterAdmin = true;
+            isAccountOwner = true;
           } else {
             // If no other users point to this user's ID, check if this is the first admin
             const firstAdmin = await db.execute(
               sql`SELECT id 
                   FROM users 
-                  WHERE role = 'ADMIN' 
+                  WHERE role IN ('ACCOUNT_OWNER', 'ADMIN') 
                   ORDER BY created_at ASC 
                   LIMIT 1`
             );
               
             if (firstAdmin.rows.length > 0 && firstAdmin.rows[0].id === row.id) {
-              isMasterAdmin = true;
+              isAccountOwner = true;
             }
           }
         } catch (innerError) {
-          console.error("Error determining Master Admin status:", innerError);
+          console.error("Error determining Account Owner status:", innerError);
           // Default to false for safety
-          isMasterAdmin = false;
+          isAccountOwner = false;
         }
       }
       
@@ -306,7 +306,7 @@ export class DatabaseStorage implements IStorage {
       const user: User = {
         ...userBaseData,
         isActive,
-        isMasterAdmin
+        isAccountOwner
       };
       
       return user;
