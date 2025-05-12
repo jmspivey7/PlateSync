@@ -42,6 +42,11 @@ export const isGlobalAdmin = async (req: Request, res: Response, next: NextFunct
 // Middleware to restrict access for users from suspended or deleted churches
 export const restrictSuspendedChurchAccess = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Skip if the route is for global admin APIs
+    if (req.path.startsWith('/api/global-admin')) {
+      return next();
+    }
+    
     // Skip for Global Admins and unauthenticated requests (they'll be caught by auth middleware)
     if (!req.session || !req.session.userId) {
       return next();
