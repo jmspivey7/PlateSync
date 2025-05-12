@@ -1,15 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-
-// Components
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,7 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -28,22 +19,29 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Lock, Shield, LogIn } from "lucide-react";
+import { AlertCircle, Lock } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
-// Form schema for global admin login
+// Define form validation schema
 const globalAdminLoginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
+// Define form values type
 type GlobalAdminLoginFormValues = z.infer<typeof globalAdminLoginSchema>;
 
 export default function GlobalAdminLoginPage() {
   const { toast } = useToast();
-  const [_, setLocation] = useLocation();
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [_, setLocation] = useLocation();
 
-  // Form definition
+  // Initialize form
   const form = useForm<GlobalAdminLoginFormValues>({
     resolver: zodResolver(globalAdminLoginSchema),
     defaultValues: {
@@ -52,73 +50,70 @@ export default function GlobalAdminLoginPage() {
     },
   });
 
-  // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: GlobalAdminLoginFormValues) => {
-      const response = await apiRequest(
-        "POST", 
-        "/api/global-admin/login", 
-        credentials
-      );
-      
+  // Form submission handler
+  const onSubmit = async (data: GlobalAdminLoginFormValues) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Call the API to authenticate the global admin
+      const response = await apiRequest("POST", "/api/global-admin/login", data);
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
+        throw new Error(errorData.message || "Authentication failed");
       }
+
+      const result = await response.json();
       
-      return await response.json();
-    },
-    onSuccess: () => {
+      // Store the token in localStorage
+      localStorage.setItem("globalAdminToken", result.token);
+      
+      // Show success message
       toast({
         title: "Login successful",
-        description: "Welcome to the Global Admin dashboard",
+        description: "Welcome to PlateSync Global Admin Portal",
+        variant: "default",
       });
+      
+      // Navigate to dashboard
       setLocation("/global-admin/dashboard");
-    },
-    onError: (error: Error) => {
+    } catch (error) {
+      // Show error message
+      setError(error instanceof Error ? error.message : "Failed to login. Please try again.");
+      
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred during login",
         variant: "destructive",
       });
-    },
-  });
-
-  // Form submission handler
-  const onSubmit = (data: GlobalAdminLoginFormValues) => {
-    loginMutation.mutate(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <div className="flex justify-center">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Shield className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">
-            Global Administrator
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to access multi-tenant administration features
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Administrative Access</CardTitle>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md p-4">
+        <Card className="shadow-lg">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">PlateSync Global Admin</CardTitle>
             <CardDescription>
-              Only authorized global administrators can access this area
+              Enter your credentials to access the global admin portal
             </CardDescription>
           </CardHeader>
+          
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="email"
@@ -126,18 +121,17 @@ export default function GlobalAdminLoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="admin@example.com"
-                          type="email"
+                        <Input 
+                          placeholder="admin@example.com" 
+                          {...field} 
                           autoComplete="email"
-                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
                   control={form.control}
                   name="password"
@@ -145,43 +139,34 @@ export default function GlobalAdminLoginPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <Input
-                            placeholder="••••••••"
-                            type="password"
-                            autoComplete="current-password"
-                            {...field}
-                          />
-                          <Lock className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        </div>
+                        <Input 
+                          type="password" 
+                          placeholder="••••••••" 
+                          {...field} 
+                          autoComplete="current-password"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading || loginMutation.isPending}
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-green-600 hover:bg-green-700" 
+                  disabled={isLoading}
                 >
-                  {(isLoading || loginMutation.isPending) ? (
-                    <>
-                      <span className="mr-2">Authenticating</span>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-                    </>
-                  ) : (
-                    <>
-                      <LogIn className="mr-2 h-4 w-4" /> Sign In
-                    </>
-                  )}
+                  {isLoading ? "Logging in..." : "Log In"}
                 </Button>
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="justify-between text-xs text-muted-foreground">
-            <p>Secure administrative access</p>
-            <p>PlateSync © {new Date().getFullYear()}</p>
+          
+          <CardFooter className="flex justify-center">
+            <div className="text-sm text-muted-foreground flex items-center">
+              <Lock className="h-3 w-3 mr-1" />
+              Secure access for system administrators
+            </div>
           </CardFooter>
         </Card>
       </div>

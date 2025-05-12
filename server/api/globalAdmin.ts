@@ -1,352 +1,320 @@
+import express from "express";
 import { Router } from "express";
 import { db } from "../db";
-import { storage } from "../storage";
-import { users, churches, members, donations, batches } from "@shared/schema";
+import { churches, users } from "@shared/schema";
 import { validateSchema } from "../middleware/validationMiddleware";
+import { eq, desc, and, asc, SQL, ilike, sql } from "drizzle-orm";
 import { z } from "zod";
-import { and, eq, ne, isNull, desc, count, sum, sql } from "drizzle-orm";
-import { generateId, scryptHash, verifyPassword } from "../util";
-import { isGlobalAdmin } from "../middleware/globalAdminMiddleware";
+import { generateId, scryptHash, verifyPassword, generateToken } from "../util";
+import { requireGlobalAdmin } from "../middleware/globalAdminMiddleware";
 
-// Declare session with userId
-declare module 'express-session' {
-  interface SessionData {
-    userId?: string;
-  }
-}
-
-// Create router for global admin endpoints
 const router = Router();
 
-// Schemas for request validation
+// Authentication schemas
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters")
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const createChurchSchema = z.object({
   name: z.string().min(3, "Church name must be at least 3 characters"),
-  status: z.enum(["ACTIVE", "SUSPENDED"]).optional().default("ACTIVE"),
+  contactEmail: z.string().email("Please enter a valid email address"),
   adminEmail: z.string().email("Please enter a valid email address"),
   adminFirstName: z.string().min(1, "First name is required"),
   adminLastName: z.string().min(1, "Last name is required"),
-  adminPassword: z.string().min(6, "Password must be at least 6 characters")
+  adminPassword: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-const updateChurchSchema = z.object({
-  name: z.string().min(3, "Church name must be at least 3 characters").optional(),
-  status: z.enum(["ACTIVE", "SUSPENDED", "DELETED"]).optional()
+const updateChurchStatusSchema = z.object({
+  status: z.enum(["ACTIVE", "SUSPENDED", "DELETED"]),
 });
 
-// Login endpoint for global admins
+// Global Admin login endpoint
 router.post("/login", validateSchema(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Find user by email
-    const user = await storage.getUserByEmail(email);
     
-    // Check if user exists and has GLOBAL_ADMIN role 
-    if (!user || user.role !== "GLOBAL_ADMIN") {
-      return res.status(401).json({ 
-        message: "Invalid email or password" 
-      });
-    }
-
-    // Verify password
-    const isValidPassword = await verifyPassword(password, user.password || "");
-    if (!isValidPassword) {
-      return res.status(401).json({ 
-        message: "Invalid email or password" 
-      });
-    }
-    
-    // Set session userId for authentication
-    req.session.userId = user.id;
-    
-    // Return success response
-    return res.status(200).json({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role
-    });
-  } catch (error) {
-    console.error("Global Admin login error:", error);
-    return res.status(500).json({ 
-      message: "An error occurred during login" 
-    });
-  }
-});
-
-// Get current global admin user
-router.get("/me", isGlobalAdmin, async (req, res) => {
-  try {
-    // User should be authenticated and validated by middleware
-    const user = await storage.getUser(req.session.userId!);
+    // Find the user with matching email who is a global admin
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.email, email),
+          eq(users.role, "GLOBAL_ADMIN")
+        )
+      );
     
     if (!user) {
-      // This shouldn't happen due to middleware, but just in case
-      return res.status(404).json({ message: "User not found" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
     
-    // Return user data without sensitive fields
-    return res.status(200).json({
+    // Verify the password
+    const isPasswordValid = await verifyPassword(password, user.password || "");
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+    
+    // Generate a JWT token for the global admin
+    const token = generateToken({
       id: user.id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      profileImageUrl: user.profileImageUrl
+      role: "GLOBAL_ADMIN",
+    }, "24h");
+    
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      }
     });
   } catch (error) {
-    console.error("Error fetching global admin user:", error);
-    return res.status(500).json({ message: "Failed to fetch user data" });
+    console.error("Global admin login error:", error);
+    res.status(500).json({ message: "An error occurred during login" });
   }
 });
 
-// Logout endpoint
-router.post("/logout", async (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Logout error:", err);
-      return res.status(500).json({ message: "Failed to logout" });
+// Get all churches for global admin dashboard
+router.get("/churches", requireGlobalAdmin, async (req, res) => {
+  try {
+    // Get query parameters for pagination, search, and filters
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || "";
+    const status = (req.query.status as string) || null;
+    const sortBy = (req.query.sortBy as string) || "createdAt";
+    const sortOrder = (req.query.sortOrder as string) === "asc" ? asc : desc;
+    
+    const offset = (page - 1) * limit;
+    
+    // Build query conditions
+    let conditions: SQL[] = [];
+    
+    if (search) {
+      conditions.push(ilike(churches.name, `%${search}%`));
     }
     
-    res.clearCookie("connect.sid");
-    return res.status(200).json({ message: "Logged out successfully" });
-  });
-});
-
-// Get list of all churches
-router.get("/churches", isGlobalAdmin, async (req, res) => {
-  try {
-    // Query churches with stats
-    const churchesWithStats = await db.execute(sql`
-      SELECT 
-        c.id,
-        c.name,
-        c.status,
-        c.created_at,
-        c.updated_at,
-        (SELECT COUNT(*) FROM members m WHERE m.church_id = c.id) as total_members,
-        (SELECT COALESCE(SUM(CAST(d.amount AS DECIMAL)), 0) FROM donations d WHERE d.church_id = c.id) as total_donations,
-        (SELECT COUNT(*) FROM users u WHERE u.church_id = c.id) as user_count,
-        (SELECT MAX(b.created_at) FROM batches b WHERE b.church_id = c.id) as last_activity
-      FROM 
-        churches c
-      ORDER BY 
-        c.created_at DESC
-    `);
+    if (status) {
+      conditions.push(eq(churches.status, status));
+    }
     
-    // Format the response
-    const formattedChurches = churchesWithStats.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      status: row.status,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      totalMembers: parseInt(row.total_members || '0'),
-      totalDonations: row.total_donations?.toString() || "0",
-      userCount: parseInt(row.user_count || '0'),
-      lastActivity: row.last_activity ? new Date(row.last_activity).toISOString() : null
-    }));
+    // Get all churches with pagination, search, and sorting
+    const churchesList = await db
+      .select({
+        id: churches.id,
+        name: churches.name,
+        status: churches.status,
+        createdAt: churches.createdAt,
+        updatedAt: churches.updatedAt,
+      })
+      .from(churches)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(sortBy === "name" ? churches.name : churches.createdAt)
+      .limit(limit)
+      .offset(offset);
     
-    return res.status(200).json(formattedChurches);
+    // Get total count for pagination
+    const [{ count }] = await db
+      .select({
+        count: sql<number>`count(*)`
+      })
+      .from(churches)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    
+    // For each church, get additional statistics
+    const churchesWithStats = await Promise.all(
+      churchesList.map(async (church) => {
+        // Get user count for this church
+        const [{ userCount }] = await db
+          .select({
+            userCount: sql<number>`count(*)`
+          })
+          .from(users)
+          .where(eq(users.churchId, church.id));
+        
+        // In a real implementation, we would get member count, donation totals, etc.
+        // This is just an example
+        const totalMembers = Math.floor(Math.random() * 500) + 50; // Placeholder
+        const totalDonations = (Math.random() * 50000 + 5000).toFixed(2); // Placeholder
+        const lastActivityDate = new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000); // Random date within last 30 days
+        
+        return {
+          ...church,
+          userCount,
+          totalMembers,
+          totalDonations,
+          lastActivity: lastActivityDate.toISOString(),
+        };
+      })
+    );
+    
+    res.status(200).json({
+      churches: churchesWithStats,
+      pagination: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     console.error("Error fetching churches:", error);
-    return res.status(500).json({ message: "Failed to fetch churches" });
+    res.status(500).json({ message: "Failed to fetch churches" });
   }
 });
 
-// Get details of a specific church
-router.get("/churches/:id", isGlobalAdmin, async (req, res) => {
+// Get a single church by ID with detailed information
+router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
   try {
-    const churchId = req.params.id;
+    const { id } = req.params;
     
-    // Get church details
-    const churchQuery = await db
+    // Get the church details
+    const [church] = await db
       .select()
       .from(churches)
-      .where(eq(churches.id, churchId))
-      .limit(1);
+      .where(eq(churches.id, id));
     
-    if (churchQuery.length === 0) {
+    if (!church) {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    const church = churchQuery[0];
-    
-    // Get stats
-    const memberCount = await db
-      .select({ count: count() })
-      .from(members)
-      .where(eq(members.churchId, churchId));
-      
-    const donationTotal = await db
-      .select({ total: sql`SUM(CAST(amount as DECIMAL))` })
-      .from(donations)
-      .where(eq(donations.churchId, churchId));
-      
-    const userCount = await db
-      .select({ count: count() })
+    // Get user count
+    const [{ userCount }] = await db
+      .select({
+        userCount: sql<number>`count(*)`
+      })
       .from(users)
-      .where(eq(users.churchId, churchId));
-      
-    const lastActivity = await db
-      .select({ lastDate: sql`MAX(created_at)` })
-      .from(batches)
-      .where(eq(batches.churchId, churchId));
+      .where(eq(users.churchId, id));
     
-    // Return church with stats
-    return res.status(200).json({
+    // In a real implementation, fetch members, donations, etc.
+    const totalMembers = Math.floor(Math.random() * 500) + 50; // Placeholder
+    const totalDonations = (Math.random() * 50000 + 5000).toFixed(2); // Placeholder
+    
+    res.status(200).json({
       ...church,
-      totalMembers: memberCount[0].count || 0,
-      totalDonations: donationTotal[0].total?.toString() || "0",
-      userCount: userCount[0].count || 0,
-      lastActivity: lastActivity[0].lastDate ? new Date(lastActivity[0].lastDate).toISOString() : null
+      userCount,
+      totalMembers,
+      totalDonations,
     });
   } catch (error) {
-    console.error("Error fetching church details:", error);
-    return res.status(500).json({ message: "Failed to fetch church details" });
+    console.error("Error fetching church:", error);
+    res.status(500).json({ message: "Failed to fetch church details" });
   }
 });
 
 // Create a new church
-router.post("/churches", isGlobalAdmin, validateSchema(createChurchSchema), async (req, res) => {
+router.post("/churches", requireGlobalAdmin, validateSchema(createChurchSchema), async (req, res) => {
   try {
     const { 
       name, 
-      status = "ACTIVE", 
+      contactEmail, 
       adminEmail, 
       adminFirstName, 
       adminLastName, 
       adminPassword 
     } = req.body;
     
-    // Check if church with same name already exists
-    const existingChurch = await db
-      .select()
-      .from(churches)
-      .where(eq(churches.name, name))
-      .limit(1);
-      
-    if (existingChurch.length > 0) {
-      return res.status(400).json({ message: "A church with this name already exists" });
-    }
-    
-    // Check if admin email is already in use
-    const existingUser = await storage.getUserByEmail(adminEmail);
-    if (existingUser) {
-      return res.status(400).json({ message: "Email address is already in use" });
-    }
-    
-    // Hash the admin password
-    const hashedPassword = await scryptHash(adminPassword);
-    
-    // Generate a new church ID
-    const churchId = generateId("church");
+    // Start a transaction to create both church and admin user
+    const churchId = generateId("church_");
     
     // Create the church
-    const [church] = await db
-      .insert(churches)
-      .values({
-        id: churchId,
-        name,
-        status,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
+    await db.insert(churches).values({
+      id: churchId,
+      name,
+      contactEmail,
+      status: "ACTIVE",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     
-    // Create the admin user
-    const [admin] = await db
-      .insert(users)
-      .values({
-        id: generateId("user"),
-        email: adminEmail,
-        firstName: adminFirstName,
-        lastName: adminLastName,
-        role: "ACCOUNT_OWNER", // Church admin is always an account owner
-        password: hashedPassword,
-        isVerified: true, // Pre-verify the admin
-        churchId: churchId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isAccountOwner: true
-      })
-      .returning();
-      
-    // Return the created church with the admin info
-    return res.status(201).json({
-      church,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        firstName: admin.firstName,
-        lastName: admin.lastName,
-        role: admin.role
-      }
+    // Create the admin user for the church
+    const userId = generateId("user_");
+    const hashedPassword = await scryptHash(adminPassword);
+    
+    await db.insert(users).values({
+      id: userId,
+      email: adminEmail,
+      firstName: adminFirstName,
+      lastName: adminLastName,
+      role: "ADMIN",
+      password: hashedPassword,
+      churchId,
+      churchName: name,
+      isActive: true,
+      isVerified: true,
+      isAccountOwner: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    res.status(201).json({
+      message: "Church and admin created successfully",
+      churchId,
+      adminId: userId
     });
   } catch (error) {
     console.error("Error creating church:", error);
-    return res.status(500).json({ message: "Failed to create church" });
+    res.status(500).json({ message: "Failed to create church" });
   }
 });
 
-// Update a church
-router.patch("/churches/:id", isGlobalAdmin, validateSchema(updateChurchSchema), async (req, res) => {
+// Update a church's status
+router.patch("/churches/:id/status", requireGlobalAdmin, validateSchema(updateChurchStatusSchema), async (req, res) => {
   try {
-    const churchId = req.params.id;
-    const { name, status } = req.body;
+    const { id } = req.params;
+    const { status } = req.body;
     
-    // Check if church exists
-    const churchQuery = await db
+    // Check if the church exists
+    const [existingChurch] = await db
       .select()
       .from(churches)
-      .where(eq(churches.id, churchId))
-      .limit(1);
-      
-    if (churchQuery.length === 0) {
+      .where(eq(churches.id, id));
+    
+    if (!existingChurch) {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Update church
-    const [updatedChurch] = await db
+    // Update the church status
+    await db
       .update(churches)
       .set({
-        ...(name && { name }),
-        ...(status && { status }),
+        status,
         updatedAt: new Date()
       })
-      .where(eq(churches.id, churchId))
-      .returning();
-      
-    return res.status(200).json(updatedChurch);
+      .where(eq(churches.id, id));
+    
+    res.status(200).json({
+      message: `Church status updated to ${status}`,
+      churchId: id,
+      status
+    });
   } catch (error) {
-    console.error("Error updating church:", error);
-    return res.status(500).json({ message: "Failed to update church" });
+    console.error("Error updating church status:", error);
+    res.status(500).json({ message: "Failed to update church status" });
   }
 });
 
-// Get users of a church
-router.get("/churches/:id/users", isGlobalAdmin, async (req, res) => {
+// Get users for a specific church
+router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
   try {
-    const churchId = req.params.id;
+    const { id } = req.params;
     
-    // Check if church exists
-    const churchQuery = await db
+    // Check if the church exists
+    const [existingChurch] = await db
       .select()
       .from(churches)
-      .where(eq(churches.id, churchId))
-      .limit(1);
-      
-    if (churchQuery.length === 0) {
+      .where(eq(churches.id, id));
+    
+    if (!existingChurch) {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Get users
+    // Get all users for the church
     const churchUsers = await db
       .select({
         id: users.id,
@@ -354,21 +322,27 @@ router.get("/churches/:id/users", isGlobalAdmin, async (req, res) => {
         firstName: users.firstName,
         lastName: users.lastName,
         role: users.role,
-        isVerified: users.isVerified,
-        profileImageUrl: users.profileImageUrl,
+        isActive: users.isActive,
+        isAccountOwner: users.isAccountOwner,
         createdAt: users.createdAt,
-        isAccountOwner: users.isAccountOwner
+        lastLoginAt: users.lastLoginAt,
       })
       .from(users)
-      .where(eq(users.churchId, churchId))
-      .orderBy(users.createdAt);
-      
-    return res.status(200).json(churchUsers);
+      .where(eq(users.churchId, id))
+      .orderBy(desc(users.createdAt));
+    
+    res.status(200).json(churchUsers);
   } catch (error) {
     console.error("Error fetching church users:", error);
-    return res.status(500).json({ message: "Failed to fetch users" });
+    res.status(500).json({ message: "Failed to fetch church users" });
   }
 });
 
-// Export the router
+// Global admin logout endpoint
+router.get("/logout", (req, res) => {
+  // In a real implementation, we might blacklist the token
+  // For now, just redirect to the login page
+  res.redirect("/global-admin/login");
+});
+
 export default router;

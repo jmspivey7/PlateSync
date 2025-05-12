@@ -1,15 +1,12 @@
-"use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -22,22 +19,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -47,505 +36,490 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
+  Building2,
   ChevronDown,
   ChevronUp,
-  Gauge,
   LogOut,
-  MoreHorizontal,
   Plus,
   RefreshCw,
   Search,
   Settings,
   Users,
+  X,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
-// Types
-interface ChurchWithStats {
+// Type definitions
+interface Church {
   id: string;
   name: string;
-  status: "ACTIVE" | "SUSPENDED" | "DELETED";
+  status: string;
   createdAt: string;
   updatedAt: string;
+  userCount: number;
   totalMembers: number;
   totalDonations: string;
-  userCount: number;
-  lastActivity: string | null;
+  lastActivity: string;
+}
+
+interface PaginationData {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+interface ChurchesResponse {
+  churches: Church[];
+  pagination: PaginationData;
 }
 
 export default function GlobalAdminDashboard() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<keyof ChurchWithStats>("createdAt");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-
-  // Fetch churches data
-  const { data: churches = [], isLoading, refetch } = useQuery<ChurchWithStats[]>({
-    queryKey: ["/api/global-admin/churches"],
-    staleTime: 1000 * 60 * 5, // 5 minutes
+  const [_, setLocation] = useLocation();
+  
+  // State for pagination, filtering, and sorting
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
+  // Check if the global admin is authenticated
+  useEffect(() => {
+    const token = localStorage.getItem("globalAdminToken");
+    if (!token) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to access the global admin dashboard",
+        variant: "destructive",
+      });
+      setLocation("/global-admin/login");
+    }
+  }, [toast, setLocation]);
+  
+  // Function to fetch churches with the API
+  const fetchChurches = async (): Promise<ChurchesResponse> => {
+    const token = localStorage.getItem("globalAdminToken");
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+    
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      sortBy,
+      sortOrder,
+    });
+    
+    if (search) queryParams.append("search", search);
+    if (status) queryParams.append("status", status);
+    
+    const response = await fetch(`/api/global-admin/churches?${queryParams.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch churches");
+    }
+    
+    return response.json();
+  };
+  
+  // Query to fetch churches
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<ChurchesResponse, Error>({
+    queryKey: ["churches", page, limit, search, status, sortBy, sortOrder],
+    queryFn: fetchChurches,
   });
-
-  // Handle church status badge color
-  const getStatusBadgeColor = (status: string) => {
+  
+  const handleLogout = () => {
+    localStorage.removeItem("globalAdminToken");
+    toast({
+      title: "Logged out",
+      description: "You have been logged out of the global admin portal",
+    });
+    setLocation("/global-admin/login");
+  };
+  
+  const handleCreateChurch = () => {
+    setLocation("/global-admin/churches/new");
+  };
+  
+  const handleViewChurch = (churchId: string) => {
+    setLocation(`/global-admin/churches/${churchId}`);
+  };
+  
+  const handleToggleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+  
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) return null;
+    return sortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+  };
+  
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return "bg-green-100 text-green-800 hover:bg-green-100";
+        return "success";
       case "SUSPENDED":
-        return "bg-amber-100 text-amber-800 hover:bg-amber-100";
+        return "warning";
       case "DELETED":
-        return "bg-red-100 text-red-800 hover:bg-red-100";
+        return "destructive";
       default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+        return "secondary";
     }
   };
-
-  // Format currency
-  const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(parseFloat(amount));
-  };
-
-  // Format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Never";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // Sorting and filtering logic
-  const handleSort = (field: keyof ChurchWithStats) => {
-    if (field === sortField) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("desc");
-    }
-  };
-
-  const getSortIcon = (field: keyof ChurchWithStats) => {
-    if (field !== sortField) return null;
-    return sortDirection === "asc" ? (
-      <ChevronUp className="h-4 w-4" />
-    ) : (
-      <ChevronDown className="h-4 w-4" />
+  
+  // If there's an error, display it
+  if (isError) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-destructive">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error.message}</p>
+            <Button onClick={() => refetch()} className="mt-4">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
-  };
-
-  // Filter and sort churches
-  const filteredAndSortedChurches = churches
-    .filter((church) => {
-      // Apply search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        if (!church.name.toLowerCase().includes(query)) {
-          return false;
-        }
-      }
-
-      // Apply status filter
-      if (statusFilter && church.status !== statusFilter) {
-        return false;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      const fieldA = a[sortField];
-      const fieldB = b[sortField];
-
-      // Handle string comparison
-      if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortDirection === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
-      }
-
-      // Handle number comparison
-      if (typeof fieldA === "number" && typeof fieldB === "number") {
-        return sortDirection === "asc" ? fieldA - fieldB : fieldB - fieldA;
-      }
-      
-      // Handle null values
-      if (fieldA === null && fieldB !== null) return sortDirection === "asc" ? -1 : 1;
-      if (fieldA !== null && fieldB === null) return sortDirection === "asc" ? 1 : -1;
-      if (fieldA === null && fieldB === null) return 0;
-
-      // For other types or mixed types (if both values are non-null at this point)
-      if (fieldA! < fieldB!) return sortDirection === "asc" ? -1 : 1;
-      if (fieldA! > fieldB!) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-
-  // Compute stats
-  const totalChurches = churches.length;
-  const activeChurches = churches.filter(
-    (church) => church.status === "ACTIVE"
-  ).length;
-  const suspendedChurches = churches.filter(
-    (church) => church.status === "SUSPENDED"
-  ).length;
-  const totalMembers = churches.reduce(
-    (sum, church) => sum + church.totalMembers,
-    0
-  );
-  const totalDonationsAmount = churches.reduce(
-    (sum, church) => sum + parseFloat(church.totalDonations || "0"),
-    0
-  );
-
+  }
+  
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Global Administration</h1>
-          <p className="text-muted-foreground">
-            Manage all churches and global system settings
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="h-9"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.href = "/api/global-admin/logout"}
-            className="h-9"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Churches</CardTitle>
-            <Gauge className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalChurches}</div>
-            <p className="text-xs text-muted-foreground">
-              {activeChurches} active, {suspendedChurches} suspended
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalMembers}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all churches
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Donations</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalDonationsAmount.toString())}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Lifetime donations processed
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">System Status</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Operational</div>
-            <p className="text-xs text-muted-foreground">
-              All services running normally
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Churches List Section */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold">Churches</h2>
-            <p className="text-sm text-muted-foreground">
-              Manage all registered churches in the system
-            </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Building2 className="h-6 w-6 text-green-600" />
+            <h1 className="text-xl font-semibold">PlateSync Global Admin</h1>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search churches..."
-                className="pl-8 w-full sm:w-[250px]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Select
-              value={statusFilter || ""}
-              onValueChange={(value) => setStatusFilter(value || null)}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                <SelectItem value="DELETED">Deleted</SelectItem>
-              </SelectContent>
-            </Select>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Church
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Church</DialogTitle>
-                  <DialogDescription>
-                    Create a new church and its initial administrator account.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="church-name">Church Name</Label>
-                    <Input id="church-name" placeholder="First Baptist Church" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="admin-email">Admin Email</Label>
-                    <Input id="admin-email" type="email" placeholder="admin@church.org" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="admin-first-name">First Name</Label>
-                      <Input id="admin-first-name" placeholder="John" />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="admin-last-name">Last Name</Label>
-                      <Input id="admin-last-name" placeholder="Smith" />
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="admin-password">Initial Password</Label>
-                    <Input id="admin-password" type="password" placeholder="•••••••••••" />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline">Cancel</Button>
-                  <Button>Create Church</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-1" />
+              Logout
+            </Button>
           </div>
         </div>
-
-        <Card>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    className="w-[250px] cursor-pointer"
-                    onClick={() => handleSort("name")}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Church Name</span>
-                      {getSortIcon("name")}
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[100px] cursor-pointer"
-                    onClick={() => handleSort("status")}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Status</span>
-                      {getSortIcon("status")}
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="text-right cursor-pointer hidden md:table-cell"
-                    onClick={() => handleSort("totalMembers")}
-                  >
-                    <div className="flex items-center justify-end space-x-1">
-                      <span>Members</span>
-                      {getSortIcon("totalMembers")}
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="text-right cursor-pointer hidden md:table-cell"
-                    onClick={() => handleSort("totalDonations")}
-                  >
-                    <div className="flex items-center justify-end space-x-1">
-                      <span>Total Donations</span>
-                      {getSortIcon("totalDonations")}
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="text-right cursor-pointer hidden md:table-cell"
-                    onClick={() => handleSort("lastActivity")}
-                  >
-                    <div className="flex items-center justify-end space-x-1">
-                      <span>Last Activity</span>
-                      {getSortIcon("lastActivity")}
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+      </header>
+      
+      {/* Main content */}
+      <main className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Total Churches</CardTitle>
+              <CardDescription>All registered churches</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      Loading churches...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredAndSortedChurches.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      No churches found.
-                    </TableCell>
-                  </TableRow>
+                  <Skeleton className="h-8 w-16" />
                 ) : (
-                  filteredAndSortedChurches.map((church) => (
-                    <TableRow key={church.id}>
-                      <TableCell className="font-medium">{church.name}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={getStatusBadgeColor(church.status)}
-                          variant="outline"
-                        >
-                          {church.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right hidden md:table-cell">
-                        {church.totalMembers}
-                      </TableCell>
-                      <TableCell className="text-right hidden md:table-cell">
-                        {formatCurrency(church.totalDonations)}
-                      </TableCell>
-                      <TableCell className="text-right hidden md:table-cell">
-                        {formatDate(church.lastActivity)}
-                      </TableCell>
-                      <TableCell>
-                        <Sheet>
-                          <SheetTrigger>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </SheetTrigger>
-                          <SheetContent>
-                            <SheetHeader>
-                              <SheetTitle>{church.name}</SheetTitle>
-                              <SheetDescription>
-                                ID: {church.id}
-                              </SheetDescription>
-                            </SheetHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h3 className="text-sm font-medium">Status</h3>
-                                  <p className="text-sm">
-                                    <Badge
-                                      className={getStatusBadgeColor(church.status)}
-                                      variant="outline"
-                                    >
-                                      {church.status}
-                                    </Badge>
-                                  </p>
-                                </div>
-                                <div>
-                                  <h3 className="text-sm font-medium">Created</h3>
-                                  <p className="text-sm">{formatDate(church.createdAt)}</p>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h3 className="text-sm font-medium">Members</h3>
-                                  <p className="text-sm">{church.totalMembers}</p>
-                                </div>
-                                <div>
-                                  <h3 className="text-sm font-medium">Users</h3>
-                                  <p className="text-sm">{church.userCount}</p>
-                                </div>
-                              </div>
-                              <div>
-                                <h3 className="text-sm font-medium">Donations Total</h3>
-                                <p className="text-sm">{formatCurrency(church.totalDonations)}</p>
-                              </div>
-                              <div>
-                                <h3 className="text-sm font-medium">Last Activity</h3>
-                                <p className="text-sm">{formatDate(church.lastActivity)}</p>
-                              </div>
-                            </div>
-                            <div className="mt-6 space-y-2">
-                              <Button className="w-full" variant="default">
-                                Manage Users
-                              </Button>
-                              <Button className="w-full" variant="outline">
-                                {church.status === "ACTIVE" ? "Suspend" : "Activate"}
-                              </Button>
-                              <Button className="w-full" variant="outline">
-                                View Details
-                              </Button>
-                            </div>
-                          </SheetContent>
-                        </Sheet>
+                  data?.pagination.total || 0
+                )}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Active Churches</CardTitle>
+              <CardDescription>Churches with active status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-green-600">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  data?.churches.filter(c => c.status === "ACTIVE").length || 0
+                )}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Suspended Churches</CardTitle>
+              <CardDescription>Churches with suspended status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-amber-500">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  data?.churches.filter(c => c.status === "SUSPENDED").length || 0
+                )}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Churches</CardTitle>
+              <Button onClick={handleCreateChurch} className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Church
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Search and filter controls */}
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search churches..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8"
+                />
+                {search && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1.5 h-7 w-7 p-0"
+                    onClick={() => setSearch("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                  <SelectItem value="DELETED">Deleted</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={limit.toString()} onValueChange={(val) => setLimit(parseInt(val))}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Items per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 per page</SelectItem>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="20">20 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Table of churches */}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[250px] cursor-pointer" onClick={() => handleToggleSort("name")}>
+                      <div className="flex items-center">
+                        Name
+                        {getSortIcon("name")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleToggleSort("status")}>
+                      <div className="flex items-center">
+                        Status
+                        {getSortIcon("status")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Users</TableHead>
+                    <TableHead className="text-right">Members</TableHead>
+                    <TableHead className="text-right">Total Donations</TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleToggleSort("createdAt")}>
+                      <div className="flex items-center">
+                        Created
+                        {getSortIcon("createdAt")}
+                      </div>
+                    </TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    // Loading skeletons
+                    Array.from({ length: limit }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-10 ml-auto" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-9 w-20" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : data?.churches.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                        No churches found. Add a new church to get started.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ) : (
+                    // Church data
+                    data?.churches.map((church) => (
+                      <TableRow key={church.id}>
+                        <TableCell className="font-medium">{church.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(church.status) as any}>
+                            {church.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{church.userCount}</TableCell>
+                        <TableCell className="text-right">{church.totalMembers}</TableCell>
+                        <TableCell className="text-right">${church.totalDonations}</TableCell>
+                        <TableCell>
+                          {new Date(church.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewChurch(church.id)}
+                            >
+                              View
+                            </Button>
+                            
+                            {church.status === "ACTIVE" && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-amber-600 border-amber-600 hover:bg-amber-50"
+                                  >
+                                    Suspend
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Suspend Church</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to suspend {church.name}? This will prevent all users from accessing the church account until you reactivate it.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-amber-600 hover:bg-amber-700">
+                                      Suspend
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                            
+                            {church.status === "SUSPENDED" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                              >
+                                Reactivate
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {/* Pagination */}
+            {data && data.pagination.totalPages > 1 && (
+              <div className="mt-4 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    {page > 1 && (
+                      <PaginationItem>
+                        <PaginationPrevious onClick={() => setPage(page - 1)} />
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Generate page links */}
+                    {Array.from(
+                      { length: Math.min(5, data.pagination.totalPages) },
+                      (_, i) => {
+                        // Logic to show pages around the current page
+                        let pageNum = i + 1;
+                        if (data.pagination.totalPages > 5) {
+                          if (page > 3) {
+                            pageNum = page - 3 + i;
+                          }
+                          if (page > data.pagination.totalPages - 2) {
+                            pageNum = data.pagination.totalPages - 4 + i;
+                          }
+                        }
+                        
+                        return (
+                          pageNum > 0 && pageNum <= data.pagination.totalPages && (
+                            <PaginationItem key={pageNum}>
+                              <PaginationLink
+                                isActive={pageNum === page}
+                                onClick={() => setPage(pageNum)}
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          )
+                        );
+                      }
+                    )}
+                    
+                    {page < data.pagination.totalPages && (
+                      <PaginationItem>
+                        <PaginationNext onClick={() => setPage(page + 1)} />
+                      </PaginationItem>
+                    )}
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }

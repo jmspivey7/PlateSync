@@ -9,24 +9,29 @@ import { AnyZodObject, ZodError } from "zod";
 export const validateSchema = (schema: AnyZodObject, source: 'body' | 'query' | 'params' = 'body') => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Get the data from the specified source
       const data = req[source];
+      
+      // Validate the data against the schema
       await schema.parseAsync(data);
+      
+      // If validation passes, continue to the next middleware
       next();
     } catch (error) {
+      // If validation fails, format and return the error
       if (error instanceof ZodError) {
-        // Format the error messages in a structured way
         const formattedErrors = error.errors.map((err) => ({
           path: err.path.join('.'),
-          message: err.message
+          message: err.message,
         }));
         
         return res.status(400).json({
-          message: "Validation error",
-          errors: formattedErrors
+          message: "Validation failed",
+          errors: formattedErrors,
         });
       }
       
-      // For other types of errors, pass to the error handler
+      // If some other error occurred, pass it to the error handler
       next(error);
     }
   };

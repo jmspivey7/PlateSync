@@ -8,7 +8,7 @@ import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, 
 import { sendVerificationEmail, verifyCode } from "./verification";
 import { setupTestEndpoints } from "./test-endpoints";
 import { setupPlanningCenterRoutes } from "./planning-center";
-import { isGlobalAdmin, restrictSuspendedChurchAccess } from "./middleware/globalAdminMiddleware";
+import { requireGlobalAdmin, restrictSuspendedChurchAccess } from "./middleware/globalAdminMiddleware";
 import globalAdminRoutes from "./api/globalAdmin";
 import { eq, sql, and, or, inArray } from "drizzle-orm";
 import * as crypto from "crypto";
