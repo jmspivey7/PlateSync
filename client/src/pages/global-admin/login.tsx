@@ -113,7 +113,7 @@ export default function GlobalAdminLogin() {
             </div>
             <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">Global Admin Portal</CardTitle>
             <CardDescription className="text-center">
-              Login to access the PlateSync administration dashboard
+              Login to access the PlateSync administration dashboard.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -129,7 +129,7 @@ export default function GlobalAdminLogin() {
                         <div className="relative">
                           <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input 
-                            placeholder="admin@example.com" 
+                            placeholder="Email address" 
                             className="pl-9"
                             {...field} 
                           />
@@ -164,7 +164,7 @@ export default function GlobalAdminLogin() {
                 
                 <Button
                   type="submit"
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
+                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -185,7 +185,7 @@ export default function GlobalAdminLogin() {
               className="text-gray-600 hover:text-gray-800 hover:bg-gray-100" 
               onClick={() => setLocation("/login-local")}
             >
-              Return to Church Login
+              Return to Main Login
             </Button>
           </CardFooter>
         </Card>
