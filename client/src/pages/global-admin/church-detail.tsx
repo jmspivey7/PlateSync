@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, useNavigate } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,16 +55,16 @@ interface ChurchWithStats extends Church {
 }
 
 export default function ChurchDetailPage() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [, params] = useRoute<{ id: string }>("/global-admin/churches/:id");
   const churchId = params?.id;
 
   // Redirect if no church ID
   useEffect(() => {
     if (!churchId) {
-      navigate("/global-admin/dashboard");
+      setLocation("/global-admin/dashboard");
     }
-  }, [churchId, navigate]);
+  }, [churchId, setLocation]);
 
   // Fetch church details with stats
   const { data: church, isLoading, error } = useQuery<ChurchWithStats>({
@@ -101,7 +101,7 @@ export default function ChurchDetailPage() {
   if (error || !church) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
-        <Button variant="outline" onClick={() => navigate("/global-admin/dashboard")} className="mb-8">
+        <Button variant="outline" onClick={() => setLocation("/global-admin/dashboard")} className="mb-8">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
@@ -114,7 +114,7 @@ export default function ChurchDetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/global-admin/dashboard")}>
+            <Button onClick={() => setLocation("/global-admin/dashboard")}>
               Return to Dashboard
             </Button>
           </CardContent>
@@ -129,7 +129,7 @@ export default function ChurchDetailPage() {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center">
-            <Button variant="ghost" onClick={() => navigate("/global-admin/dashboard")} className="mr-4">
+            <Button variant="ghost" onClick={() => setLocation("/global-admin/dashboard")} className="mr-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>

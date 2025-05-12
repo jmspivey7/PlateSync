@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -68,7 +68,7 @@ interface ChurchWithStats extends Church {
 
 export default function GlobalAdminDashboard() {
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [selectedChurch, setSelectedChurch] = useState<Church | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -84,7 +84,7 @@ export default function GlobalAdminDashboard() {
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
-      navigate("/global-admin/login");
+      setLocation("/global-admin/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }

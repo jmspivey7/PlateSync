@@ -25,8 +25,12 @@ import Help from "@/pages/help";
 import UserManagement from "@/pages/user-management";
 import ServiceOptions from "@/pages/service-options";
 import EmailSettings from "@/pages/email-settings";
-
 import EmailTemplateEditor from "@/pages/email-template-editor";
+
+// Global Admin pages
+import GlobalAdminLogin from "@/pages/global-admin/login";
+import GlobalAdminDashboard from "@/pages/global-admin/dashboard";
+import ChurchDetail from "@/pages/global-admin/church-detail";
 
 import { useAuth } from "@/hooks/useAuth";
 
