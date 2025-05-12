@@ -535,12 +535,15 @@ const UserManagement = () => {
             
             if (!selectedUser) return <div>User not found</div>;
             
-            // Use isAccountOwner from the useAuth hook
-            const { isAccountOwner: isCurrentUserAccountOwner } = useAuth();
+            // Don't call useAuth hook here - use the currentUser from the parent component
+            // React hooks can't be called conditionally
+            const isCurrentUserAccountOwner = 
+              currentUser?.role === "ACCOUNT_OWNER" || 
+              currentUser?.isAccountOwner === true;
             
             const isSelectedUserAccountOwner = 
               selectedUser.role === "ACCOUNT_OWNER" || 
-              selectedUser.isAccountOwner;
+              selectedUser.isAccountOwner === true;
             
             return (
               <div className="space-y-6">
