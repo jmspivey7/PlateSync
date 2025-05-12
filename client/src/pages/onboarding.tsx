@@ -1021,7 +1021,7 @@ export default function Onboarding() {
                     type="button"
                     disabled={isVerifying || verificationCode.length !== 6}
                     onClick={verifyCode}
-                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
+                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
                   >
                     {isVerifying ? (
                       <>
@@ -1309,8 +1309,10 @@ export default function Onboarding() {
                     <Switch 
                       id="donor-notifications"
                       checked={donorNotificationsEnabled}
-                      onCheckedChange={setDonorNotificationsEnabled}
-                      className={`${donorNotificationsEnabled ? "bg-[#69ad4c]" : "bg-gray-300"} relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
+                      onCheckedChange={(checked) => {
+                        setDonorNotificationsEnabled(checked || false);
+                      }}
+                      className="data-[state=checked]:bg-[#69ad4c]"
                     />
                   </div>
                   <span className="font-semibold text-base">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
