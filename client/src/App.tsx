@@ -41,12 +41,22 @@ const PUBLIC_PATHS = [
   "/verify", 
   "/forgot-password", 
   "/reset-password", 
-  "/onboarding",
-  "/global-admin/login"
+  "/onboarding"
+];
+
+// Global Admin paths are handled separately
+const GLOBAL_ADMIN_PATHS = [
+  "/global-admin/login",
+  "/global-admin/dashboard",
+  "/global-admin/churches"
 ];
 
 function isPublicPath(path: string) {
   return PUBLIC_PATHS.some(publicPath => path.startsWith(publicPath));
+}
+
+function isGlobalAdminPath(path: string) {
+  return GLOBAL_ADMIN_PATHS.some(adminPath => path.startsWith(adminPath));
 }
 
 function Router() {
@@ -57,6 +67,12 @@ function Router() {
   // Check authentication and redirect if needed
   useEffect(() => {
     if (isLoading || redirectInProgress) return;
+    
+    // Skip authentication checks for Global Admin paths
+    if (isGlobalAdminPath(location)) {
+      setRedirectInProgress(false);
+      return;
+    }
     
     const currentPathIsPublic = isPublicPath(location);
     
@@ -126,10 +142,11 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [location] = useLocation();
   
-  // Don't show header/footer on public pages
+  // Don't show header/footer on public pages or global admin pages
   const currentPathIsPublic = isPublicPath(location);
+  const isGlobalAdmin = isGlobalAdminPath(location);
   
-  if (!user || currentPathIsPublic) {
+  if (!user || currentPathIsPublic || isGlobalAdmin) {
     return <>{children}</>;
   }
   
