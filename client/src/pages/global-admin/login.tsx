@@ -127,7 +127,7 @@ export default function GlobalAdminLogin() {
                         <div className="relative">
                           <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input 
-                            placeholder="Email address" 
+                            placeholder="" 
                             className="pl-9"
                             {...field} 
                           />
@@ -149,7 +149,7 @@ export default function GlobalAdminLogin() {
                           <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input 
                             type="password" 
-                            placeholder="••••••••" 
+                            placeholder="" 
                             className="pl-9"
                             {...field} 
                           />
