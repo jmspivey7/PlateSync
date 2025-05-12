@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, KeyRound } from "lucide-react";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -103,13 +103,15 @@ export default function GlobalAdminLogin() {
         <Card className="border-gray-200 shadow-xl">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <img 
-                src="/images/platesync-logo.png" 
-                alt="PlateSync Logo" 
-                className="w-24 h-24 object-contain"
-              />
+              <div className="p-4 rounded-full bg-white shadow-md">
+                <img 
+                  src="/images/platesync-logo.png" 
+                  alt="PlateSync Logo" 
+                  className="w-24 h-24 object-contain"
+                />
+              </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-center">Global Admin Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">Global Admin Portal</CardTitle>
             <CardDescription className="text-center">
               Login to access the PlateSync administration dashboard
             </CardDescription>
@@ -146,7 +148,7 @@ export default function GlobalAdminLogin() {
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input 
                             type="password" 
                             placeholder="••••••••" 
@@ -162,7 +164,7 @@ export default function GlobalAdminLogin() {
                 
                 <Button
                   type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -178,7 +180,11 @@ export default function GlobalAdminLogin() {
             </Form>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <Button variant="link" onClick={() => setLocation("/login-local")}>
+            <Button 
+              variant="outline" 
+              className="text-gray-600 hover:text-gray-800 hover:bg-gray-100" 
+              onClick={() => setLocation("/login-local")}
+            >
               Return to Church Login
             </Button>
           </CardFooter>
