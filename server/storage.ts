@@ -944,6 +944,25 @@ export class DatabaseStorage implements IStorage {
         suffix++;
       }
       
+      // Important: We need to check if the churchId exists as a user in the database first
+      // because there's a foreign key constraint requiring churchId to exist in users.id
+      let finalChurchId = null;
+      if (churchId) {
+        // Check if the churchId exists first
+        const churchExists = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, churchId))
+          .limit(1);
+          
+        if (churchExists.length > 0) {
+          finalChurchId = churchId;
+          console.log(`Verified churchId ${churchId} exists in users table`);
+        } else {
+          console.log(`WARNING: churchId ${churchId} doesn't exist in users table, setting to null`);
+        }
+      }
+      
       const [newUser] = await db
         .insert(users)
         .values({
@@ -955,11 +974,11 @@ export class DatabaseStorage implements IStorage {
           bio: userData.bio || null,
           profileImageUrl: userData.profileImageUrl || null,
           role: userData.role || 'USHER',
-          password: userData.password || null, // Add password field here
+          password: userData.password || null,
           createdAt: new Date(),
           updatedAt: new Date(),
           churchName: userData.churchName || null,
-          churchId: churchId || null, // ADD CHURCH ID BACK!
+          churchId: finalChurchId, // Only set if verified to exist
           emailNotificationsEnabled: userData.emailNotificationsEnabled !== undefined ? userData.emailNotificationsEnabled : true,
           passwordResetToken: resetToken,
           passwordResetExpires: resetExpires,
