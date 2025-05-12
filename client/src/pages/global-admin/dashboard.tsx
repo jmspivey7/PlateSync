@@ -248,7 +248,7 @@ export default function GlobalAdminDashboard() {
             <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/global-admin/churches"] })}>
               Retry
             </Button>
-            <Button onClick={() => navigate("/global-admin/login")}>Return to Login</Button>
+            <Button onClick={() => setLocation("/global-admin/login")}>Return to Login</Button>
           </CardFooter>
         </Card>
       </div>
@@ -373,7 +373,7 @@ export default function GlobalAdminDashboard() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/global-admin/churches/${church.id}`)}>
+                              <DropdownMenuItem onClick={() => setLocation(`/global-admin/churches/${church.id}`)}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>

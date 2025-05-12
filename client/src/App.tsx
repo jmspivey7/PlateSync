@@ -35,7 +35,15 @@ import ChurchDetail from "@/pages/global-admin/church-detail";
 import { useAuth } from "@/hooks/useAuth";
 
 // Public paths that don't require authentication
-const PUBLIC_PATHS = ["/login", "/login-local", "/verify", "/forgot-password", "/reset-password", "/onboarding"];
+const PUBLIC_PATHS = [
+  "/login", 
+  "/login-local", 
+  "/verify", 
+  "/forgot-password", 
+  "/reset-password", 
+  "/onboarding",
+  "/global-admin/login"
+];
 
 function isPublicPath(path: string) {
   return PUBLIC_PATHS.some(publicPath => path.startsWith(publicPath));

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -22,7 +22,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function GlobalAdminLogin() {
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [error, setError] = useState<string | null>(null);
 
   // Initialize form with validation schema
@@ -58,7 +58,7 @@ export default function GlobalAdminLogin() {
         title: "Login successful",
         description: "Welcome to the Global Admin dashboard",
       });
-      navigate("/global-admin/dashboard");
+      setLocation("/global-admin/dashboard");
     },
     onError: (error: Error) => {
       setError(error.message);
@@ -156,7 +156,7 @@ export default function GlobalAdminLogin() {
             <Button 
               variant="outline" 
               className="w-full" 
-              onClick={() => navigate("/login")}
+              onClick={() => setLocation("/login")}
             >
               Return to Regular Login
             </Button>
