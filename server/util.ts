@@ -23,7 +23,8 @@ export function generateId(prefix: string = ""): string {
 export async function scryptHash(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  // Using colon as separator to match existing database format
+  return `${buf.toString("hex")}:${salt}`;
 }
 
 /**
@@ -33,7 +34,15 @@ export async function scryptHash(password: string): Promise<string> {
  * @returns A promise resolving to a boolean
  */
 export async function verifyPassword(supplied: string, stored: string): Promise<boolean> {
-  const [hashed, salt] = stored.split(".");
+  // Handle both period and colon separators between hash and salt
+  const separator = stored.includes(".") ? "." : ":";
+  const [hashed, salt] = stored.split(separator);
+  
+  if (!salt || !hashed) {
+    console.error("Invalid stored password format");
+    return false;
+  }
+  
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
