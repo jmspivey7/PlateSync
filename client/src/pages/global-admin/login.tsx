@@ -14,8 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 // Schema for Global Admin login
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  secretKey: z.string().min(1, { message: "Global Admin secret key is required" })
+  password: z.string().min(8, { message: "Password must be at least 8 characters" })
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -30,8 +29,7 @@ export default function GlobalAdminLogin() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
-      password: "",
-      secretKey: ""
+      password: ""
     }
   });
 
@@ -115,19 +113,7 @@ export default function GlobalAdminLogin() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="secretKey"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Global Admin Secret Key</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Enter secret key" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
                 {error && (
                   <div className="text-sm font-medium text-destructive">{error}</div>
                 )}
