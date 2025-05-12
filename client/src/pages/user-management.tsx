@@ -196,7 +196,7 @@ const CreateUserForm = ({
 };
 
 const UserManagement = () => {
-  const { isAdmin, user: currentUser } = useAuth();
+  const { isAdmin, user: currentUser, isAccountOwner } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -535,12 +535,8 @@ const UserManagement = () => {
             
             if (!selectedUser) return <div>User not found</div>;
             
-            // Don't call useAuth hook here - use the currentUser from the parent component
+            // Don't call useAuth hook here - we get the value from the parent component
             // React hooks can't be called conditionally
-            const isCurrentUserAccountOwner = 
-              currentUser?.role === "ACCOUNT_OWNER" || 
-              currentUser?.isAccountOwner === true;
-            
             const isSelectedUserAccountOwner = 
               selectedUser.role === "ACCOUNT_OWNER" || 
               selectedUser.isAccountOwner === true;
@@ -587,7 +583,7 @@ const UserManagement = () => {
                 </div>
                 
                 {/* Role Management Section */}
-                {currentUser?.id !== selectedUser.id && isCurrentUserAccountOwner && (
+                {currentUser?.id !== selectedUser.id && isAccountOwner && (
                   <div className="border-t pt-4">
                     <h4 className="text-sm font-semibold mb-3">Manage User Role</h4>
                     <div className="flex flex-wrap gap-2">
@@ -611,7 +607,7 @@ const UserManagement = () => {
                           1. Current user is the account owner (not just an admin)
                           2. Selected user is not already an account owner
                           3. Selected user is an administrator (we don't want to transfer to standard users) */}
-                      {isCurrentUserAccountOwner && !isSelectedUserAccountOwner && selectedUser.role === "ADMIN" && (
+                      {isAccountOwner && !isSelectedUserAccountOwner && selectedUser.role === "ADMIN" && (
                         <Button 
                           variant="outline"
                           className="ml-2"
@@ -630,7 +626,7 @@ const UserManagement = () => {
                 
                 {/* Delete User Button */}
                 {currentUser?.id !== selectedUser.id && 
-                 isCurrentUserAccountOwner && 
+                 isAccountOwner && 
                  !isSelectedUserAccountOwner && (
                   <div className="border-t pt-4">
                     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
