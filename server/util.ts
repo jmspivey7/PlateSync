@@ -1,5 +1,9 @@
-import * as crypto from "crypto";
+import { randomBytes, scrypt, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 import jwt from "jsonwebtoken";
+
+// Convert callback-based scrypt to Promise-based
+const scryptAsync = promisify(scrypt);
 
 /**
  * Generate a random ID with optional prefix
@@ -7,8 +11,8 @@ import jwt from "jsonwebtoken";
  * @returns A string ID
  */
 export function generateId(prefix: string = ""): string {
-  const randomId = crypto.randomBytes(12).toString("hex");
-  return prefix ? `${prefix}_${randomId}` : randomId;
+  const randomId = randomBytes(8).toString("hex");
+  return `${prefix}${randomId}`;
 }
 
 /**
@@ -17,13 +21,9 @@ export function generateId(prefix: string = ""): string {
  * @returns A promise resolving to a hashed password
  */
 export async function scryptHash(password: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const salt = crypto.randomBytes(16).toString('hex');
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
-      if (err) reject(err);
-      resolve(derivedKey.toString('hex') + ':' + salt);
-    });
-  });
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
 }
 
 /**
@@ -33,42 +33,10 @@ export async function scryptHash(password: string): Promise<string> {
  * @returns A promise resolving to a boolean
  */
 export async function verifyPassword(supplied: string, stored: string): Promise<boolean> {
-  // First, check for a special case where we want to make test1234 valid for all accounts during development
-  if (process.env.NODE_ENV !== 'production' && supplied === 'test1234') {
-    console.log("Using development master password");
-    return true;
-  }
-  
-  return new Promise((resolve, reject) => {
-    try {
-      console.log("Verifying password...");
-      
-      const [key, salt] = stored.split(':');
-      
-      if (!salt) {
-        console.error("Invalid hash format - no salt found");
-        resolve(false);
-        return;
-      }
-      
-      crypto.scrypt(supplied, salt, 64, (err, derivedKey) => {
-        if (err) {
-          console.error("Error verifying password:", err);
-          reject(err);
-          return;
-        }
-        
-        const suppliedKey = derivedKey.toString('hex');
-        const result = suppliedKey === key;
-        
-        console.log("Password verification result:", result ? "SUCCESS" : "FAILED");
-        resolve(result);
-      });
-    } catch (error) {
-      console.error("Password verification error:", error);
-      resolve(false);
-    }
-  });
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
 /**
@@ -77,10 +45,15 @@ export async function verifyPassword(supplied: string, stored: string): Promise<
  * @returns A numeric string of the specified length
  */
 export function generateVerificationCode(length: number = 6): string {
-  // Generate a random numeric string of the specified length
-  return Math.floor(Math.random() * Math.pow(10, length))
-    .toString()
-    .padStart(length, '0');
+  const chars = "0123456789";
+  let code = "";
+  
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    code += chars[randomIndex];
+  }
+  
+  return code;
 }
 
 /**
@@ -89,11 +62,7 @@ export function generateVerificationCode(length: number = 6): string {
  * @returns A formatted date string
  */
 export function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  return date.toISOString();
 }
 
 /**
@@ -103,9 +72,9 @@ export function formatDate(date: Date): string {
  */
 export function formatCurrency(amount: string): string {
   const numericAmount = parseFloat(amount);
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(numericAmount);
 }
 
@@ -120,11 +89,7 @@ export function generateToken(payload: any, expiresIn: string = "1h"): string {
     throw new Error("SESSION_SECRET environment variable is required");
   }
   
-  return jwt.sign(
-    payload,
-    process.env.SESSION_SECRET,
-    { expiresIn: expiresIn }
-  );
+  return jwt.sign(payload, process.env.SESSION_SECRET, { expiresIn });
 }
 
 /**
@@ -138,9 +103,8 @@ export function verifyToken(token: string): any | null {
   }
   
   try {
-    return jwt.verify(token, process.env.SESSION_SECRET as jwt.Secret);
+    return jwt.verify(token, process.env.SESSION_SECRET);
   } catch (error) {
-    console.error("Token verification error:", error);
     return null;
   }
 }

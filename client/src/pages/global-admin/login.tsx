@@ -56,8 +56,8 @@ export default function GlobalAdminLoginPage() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: GlobalAdminLoginFormValues) => {
       const response = await apiRequest(
-        "POST",
-        "/api/global-admin/login",
+        "POST", 
+        "/api/global-admin/login", 
         credentials
       );
       
