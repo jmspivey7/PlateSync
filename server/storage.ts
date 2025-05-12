@@ -8,6 +8,7 @@ import {
   reportRecipients,
   emailTemplates,
   planningCenterTokens,
+  churches,
   type User,
   type UpsertUser,
   type Member,
@@ -26,7 +27,9 @@ import {
   type EmailTemplate,
   type InsertEmailTemplate,
   type PlanningCenterTokens,
-  type InsertPlanningCenterTokens
+  type InsertPlanningCenterTokens,
+  type Church,
+  type InsertChurch
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, sum, count, asc, ne } from "drizzle-orm";
@@ -2523,6 +2526,255 @@ PlateSync Reporting System
     } catch (error) {
       console.error("Error in removeDuplicateMembers:", error);
       throw error;
+    }
+  }
+
+  // ========== Global Admin Church Management Functions ==========
+
+  /**
+   * Get all churches in the system (for Global Admin)
+   */
+  async getAllChurches(): Promise<Church[]> {
+    try {
+      return await db.select().from(churches).orderBy(churches.name);
+    } catch (error) {
+      console.error("Error fetching all churches:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get a specific church by ID
+   */
+  async getChurch(id: string): Promise<Church | undefined> {
+    try {
+      const [church] = await db.select().from(churches).where(eq(churches.id, id));
+      return church;
+    } catch (error) {
+      console.error(`Error fetching church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Get church with additional statistics
+   */
+  async getChurchWithStats(id: string): Promise<Church & { 
+    totalMembers: number; 
+    totalDonations: string;
+    userCount: number;
+    lastActivity: Date | null;
+  } | undefined> {
+    try {
+      // Get the church record first
+      const [church] = await db.select().from(churches).where(eq(churches.id, id));
+      
+      if (!church) return undefined;
+      
+      // Get member count for this church
+      const [{ count: totalMembers }] = await db
+        .select({ count: count() })
+        .from(members)
+        .where(eq(members.churchId, id));
+      
+      // Get total donations amount
+      const [donationResult] = await db
+        .select({ total: sql<string>`SUM(CAST(${donations.amount} AS DECIMAL(10,2)))` })
+        .from(donations)
+        .where(eq(donations.churchId, id));
+      
+      // Get user count
+      const [{ count: userCount }] = await db
+        .select({ count: count() })
+        .from(users)
+        .where(eq(users.churchId, id));
+      
+      // Get last activity (most recent batch)
+      const [lastBatch] = await db
+        .select({ createdAt: batches.createdAt })
+        .from(batches)
+        .where(eq(batches.churchId, id))
+        .orderBy(desc(batches.createdAt))
+        .limit(1);
+      
+      return {
+        ...church,
+        totalMembers,
+        totalDonations: donationResult?.total || "0.00",
+        userCount,
+        lastActivity: lastBatch?.createdAt || null
+      };
+    } catch (error) {
+      console.error(`Error fetching church stats for ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Create a new church
+   */
+  async createChurch(churchData: InsertChurch): Promise<Church> {
+    try {
+      // Generate unique ID for the church
+      const churchId = crypto.randomUUID();
+      
+      const [church] = await db
+        .insert(churches)
+        .values({
+          id: churchId,
+          ...churchData
+        })
+        .returning();
+      
+      return church;
+    } catch (error) {
+      console.error("Error creating church:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update church details
+   */
+  async updateChurch(id: string, data: Partial<Church>): Promise<Church | undefined> {
+    try {
+      const [updatedChurch] = await db
+        .update(churches)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return updatedChurch;
+    } catch (error) {
+      console.error(`Error updating church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Suspend a church
+   */
+  async suspendChurch(id: string): Promise<Church | undefined> {
+    try {
+      const [suspendedChurch] = await db
+        .update(churches)
+        .set({
+          status: "SUSPENDED",
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return suspendedChurch;
+    } catch (error) {
+      console.error(`Error suspending church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Activate a previously suspended church
+   */
+  async activateChurch(id: string): Promise<Church | undefined> {
+    try {
+      const [activatedChurch] = await db
+        .update(churches)
+        .set({
+          status: "ACTIVE",
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return activatedChurch;
+    } catch (error) {
+      console.error(`Error activating church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Delete a church (mark as deleted and archive data)
+   */
+  async deleteChurch(id: string): Promise<{ archiveUrl: string | null }> {
+    try {
+      // In a production system, we would:
+      // 1. Export all church data to a file
+      // 2. Store it somewhere (S3, etc.)
+      // 3. Mark the church as DELETED
+      // 4. Optionally perform soft-delete of associated records
+
+      // For now, just mark as deleted
+      const [deletedChurch] = await db
+        .update(churches)
+        .set({
+          status: "DELETED",
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+          // In a real implementation, store the archive URL
+          archiveUrl: null 
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return { archiveUrl: deletedChurch.archiveUrl };
+    } catch (error) {
+      console.error(`Error deleting church with ID ${id}:`, error);
+      return { archiveUrl: null };
+    }
+  }
+
+  /**
+   * Migrate existing church data to new churches table
+   */
+  async migrateDataToNewChurchTable(): Promise<number> {
+    try {
+      // Get unique churchIds from the users table where role is ACCOUNT_OWNER
+      const accountOwners = await db
+        .select({
+          id: users.id,
+          churchId: users.churchId,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName
+        })
+        .from(users)
+        .where(eq(users.role, "ACCOUNT_OWNER"))
+        .orderBy(users.churchId);
+      
+      let migratedCount = 0;
+      
+      // For each church, create a church record if it doesn't exist
+      for (const owner of accountOwners) {
+        if (!owner.churchId) continue;
+        
+        // Check if church already exists
+        const [existingChurch] = await db
+          .select()
+          .from(churches)
+          .where(eq(churches.id, owner.churchId));
+        
+        if (!existingChurch) {
+          // Create new church record
+          await db.insert(churches).values({
+            id: owner.churchId,
+            name: `${owner.firstName || ''} ${owner.lastName || ''}`.trim() + "'s Church",
+            contactEmail: owner.email,
+            status: "ACTIVE",
+            accountOwnerId: owner.id,
+          });
+          
+          migratedCount++;
+        }
+      }
+      
+      return migratedCount;
+    } catch (error) {
+      console.error("Error migrating to church table:", error);
+      return 0;
     }
   }
 }
