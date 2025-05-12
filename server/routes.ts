@@ -1245,8 +1245,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Filter by church_id in JavaScript for more reliability
-      // TEMPORARY LOGGING: Don't filter for debugging
-      const churchUsers = allUsers;
+      const churchUsers = allUsers.filter(user => {
+        const isChurchMember = user.churchId === churchId;
+        const isChurchAccount = user.id === churchId;
+        const shouldInclude = isChurchMember || isChurchAccount;
+        
+        if (shouldInclude) {
+          console.log(`Including user ${user.id} (${user.firstName} ${user.lastName}) - churchId: ${user.churchId}, is church account: ${isChurchAccount}`);
+        }
+        
+        return shouldInclude;
+      });
       
       console.log(`Total users in database: ${allUsers.length}`);
       
