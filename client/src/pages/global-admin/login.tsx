@@ -103,13 +103,11 @@ export default function GlobalAdminLogin() {
         <Card className="border-gray-200 shadow-xl">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <div className="p-4 rounded-full bg-white shadow-md">
-                <img 
-                  src="/logo-with-text.png" 
-                  alt="PlateSync Logo" 
-                  className="w-40 h-24 object-contain"
-                />
-              </div>
+              <img 
+                src="/logo-with-text.png" 
+                alt="PlateSync Logo" 
+                className="w-80 object-contain"
+              />
             </div>
             <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">Global Admin Portal</CardTitle>
             <CardDescription className="text-center">
