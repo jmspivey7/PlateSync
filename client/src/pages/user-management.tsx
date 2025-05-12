@@ -197,10 +197,6 @@ const CreateUserForm = ({
 
 const UserManagement = () => {
   const { isAdmin, user: currentUser, isAccountOwner } = useAuth();
-  
-  console.log("UserManagement: Current user:", currentUser);
-  console.log("UserManagement: isAdmin:", isAdmin);
-  console.log("UserManagement: isAccountOwner:", isAccountOwner);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -587,7 +583,7 @@ const UserManagement = () => {
                 </div>
                 
                 {/* Role Management Section */}
-                {currentUser?.id !== selectedUser.id && isAccountOwner && (
+                {currentUser?.id !== selectedUser.id && currentUser?.isAccountOwner === true && (
                   <div className="border-t pt-4">
                     <h4 className="text-sm font-semibold mb-3">Manage User Role</h4>
                     <div className="flex flex-wrap gap-2">
@@ -611,10 +607,7 @@ const UserManagement = () => {
                           1. Current user is the account owner (not just an admin)
                           2. Selected user is not already an account owner
                           3. Selected user is an administrator (we don't want to transfer to standard users) */}
-                      {console.log("Transfer Button Debug - isAccountOwner:", isAccountOwner, 
-                                  "selectedUser.role:", selectedUser.role, 
-                                  "isSelectedUserAccountOwner:", isSelectedUserAccountOwner)}
-                      {isAccountOwner && !isSelectedUserAccountOwner && selectedUser.role === "ADMIN" && (
+                      {currentUser?.isAccountOwner === true && !isSelectedUserAccountOwner && selectedUser.role === "ADMIN" && (
                         <Button 
                           variant="outline"
                           className="ml-2"
@@ -633,7 +626,7 @@ const UserManagement = () => {
                 
                 {/* Delete User Button */}
                 {currentUser?.id !== selectedUser.id && 
-                 isAccountOwner && 
+                 currentUser?.isAccountOwner === true && 
                  !isSelectedUserAccountOwner && (
                   <div className="border-t pt-4">
                     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
