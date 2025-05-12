@@ -189,11 +189,26 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
         userCount: sql<number>`count(*)`
       })
       .from(users)
-      .where(eq(users.churchId, id));
+      .where(eq(users.church_id, id));
+      
+    // Get members count
+    const [{ totalMembers }] = await db
+      .select({
+        totalMembers: sql<number>`count(*)`
+      })
+      .from(members)
+      .where(eq(members.churchId, id));
+      
+    // Get total donations
+    const [totalDonationsResult] = await db
+      .select({
+        totalDonations: sql<string>`SUM(amount)`
+      })
+      .from(donations)
+      .where(eq(donations.churchId, id));
     
-    // In a real implementation, fetch members, donations, etc.
-    const totalMembers = Math.floor(Math.random() * 500) + 50; // Placeholder
-    const totalDonations = (Math.random() * 50000 + 5000).toFixed(2); // Placeholder
+    // Format the total donations amount
+    const totalDonations = totalDonationsResult.totalDonations || "0.00";
     
     res.status(200).json({
       ...church,
@@ -314,22 +329,18 @@ router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Get all users for the church
-    const churchUsers = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        firstName: users.first_name,
-        lastName: users.last_name,
-        role: users.role,
-        isVerified: users.is_verified,
-        isAccountOwner: users.is_account_owner,
-        createdAt: users.created_at,
-        updatedAt: users.updated_at,
-      })
-      .from(users)
-      .where(eq(users.church_id, id))
-      .orderBy(desc(users.created_at));
+    // Use a raw SQL query to avoid field mapping issues with Drizzle ORM
+    const result = await db.execute(
+      `SELECT id, email, first_name AS "firstName", last_name AS "lastName", 
+              role, is_verified AS "isVerified", is_account_owner AS "isAccountOwner", 
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM users 
+       WHERE church_id = $1
+       ORDER BY created_at DESC`,
+      [id]
+    );
+    
+    const churchUsers = result.rows || [];
     
     res.status(200).json(churchUsers);
   } catch (error) {
