@@ -30,6 +30,7 @@ import EmailTemplateEditor from "@/pages/email-template-editor";
 // Global Admin pages
 import GlobalAdminLogin from "@/pages/global-admin/login";
 import GlobalAdminDashboard from "@/pages/global-admin/dashboard";
+import GlobalAdminChurches from "@/pages/global-admin/churches";
 import ChurchDetail from "@/pages/global-admin/church-detail";
 import GlobalAdminProfile from "@/pages/global-admin/profile";
 import GlobalAdminHelp from "@/pages/global-admin/help";
