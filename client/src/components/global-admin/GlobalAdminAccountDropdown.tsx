@@ -31,8 +31,8 @@ interface GlobalAdminAccountDropdownProps {
 }
 
 const GlobalAdminAccountDropdown = ({ 
-  adminName = "Global Admin", 
-  adminEmail = "admin@platesync.com" 
+  adminName = "John Spivey", 
+  adminEmail = "jspivey@spiveyco.com" 
 }: GlobalAdminAccountDropdownProps) => {
   const [_, setLocation] = useLocation();
   

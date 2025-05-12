@@ -287,8 +287,8 @@ export default function ChurchDetail() {
               Back to Churches
             </Button>
             <GlobalAdminAccountDropdown 
-              adminName="Global Admin" 
-              adminEmail="admin@platesync.com" 
+              adminName="John Spivey" 
+              adminEmail="jspivey@spiveyco.com" 
             />
           </div>
         </div>

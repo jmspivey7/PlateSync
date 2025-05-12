@@ -204,8 +204,8 @@ export default function GlobalAdminDashboard() {
             <h1 className="text-xl font-semibold text-[#69ad4c]">Global Admin</h1>
           </div>
           <GlobalAdminAccountDropdown 
-            adminName="Global Admin" 
-            adminEmail="admin@platesync.com" 
+            adminName="John Spivey" 
+            adminEmail="jspivey@spiveyco.com" 
           />
         </div>
       </header>
