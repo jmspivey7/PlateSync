@@ -31,6 +31,10 @@ import EmailTemplateEditor from "@/pages/email-template-editor";
 import GlobalAdminLogin from "@/pages/global-admin/login";
 import GlobalAdminDashboard from "@/pages/global-admin/dashboard";
 import ChurchDetail from "@/pages/global-admin/church-detail";
+import GlobalAdminProfile from "@/pages/global-admin/profile";
+import GlobalAdminHelp from "@/pages/global-admin/help";
+import GlobalAdminUsers from "@/pages/global-admin/users";
+import GlobalAdminReports from "@/pages/global-admin/reports";
 
 import { useAuth } from "@/hooks/useAuth";
 
@@ -48,7 +52,11 @@ const PUBLIC_PATHS = [
 const GLOBAL_ADMIN_PATHS = [
   "/global-admin/login",
   "/global-admin/dashboard",
-  "/global-admin/churches"
+  "/global-admin/churches",
+  "/global-admin/profile",
+  "/global-admin/help",
+  "/global-admin/users",
+  "/global-admin/reports"
 ];
 
 function isPublicPath(path: string) {
@@ -132,6 +140,10 @@ function Router() {
       <Route path="/global-admin/login" component={GlobalAdminLogin} />
       <Route path="/global-admin/dashboard" component={GlobalAdminDashboard} />
       <Route path="/global-admin/churches/:id" component={ChurchDetail} />
+      <Route path="/global-admin/profile" component={GlobalAdminProfile} />
+      <Route path="/global-admin/help" component={GlobalAdminHelp} />
+      <Route path="/global-admin/users" component={GlobalAdminUsers} />
+      <Route path="/global-admin/reports" component={GlobalAdminReports} />
       
       <Route component={NotFound} />
     </Switch>
