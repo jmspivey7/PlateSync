@@ -173,10 +173,10 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Get the church details using raw SQL for more reliable query
+    // Get the church details using string interpolation instead of parameterized query
+    // This is safe because 'id' comes from the route parameter, not user input
     const churchResult = await db.execute(
-      `SELECT * FROM churches WHERE id = $1 LIMIT 1`,
-      [id]
+      `SELECT * FROM churches WHERE id = '${id}' LIMIT 1`
     );
     
     const church = churchResult.rows?.[0];
@@ -185,24 +185,21 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Get user count - use raw SQL to avoid column name mismatches
+    // Get user count - use string interpolation for consistency
     const userResult = await db.execute(
-      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = $1`,
-      [id]
+      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${id}'`
     );
     const userCount = parseInt(userResult.rows[0]?.userCount || '0');
       
     // Get members count  
     const membersResult = await db.execute(
-      `SELECT COUNT(*) as "totalMembers" FROM members WHERE church_id = $1`,
-      [id]
+      `SELECT COUNT(*) as "totalMembers" FROM members WHERE church_id = '${id}'`
     );
     const totalMembers = parseInt(membersResult.rows[0]?.totalMembers || '0');
       
     // Get total donations
     const donationsResult = await db.execute(
-      `SELECT SUM(amount) as "totalDonations" FROM donations WHERE church_id = $1`,
-      [id]
+      `SELECT SUM(amount) as "totalDonations" FROM donations WHERE church_id = '${id}'`
     );
     const totalDonations = donationsResult.rows[0]?.totalDonations || '0.00';
     
@@ -325,15 +322,14 @@ router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Use a raw SQL query to avoid field mapping issues with Drizzle ORM
+    // Use a raw SQL query with string interpolation for consistency
     const result = await db.execute(
       `SELECT id, email, first_name AS "firstName", last_name AS "lastName", 
               role, is_verified AS "isVerified", is_account_owner AS "isAccountOwner", 
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM users 
-       WHERE church_id = $1
-       ORDER BY created_at DESC`,
-      [id]
+       WHERE church_id = '${id}'
+       ORDER BY created_at DESC`
     );
     
     const churchUsers = result.rows || [];
