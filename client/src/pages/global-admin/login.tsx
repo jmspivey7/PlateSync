@@ -105,9 +105,9 @@ export default function GlobalAdminLogin() {
             <div className="flex justify-center mb-4">
               <div className="p-4 rounded-full bg-white shadow-md">
                 <img 
-                  src="/images/platesync-logo.png" 
+                  src="/logo-with-text.png" 
                   alt="PlateSync Logo" 
-                  className="w-24 h-24 object-contain"
+                  className="w-40 h-24 object-contain"
                 />
               </div>
             </div>

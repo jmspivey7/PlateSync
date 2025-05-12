@@ -191,13 +191,22 @@ export default function GlobalAdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-md border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <Building2 className="h-6 w-6 text-green-600" />
-            <h1 className="text-xl font-semibold">PlateSync Global Admin</h1>
+            <img 
+              src="/images/platesync-logo.png" 
+              alt="PlateSync Logo" 
+              className="h-8 w-8 object-contain" 
+            />
+            <h1 className="text-xl font-semibold text-[#69ad4c]">PlateSync Global Admin</h1>
           </div>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-gray-300 hover:bg-gray-100 hover:text-gray-900"
+            onClick={handleLogout}
+          >
             <LogOut className="h-4 w-4 mr-1" /> Logout
           </Button>
         </div>
@@ -206,9 +215,9 @@ export default function GlobalAdminDashboard() {
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
         <div className="mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Global Administrator Dashboard</CardTitle>
+          <Card className="border-gray-200 shadow-md overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-[#69ad4c]/10 to-[#69ad4c]/5 border-b border-gray-200">
+              <CardTitle className="text-[#4a8330]">Global Administrator Dashboard</CardTitle>
               <CardDescription>
                 Manage all churches and users in the PlateSync platform
               </CardDescription>
@@ -217,9 +226,9 @@ export default function GlobalAdminDashboard() {
         </div>
         
         <div className="mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Churches Overview</CardTitle>
+          <Card className="border-gray-200 shadow-md overflow-hidden">
+            <CardHeader className="border-b border-gray-200">
+              <CardTitle className="text-[#4a8330]">Churches Overview</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -262,7 +271,12 @@ export default function GlobalAdminDashboard() {
               {isError ? (
                 <div className="text-center py-10">
                   <p className="text-destructive mb-4">{error?.message || "Failed to load churches"}</p>
-                  <Button onClick={() => refetch()}>Try Again</Button>
+                  <Button 
+                    onClick={() => refetch()} 
+                    className="bg-[#69ad4c] hover:bg-[#5a9440]"
+                  >
+                    Try Again
+                  </Button>
                 </div>
               ) : isLoading ? (
                 <div className="space-y-4">
@@ -330,6 +344,7 @@ export default function GlobalAdminDashboard() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
                                 onClick={() => handleDetailView(church.id)}
                               >
                                 Details <ArrowRight className="h-4 w-4 ml-1" />
