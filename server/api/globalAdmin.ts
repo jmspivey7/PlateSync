@@ -319,17 +319,17 @@ router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
       .select({
         id: users.id,
         email: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
+        firstName: users.first_name,
+        lastName: users.last_name,
         role: users.role,
-        isActive: users.isActive,
-        isAccountOwner: users.isAccountOwner,
-        createdAt: users.createdAt,
-        lastLoginAt: users.lastLoginAt,
+        isVerified: users.is_verified,
+        isAccountOwner: users.is_account_owner,
+        createdAt: users.created_at,
+        updatedAt: users.updated_at,
       })
       .from(users)
-      .where(eq(users.churchId, id))
-      .orderBy(desc(users.createdAt));
+      .where(eq(users.church_id, id))
+      .orderBy(desc(users.created_at));
     
     res.status(200).json(churchUsers);
   } catch (error) {
