@@ -3980,6 +3980,61 @@ PlateSync Reporting System`;
   // Setup Planning Center integration
   setupPlanningCenterRoutes(app);
 
+  // Global Admin login endpoint
+  app.post('/api/global-admin/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Find user by email with master admin privileges
+      const usersResult = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.email, email),
+          eq(users.isMasterAdmin, true)
+        ));
+      
+      const user = usersResult.length > 0 ? usersResult[0] : null;
+      
+      if (!user || !user.password) {
+        return res.status(401).json({ message: "Invalid credentials or insufficient privileges" });
+      }
+      
+      // Verify password
+      const passwordValid = await verifyPassword(password, user.password);
+      
+      if (!passwordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Create session for the Global Admin
+      req.login({
+        claims: {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+          isMasterAdmin: user.isMasterAdmin
+        }
+      }, (err) => {
+        if (err) {
+          console.error("Session creation error:", err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        // Return user information (excluding sensitive data)
+        const { password, passwordResetToken, passwordResetExpires, ...safeUser } = user;
+        res.json(safeUser);
+      });
+    } catch (error) {
+      console.error("Global Admin login error:", error);
+      res.status(500).json({ message: "An error occurred during authentication" });
+    }
+  });
+
   // Register Global Admin routes
   app.use('/api/global-admin', globalAdminRoutes);
   
