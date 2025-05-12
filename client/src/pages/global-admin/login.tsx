@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -98,14 +98,16 @@ export default function GlobalAdminLogin() {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="w-full max-w-md p-4">
-        <Card className="border-gray-200 shadow-lg">
+        <Card className="border-gray-200 shadow-xl">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
-                <Lock className="w-8 h-8 text-white" />
-              </div>
+              <img 
+                src="/images/platesync-logo.png" 
+                alt="PlateSync Logo" 
+                className="w-24 h-24 object-contain"
+              />
             </div>
             <CardTitle className="text-2xl font-bold text-center">Global Admin Portal</CardTitle>
             <CardDescription className="text-center">
