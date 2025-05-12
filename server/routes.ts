@@ -348,10 +348,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Creating church account with ID: ${userId}`);
       
-      // Generate a unique username with timestamp to avoid collisions
-      const timestamp = Date.now().toString().slice(-6); // Use last 6 digits of timestamp
+      // Generate a base username from email
       const usernameBase = email.split('@')[0];
-      const username = `${usernameBase}_${timestamp}`;
+      let username = usernameBase;
+      
+      // Check if username already exists
+      const checkUsername = async (name: string) => {
+        const result = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, name))
+          .limit(1);
+        return result.length > 0;
+      };
+      
+      // If username exists, find all similar usernames and generate a sequential number
+      const usernameExists = await checkUsername(username);
+      
+      if (usernameExists) {
+        // First, try to find all usernames that start with this base
+        const similarUsernames = await db
+          .select()
+          .from(users)
+          .where(sql`${users.username} LIKE ${usernameBase + '%'}`);
+        
+        // Start the suffix from the highest existing number + 1
+        let suffix = 1;
+        if (similarUsernames.length > 0) {
+          const existingNumbers = similarUsernames
+            .map(u => {
+              const match = u.username?.match(new RegExp(`^${usernameBase}(\\d+)$`));
+              return match ? parseInt(match[1], 10) : 0;
+            })
+            .filter(n => !isNaN(n));
+          
+          if (existingNumbers.length > 0) {
+            suffix = Math.max(...existingNumbers) + 1;
+          }
+        }
+        
+        // Format the suffix with leading zeros (e.g., 01, 02, ... 10, 11)
+        const suffixStr = suffix.toString().padStart(2, '0');
+        username = `${usernameBase}${suffixStr}`;
+        
+        // Double-check for uniqueness (in case of race conditions)
+        while (await checkUsername(username)) {
+          suffix++;
+          const newSuffixStr = suffix.toString().padStart(2, '0');
+          username = `${usernameBase}${newSuffixStr}`;
+        }
+      }
       
       console.log(`Generated unique username: ${username}`);
       
@@ -1146,7 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastName: user.last_name,
             role: user.role,
             isVerified: user.is_verified === true || user.is_verified === 't',
-            isMasterAdmin: user.is_master_admin
+            isAccountOwner: user.is_account_owner
           }));
         console.log(`Found ${usersList.length} active users via direct SQL`);
       }
@@ -1161,7 +1207,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: "John",
             lastName: "Spivey",
             role: "ADMIN",
-            isMasterAdmin: true
+            isAccountOwner: true,
+            profileImageUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isVerified: true,
+            churchId: null
           }
           // Removed hardcoded USHER user
         ];
@@ -1213,7 +1264,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           isVerified: !!user.isVerified,
-          isMasterAdmin: !!user.isMasterAdmin,
           isAccountOwner: !!user.isAccountOwner,
           churchId: user.churchId // Add churchId for debugging
         }));
@@ -1229,8 +1279,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: "Admin",
           lastName: "User",
           role: "ADMIN",
-          isMasterAdmin: true,
-          isAccountOwner: true
+          isAccountOwner: true,
+          profileImageUrl: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isVerified: true,
+          churchId: null
         });
         console.log("No users found, using fallback data");
       }

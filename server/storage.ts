@@ -924,14 +924,9 @@ export class DatabaseStorage implements IStorage {
       
       // Generate base username from email if not provided
       let baseUsername = userData.username || userData.email?.split('@')[0] || `user_${userId}`;
+      let username = baseUsername;
       
-      // Add a timestamp suffix to always generate a unique username
-      const timestamp = Date.now().toString().slice(-6); // Use last 6 digits of timestamp
-      let username = `${baseUsername}_${timestamp}`;
-      
-      console.log(`Generated unique username: ${username} for user ${userData.email}`);
-      
-      // For paranoia, still check if this username somehow exists
+      // Check if this username already exists
       const usernameExists = async (name: string) => {
         const result = await db
           .select()
@@ -941,12 +936,45 @@ export class DatabaseStorage implements IStorage {
         return result.length > 0;
       };
       
-      // If by some chance the timestamp isn't unique, add a random suffix
+      // If username exists, add a sequential number suffix until we find a unique one
       let suffix = 1;
-      while (await usernameExists(username)) {
-        username = `${baseUsername}_${timestamp}_${suffix}`;
-        suffix++;
+      const existsCheck = await usernameExists(username);
+      
+      if (existsCheck) {
+        // First, try to find all usernames that start with this base
+        const similarUsernames = await db
+          .select()
+          .from(users)
+          .where(sql`${users.username} LIKE ${baseUsername + '%'}`);
+        
+        // Start the suffix from the highest existing number + 1
+        if (similarUsernames.length > 0) {
+          const existingNumbers = similarUsernames
+            .map(u => {
+              const match = u.username?.match(new RegExp(`^${baseUsername}(\\d+)$`));
+              return match ? parseInt(match[1], 10) : 0;
+            })
+            .filter(n => !isNaN(n));
+          
+          if (existingNumbers.length > 0) {
+            suffix = Math.max(...existingNumbers) + 1;
+          }
+        }
+        
+        // Format the suffix with leading zeros based on how many digits we need
+        // e.g., 01, 02, ..., 10, 11, etc.
+        const suffixStr = suffix.toString().padStart(2, '0');
+        username = `${baseUsername}${suffixStr}`;
+        
+        // Double-check that this username is unique (in case of race conditions)
+        while (await usernameExists(username)) {
+          suffix++;
+          const newSuffixStr = suffix.toString().padStart(2, '0');
+          username = `${baseUsername}${newSuffixStr}`;
+        }
       }
+      
+      console.log(`Generated unique username: ${username} for user ${userData.email}`);
       
       // Important: We need to check if the churchId exists as a user in the database first
       // because there's a foreign key constraint requiring churchId to exist in users.id
