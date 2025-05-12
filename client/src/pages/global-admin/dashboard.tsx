@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import GlobalAdminAccountDropdown from "@/components/global-admin/GlobalAdminAccountDropdown";
 import {
   Card,
   CardContent,
@@ -192,23 +193,20 @@ export default function GlobalAdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-md border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <img 
-              src="/images/platesync-logo.png" 
+              src="/logo-with-text.png" 
               alt="PlateSync Logo" 
-              className="h-8 w-8 object-contain" 
+              className="h-10 object-contain" 
             />
-            <h1 className="text-xl font-semibold text-[#69ad4c]">PlateSync Global Admin</h1>
+            <div className="h-6 w-px bg-gray-300 mx-2"></div>
+            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Admin</h1>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="border-gray-300 hover:bg-gray-100 hover:text-gray-900"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4 mr-1" /> Logout
-          </Button>
+          <GlobalAdminAccountDropdown 
+            adminName="Global Admin" 
+            adminEmail="admin@platesync.com" 
+          />
         </div>
       </header>
       
