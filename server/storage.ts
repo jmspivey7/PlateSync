@@ -924,10 +924,14 @@ export class DatabaseStorage implements IStorage {
       
       // Generate base username from email if not provided
       let baseUsername = userData.username || userData.email?.split('@')[0] || `user_${userId}`;
-      let username = baseUsername;
       
-      // Check if this username already exists (including soft-deleted users)
-      // This includes INACTIVE_ prefixed emails, as those users still have the same username
+      // Add a timestamp suffix to always generate a unique username
+      const timestamp = Date.now().toString().slice(-6); // Use last 6 digits of timestamp
+      let username = `${baseUsername}_${timestamp}`;
+      
+      console.log(`Generated unique username: ${username} for user ${userData.email}`);
+      
+      // For paranoia, still check if this username somehow exists
       const usernameExists = async (name: string) => {
         const result = await db
           .select()
@@ -937,10 +941,10 @@ export class DatabaseStorage implements IStorage {
         return result.length > 0;
       };
       
-      // If username exists, add a random suffix until we find a unique one
+      // If by some chance the timestamp isn't unique, add a random suffix
       let suffix = 1;
       while (await usernameExists(username)) {
-        username = `${baseUsername}_${suffix}`;
+        username = `${baseUsername}_${timestamp}_${suffix}`;
         suffix++;
       }
       
