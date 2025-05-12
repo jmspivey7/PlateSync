@@ -1,425 +1,652 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useRoute, useLocation } from "wouter";
+import { useEffect, useState } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
-  Building,
+  AtSign,
+  Building2,
   Calendar,
-  CheckCircle,
-  ChevronRight,
-  DollarSign,
-  Loader2,
+  Clock,
+  LogOut,
   Mail,
-  MapPin,
   Phone,
+  RefreshCw,
+  Shield,
   Users,
-  XCircle,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-// Type definitions for church data from API
+// Type definitions
 interface Church {
   id: string;
   name: string;
-  status: "ACTIVE" | "SUSPENDED" | "DELETED";
   contactEmail: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  logoUrl?: string;
-  websiteUrl?: string;
-  denomination?: string;
-  notes?: string;
-  membersCount: number;
-  accountOwnerId?: string;
+  status: string;
   createdAt: string;
-  updatedAt?: string;
-  lastLoginDate?: string;
-  registrationDate: string;
-  deletedAt?: string;
-  archiveUrl?: string;
-}
-
-interface ChurchWithStats extends Church {
+  updatedAt: string;
+  userCount: number;
   totalMembers: number;
   totalDonations: string;
-  userCount: number;
-  lastActivity: string | null;
 }
 
-export default function ChurchDetailPage() {
-  const [, setLocation] = useLocation();
-  const [, params] = useRoute<{ id: string }>("/global-admin/churches/:id");
-  const churchId = params?.id;
+interface User {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+  isActive: boolean;
+  isAccountOwner: boolean;
+}
 
-  // Redirect if no church ID
+export default function ChurchDetail() {
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const [_, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState("overview");
+  
+  // Check if the global admin is authenticated
   useEffect(() => {
-    if (!churchId) {
-      setLocation("/global-admin/dashboard");
+    const token = localStorage.getItem("globalAdminToken");
+    if (!token) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to access the global admin portal",
+        variant: "destructive",
+      });
+      setLocation("/global-admin/login");
     }
-  }, [churchId, setLocation]);
-
-  // Fetch church details with stats
-  const { data: church, isLoading, error } = useQuery<ChurchWithStats>({
-    queryKey: [`/api/global-admin/churches/${churchId}`],
-    enabled: !!churchId,
-    retry: 1,
+  }, [toast, setLocation]);
+  
+  // Function to fetch church details
+  const fetchChurchDetails = async (): Promise<Church> => {
+    const token = localStorage.getItem("globalAdminToken");
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+    
+    const response = await fetch(`/api/global-admin/churches/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch church details");
+    }
+    
+    return response.json();
+  };
+  
+  // Function to fetch church users
+  const fetchChurchUsers = async (): Promise<User[]> => {
+    const token = localStorage.getItem("globalAdminToken");
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+    
+    const response = await fetch(`/api/global-admin/churches/${id}/users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch church users");
+    }
+    
+    return response.json();
+  };
+  
+  // Query to fetch church details
+  const {
+    data: church,
+    isLoading: isLoadingChurch,
+    isError: isChurchError,
+    error: churchError,
+    refetch: refetchChurch,
+  } = useQuery<Church, Error>({
+    queryKey: ["church", id],
+    queryFn: fetchChurchDetails,
   });
-
-  // Status badge renderer
-  const renderStatusBadge = (status?: Church["status"]) => {
+  
+  // Query to fetch church users
+  const {
+    data: users,
+    isLoading: isLoadingUsers,
+    isError: isUsersError,
+    error: usersError,
+    refetch: refetchUsers,
+  } = useQuery<User[], Error>({
+    queryKey: ["church-users", id],
+    queryFn: fetchChurchUsers,
+  });
+  
+  // Mutation to update church status
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      const response = await fetch(`/api/global-admin/churches/${id}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Failed to update church status to ${newStatus}`);
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Status updated",
+        description: "Church status has been updated successfully",
+        variant: "default",
+      });
+      refetchChurch();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update church status",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleStatusChange = (newStatus: string) => {
+    updateStatusMutation.mutate(newStatus);
+  };
+  
+  const handleBackToDashboard = () => {
+    setLocation("/global-admin/dashboard");
+  };
+  
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return <Badge className="bg-green-500">Active</Badge>;
+        return "success";
       case "SUSPENDED":
-        return <Badge variant="secondary" className="bg-yellow-500 text-black">Suspended</Badge>;
+        return "warning";
       case "DELETED":
-        return <Badge variant="destructive">Deleted</Badge>;
+        return "destructive";
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return "secondary";
     }
   };
-
-  if (isLoading) {
+  
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    } catch (error) {
+      return "Invalid date";
+    }
+  };
+  
+  // If there's an error, display it
+  if (isChurchError) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-xl font-medium">Loading church details...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !church) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <Button variant="outline" onClick={() => setLocation("/global-admin/dashboard")} className="mb-8">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
-        </Button>
-        
+      <div className="container mx-auto p-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Church</CardTitle>
-            <CardDescription>
-              There was a problem loading the church details. The church may have been deleted or you may not have permission to view it.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-destructive">Error</CardTitle>
+              <Button variant="outline" size="sm" onClick={handleBackToDashboard}>
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back to Dashboard
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setLocation("/global-admin/dashboard")}>
-              Return to Dashboard
+            <p>{churchError?.message || "Failed to load church details"}</p>
+            <Button onClick={() => refetchChurch()} className="mt-4">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
             </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center">
-            <Button variant="ghost" onClick={() => setLocation("/global-admin/dashboard")} className="mr-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Building2 className="h-6 w-6 text-green-600" />
+            <h1 className="text-xl font-semibold">PlateSync Global Admin</h1>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={() => setLocation("/global-admin/dashboard")}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Dashboard
             </Button>
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">Church Details</h1>
-              <ChevronRight className="h-5 w-5 mx-2 text-gray-400" />
-              <h2 className="text-xl font-bold text-gray-900">{church.name}</h2>
-              <div className="ml-3">{renderStatusBadge(church.status)}</div>
-            </div>
+            <Button variant="outline" size="sm" onClick={() => {
+              localStorage.removeItem("globalAdminToken");
+              setLocation("/global-admin/login");
+            }}>
+              <LogOut className="h-4 w-4 mr-1" />
+              Logout
+            </Button>
           </div>
         </div>
       </header>
-
+      
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Overview */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Church Profile */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Church Profile</CardTitle>
-                <CardDescription>Basic information about the church</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex justify-center">
-                  <Avatar className="h-24 w-24">
-                    {church.logoUrl ? (
-                      <AvatarImage src={church.logoUrl} alt={church.name} />
+      <main className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                  <CardTitle className="text-2xl font-bold">
+                    {isLoadingChurch ? (
+                      <Skeleton className="h-8 w-48" />
                     ) : (
-                      <AvatarFallback className="text-2xl">
-                        {church.name.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
+                      church?.name
                     )}
-                  </Avatar>
+                  </CardTitle>
+                  <CardDescription className="flex items-center mt-1">
+                    <Mail className="h-4 w-4 mr-1 text-muted-foreground" />
+                    {isLoadingChurch ? (
+                      <Skeleton className="h-4 w-32" />
+                    ) : (
+                      church?.contactEmail
+                    )}
+                  </CardDescription>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Name</p>
-                    <p className="text-base">{church.name}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Contact Email</p>
-                    <div className="flex items-center">
-                      <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <p className="text-base">{church.contactEmail}</p>
-                    </div>
-                  </div>
-
-                  {church.phone && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <p className="text-base">{church.phone}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {(church.address || church.city || church.state) && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Location</p>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <p className="text-base">
-                          {[
-                            church.address,
-                            [church.city, church.state].filter(Boolean).join(", "),
-                            church.zipCode
-                          ].filter(Boolean).join(", ")}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {church.denomination && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Denomination</p>
-                      <p className="text-base">{church.denomination}</p>
-                    </div>
-                  )}
-
-                  {church.websiteUrl && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Website</p>
-                      <a 
-                        href={church.websiteUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-base text-primary hover:underline"
-                      >
-                        {church.websiteUrl}
-                      </a>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Registration Date</p>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <p className="text-base">
-                        {new Date(church.registrationDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  {church.lastLoginDate && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Last Login</p>
-                      <p className="text-base">
-                        {new Date(church.lastLoginDate).toLocaleDateString()}
-                      </p>
-                    </div>
+                <div className="mt-4 sm:mt-0">
+                  {isLoadingChurch ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <Badge variant={getStatusBadgeVariant(church?.status || "") as any} className="text-sm py-1 px-3">
+                      {church?.status}
+                    </Badge>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Stats & Activity */}
-            <Card className="lg:col-span-2">
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <div className="bg-white rounded-md p-1 border">
+            <TabsList className="grid grid-cols-3 md:grid-cols-4 lg:w-auto">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
+            </TabsList>
+          </div>
+          
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-md">Users</CardTitle>
+                  <CardDescription>Total registered users</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-green-600" />
+                    <span className="text-2xl font-bold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-12" />
+                      ) : (
+                        church?.userCount || 0
+                      )}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-md">Members</CardTitle>
+                  <CardDescription>Total church members</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-green-600" />
+                    <span className="text-2xl font-bold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-12" />
+                      ) : (
+                        church?.totalMembers || 0
+                      )}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-md">Total Donations</CardTitle>
+                  <CardDescription>Lifetime donation amount</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center">
+                    <span className="text-2xl font-bold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-24" />
+                      ) : (
+                        `$${church?.totalDonations || "0.00"}`
+                      )}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <Card>
               <CardHeader>
-                <CardTitle>Church Statistics</CardTitle>
-                <CardDescription>Overview of activity and data</CardDescription>
+                <CardTitle>Church Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="overview">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="activity">Activity</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="overview" className="space-y-6 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Members
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center">
-                            <Users className="h-5 w-5 text-primary mr-2" />
-                            <p className="text-2xl font-bold">{church.totalMembers}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Users
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center">
-                            <Users className="h-5 w-5 text-blue-500 mr-2" />
-                            <p className="text-2xl font-bold">{church.userCount}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Donations
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center">
-                            <DollarSign className="h-5 w-5 text-green-500 mr-2" />
-                            <p className="text-2xl font-bold">
-                              ${parseFloat(church.totalDonations).toLocaleString()}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Current Status
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center">
-                            {church.status === "ACTIVE" && (
-                              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                            )}
-                            {church.status === "SUSPENDED" && (
-                              <XCircle className="h-5 w-5 text-yellow-500 mr-2" />
-                            )}
-                            {church.status === "DELETED" && (
-                              <XCircle className="h-5 w-5 text-red-500 mr-2" />
-                            )}
-                            <p className="text-lg font-semibold">{church.status}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {church.notes && (
-                      <>
-                        <Separator />
-                        <div>
-                          <h3 className="font-medium mb-2">Church Notes</h3>
-                          <p className="text-sm text-muted-foreground whitespace-pre-line">
-                            {church.notes}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="activity" className="space-y-4 pt-4">
-                    <div>
-                      <h3 className="font-medium mb-2">Recent Activity</h3>
-                      {church.lastActivity ? (
-                        <p>
-                          Last activity recorded on{" "}
-                          <span className="font-semibold">
-                            {new Date(church.lastActivity).toLocaleDateString()}
-                          </span>
-                        </p>
-                      ) : (
-                        <p className="text-muted-foreground">No recent activity recorded</p>
-                      )}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">ID:</span>
+                      <span className="text-muted-foreground">
+                        {isLoadingChurch ? (
+                          <Skeleton className="h-4 w-32" />
+                        ) : (
+                          church?.id
+                        )}
+                      </span>
                     </div>
                     
-                    <div>
-                      <h3 className="font-medium mb-2">Church Timeline</h3>
-                      <div className="space-y-3">
-                        <div className="flex">
-                          <div className="w-12 flex-shrink-0 text-sm text-muted-foreground">
-                            Created
-                          </div>
-                          <div>
-                            {new Date(church.registrationDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                        {church.updatedAt && (
-                          <div className="flex">
-                            <div className="w-12 flex-shrink-0 text-sm text-muted-foreground">
-                              Updated
-                            </div>
-                            <div>
-                              {new Date(church.updatedAt).toLocaleDateString()}
-                            </div>
-                          </div>
+                    <div className="flex items-center space-x-2">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Status:</span>
+                      <span>
+                        {isLoadingChurch ? (
+                          <Skeleton className="h-4 w-20" />
+                        ) : (
+                          <Badge variant={getStatusBadgeVariant(church?.status || "") as any}>
+                            {church?.status}
+                          </Badge>
                         )}
-                        {church.lastLoginDate && (
-                          <div className="flex">
-                            <div className="w-12 flex-shrink-0 text-sm text-muted-foreground">
-                              Login
-                            </div>
-                            <div>
-                              {new Date(church.lastLoginDate).toLocaleDateString()}
-                            </div>
-                          </div>
-                        )}
-                        {church.deletedAt && (
-                          <div className="flex">
-                            <div className="w-12 flex-shrink-0 text-sm text-muted-foreground">
-                              Deleted
-                            </div>
-                            <div>
-                              {new Date(church.deletedAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      </span>
                     </div>
-
-                    {church.status === "DELETED" && church.archiveUrl && (
-                      <div>
-                        <h3 className="font-medium mb-2">Archived Data</h3>
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={church.archiveUrl} target="_blank" rel="noopener noreferrer">
-                            Download Archive
-                          </a>
-                        </Button>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Created:</span>
+                      <span className="text-muted-foreground">
+                        {isLoadingChurch ? (
+                          <Skeleton className="h-4 w-32" />
+                        ) : (
+                          formatDate(church?.createdAt || "")
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Last Updated:</span>
+                      <span className="text-muted-foreground">
+                        {isLoadingChurch ? (
+                          <Skeleton className="h-4 w-32" />
+                        ) : (
+                          formatDate(church?.updatedAt || "")
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <AtSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Contact:</span>
+                      <span className="text-muted-foreground">
+                        {isLoadingChurch ? (
+                          <Skeleton className="h-4 w-32" />
+                        ) : (
+                          church?.contactEmail
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-4 flex justify-end space-x-2">
+                {isLoadingChurch ? (
+                  <Skeleton className="h-10 w-32" />
+                ) : church?.status === "ACTIVE" ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="warning">Suspend Church</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Suspend Church</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to suspend {church?.name}? This will prevent all users from accessing the church account until you reactivate it.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          className="bg-amber-600 hover:bg-amber-700"
+                          onClick={() => handleStatusChange("SUSPENDED")}
+                        >
+                          Suspend
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : church?.status === "SUSPENDED" ? (
+                  <Button
+                    variant="success"
+                    onClick={() => handleStatusChange("ACTIVE")}
+                  >
+                    Reactivate Church
+                  </Button>
+                ) : null}
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">Delete Church</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Church</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {church?.name}? This action is irreversible and will permanently remove all church data, users, members, and donations.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => handleStatusChange("DELETED")}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Church Users</CardTitle>
+                  <Button size="sm" variant="outline" onClick={() => refetchUsers()}>
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isUsersError ? (
+                  <div className="text-center py-6">
+                    <p className="text-destructive mb-2">{usersError?.message || "Failed to load users"}</p>
+                    <Button onClick={() => refetchUsers()} variant="outline" size="sm">
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      Try Again
+                    </Button>
+                  </div>
+                ) : isLoadingUsers ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="flex items-center space-x-4 py-2">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[200px]" />
+                          <Skeleton className="h-4 w-[150px]" />
+                        </div>
                       </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
+                    ))}
+                  </div>
+                ) : users && users.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Last Login</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">
+                              {user.firstName && user.lastName 
+                                ? `${user.firstName} ${user.lastName}` 
+                                : "No name provided"}
+                            </TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {user.role?.toLowerCase().replace("_", " ")}
+                              </Badge>
+                              {user.isAccountOwner && (
+                                <Badge variant="secondary" className="ml-2">
+                                  Account Owner
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{formatDate(user.createdAt)}</TableCell>
+                            <TableCell>
+                              {user.lastLoginAt ? formatDate(user.lastLoginAt) : "Never"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={user.isActive ? "success" : "destructive"}>
+                                {user.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-muted-foreground">
+                    No users found for this church.
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+          
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Church Settings</CardTitle>
+                <CardDescription>
+                  Configure settings for this church
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-10 text-muted-foreground">
+                  This feature is coming soon.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Reports Tab */}
+          <TabsContent value="reports" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Church Reports</CardTitle>
+                <CardDescription>
+                  View reports and analytics for this church
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-10 text-muted-foreground">
+                  This feature is coming soon.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
