@@ -54,8 +54,8 @@ export default function GlobalAdminProfile() {
               Back to Dashboard
             </Button>
             <GlobalAdminAccountDropdown 
-              adminName="Global Admin" 
-              adminEmail="admin@platesync.com" 
+              adminName="John Spivey" 
+              adminEmail="jspivey@spiveyco.com" 
             />
           </div>
         </div>
@@ -74,7 +74,7 @@ export default function GlobalAdminProfile() {
             <CardContent>
               <div className="flex items-center space-x-4 mb-6">
                 <Avatar className="h-20 w-20 bg-[#69ad4c]">
-                  <AvatarFallback className="text-white text-xl">GA</AvatarFallback>
+                  <AvatarFallback className="text-white text-xl">JS</AvatarFallback>
                 </Avatar>
                 <Button variant="outline" size="sm">Change Avatar</Button>
               </div>
@@ -83,17 +83,17 @@ export default function GlobalAdminProfile() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" defaultValue="Global" />
+                    <Input id="firstName" defaultValue="John" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" defaultValue="Admin" />
+                    <Input id="lastName" defaultValue="Spivey" />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" defaultValue="admin@platesync.com" />
+                  <Input id="email" type="email" defaultValue="jspivey@spiveyco.com" />
                 </div>
                 
                 <div className="space-y-2">

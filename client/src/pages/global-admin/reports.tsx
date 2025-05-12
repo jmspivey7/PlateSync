@@ -66,8 +66,8 @@ export default function GlobalAdminReports() {
               Back to Dashboard
             </Button>
             <GlobalAdminAccountDropdown 
-              adminName="Global Admin" 
-              adminEmail="admin@platesync.com" 
+              adminName="John Spivey" 
+              adminEmail="jspivey@spiveyco.com" 
             />
           </div>
         </div>

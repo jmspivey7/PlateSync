@@ -65,36 +65,12 @@ interface GlobalAdminUser {
 // Sample data (in a real application, this would come from the API)
 const sampleUsers: GlobalAdminUser[] = [
   {
-    id: "1",
-    name: "John Smith",
-    email: "john.smith@platesync.com",
+    id: "40829937",
+    name: "John Spivey",
+    email: "jspivey@spiveyco.com",
     role: "Global Admin",
     status: "active",
     lastLogin: "2025-05-12 09:45 AM"
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    email: "sarah.johnson@platesync.com",
-    role: "Global Admin",
-    status: "active",
-    lastLogin: "2025-05-11 03:22 PM"
-  },
-  {
-    id: "3",
-    name: "Michael Chen",
-    email: "michael.chen@platesync.com",
-    role: "Support Admin",
-    status: "active",
-    lastLogin: "2025-05-10 11:05 AM"
-  },
-  {
-    id: "4",
-    name: "Emily Davis",
-    email: "emily.davis@platesync.com",
-    role: "Support Admin",
-    status: "inactive",
-    lastLogin: "2025-04-28 02:17 PM"
   }
 ];
 
@@ -171,8 +147,8 @@ export default function GlobalAdminUsers() {
               Back to Dashboard
             </Button>
             <GlobalAdminAccountDropdown 
-              adminName="Global Admin" 
-              adminEmail="admin@platesync.com" 
+              adminName="John Spivey" 
+              adminEmail="jspivey@spiveyco.com" 
             />
           </div>
         </div>
