@@ -3980,6 +3980,12 @@ PlateSync Reporting System`;
   // Setup Planning Center integration
   setupPlanningCenterRoutes(app);
 
+  // Register Global Admin routes
+  app.use('/api/global-admin', globalAdminRoutes);
+  
+  // Apply middleware to restrict access to suspended churches
+  app.use(restrictSuspendedChurchAccess);
+
   // Add test endpoints
   setupTestEndpoints(app);
   
