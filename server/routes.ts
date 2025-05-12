@@ -99,6 +99,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (!fs.existsSync(avatarsDir)) {
     fs.mkdirSync(avatarsDir, { recursive: true });
   }
+  
+  // Apply church status check middleware to all routes
+  app.use(restrictSuspendedChurchAccess);
+  
+  // Mount Global Admin routes
+  app.use('/api/global-admin', globalAdminRoutes);
 
   // Serve static files
   app.use(express.static('public'));

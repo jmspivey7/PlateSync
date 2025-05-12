@@ -4,6 +4,13 @@ import { db } from "../db";
 import { churches } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
+// Declare session with userId
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+  }
+}
+
 // Middleware to check if the user is a Global Admin
 export const isGlobalAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
