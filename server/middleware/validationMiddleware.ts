@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from "express";
-import { AnyZodObject, ZodError } from "zod";
+import { Request, Response, NextFunction } from 'express';
+import { AnyZodObject, ZodError } from 'zod';
 
 /**
  * Middleware that validates request data against a Zod schema
@@ -9,31 +9,31 @@ import { AnyZodObject, ZodError } from "zod";
 export const validateSchema = (schema: AnyZodObject, source: 'body' | 'query' | 'params' = 'body') => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Get the data from the appropriate request property
-      const data = req[source];
+      // Parse and validate the request data against the schema
+      const data = await schema.parseAsync(req[source]);
       
-      // Validate data against schema
-      await schema.parseAsync(data);
+      // Replace the request data with the validated data
+      req[source] = data;
       
-      // Validation passed, continue
-      next();
+      // Continue to the next middleware/route handler
+      return next();
     } catch (error) {
-      // If Zod validation error, send formatted response
+      // If validation fails, format and return the errors
       if (error instanceof ZodError) {
+        const formattedErrors = error.errors.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        }));
+        
         return res.status(400).json({
-          message: "Validation error",
-          errors: error.errors.map(err => ({
-            path: err.path,
-            message: err.message
-          }))
+          message: 'Validation failed',
+          errors: formattedErrors
         });
       }
       
-      // For any other error, send generic error response
-      console.error("Validation middleware error:", error);
-      return res.status(500).json({ 
-        message: "Internal server error during request validation" 
-      });
+      // For any other errors, pass to the error handler
+      console.error('Validation middleware error:', error);
+      return res.status(500).json({ message: 'Server error during validation' });
     }
   };
 };

@@ -122,8 +122,8 @@ export function generateToken(payload: any, expiresIn: string = "1h"): string {
   
   return jwt.sign(
     payload,
-    process.env.SESSION_SECRET as jwt.Secret,
-    { expiresIn }
+    process.env.SESSION_SECRET,
+    { expiresIn: expiresIn }
   );
 }
 

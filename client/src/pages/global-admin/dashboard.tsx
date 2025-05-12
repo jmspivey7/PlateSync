@@ -1,8 +1,18 @@
+"use client";
+
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,51 +25,56 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
 import {
-  MoreHorizontal,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import {
+  ChevronDown,
+  ChevronUp,
+  Gauge,
   LogOut,
-  CheckCircle,
-  XCircle,
-  Archive,
-  Eye,
+  MoreHorizontal,
+  Plus,
   RefreshCw,
-  Trash,
-  Building,
+  Search,
+  Settings,
   Users,
-  DollarSign
 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-// Type definitions for church data from API
-interface Church {
+// Types
+interface ChurchWithStats {
   id: string;
   name: string;
   status: "ACTIVE" | "SUSPENDED" | "DELETED";
-  contactEmail: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  logoUrl?: string;
-  websiteUrl?: string;
-  denomination?: string;
-  notes?: string;
-  membersCount: number;
-  accountOwnerId?: string;
   createdAt: string;
-  updatedAt?: string;
-  lastLoginDate?: string;
-  registrationDate: string;
-  deletedAt?: string;
-  archiveUrl?: string;
-}
-
-interface ChurchWithStats extends Church {
+  updatedAt: string;
   totalMembers: number;
   totalDonations: string;
   userCount: number;
@@ -68,426 +83,469 @@ interface ChurchWithStats extends Church {
 
 export default function GlobalAdminDashboard() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
-  const [selectedChurch, setSelectedChurch] = useState<Church | null>(null);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<"suspend" | "activate" | "delete" | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<keyof ChurchWithStats>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Fetch all churches
-  const { data: churches, isLoading, error } = useQuery<Church[]>({
+  // Fetch churches data
+  const { data: churches = [], isLoading, refetch } = useQuery<ChurchWithStats[]>({
     queryKey: ["/api/global-admin/churches"],
-    retry: 1,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Logout handler
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/logout", { method: "POST" });
-      setLocation("/global-admin/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
-  // Action mutations
-  const suspendMutation = useMutation({
-    mutationFn: async (churchId: string) => {
-      const response = await fetch(`/api/global-admin/churches/${churchId}/suspend`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Failed to suspend church");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/global-admin/churches"] });
-      toast({
-        title: "Church suspended",
-        description: `${selectedChurch?.name} has been suspended successfully.`,
-      });
-      setConfirmDialogOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to suspend church",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const activateMutation = useMutation({
-    mutationFn: async (churchId: string) => {
-      const response = await fetch(`/api/global-admin/churches/${churchId}/activate`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Failed to activate church");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/global-admin/churches"] });
-      toast({
-        title: "Church activated",
-        description: `${selectedChurch?.name} has been activated successfully.`,
-      });
-      setConfirmDialogOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to activate church",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (churchId: string) => {
-      const response = await fetch(`/api/global-admin/churches/${churchId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete church");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/global-admin/churches"] });
-      toast({
-        title: "Church deleted",
-        description: `${selectedChurch?.name} has been deleted successfully.`,
-      });
-      setConfirmDialogOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to delete church",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const migrateMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/global-admin/migrate-churches", {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Failed to migrate churches");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/global-admin/churches"] });
-      toast({
-        title: "Migration complete",
-        description: data.message,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Migration failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Dialog confirmation handler
-  const handleConfirmAction = () => {
-    if (!selectedChurch) return;
-    
-    switch (confirmAction) {
-      case "suspend":
-        suspendMutation.mutate(selectedChurch.id);
-        break;
-      case "activate":
-        activateMutation.mutate(selectedChurch.id);
-        break;
-      case "delete":
-        deleteMutation.mutate(selectedChurch.id);
-        break;
-      default:
-        setConfirmDialogOpen(false);
-    }
-  };
-
-  // Status badge renderer
-  const renderStatusBadge = (status: Church["status"]) => {
+  // Handle church status badge color
+  const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return <Badge className="bg-green-500">Active</Badge>;
+        return "bg-green-100 text-green-800 hover:bg-green-100";
       case "SUSPENDED":
-        return <Badge variant="secondary" className="bg-yellow-500 text-black">Suspended</Badge>;
+        return "bg-amber-100 text-amber-800 hover:bg-amber-100";
       case "DELETED":
-        return <Badge variant="destructive">Deleted</Badge>;
+        return "bg-red-100 text-red-800 hover:bg-red-100";
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center space-y-4">
-          <RefreshCw className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-xl font-medium">Loading churches...</p>
-        </div>
-      </div>
-    );
-  }
+  // Format currency
+  const formatCurrency = (amount: string) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(parseFloat(amount));
+  };
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Data</CardTitle>
-            <CardDescription>
-              There was a problem loading the churches data. You may need to log in again.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/global-admin/churches"] })}>
-              Retry
-            </Button>
-            <Button onClick={() => setLocation("/global-admin/login")}>Return to Login</Button>
-          </CardFooter>
-        </Card>
-      </div>
+  // Format date
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Never";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Sorting and filtering logic
+  const handleSort = (field: keyof ChurchWithStats) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
+
+  const getSortIcon = (field: keyof ChurchWithStats) => {
+    if (field !== sortField) return null;
+    return sortDirection === "asc" ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
     );
-  }
+  };
+
+  // Filter and sort churches
+  const filteredAndSortedChurches = churches
+    .filter((church) => {
+      // Apply search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (!church.name.toLowerCase().includes(query)) {
+          return false;
+        }
+      }
+
+      // Apply status filter
+      if (statusFilter && church.status !== statusFilter) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      const fieldA = a[sortField];
+      const fieldB = b[sortField];
+
+      // Handle string comparison
+      if (typeof fieldA === "string" && typeof fieldB === "string") {
+        return sortDirection === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
+      }
+
+      // Handle number comparison
+      if (typeof fieldA === "number" && typeof fieldB === "number") {
+        return sortDirection === "asc" ? fieldA - fieldB : fieldB - fieldA;
+      }
+      
+      // Handle null values
+      if (fieldA === null && fieldB !== null) return sortDirection === "asc" ? -1 : 1;
+      if (fieldA !== null && fieldB === null) return sortDirection === "asc" ? 1 : -1;
+      if (fieldA === null && fieldB === null) return 0;
+
+      // For other types or mixed types (if both values are non-null at this point)
+      if (fieldA! < fieldB!) return sortDirection === "asc" ? -1 : 1;
+      if (fieldA! > fieldB!) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  // Compute stats
+  const totalChurches = churches.length;
+  const activeChurches = churches.filter(
+    (church) => church.status === "ACTIVE"
+  ).length;
+  const suspendedChurches = churches.filter(
+    (church) => church.status === "SUSPENDED"
+  ).length;
+  const totalMembers = churches.reduce(
+    (sum, church) => sum + church.totalMembers,
+    0
+  );
+  const totalDonationsAmount = churches.reduce(
+    (sum, church) => sum + parseFloat(church.totalDonations || "0"),
+    0
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">PlateSync Global Administrator</h1>
-          <Button variant="ghost" onClick={handleLogout}>
-            <LogOut className="h-5 w-5 mr-2" />
-            Log Out
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Global Administration</h1>
+          <p className="text-muted-foreground">
+            Manage all churches and global system settings
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="h-9"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.href = "/api/global-admin/logout"}
+            className="h-9"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
           </Button>
         </div>
-      </header>
+      </div>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Churches</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Building className="h-5 w-5 text-primary mr-2" />
-                  <p className="text-2xl font-bold">{churches?.length || 0}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Churches</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <p className="text-2xl font-bold">
-                    {churches?.filter(c => c.status === "ACTIVE").length || 0}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Suspended Churches</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <XCircle className="h-5 w-5 text-yellow-500 mr-2" />
-                  <p className="text-2xl font-bold">
-                    {churches?.filter(c => c.status === "SUSPENDED").length || 0}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Deleted Churches</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Archive className="h-5 w-5 text-red-500 mr-2" />
-                  <p className="text-2xl font-bold">
-                    {churches?.filter(c => c.status === "DELETED").length || 0}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Stats Overview */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Churches</CardTitle>
+            <Gauge className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalChurches}</div>
+            <p className="text-xs text-muted-foreground">
+              {activeChurches} active, {suspendedChurches} suspended
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalMembers}</div>
+            <p className="text-xs text-muted-foreground">
+              Across all churches
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Donations</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalDonationsAmount.toString())}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Lifetime donations processed
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">System Status</CardTitle>
+            <Settings className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Operational</div>
+            <p className="text-xs text-muted-foreground">
+              All services running normally
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Churches List Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold">Churches</h2>
+            <p className="text-sm text-muted-foreground">
+              Manage all registered churches in the system
+            </p>
           </div>
-
-          {/* Churches Table */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>All Churches</CardTitle>
-                <Button size="sm" onClick={() => migrateMutation.mutate()} disabled={migrateMutation.isPending}>
-                  {migrateMutation.isPending ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Migrating...
-                    </>
-                  ) : (
-                    "Migrate Legacy Data"
-                  )}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search churches..."
+                className="pl-8 w-full sm:w-[250px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select
+              value={statusFilter || ""}
+              onValueChange={(value) => setStatusFilter(value || null)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                <SelectItem value="DELETED">Deleted</SelectItem>
+              </SelectContent>
+            </Select>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Church
                 </Button>
-              </div>
-              <CardDescription>
-                Manage all church accounts in the system. View details, suspend accounts or archive deleted churches.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Church</DialogTitle>
+                  <DialogDescription>
+                    Create a new church and its initial administrator account.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="church-name">Church Name</Label>
+                    <Input id="church-name" placeholder="First Baptist Church" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="admin-email">Admin Email</Label>
+                    <Input id="admin-email" type="email" placeholder="admin@church.org" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="admin-first-name">First Name</Label>
+                      <Input id="admin-first-name" placeholder="John" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="admin-last-name">Last Name</Label>
+                      <Input id="admin-last-name" placeholder="Smith" />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="admin-password">Initial Password</Label>
+                    <Input id="admin-password" type="password" placeholder="•••••••••••" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline">Cancel</Button>
+                  <Button>Create Church</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <Card>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="w-[250px] cursor-pointer"
+                    onClick={() => handleSort("name")}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Church Name</span>
+                      {getSortIcon("name")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="w-[100px] cursor-pointer"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Status</span>
+                      {getSortIcon("status")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hidden md:table-cell"
+                    onClick={() => handleSort("totalMembers")}
+                  >
+                    <div className="flex items-center justify-end space-x-1">
+                      <span>Members</span>
+                      {getSortIcon("totalMembers")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hidden md:table-cell"
+                    onClick={() => handleSort("totalDonations")}
+                  >
+                    <div className="flex items-center justify-end space-x-1">
+                      <span>Total Donations</span>
+                      {getSortIcon("totalDonations")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hidden md:table-cell"
+                    onClick={() => handleSort("lastActivity")}
+                  >
+                    <div className="flex items-center justify-end space-x-1">
+                      <span>Last Activity</span>
+                      {getSortIcon("lastActivity")}
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[80px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Contact Email</TableHead>
-                    <TableHead>Registration Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      Loading churches...
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {churches && churches.length > 0 ? (
-                    churches.map((church) => (
-                      <TableRow key={church.id}>
-                        <TableCell className="font-medium">{church.name}</TableCell>
-                        <TableCell>{renderStatusBadge(church.status)}</TableCell>
-                        <TableCell>{church.contactEmail}</TableCell>
-                        <TableCell>{new Date(church.registrationDate).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
+                ) : filteredAndSortedChurches.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      No churches found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredAndSortedChurches.map((church) => (
+                    <TableRow key={church.id}>
+                      <TableCell className="font-medium">{church.name}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={getStatusBadgeColor(church.status)}
+                          variant="outline"
+                        >
+                          {church.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right hidden md:table-cell">
+                        {church.totalMembers}
+                      </TableCell>
+                      <TableCell className="text-right hidden md:table-cell">
+                        {formatCurrency(church.totalDonations)}
+                      </TableCell>
+                      <TableCell className="text-right hidden md:table-cell">
+                        {formatDate(church.lastActivity)}
+                      </TableCell>
+                      <TableCell>
+                        <Sheet>
+                          <SheetTrigger>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent>
+                            <SheetHeader>
+                              <SheetTitle>{church.name}</SheetTitle>
+                              <SheetDescription>
+                                ID: {church.id}
+                              </SheetDescription>
+                            </SheetHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h3 className="text-sm font-medium">Status</h3>
+                                  <p className="text-sm">
+                                    <Badge
+                                      className={getStatusBadgeColor(church.status)}
+                                      variant="outline"
+                                    >
+                                      {church.status}
+                                    </Badge>
+                                  </p>
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-medium">Created</h3>
+                                  <p className="text-sm">{formatDate(church.createdAt)}</p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h3 className="text-sm font-medium">Members</h3>
+                                  <p className="text-sm">{church.totalMembers}</p>
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-medium">Users</h3>
+                                  <p className="text-sm">{church.userCount}</p>
+                                </div>
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-medium">Donations Total</h3>
+                                <p className="text-sm">{formatCurrency(church.totalDonations)}</p>
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-medium">Last Activity</h3>
+                                <p className="text-sm">{formatDate(church.lastActivity)}</p>
+                              </div>
+                            </div>
+                            <div className="mt-6 space-y-2">
+                              <Button className="w-full" variant="default">
+                                Manage Users
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setLocation(`/global-admin/churches/${church.id}`)}>
-                                <Eye className="h-4 w-4 mr-2" />
+                              <Button className="w-full" variant="outline">
+                                {church.status === "ACTIVE" ? "Suspend" : "Activate"}
+                              </Button>
+                              <Button className="w-full" variant="outline">
                                 View Details
-                              </DropdownMenuItem>
-                              
-                              {church.status === "ACTIVE" && (
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setSelectedChurch(church);
-                                    setConfirmAction("suspend");
-                                    setConfirmDialogOpen(true);
-                                  }}
-                                  className="text-yellow-600"
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Suspend Church
-                                </DropdownMenuItem>
-                              )}
-                              
-                              {church.status === "SUSPENDED" && (
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setSelectedChurch(church);
-                                    setConfirmAction("activate");
-                                    setConfirmDialogOpen(true);
-                                  }}
-                                  className="text-green-600"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Activate Church
-                                </DropdownMenuItem>
-                              )}
-                              
-                              {(church.status === "ACTIVE" || church.status === "SUSPENDED") && (
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setSelectedChurch(church);
-                                    setConfirmAction("delete");
-                                    setConfirmDialogOpen(true);
-                                  }}
-                                  className="text-destructive"
-                                >
-                                  <Trash className="h-4 w-4 mr-2" />
-                                  Delete Church
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                        No churches found. You may need to migrate legacy data first.
+                              </Button>
+                            </div>
+                          </SheetContent>
+                        </Sheet>
                       </TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
-      {/* Confirmation Dialog */}
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {confirmAction === "suspend" && "Suspend Church"}
-              {confirmAction === "activate" && "Activate Church"}
-              {confirmAction === "delete" && "Delete Church"}
-            </DialogTitle>
-            <DialogDescription>
-              {confirmAction === "suspend" && 
-                `Are you sure you want to suspend ${selectedChurch?.name}? This will prevent all users from accessing their account.`
-              }
-              {confirmAction === "activate" && 
-                `Are you sure you want to activate ${selectedChurch?.name}? This will restore access to all users.`
-              }
-              {confirmAction === "delete" && 
-                `Are you sure you want to delete ${selectedChurch?.name}? This action cannot be undone. The church data will be archived.`
-              }
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant={confirmAction === "delete" ? "destructive" : "default"}
-              onClick={handleConfirmAction}
-              disabled={
-                (confirmAction === "suspend" && suspendMutation.isPending) ||
-                (confirmAction === "activate" && activateMutation.isPending) ||
-                (confirmAction === "delete" && deleteMutation.isPending)
-              }
-            >
-              {(
-                (confirmAction === "suspend" && suspendMutation.isPending) ||
-                (confirmAction === "activate" && activateMutation.isPending) ||
-                (confirmAction === "delete" && deleteMutation.isPending)
-              ) ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Confirm"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

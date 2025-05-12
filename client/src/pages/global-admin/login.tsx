@@ -1,54 +1,71 @@
+"use client";
+
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
-// Schema for Global Admin login
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" })
+// Components
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Lock, Shield, LogIn } from "lucide-react";
+
+// Form schema for global admin login
+const globalAdminLoginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type GlobalAdminLoginFormValues = z.infer<typeof globalAdminLoginSchema>;
 
-export default function GlobalAdminLogin() {
+export default function GlobalAdminLoginPage() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const [error, setError] = useState<string | null>(null);
+  const [_, setLocation] = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize form with validation schema
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  // Form definition
+  const form = useForm<GlobalAdminLoginFormValues>({
+    resolver: zodResolver(globalAdminLoginSchema),
     defaultValues: {
       email: "",
-      password: ""
-    }
+      password: "",
+    },
   });
 
-  // Handle Global Admin login - this would be implemented server-side
+  // Login mutation
   const loginMutation = useMutation({
-    mutationFn: async (values: LoginFormValues) => {
-      // In a real implementation, this would validate Global Admin credentials
-      // and the secret key against server security requirements
-      const response = await fetch("/api/global-admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values)
-      });
-
+    mutationFn: async (credentials: GlobalAdminLoginFormValues) => {
+      const response = await apiRequest(
+        "POST",
+        "/api/global-admin/login",
+        credentials
+      );
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Authentication failed");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login failed");
       }
-
+      
       return await response.json();
     },
     onSuccess: () => {
@@ -59,34 +76,49 @@ export default function GlobalAdminLogin() {
       setLocation("/global-admin/dashboard");
     },
     onError: (error: Error) => {
-      setError(error.message);
       toast({
         title: "Login failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Form submission handler
-  function onSubmit(values: LoginFormValues) {
-    setError(null);
-    loginMutation.mutate(values);
-  }
+  const onSubmit = (data: GlobalAdminLoginFormValues) => {
+    loginMutation.mutate(data);
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-6">
-        <Card className="w-full">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center font-bold">PlateSync Global Admin</CardTitle>
-            <CardDescription className="text-center">
-              Secure authentication required for Global Administrator access
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center">
+            <div className="rounded-full bg-primary/10 p-3">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">
+            Global Administrator
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to access multi-tenant administration features
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Administrative Access</CardTitle>
+            <CardDescription>
+              Only authorized global administrators can access this area
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 <FormField
                   control={form.control}
                   name="email"
@@ -94,12 +126,18 @@ export default function GlobalAdminLogin() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="admin@example.com" type="email" {...field} />
+                        <Input
+                          placeholder="admin@example.com"
+                          type="email"
+                          autoComplete="email"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="password"
@@ -107,45 +145,43 @@ export default function GlobalAdminLogin() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <div className="relative">
+                          <Input
+                            placeholder="••••••••"
+                            type="password"
+                            autoComplete="current-password"
+                            {...field}
+                          />
+                          <Lock className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {error && (
-                  <div className="text-sm font-medium text-destructive">{error}</div>
-                )}
                 <Button
                   type="submit"
-                  className="w-full font-semibold bg-primary"
-                  disabled={loginMutation.isPending}
+                  className="w-full"
+                  disabled={isLoading || loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? (
+                  {(isLoading || loginMutation.isPending) ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Authenticating...
+                      <span className="mr-2">Authenticating</span>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
                     </>
                   ) : (
-                    "Log In"
+                    <>
+                      <LogIn className="mr-2 h-4 w-4" /> Sign In
+                    </>
                   )}
                 </Button>
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="text-sm text-center text-muted-foreground">
-              This login is for PlateSync Global Administrators only. <br />
-              Regular church users should log in through the main login page.
-            </div>
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => setLocation("/login")}
-            >
-              Return to Regular Login
-            </Button>
+          <CardFooter className="justify-between text-xs text-muted-foreground">
+            <p>Secure administrative access</p>
+            <p>PlateSync © {new Date().getFullYear()}</p>
           </CardFooter>
         </Card>
       </div>
