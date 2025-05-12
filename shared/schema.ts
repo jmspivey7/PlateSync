@@ -16,6 +16,46 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 import { format } from "date-fns";
 
+// Define church status enum
+export const churchStatusEnum = z.enum(["ACTIVE", "SUSPENDED", "DELETED"]);
+export type ChurchStatus = z.infer<typeof churchStatusEnum>;
+
+// Churches table to properly support multi-tenant architecture
+export const churches = pgTable("churches", {
+  id: varchar("id").primaryKey().notNull(),  // Unique identifier for the church
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 20 }).default("ACTIVE").notNull(),
+  contactEmail: varchar("contact_email").notNull(),
+  phone: varchar("phone", { length: 20 }),
+  address: varchar("address", { length: 255 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 50 }),
+  zipCode: varchar("zip_code", { length: 20 }),
+  logoUrl: varchar("logo_url"),
+  websiteUrl: varchar("website_url"),
+  denomination: varchar("denomination", { length: 100 }),
+  notes: text("notes"),
+  membersCount: integer("members_count").default(0),
+  accountOwnerId: varchar("account_owner_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  lastLoginDate: timestamp("last_login_date"),
+  registrationDate: timestamp("registration_date").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+  archiveUrl: varchar("archive_url"),  // URL to the archived ZIP if church is deleted
+});
+
+// Schema for church record insertion
+export const insertChurchSchema = createInsertSchema(churches).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  registrationDate: true,
+  deletedAt: true,
+  archiveUrl: true,
+  membersCount: true
+});
+
 // Session storage table for Replit Auth
 export const sessions = pgTable(
   "sessions",
@@ -28,7 +68,7 @@ export const sessions = pgTable(
 );
 
 // Define user roles enum
-export const userRoleEnum = z.enum(["ACCOUNT_OWNER", "ADMIN", "STANDARD"]);
+export const userRoleEnum = z.enum(["GLOBAL_ADMIN", "ACCOUNT_OWNER", "ADMIN", "STANDARD"]);
 export type UserRole = z.infer<typeof userRoleEnum>;
 
 // User storage table for Replit Auth
@@ -248,6 +288,23 @@ export type User = typeof users.$inferSelect & {
   isMasterAdmin?: boolean;
 };
 
+// Define relations between churches and users
+export const churchesRelations = relations(churches, ({ many, one }) => ({
+  users: many(users),
+  accountOwner: one(users, {
+    fields: [churches.accountOwnerId],
+    references: [users.id],
+  }),
+}));
+
+// Define relations between users and churches
+export const usersRelations = relations(users, ({ one }) => ({
+  church: one(churches, {
+    fields: [users.churchId],
+    references: [churches.id],
+  }),
+}));
+
 // Types for our application
 export type InsertMember = z.infer<typeof insertMemberSchema>;
 export type Member = typeof members.$inferSelect;
@@ -261,6 +318,9 @@ export type Donation = typeof donations.$inferSelect;
 
 export type InsertServiceOption = z.infer<typeof insertServiceOptionSchema>;
 export type ServiceOption = typeof serviceOptions.$inferSelect;
+
+export type InsertChurch = z.infer<typeof insertChurchSchema>;
+export type Church = typeof churches.$inferSelect;
 
 // Extended types for front-end display
 export type DonationWithMember = Donation & {

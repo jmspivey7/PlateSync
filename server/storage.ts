@@ -48,6 +48,7 @@ export interface IStorage {
   updateUserRole(id: string, role: string): Promise<User>;
   createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  
   // Account Owner functions
   getAccountOwnerForChurch(churchId: string): Promise<User | undefined>;
   getMasterAdminForChurch(churchId: string): Promise<User | undefined>; // Backward compatibility
@@ -55,6 +56,22 @@ export interface IStorage {
   setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined>; // Backward compatibility
   transferAccountOwnership(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>;
   transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>; // Backward compatibility
+  
+  // Global Admin operations
+  getAllChurches(): Promise<Church[]>;
+  getChurch(id: string): Promise<Church | undefined>;
+  getChurchWithStats(id: string): Promise<Church & { 
+    totalMembers: number; 
+    totalDonations: string;
+    userCount: number;
+    lastActivity: Date | null;
+  } | undefined>;
+  createChurch(churchData: InsertChurch): Promise<Church>;
+  updateChurch(id: string, data: Partial<Church>): Promise<Church | undefined>;
+  suspendChurch(id: string): Promise<Church | undefined>;
+  activateChurch(id: string): Promise<Church | undefined>;
+  deleteChurch(id: string): Promise<{ archiveUrl: string | null }>;
+  migrateDataToNewChurchTable(): Promise<number>; // To help migrate existing data
   
   // Member operations
   getMembers(churchId: string): Promise<Member[]>;
