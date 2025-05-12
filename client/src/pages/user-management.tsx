@@ -608,7 +608,7 @@ const UserManagement = () => {
                           1. Current user is the account owner (not just an admin)
                           2. Selected user is not already an account owner
                           3. Selected user is an administrator (we don't want to transfer to standard users) */}
-                      {currentUser?.isAccountOwner && !isSelectedUserAccountOwner && selectedUser.role === "ADMIN" && (
+                      {isCurrentUserAccountOwner && !isSelectedUserAccountOwner && selectedUser.role === "ADMIN" && (
                         <Button 
                           variant="outline"
                           className="ml-2"
