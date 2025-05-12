@@ -173,42 +173,38 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Get the church details
-    const [church] = await db
-      .select()
-      .from(churches)
-      .where(eq(churches.id, id));
+    // Get the church details using raw SQL for more reliable query
+    const churchResult = await db.execute(
+      `SELECT * FROM churches WHERE id = $1 LIMIT 1`,
+      [id]
+    );
+    
+    const church = churchResult.rows?.[0];
     
     if (!church) {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Get user count
-    const [{ userCount }] = await db
-      .select({
-        userCount: sql<number>`count(*)`
-      })
-      .from(users)
-      .where(eq(users.church_id, id));
+    // Get user count - use raw SQL to avoid column name mismatches
+    const userResult = await db.execute(
+      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = $1`,
+      [id]
+    );
+    const userCount = parseInt(userResult.rows[0]?.userCount || '0');
       
-    // Get members count
-    const [{ totalMembers }] = await db
-      .select({
-        totalMembers: sql<number>`count(*)`
-      })
-      .from(members)
-      .where(eq(members.churchId, id));
+    // Get members count  
+    const membersResult = await db.execute(
+      `SELECT COUNT(*) as "totalMembers" FROM members WHERE church_id = $1`,
+      [id]
+    );
+    const totalMembers = parseInt(membersResult.rows[0]?.totalMembers || '0');
       
     // Get total donations
-    const [totalDonationsResult] = await db
-      .select({
-        totalDonations: sql<string>`SUM(amount)`
-      })
-      .from(donations)
-      .where(eq(donations.churchId, id));
-    
-    // Format the total donations amount
-    const totalDonations = totalDonationsResult.totalDonations || "0.00";
+    const donationsResult = await db.execute(
+      `SELECT SUM(amount) as "totalDonations" FROM donations WHERE church_id = $1`,
+      [id]
+    );
+    const totalDonations = donationsResult.rows[0]?.totalDonations || '0.00';
     
     res.status(200).json({
       ...church,
