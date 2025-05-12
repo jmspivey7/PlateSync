@@ -535,15 +535,12 @@ const UserManagement = () => {
             
             if (!selectedUser) return <div>User not found</div>;
             
-            const isCurrentUserAccountOwner = 
-              currentUser?.role === "ACCOUNT_OWNER" || 
-              currentUser?.isAccountOwner ||
-              currentUser?.isMasterAdmin;
+            // Use isAccountOwner from the useAuth hook
+            const { isAccountOwner: isCurrentUserAccountOwner } = useAuth();
             
             const isSelectedUserAccountOwner = 
               selectedUser.role === "ACCOUNT_OWNER" || 
-              selectedUser.isAccountOwner ||
-              selectedUser.isMasterAdmin;
+              selectedUser.isAccountOwner;
             
             return (
               <div className="space-y-6">
