@@ -112,6 +112,11 @@ function Router() {
 
       <Route path="/email-template/:id" component={EmailTemplateEditor} />
       
+      {/* Global Admin Routes */}
+      <Route path="/global-admin/login" component={GlobalAdminLogin} />
+      <Route path="/global-admin/dashboard" component={GlobalAdminDashboard} />
+      <Route path="/global-admin/churches/:id" component={ChurchDetail} />
+      
       <Route component={NotFound} />
     </Switch>
   );
