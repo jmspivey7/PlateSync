@@ -89,7 +89,7 @@ const GlobalAdminAccountDropdown = ({
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="cursor-pointer"
-            onClick={() => setLocation("/global-admin/dashboard")}
+            onClick={() => setLocation("/global-admin/churches")}
           >
             <Building2 className="mr-2 h-4 w-4" />
             <span>Churches</span>

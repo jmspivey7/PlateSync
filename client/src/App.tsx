@@ -140,7 +140,8 @@ function Router() {
       {/* Global Admin Routes */}
       <Route path="/global-admin/login" component={GlobalAdminLogin} />
       <Route path="/global-admin/dashboard" component={GlobalAdminDashboard} />
-      <Route path="/global-admin/churches/:id" component={ChurchDetail} />
+      <Route path="/global-admin/churches" component={GlobalAdminChurches} />
+      <Route path="/global-admin/church/:id" component={ChurchDetail} />
       <Route path="/global-admin/profile" component={GlobalAdminProfile} />
       <Route path="/global-admin/help" component={GlobalAdminHelp} />
       <Route path="/global-admin/users" component={GlobalAdminUsers} />

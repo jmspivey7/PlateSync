@@ -34,15 +34,12 @@ export default function GlobalAdminProfile() {
       {/* Header */}
       <header className="bg-white shadow-md border-b">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <img 
-              src="/logo-with-text.png" 
-              alt="PlateSync Logo" 
-              className="h-10 object-contain" 
-            />
-            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Admin</h1>
-          </div>
+          <img 
+            src="/logo-with-text.png" 
+            alt="PlateSync Logo" 
+            className="h-10 object-contain" 
+          />
+          <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
           <div className="flex items-center space-x-4">
             <Button 
               variant="outline" 
