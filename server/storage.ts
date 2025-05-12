@@ -346,11 +346,38 @@ export class DatabaseStorage implements IStorage {
         return user.churchId;
       }
       
-      // If user is an ADMIN and doesn't have a churchId, they are their own church
+      // If user is an ADMIN and doesn't have a churchId, find or create a church ID
       if (user.role === "ADMIN") {
-        console.log(`User ${userId} is an ADMIN, using their ID as churchId`);
+        console.log(`User ${userId} is an ADMIN without a churchId - finding a church for them`);
         
-        // Set this ADMIN's churchId to be themselves if not already set
+        // Instead of making the user their own church, look for an existing church ID
+        // or generate a more appropriate church identifier
+        
+        // First, check if this admin has created any batches with a different churchId
+        const [adminBatch] = await db
+          .select({
+            churchId: batches.churchId
+          })
+          .from(batches)
+          .where(eq(batches.churchId, userId))
+          .limit(1);
+          
+        if (adminBatch?.churchId) {
+          console.log(`Found existing churchId ${adminBatch.churchId} from batches`);
+          
+          // Update the admin to use this churchId
+          await db
+            .update(users)
+            .set({ churchId: adminBatch.churchId })
+            .where(eq(users.id, userId));
+            
+          return adminBatch.churchId;
+        }
+        
+        // If no existing churchId found, use the admin's own ID (legacy behavior)
+        // but flag this in the logs
+        console.log(`No existing churchId found - using legacy behavior with admin's ID ${userId}`);
+        
         await db
           .update(users)
           .set({ churchId: userId })
@@ -712,19 +739,19 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      // Update the user to set as Account Owner
+      // Do NOT change the churchId here - we want to preserve the association with the church
+      // Update only the role and isAccountOwner flag
       const [updatedUser] = await db
         .update(users)
         .set({
           role: 'ACCOUNT_OWNER',
           isAccountOwner: true,
-          churchId: churchId,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId))
         .returning();
         
-      console.log(`Set user ${userId} as Account Owner for church ${churchId}`);
+      console.log(`Set user ${userId} as Account Owner for church ${churchId} without changing churchId`);
       
       return updatedUser;
     } catch (error) {
@@ -797,35 +824,9 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(users.id, toUserId));
         
-        // 3. Get all users who have the old Account Owner as their churchId
-        const usersToUpdate = await tx
-          .select()
-          .from(users)
-          .where(eq(users.churchId, fromUserId));
-          
-        console.log(`Found ${usersToUpdate.length} users to update from old Account Owner ${fromUserId} to new Account Owner ${toUserId}`);
-        
-        // 4. Update all these users to point to the new Account Owner
-        for (const userToUpdate of usersToUpdate) {
-          if (userToUpdate.id !== toUserId) {  // Don't update the new Account Owner yet
-            await tx
-              .update(users)
-              .set({ 
-                churchId: toUserId,
-                updatedAt: new Date()
-              })
-              .where(eq(users.id, userToUpdate.id));
-          }
-        }
-        
-        // 5. Make sure the new Account Owner points to themselves
-        await tx
-          .update(users)
-          .set({
-            churchId: toUserId,
-            updatedAt: new Date()
-          })
-          .where(eq(users.id, toUserId));
+        // Important: We DO NOT update the churchId of any users. The churchId
+        // should remain constant and represent the actual church, not the Account Owner's ID.
+        console.log(`Transferred Account Ownership from ${fromUserId} to ${toUserId} while preserving churchId ${churchId}`);
       });
         
       console.log(`Transferred Account Ownership from ${fromUserId} to ${toUserId} for church ${churchId}`);
