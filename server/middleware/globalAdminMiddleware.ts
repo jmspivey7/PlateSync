@@ -1,73 +1,86 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
+import { db } from "../db";
+import { churches } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
-/**
- * Middleware to ensure a user is a Global Admin
- * This is the highest level of authorization in the system
- */
+// Middleware to check if the user is a Global Admin
 export const isGlobalAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Authentication required" });
+    // Check if user is authenticated
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const userRole = await storage.getUserRole(req.user.id);
+    const userId = req.session.userId;
     
-    if (userRole !== "GLOBAL_ADMIN") {
+    // Get user from database
+    const user = await storage.getUser(userId);
+    
+    // If user not found or not a Global Admin
+    if (!user || user.role !== "GLOBAL_ADMIN") {
       return res.status(403).json({ 
-        message: "Access denied. Global Administrator role required." 
+        message: "Forbidden: Global Administrator access required" 
       });
     }
 
+    // User is a Global Admin, proceed
     next();
   } catch (error) {
-    console.error("Error in global admin middleware:", error);
-    res.status(500).json({ message: "Server error verifying administrator access" });
+    console.error("Global Admin middleware error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-/**
- * Middleware to check if a user is trying to access data that belongs to a suspended or deleted church
- * Global admins can bypass this check
- */
+// Middleware to restrict access for users from suspended or deleted churches
 export const restrictSuspendedChurchAccess = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Global admins can always access everything
-    const userRole = req.user ? await storage.getUserRole(req.user.id) : null;
-    if (userRole === "GLOBAL_ADMIN") {
+    // Skip for Global Admins and unauthenticated requests (they'll be caught by auth middleware)
+    if (!req.session || !req.session.userId) {
       return next();
     }
-
-    // Get churchId from user or from request
-    const churchId = req.user?.churchId || req.params.churchId || req.body.churchId;
     
-    if (!churchId) {
-      return next(); // No church specified, continue
+    const user = await storage.getUser(req.session.userId);
+    
+    // Global Admins bypass this check
+    if (user?.role === "GLOBAL_ADMIN") {
+      return next();
     }
-
+    
+    // If user has no church ID, let them proceed (this is not ideal but prevents errors)
+    if (!user?.churchId) {
+      return next();
+    }
+    
     // Check church status
-    const church = await storage.getChurch(churchId);
+    const [church] = await db
+      .select()
+      .from(churches)
+      .where(eq(churches.id, user.churchId));
     
+    // If church not found, something is wrong
     if (!church) {
-      return next(); // Church not found, this will be handled by the route handler
+      console.error(`Church not found for ID: ${user.churchId}`);
+      return res.status(403).json({ message: "Account issue detected. Please contact support." });
     }
-
-    // If church is suspended or deleted, restrict access
+    
+    // Check if church is suspended or deleted
     if (church.status === "SUSPENDED") {
       return res.status(403).json({ 
-        message: "This church account has been suspended. Please contact support for assistance." 
+        message: "Your church account has been suspended. Please contact support for assistance."
       });
     }
-
+    
     if (church.status === "DELETED") {
-      return res.status(404).json({ 
-        message: "This church account has been deleted." 
+      return res.status(403).json({ 
+        message: "This church account has been deleted and is no longer accessible."
       });
     }
-
+    
+    // Church is active, proceed
     next();
   } catch (error) {
-    console.error("Error in suspended church access middleware:", error);
-    next(); // Continue on error to avoid blocking legitimate requests
+    console.error("Church status check error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

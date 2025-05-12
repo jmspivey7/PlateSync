@@ -427,3 +427,11 @@ export const insertVerificationCodeSchema = createInsertSchema(verificationCodes
 
 export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
+
+// Extended church type with additional statistics used in Global Admin
+export interface ChurchWithStats extends Church {
+  totalMembers: number;
+  totalDonations: string;
+  userCount: number;
+  lastActivity: string | null;
+}
