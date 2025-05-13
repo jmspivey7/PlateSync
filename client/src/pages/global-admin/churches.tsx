@@ -74,7 +74,7 @@ export default function GlobalAdminChurches() {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   
@@ -222,14 +222,11 @@ export default function GlobalAdminChurches() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center mb-6">
           <Building2 className="h-7 w-7 text-[#69ad4c] mr-3" />
-          <h2 className="text-2xl font-bold">Churches Management</h2>
+          <h2 className="text-2xl font-bold">Church Management</h2>
         </div>
         
         <div className="mb-6">
           <Card className="border-gray-200 shadow-md overflow-hidden">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle className="text-[#4a8330]">Churches Overview</CardTitle>
-            </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1 relative">
@@ -265,13 +262,6 @@ export default function GlobalAdminChurches() {
                       <SelectItem value="DELETED">Deleted</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="w-full sm:w-auto">
-                  <Button className="w-full bg-[#69ad4c] hover:bg-[#5a9740]">
-                    <Plus className="h-4 w-4 mr-2" />
-                    <Link href="/global-admin/church-add">Add Church</Link>
-                  </Button>
                 </div>
               </div>
               
@@ -319,12 +309,15 @@ export default function GlobalAdminChurches() {
                           <TableHead className="hidden md:table-cell">Created</TableHead>
                           <TableHead className="hidden md:table-cell">Last Activity</TableHead>
                           <TableHead className="hidden lg:table-cell text-right">Donations</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {data.churches.map((church) => (
-                          <TableRow key={church.id}>
+                          <TableRow 
+                            key={church.id} 
+                            onClick={() => handleDetailView(church.id)} 
+                            className="cursor-pointer hover:bg-[#69ad4c]/5 transition-colors"
+                          >
                             <TableCell className="font-medium truncate max-w-[200px]">
                               {church.name}
                             </TableCell>
@@ -347,16 +340,6 @@ export default function GlobalAdminChurches() {
                             </TableCell>
                             <TableCell className="hidden lg:table-cell text-right">
                               {formatCurrency(church.totalDonations)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
-                                onClick={() => handleDetailView(church.id)}
-                              >
-                                Details <ExternalLink className="h-4 w-4 ml-1" />
-                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
