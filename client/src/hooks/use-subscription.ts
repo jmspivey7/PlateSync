@@ -48,7 +48,17 @@ export function useSubscription() {
     isPending: isStartingTrial
   } = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/subscription/start-trial", {});
+      const res = await fetch("/api/subscription/start-trial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to start trial");
+      }
+      
       const data = await res.json();
       return data as CreateTrialResponse;
     },
@@ -74,7 +84,17 @@ export function useSubscription() {
     isPending: isUpgrading 
   } = useMutation({
     mutationFn: async (plan: string) => {
-      const res = await apiRequest("POST", "/api/subscription/init-upgrade", { plan });
+      const res = await fetch("/api/subscription/init-upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan })
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to upgrade plan");
+      }
+      
       const data = await res.json();
       return data as UpgradeInitResponse;
     },
@@ -84,6 +104,7 @@ export function useSubscription() {
         title: "Payment initiated",
         description: data.message,
       });
+      return data;
     },
     onError: (error: Error) => {
       toast({
@@ -115,13 +136,34 @@ export function useSubscription() {
     }
   };
 
+  // Create async versions of the mutations
+  const startTrialAsync = async () => {
+    return new Promise<CreateTrialResponse>((resolve, reject) => {
+      startTrial(undefined, {
+        onSuccess: (data) => resolve(data),
+        onError: (error) => reject(error),
+      });
+    });
+  };
+
+  const upgradePlanAsync = async (plan: string) => {
+    return new Promise<UpgradeInitResponse>((resolve, reject) => {
+      upgradePlan(plan, {
+        onSuccess: (data) => resolve(data),
+        onError: (error) => reject(error),
+      });
+    });
+  };
+
   return {
     subscriptionStatus,
     isLoading,
     error,
     startTrial,
+    startTrialAsync,
     isStartingTrial,
     upgradePlan,
+    upgradePlanAsync,
     isUpgrading,
     formatTrialRemaining,
   };

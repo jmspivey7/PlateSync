@@ -90,7 +90,11 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
         
         // Notify backend about successful payment
         try {
-          await apiRequest("POST", "/api/subscription/confirm-payment", { plan });
+          await fetch("/api/subscription/confirm-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan })
+          });
         } catch (err) {
           console.error("Failed to confirm payment with server:", err);
         }
@@ -181,13 +185,14 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
 
 export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const { upgradePlan } = useSubscription();
+  const { upgradePlanAsync, isUpgrading } = useSubscription();
 
   useEffect(() => {
     // Initiate the payment intent
     const initPayment = async () => {
       try {
-        const data = await upgradePlan(plan);
+        // Use the async mutation
+        const data = await upgradePlanAsync(plan);
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
         } else {
@@ -199,7 +204,7 @@ export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
     };
 
     initPayment();
-  }, [plan, upgradePlan]);
+  }, [plan, upgradePlanAsync]);
 
   if (!clientSecret) {
     return (
