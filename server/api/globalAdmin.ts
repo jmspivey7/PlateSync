@@ -137,40 +137,34 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
           .from(users)
           .where(eq(users.churchId, church.id));
         
-        // Get member count for this church
-        const [{ memberCount = 0 }] = await db
-          .select({
-            memberCount: sql<number>`count(*)`
-          })
-          .from(members)
-          .where(eq(members.churchId, church.id));
+        // Use SQL to get member count for this church safely
+        const memberResult = await db.execute(
+          `SELECT COUNT(*) as "memberCount" FROM members WHERE church_id = '${church.id}'`
+        );
+        const memberCount = parseInt(memberResult.rows?.[0]?.memberCount || '0');
         
-        // Get total donations for this church
-        const [{ donationSum = "0.00" }] = await db
-          .select({
-            donationSum: sql<string>`COALESCE(SUM(amount)::text, '0.00')`
-          })
-          .from(donations)
-          .where(eq(donations.churchId, church.id));
+        // Use SQL to get total donations for this church safely
+        const donationResult = await db.execute(
+          `SELECT COALESCE(SUM(amount)::text, '0.00') as "donationSum" FROM donations WHERE church_id = '${church.id}'`
+        );
+        const donationSum = donationResult.rows?.[0]?.donationSum || '0.00';
           
-        // Get the most recent login date (using updatedAt as a proxy) from any user in this church
-        const [mostRecentUser] = await db
-          .select({
-            updatedAt: users.updatedAt
-          })
-          .from(users)
-          .where(eq(users.churchId, church.id))
-          .orderBy(desc(users.updatedAt))
-          .limit(1);
+        // Use SQL to get the most recent login date (using updatedAt as a proxy) from any user in this church
+        const userResult = await db.execute(
+          `SELECT updated_at FROM users WHERE church_id = '${church.id}' ORDER BY updated_at DESC LIMIT 1`
+        );
         
-        const lastLoginDate = mostRecentUser?.updatedAt || church.updatedAt;
+        // If no users have logged in recently, fall back to the church's updated_at date
+        const lastLoginDate = userResult?.rows?.[0]?.updated_at 
+          ? new Date(userResult.rows[0].updated_at) 
+          : church.updatedAt;
         
         return {
           ...church,
           userCount,
           totalMembers: memberCount,
           totalDonations: donationSum,
-          lastActivity: lastLoginDate.toISOString(),
+          lastActivity: lastLoginDate ? lastLoginDate.toISOString() : null,
         };
       })
     );
