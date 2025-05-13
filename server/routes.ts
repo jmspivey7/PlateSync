@@ -15,6 +15,13 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { generateCountReportPDF } from "./pdf-generator";
+import { 
+  subscriptions, 
+  subscriptionStatusEnum, 
+  subscriptionPlanEnum, 
+  type Subscription, 
+  type InsertSubscription 
+} from "@shared/schema";
 
 // Password hashing function using scrypt
 async function scryptHash(password: string): Promise<string> {
