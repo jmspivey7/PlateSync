@@ -279,25 +279,12 @@ export default function GlobalAdminChurches() {
                   </Button>
                 </div>
               ) : isLoading ? (
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-4 w-48" />
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="relative h-16 w-16">
+                    <Loader2 className="h-16 w-16 animate-spin text-[#69ad4c]" />
+                    <Building2 className="h-8 w-8 text-[#69ad4c] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
                   </div>
-                  <div className="rounded-md border">
-                    <div className="h-10 px-4 flex items-center bg-muted/50">
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="h-16 px-4 flex items-center border-t">
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-between">
-                    <Skeleton className="h-10 w-32" />
-                    <Skeleton className="h-10 w-48" />
-                  </div>
+                  <p className="mt-4 text-muted-foreground">Loading churches...</p>
                 </div>
               ) : data && data.churches && data.churches.length > 0 ? (
                 <>

@@ -84,32 +84,6 @@ export default function ChurchDetail() {
   const [_, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   
-  // Check if the global admin is authenticated
-  useEffect(() => {
-    const token = localStorage.getItem("globalAdminToken");
-    if (!token) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to access the global admin portal",
-        variant: "destructive",
-      });
-      setLocation("/global-admin/login");
-      return;
-    }
-    
-    // If we have a token but are getting a 404, try refreshing the token
-    const refreshToken = () => {
-      // Simple refresh by checking localStorage again
-      const currentToken = localStorage.getItem("globalAdminToken");
-      if (currentToken) {
-        // Force a data refetch
-        refetchChurch?.();
-      }
-    };
-    
-    refreshToken();
-  }, [toast, setLocation, refetchChurch]);
-  
   // Function to fetch church details
   const fetchChurchDetails = async (): Promise<Church> => {
     const token = localStorage.getItem("globalAdminToken");
@@ -131,6 +105,35 @@ export default function ChurchDetail() {
     return response.json();
   };
   
+  // Query to fetch church details - define before using in useEffect
+  const {
+    data: church,
+    isLoading: isLoadingChurch,
+    isError: isChurchError,
+    error: churchError,
+    refetch: refetchChurch,
+  } = useQuery<Church, Error>({
+    queryKey: ["church", id],
+    queryFn: fetchChurchDetails,
+  });
+  
+  // Check if the global admin is authenticated
+  useEffect(() => {
+    const token = localStorage.getItem("globalAdminToken");
+    if (!token) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to access the global admin portal",
+        variant: "destructive",
+      });
+      setLocation("/global-admin/login");
+      return;
+    }
+    
+    // Force a data refetch after authentication check
+    refetchChurch();
+  }, [toast, setLocation, refetchChurch]);
+  
   // Function to fetch church users
   const fetchChurchUsers = async (): Promise<User[]> => {
     const token = localStorage.getItem("globalAdminToken");
@@ -151,18 +154,6 @@ export default function ChurchDetail() {
     
     return response.json();
   };
-  
-  // Query to fetch church details
-  const {
-    data: church,
-    isLoading: isLoadingChurch,
-    isError: isChurchError,
-    error: churchError,
-    refetch: refetchChurch,
-  } = useQuery<Church, Error>({
-    queryKey: ["church", id],
-    queryFn: fetchChurchDetails,
-  });
   
   // Query to fetch church users
   const {
