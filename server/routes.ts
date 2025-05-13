@@ -4554,7 +4554,7 @@ PlateSync Reporting System`;
   });
   
   // Initialize subscription upgrade with Stripe integration
-  app.post('/api/subscription/upgrade/init', isAuthenticated, isAccountOwner, async (req: any, res) => {
+  app.post('/api/subscription/init-upgrade', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
       

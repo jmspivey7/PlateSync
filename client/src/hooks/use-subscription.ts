@@ -48,19 +48,15 @@ export function useSubscription() {
     isPending: isStartingTrial
   } = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/subscription/start-trial", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({})
-      });
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Failed to start trial");
+      try {
+        return await apiRequest<CreateTrialResponse>("/api/subscription/start-trial", { 
+          method: "POST",
+          body: {} 
+        });
+      } catch (error) {
+        console.error("Error starting trial:", error);
+        throw error instanceof Error ? error : new Error("Unknown error starting trial");
       }
-      
-      const data = await res.json();
-      return data as CreateTrialResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
@@ -84,19 +80,15 @@ export function useSubscription() {
     isPending: isUpgrading 
   } = useMutation({
     mutationFn: async (plan: string) => {
-      const res = await fetch("/api/subscription/init-upgrade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan })
-      });
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Failed to upgrade plan");
+      try {
+        return await apiRequest<UpgradeInitResponse>("/api/subscription/init-upgrade", {
+          method: "POST",
+          body: { plan }
+        });
+      } catch (error) {
+        console.error("Error upgrading plan:", error);
+        throw error instanceof Error ? error : new Error("Unknown error upgrading plan");
       }
-      
-      const data = await res.json();
-      return data as UpgradeInitResponse;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
@@ -136,23 +128,38 @@ export function useSubscription() {
     }
   };
 
-  // Create async versions of the mutations
-  const startTrialAsync = async () => {
-    return new Promise<CreateTrialResponse>((resolve, reject) => {
-      startTrial(undefined, {
-        onSuccess: (data) => resolve(data),
-        onError: (error) => reject(error),
+  // Create async versions of the mutations with enhanced error handling
+  const startTrialAsync = async (): Promise<CreateTrialResponse> => {
+    try {
+      return await new Promise<CreateTrialResponse>((resolve, reject) => {
+        startTrial(undefined, {
+          onSuccess: (data) => resolve(data),
+          onError: (error) => reject(error),
+        });
       });
-    });
+    } catch (error) {
+      console.error("Trial start error:", error);
+      throw error;
+    }
   };
 
-  const upgradePlanAsync = async (plan: string) => {
-    return new Promise<UpgradeInitResponse>((resolve, reject) => {
-      upgradePlan(plan, {
-        onSuccess: (data) => resolve(data),
-        onError: (error) => reject(error),
+  const upgradePlanAsync = async (plan: string): Promise<UpgradeInitResponse> => {
+    try {
+      return await new Promise<UpgradeInitResponse>((resolve, reject) => {
+        upgradePlan(plan, {
+          onSuccess: (data) => resolve(data),
+          onError: (error) => reject(error),
+        });
       });
-    });
+    } catch (error) {
+      console.error("Plan upgrade error:", error);
+      throw error;
+    }
+  };
+  
+  // Add a function to check if the subscription is ready to be shown
+  const isSubscriptionReady = (): boolean => {
+    return !isLoading && subscriptionStatus !== undefined;
   };
 
   return {
