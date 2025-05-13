@@ -54,6 +54,7 @@ const GLOBAL_ADMIN_PATHS = [
   "/global-admin/login",
   "/global-admin/dashboard",
   "/global-admin/churches",
+  "/global-admin/church",  // Added to support all church detail pages
   "/global-admin/profile",
   "/global-admin/help",
   "/global-admin/users",

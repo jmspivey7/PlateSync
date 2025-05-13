@@ -208,8 +208,8 @@ export default function ChurchDetail() {
     updateStatusMutation.mutate(newStatus);
   };
   
-  const handleBackToDashboard = () => {
-    setLocation("/global-admin/dashboard");
+  const handleBackToChurches = () => {
+    setLocation("/global-admin/churches");
   };
   
   const getStatusBadgeVariant = (status: string) => {
@@ -244,9 +244,9 @@ export default function ChurchDetail() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-destructive">Error</CardTitle>
-              <Button variant="outline" size="sm" onClick={handleBackToDashboard}>
+              <Button variant="outline" size="sm" onClick={handleBackToChurches}>
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Dashboard
+                Back to Churches
               </Button>
             </div>
           </CardHeader>
