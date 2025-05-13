@@ -35,8 +35,8 @@ export async function createTrialSubscriptionForOnboarding(
     console.log(`Successfully created church record:`, church);
   }
   
-  // Check if there's already a subscription
-  const existingSubscription = await storage.getSubscription(churchId);
+  // Check if there's already a subscription (using church.id)
+  const existingSubscription = await storage.getSubscription(church.id);
   if (existingSubscription) {
     return existingSubscription; // Return existing if already created
   }
@@ -46,9 +46,9 @@ export async function createTrialSubscriptionForOnboarding(
   const trialEndDate = new Date(now);
   trialEndDate.setDate(trialEndDate.getDate() + 30);
   
-  // Create the subscription
+  // Create the subscription using church.id (UUID) instead of churchId (user ID)
   const subscription = await storage.createSubscription({
-    churchId,
+    churchId: church.id, // Use the UUID from the church record
     plan: 'TRIAL',
     status: 'TRIAL',
     trialStartDate: now,
