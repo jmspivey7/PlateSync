@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, Upload, CheckCircle, ArrowRight, ChevronsRight, X, 
   Plus, ChevronLeft, Mail, FileUp, Users, Link as LinkIcon, UserPlus,
-  AlertCircle, AlertTriangle, BellRing
+  AlertCircle, AlertTriangle, BellRing, Calendar, Gift, CreditCard
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { useSubscription } from "@/hooks/use-subscription";
 import plateSyncLogo from "../assets/platesync-logo.png";
 
 // Onboarding Steps
@@ -28,8 +30,9 @@ enum OnboardingStep {
   UPLOAD_LOGO = 2,
   SERVICE_OPTIONS = 3,
   IMPORT_MEMBERS = 4,
-  EMAIL_NOTIFICATIONS = 5,
-  COMPLETE = 6
+  SUBSCRIPTION = 5,
+  EMAIL_NOTIFICATIONS = 6,
+  COMPLETE = 7
 }
 
 interface OnboardingParams {
@@ -729,7 +732,10 @@ export default function Onboarding() {
       // Now proceed to member import step
       setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
-      // Member import is complete or skipped, move to email notifications
+      // Member import is complete or skipped, move to subscription step
+      setCurrentStep(OnboardingStep.SUBSCRIPTION);
+    } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
+      // Subscription step is complete, move to email notifications
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
       // Email notifications configuration is complete, move to completion
@@ -931,16 +937,22 @@ export default function Onboarding() {
         // Progress is handled by the animation
         break;
       case OnboardingStep.VERIFY_EMAIL:
-        setProgress(20);
+        setProgress(14);
         break;
       case OnboardingStep.UPLOAD_LOGO:
-        setProgress(40);
+        setProgress(28);
         break;
       case OnboardingStep.SERVICE_OPTIONS:
-        setProgress(60);
+        setProgress(42);
         break;
       case OnboardingStep.IMPORT_MEMBERS:
-        setProgress(80);
+        setProgress(56);
+        break;
+      case OnboardingStep.SUBSCRIPTION:
+        setProgress(70);
+        break;
+      case OnboardingStep.EMAIL_NOTIFICATIONS:
+        setProgress(85);
         break;
       case OnboardingStep.COMPLETE:
         setProgress(100);
