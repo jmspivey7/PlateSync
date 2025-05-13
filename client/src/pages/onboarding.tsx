@@ -758,8 +758,10 @@ export default function Onboarding() {
       setCurrentStep(OnboardingStep.UPLOAD_LOGO);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
-    } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
+    } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
       setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
+    } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
+      setCurrentStep(OnboardingStep.SUBSCRIPTION);
     } else if (currentStep === OnboardingStep.COMPLETE) {
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     }
@@ -978,7 +980,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Verify Your Email</h2>
-              <div className="text-sm text-gray-500">Step 1 of 5</div>
+              <div className="text-sm text-gray-500">Step 1 of 7</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -1060,7 +1062,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Step 2: Upload Your Church Logo</h2>
-              <div className="text-sm text-gray-500">Step 2 of 5</div>
+              <div className="text-sm text-gray-500">Step 2 of 7</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -1165,7 +1167,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Step 3: Add Service Options</h2>
-              <div className="text-sm text-gray-500">Step 3 of 5</div>
+              <div className="text-sm text-gray-500">Step 3 of 7</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -1402,7 +1404,7 @@ export default function Onboarding() {
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Step 4: Import Members</h2>
-              <div className="text-sm text-gray-500">Step 4 of 6</div>
+              <div className="text-sm text-gray-500">Step 4 of 7</div>
             </div>
             
             <p className="text-gray-600 mb-6">
@@ -1618,6 +1620,119 @@ export default function Onboarding() {
                 onClick={handleNextStep}
               >
                 {importStatus === 'success' ? 'Next' : 'Skip for now'} <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+        
+      case OnboardingStep.SUBSCRIPTION:
+        // Calculate trial dates
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 30);
+        
+        // Format dates for display
+        const formatDate = (date: Date) => {
+          return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+        };
+        
+        return (
+          <div className="space-y-6 p-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Step 5: Subscription Plan</h2>
+              <div className="text-sm text-gray-500">Step 5 of 7</div>
+            </div>
+            
+            <div className="bg-white rounded-lg border p-6 mb-6">
+              <div className="flex items-center justify-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                  <Gift className="h-8 w-8 text-[#69ad4c]" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Start Your Free Trial</h3>
+                  <p className="text-gray-600">Experience the full power of PlateSync</p>
+                </div>
+              </div>
+              
+              <p className="text-center mb-6">
+                Your Free Trial of PlateSync is set to start. You'll have 30 days to use the app to 
+                make sure it meets your needs. After your trial period ends you will be able to continue 
+                using the app by choosing one of two billing options:
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Card className="border border-gray-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl">Monthly Plan</CardTitle>
+                    <CardDescription>Pay monthly, cancel anytime</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold mb-2">$2.99<span className="text-base font-normal text-gray-500">/month</span></p>
+                    <ul className="space-y-2">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <span>All features included</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <span>Unlimited members</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+                
+                <Card className="border border-green-200 shadow-sm">
+                  <CardHeader className="pb-2 bg-green-50 rounded-t-lg">
+                    <Badge className="w-fit bg-green-600 mb-2">Best Value</Badge>
+                    <CardTitle className="text-xl">Annual Plan</CardTitle>
+                    <CardDescription>Get 2 months free</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold mb-2">$25.00<span className="text-base font-normal text-gray-500">/year</span></p>
+                    <ul className="space-y-2">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <span>All features included</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <span>Unlimited members</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <span>Save over 30%</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="text-center mb-6">
+                <p className="text-gray-600">
+                  <Calendar className="inline-block mr-2 h-4 w-4" />
+                  <span className="font-medium">Trial Period: </span> 
+                  {formatDate(startDate)} to {formatDate(endDate)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={handleBackStep}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              
+              <Button 
+                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
+                onClick={handleNextStep}
+              >
+                Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
