@@ -1055,6 +1055,35 @@ export default function Onboarding() {
                 If you continue to have issues, please contact support.
               </p>
             </div>
+            
+            <div className="flex justify-between pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={handleBackStep}
+                disabled={true} // Back button is disabled for verification
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              
+              <div>
+                <Button 
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                  onClick={verifyCode}
+                  disabled={isVerifying || verificationCode.length !== 6}
+                >
+                  {isVerifying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Verify & Continue <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         );
         
@@ -1784,13 +1813,21 @@ export default function Onboarding() {
             <p className="text-gray-600 max-w-md">
               Congratulations! Your PlateSync account is ready to use and your 30-day free trial has started. Click the button below to sign in and start managing your donations.
             </p>
-            <Button
-              variant="default"
-              className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white mt-4"
-              onClick={handleNextStep}
-            >
-              Go to Sign In <ChevronsRight className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="flex justify-between pt-4 border-t mt-6 w-full max-w-md">
+              <Button 
+                variant="outline" 
+                onClick={handleBackStep}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              
+              <Button 
+                className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
+                onClick={handleNextStep}
+              >
+                Go to Sign In <ChevronsRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         );
         
