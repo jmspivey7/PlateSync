@@ -4481,24 +4481,26 @@ PlateSync Reporting System`;
       if (isAccountOwner && subscriptionStatus.status === "NO_SUBSCRIPTION") {
         console.log(`Auto-creating trial subscription for account owner ${userId} of church ${churchId}`);
         
-        // Calculate trial end date (30 days from user creation or today)
-        const now = new Date();
-        const trialStartDate = user?.createdAt ? new Date(user.createdAt) : now;
-        const trialEndDate = new Date(trialStartDate);
-        trialEndDate.setDate(trialEndDate.getDate() + 30);
+        // Get church name for better church record creation
+        const churchName = user?.churchName || 
+                           (await storage.getChurch(churchId))?.name || 
+                           "New Church";
         
-        // Create the subscription
-        await storage.createSubscription({
-          churchId,
-          plan: "TRIAL",
-          status: "TRIAL",
-          trialStartDate,
-          trialEndDate
-        });
-        
-        // Get updated subscription status
-        subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
-        console.log(`Auto-created trial subscription for church ${churchId}, ending on ${trialEndDate.toISOString()}`);
+        try {
+          // Use the helper function to ensure church exists before subscription
+          await createTrialSubscriptionForOnboarding(
+            storage,
+            churchId,
+            churchName
+          );
+          
+          // Get updated subscription status
+          subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+        } catch (error) {
+          console.error('Error auto-creating trial subscription:', error);
+          // If there's an error, we'll continue with the NO_SUBSCRIPTION status
+        }
+        console.log(`Auto-created trial subscription for church ${churchId}`);
       }
       
       res.json(subscriptionStatus);
