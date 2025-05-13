@@ -11,40 +11,51 @@ export default function SubscriptionPage() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   if (isLoading) {
-    return <LoadingPage />;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#69ad4c]" />
+      </div>
+    );
   }
 
   if (!user) {
-    return <Redirect to="/auth" />;
+    return <Redirect to="/login-local" />;
   }
 
   return (
-    <MainLayout>
-      <div className="container max-w-3xl py-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Subscription</h1>
-            <p className="text-gray-600">Manage your PlateSync subscription</p>
+    <div className="min-h-screen bg-[#f5f5f5]">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <h1 className="text-2xl font-semibold text-[#333]">Subscription</h1>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white shadow rounded-lg p-6 max-w-3xl mx-auto">
+          <div className="mb-4">
+            <h2 className="text-xl font-medium text-[#333]">Manage your PlateSync subscription</h2>
+          </div>
+
+          <div className="mt-6">
+            <SubscriptionStatus onUpgrade={() => setShowUpgradeDialog(true)} />
           </div>
         </div>
+      </main>
 
-        <div className="grid gap-6">
-          <SubscriptionStatus onUpgrade={() => setShowUpgradeDialog(true)} />
-        </div>
-
-        {/* Upgrade Dialog */}
-        <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Upgrade Your Subscription</DialogTitle>
-              <DialogDescription>
-                Choose a plan to continue using PlateSync
-              </DialogDescription>
-            </DialogHeader>
-            <SubscriptionPlans onCancel={() => setShowUpgradeDialog(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
-    </MainLayout>
+      {/* Upgrade Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Upgrade Your Subscription</DialogTitle>
+            <DialogDescription>
+              Choose a plan to continue using PlateSync
+            </DialogDescription>
+          </DialogHeader>
+          <SubscriptionPlans onCancel={() => setShowUpgradeDialog(false)} />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

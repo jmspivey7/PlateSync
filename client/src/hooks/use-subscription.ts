@@ -1,14 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-// Types for subscription data
 interface SubscriptionStatus {
   isActive: boolean;
   isTrialExpired: boolean;
   status: string;
   daysRemaining: number | null;
   trialEndDate: string | null;
+  plan?: string;
 }
 
 interface CreateTrialResponse {
@@ -28,88 +29,104 @@ interface UpgradeInitResponse {
 }
 
 export function useSubscription() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Get subscription status
-  const {
+  const { toast } = useToast();
+  
+  // Query to get subscription status
+  const { 
     data: subscriptionStatus,
     isLoading,
     error,
     refetch
   } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
-    // The error is suppressed and null is returned when the user is not authenticated
-    retry: false,
+    retry: 1
   });
 
-  // Start a trial subscription
-  const startTrialMutation = useMutation({
+  // Mutation to start a trial
+  const { 
+    mutate: startTrial,
+    isPending: isStartingTrial 
+  } = useMutation<CreateTrialResponse>({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/subscription/trial");
-      return response.json() as Promise<CreateTrialResponse>;
+      const response = await apiRequest("/api/subscription/trial", "POST");
+      return await response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Trial Started!",
-        description: "Your 30-day free trial has been started successfully.",
+        title: "Trial Started",
+        description: "Your 30-day free trial has been started successfully",
+        variant: "default",
       });
-      // Invalidate subscription status to refresh the data
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Error Starting Trial",
-        description: error.message || "There was an error starting your trial. Please try again.",
+        description: error.message || "Failed to start your trial. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  // Initialize subscription upgrade
-  const initiateUpgradeMutation = useMutation({
-    mutationFn: async (plan: "MONTHLY" | "ANNUAL") => {
-      const response = await apiRequest("POST", "/api/subscription/upgrade/init", { plan });
-      return response.json() as Promise<UpgradeInitResponse>;
+  // Mutation to initiate upgrade process
+  const { 
+    mutate: initiateUpgrade,
+    isPending: isInitiatingUpgrade 
+  } = useMutation<UpgradeInitResponse, Error, string>({
+    mutationFn: async (plan: string) => {
+      const response = await apiRequest("/api/subscription/upgrade/init", "POST", { plan });
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: UpgradeInitResponse) => {
       toast({
-        title: "Upgrade Initialized",
-        description: data.message || "Your subscription upgrade has been initialized.",
+        title: "Payment Processing",
+        description: "Please complete the payment process to upgrade your subscription.",
       });
-      // Don't invalidate queries here since we want to keep the upgrade flow state
+
+      // Return the client secret if available for Stripe
+      if (data.clientSecret) {
+        // Will eventually use this with Stripe Elements
+        console.log("Client secret received:", data.clientSecret);
+      }
     },
     onError: (error: Error) => {
       toast({
-        title: "Error Initializing Upgrade",
-        description: error.message || "There was an error initializing your upgrade. Please try again.",
+        title: "Upgrade Failed",
+        description: error.message || "Failed to initiate upgrade. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  // Format trial remaining time in friendly way
+  // Helper function to format the remaining trial days
   const formatTrialRemaining = () => {
-    if (!subscriptionStatus?.daysRemaining) return null;
-
-    if (subscriptionStatus.daysRemaining <= 0) {
-      return "Trial expired";
-    } else if (subscriptionStatus.daysRemaining === 1) {
-      return "1 day remaining";
-    } else {
-      return `${subscriptionStatus.daysRemaining} days remaining`;
+    if (!subscriptionStatus || subscriptionStatus.daysRemaining === null) {
+      return "Unknown";
     }
+    
+    if (subscriptionStatus.daysRemaining <= 0) {
+      return "Expired";
+    }
+    
+    if (subscriptionStatus.daysRemaining === 1) {
+      return "1 day left";
+    }
+    
+    return `${subscriptionStatus.daysRemaining} days left`;
   };
 
   return {
     subscriptionStatus,
     isLoading,
     error,
-    startTrial: startTrialMutation.mutate,
-    isStartingTrial: startTrialMutation.isPending,
-    initiateUpgrade: initiateUpgradeMutation.mutate,
-    isInitiatingUpgrade: initiateUpgradeMutation.isPending,
+    refetch,
+    // Trial functions
+    startTrial,
+    isStartingTrial,
     formatTrialRemaining,
-    refetchStatus: refetch
+    // Upgrade functions
+    initiateUpgrade,
+    isInitiatingUpgrade
   };
 }
