@@ -156,20 +156,17 @@ export default function ChurchDetail() {
     data: users,
     isLoading: isLoadingUsers,
     isError: isUsersError,
-    error: usersError,
-    refetch: refetchUsers,
   } = useQuery<User[], Error>({
     queryKey: ["church-users", id],
     queryFn: fetchChurchUsers,
+    enabled: !!church, // Only fetch users if church details are loaded
   });
   
   // Mutation to update church status
   const updateStatusMutation = useMutation({
-    mutationFn: async (newStatus: string) => {
+    mutationFn: async (status: string) => {
       const token = localStorage.getItem("globalAdminToken");
-      if (!token) {
-        throw new Error("Authentication required");
-      }
+      if (!token) throw new Error("Authentication required");
       
       const response = await fetch(`/api/global-admin/churches/${id}/status`, {
         method: "PATCH",
@@ -177,12 +174,12 @@ export default function ChurchDetail() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status }),
       });
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || `Failed to update church status to ${newStatus}`);
+        throw new Error(error.message || "Failed to update status");
       }
       
       return response.json();
@@ -191,8 +188,9 @@ export default function ChurchDetail() {
       toast({
         title: "Status updated",
         description: "Church status has been updated successfully",
-        variant: "default",
       });
+      
+      // Refetch church details to show updated status
       refetchChurch();
     },
     onError: (error: Error) => {
@@ -267,21 +265,22 @@ export default function ChurchDetail() {
       {/* Header */}
       <header className="bg-white shadow-md border-b">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
+          <div className="flex-1">
             <img 
               src="/logo-with-text.png" 
               alt="PlateSync Logo" 
               className="h-10 object-contain" 
             />
-            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Admin</h1>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex-1 text-center">
+            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
+          </div>
+          <div className="flex-1 flex justify-end">
             <Button 
               variant="outline" 
               size="sm"
               className="border-gray-300"
-              onClick={() => setLocation("/global-admin/dashboard")}
+              onClick={() => setLocation("/global-admin/churches")}
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Churches
@@ -298,178 +297,110 @@ export default function ChurchDetail() {
       <main className="container mx-auto px-4 py-6">
         <div className="mb-6">
           <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <div>
-                  <CardTitle className="text-2xl font-bold">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl flex items-center">
+                    <Building2 className="h-6 w-6 text-[#69ad4c] mr-2" />
                     {isLoadingChurch ? (
-                      <Skeleton className="h-8 w-48" />
+                      <Skeleton className="h-8 w-64" />
                     ) : (
                       church?.name
                     )}
-                  </CardTitle>
-                  <CardDescription className="flex items-center mt-1">
-                    <Mail className="h-4 w-4 mr-1 text-muted-foreground" />
-                    {isLoadingChurch ? (
-                      <Skeleton className="h-4 w-32" />
-                    ) : (
-                      church?.contactEmail
+                    {church?.status && (
+                      <Badge 
+                        className={`ml-3 ${
+                          church.status === "ACTIVE" 
+                            ? "bg-green-500" 
+                            : church.status === "SUSPENDED" 
+                            ? "bg-amber-500" 
+                            : "bg-red-500"
+                        }`}
+                      >
+                        {church.status}
+                      </Badge>
                     )}
-                  </CardDescription>
-                </div>
-                <div className="mt-4 sm:mt-0">
-                  {isLoadingChurch ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    <Badge variant={getStatusBadgeVariant(church?.status || "") as any} className="text-sm py-1 px-3">
-                      {church?.status}
-                    </Badge>
+                  </CardTitle>
+                  {!isLoadingChurch && (
+                    <CardDescription className="mt-2 flex items-center">
+                      <Mail className="h-4 w-4 mr-1 text-muted-foreground" />
+                      {church?.contactEmail}
+                    </CardDescription>
                   )}
                 </div>
-              </div>
-            </CardHeader>
-          </Card>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="bg-white rounded-md p-1 border">
-            <TabsList className="grid grid-cols-3 md:grid-cols-4 lg:w-auto">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
-            </TabsList>
-          </div>
-          
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-md">Users</CardTitle>
-                  <CardDescription>Total registered users</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-2 text-green-600" />
-                    <span className="text-2xl font-bold">
+                
+                <div className="flex flex-wrap gap-3 items-center">
+                  <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
+                    <span className="text-xs text-muted-foreground">Users</span>
+                    <span className="text-xl font-semibold">
                       {isLoadingChurch ? (
-                        <Skeleton className="h-8 w-12" />
+                        <Skeleton className="h-6 w-8" />
                       ) : (
                         church?.userCount || 0
                       )}
                     </span>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-md">Members</CardTitle>
-                  <CardDescription>Total church members</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-2 text-green-600" />
-                    <span className="text-2xl font-bold">
+                  <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
+                    <span className="text-xs text-muted-foreground">Members</span>
+                    <span className="text-xl font-semibold">
                       {isLoadingChurch ? (
-                        <Skeleton className="h-8 w-12" />
+                        <Skeleton className="h-6 w-8" />
                       ) : (
                         church?.totalMembers || 0
                       )}
                     </span>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-md">Total Donations</CardTitle>
-                  <CardDescription>Lifetime donation amount</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <span className="text-2xl font-bold">
+                  <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
+                    <span className="text-xs text-muted-foreground">Total Donations</span>
+                    <span className="text-xl font-semibold">
                       {isLoadingChurch ? (
-                        <Skeleton className="h-8 w-24" />
+                        <Skeleton className="h-6 w-16" />
                       ) : (
-                        `$${church?.totalDonations || "0.00"}`
+                        new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                        }).format(parseFloat(church?.totalDonations || "0"))
                       )}
                     </span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-            
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex flex-col sm:flex-row gap-4 mt-2 text-sm text-muted-foreground">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>Created: {isLoadingChurch ? <Skeleton className="h-4 w-24 inline-block" /> : formatDate(church?.createdAt || "")}</span>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-1" />
+                  <span>Last Updated: {isLoadingChurch ? <Skeleton className="h-4 w-24 inline-block" /> : formatDate(church?.updatedAt || "")}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+          </TabsList>
+          
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Church Details</CardTitle>
+                <CardTitle>Church Overview</CardTitle>
+                <CardDescription>
+                  A summary of the church's activity and key metrics
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">ID:</span>
-                      <span className="text-muted-foreground">
-                        {isLoadingChurch ? (
-                          <Skeleton className="h-4 w-32" />
-                        ) : (
-                          church?.id
-                        )}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Status:</span>
-                      <span>
-                        {isLoadingChurch ? (
-                          <Skeleton className="h-4 w-20" />
-                        ) : (
-                          <Badge variant={getStatusBadgeVariant(church?.status || "") as any}>
-                            {church?.status}
-                          </Badge>
-                        )}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Created:</span>
-                      <span className="text-muted-foreground">
-                        {isLoadingChurch ? (
-                          <Skeleton className="h-4 w-32" />
-                        ) : (
-                          formatDate(church?.createdAt || "")
-                        )}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Last Updated:</span>
-                      <span className="text-muted-foreground">
-                        {isLoadingChurch ? (
-                          <Skeleton className="h-4 w-32" />
-                        ) : (
-                          formatDate(church?.updatedAt || "")
-                        )}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <AtSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Contact:</span>
-                      <span className="text-muted-foreground">
-                        {isLoadingChurch ? (
-                          <Skeleton className="h-4 w-32" />
-                        ) : (
-                          church?.contactEmail
-                        )}
-                      </span>
-                    </div>
-                  </div>
+                <div className="text-center py-10 text-muted-foreground">
+                  Detailed overview is coming soon.
                 </div>
               </CardContent>
               <CardFooter className="border-t pt-4 flex justify-end space-x-2">
@@ -478,7 +409,7 @@ export default function ChurchDetail() {
                 ) : church?.status === "ACTIVE" ? (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="warning">Suspend Church</Button>
+                      <Button variant="outline" className="border-amber-500 text-amber-500">Suspend Church</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
@@ -500,7 +431,8 @@ export default function ChurchDetail() {
                   </AlertDialog>
                 ) : church?.status === "SUSPENDED" ? (
                   <Button
-                    variant="success"
+                    variant="outline"
+                    className="border-green-500 text-green-500 hover:bg-green-500/10"
                     onClick={() => handleStatusChange("ACTIVE")}
                   >
                     Reactivate Church
@@ -515,7 +447,7 @@ export default function ChurchDetail() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Church</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete {church?.name}? This action is irreversible and will permanently remove all church data, users, members, and donations.
+                        Are you sure you want to delete {church?.name}? This action cannot be undone and all data will be permanently removed.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -537,45 +469,31 @@ export default function ChurchDetail() {
           <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Church Users</CardTitle>
-                  <Button size="sm" variant="outline" onClick={() => refetchUsers()}>
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                    Refresh
-                  </Button>
-                </div>
+                <CardTitle>Church Users</CardTitle>
+                <CardDescription>
+                  Manage user accounts for this church
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {isUsersError ? (
-                  <div className="text-center py-6">
-                    <p className="text-destructive mb-2">{usersError?.message || "Failed to load users"}</p>
-                    <Button onClick={() => refetchUsers()} variant="outline" size="sm">
-                      <RefreshCw className="h-4 w-4 mr-1" />
-                      Try Again
-                    </Button>
-                  </div>
-                ) : isLoadingUsers ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="flex items-center space-x-4 py-2">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-[200px]" />
-                          <Skeleton className="h-4 w-[150px]" />
-                        </div>
-                      </div>
-                    ))}
+                {isLoadingUsers ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full" />
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                      ))}
+                    </div>
                   </div>
                 ) : users && users.length > 0 ? (
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Last Login</TableHead>
+                          <TableHead className="hidden md:table-cell">Created</TableHead>
+                          <TableHead className="hidden md:table-cell">Last Login</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -603,9 +521,11 @@ export default function ChurchDetail() {
                               {user.lastLoginAt ? formatDate(user.lastLoginAt) : "Never"}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={user.isActive ? "success" : "destructive"}>
-                                {user.isActive ? "Active" : "Inactive"}
-                              </Badge>
+                              {user.isActive ? (
+                                <Badge className="bg-green-500">Active</Badge>
+                              ) : (
+                                <Badge variant="destructive">Inactive</Badge>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
