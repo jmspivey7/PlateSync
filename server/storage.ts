@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { eq, desc, and, or, asc, isNull, not, inArray } from 'drizzle-orm';
 import {
   users,
   members,
@@ -2573,6 +2574,23 @@ PlateSync Reporting System
     } catch (error) {
       console.error(`Error fetching church with ID ${id}:`, error);
       return undefined;
+    }
+  }
+  
+  async getChurchesByAccountOwner(accountOwnerId: string): Promise<Church[]> {
+    try {
+      console.log(`Looking for churches with account owner ID: ${accountOwnerId}`);
+      const churchResults = await db
+        .select()
+        .from(churches)
+        .where(eq(churches.accountOwnerId, accountOwnerId))
+        .orderBy(desc(churches.createdAt));
+      
+      console.log(`Found ${churchResults.length} churches for account owner ${accountOwnerId}`);
+      return churchResults;
+    } catch (error) {
+      console.error(`Error getting churches for account owner ${accountOwnerId}:`, error);
+      return [];
     }
   }
 
