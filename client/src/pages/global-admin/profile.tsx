@@ -31,6 +31,7 @@ export default function GlobalAdminProfile() {
     firstName: "John",
     lastName: "Spivey",
     email: "jmspivey@icloud.com",
+    phoneNumber: "",
     profileImageUrl: null as string | null
   });
   
@@ -268,7 +269,12 @@ export default function GlobalAdminProfile() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" defaultValue="" />
+                  <Input 
+                    id="phone" 
+                    type="tel" 
+                    value={profileData.phoneNumber} 
+                    onChange={(e) => setProfileData({...profileData, phoneNumber: e.target.value})}
+                  />
                 </div>
               </div>
             </CardContent>
