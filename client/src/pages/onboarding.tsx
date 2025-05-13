@@ -1767,34 +1767,25 @@ export default function Onboarding() {
                 <ChevronLeft className="mr-2 h-4 w-4" /> Back
               </Button>
               
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={handleSkip}
-                >
-                  Skip for now
-                </Button>
-                
-                <Button 
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
-                  onClick={() => {
-                    startTrial();
-                    handleNextStep();
-                  }}
-                  disabled={isStartingTrial}
-                >
-                  {isStartingTrial ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Starting Trial...
-                    </>
-                  ) : (
-                    <>
-                      Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button 
+                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
+                onClick={() => {
+                  startTrial();
+                  handleNextStep();
+                }}
+                disabled={isStartingTrial}
+              >
+                {isStartingTrial ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Starting Trial...
+                  </>
+                ) : (
+                  <>
+                    Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         );
