@@ -217,7 +217,7 @@ const Profile = () => {
           <CardContent className="pt-6">
             {/* Profile header with avatar */}
             <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
-              <div className="relative">
+              <div>
                 <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
                   {user?.profileImageUrl ? (
                     <AvatarImage src={user.profileImageUrl} alt="Profile" />
@@ -229,17 +229,6 @@ const Profile = () => {
                     </AvatarFallback>
                   )}
                 </Avatar>
-                
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute bottom-0 right-0 rounded-full bg-white"
-                  onClick={triggerFileInput}
-                  disabled={isUploading}
-                >
-                  <Camera className="h-4 w-4" />
-                  <span className="sr-only">Upload profile picture</span>
-                </Button>
                 
                 <input 
                   type="file"

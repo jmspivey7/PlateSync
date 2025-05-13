@@ -74,11 +74,28 @@ export default function GlobalAdminProfile() {
               <CardDescription>Update your profile information</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center space-x-4 mb-6">
-                <Avatar className="h-20 w-20 bg-[#69ad4c]">
-                  <AvatarFallback className="text-white text-xl">JS</AvatarFallback>
-                </Avatar>
-                <Button variant="outline" size="sm">Change Avatar</Button>
+              <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
+                <div>
+                  <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
+                    <AvatarFallback className="bg-[#69ad4c] text-white text-xl">JS</AvatarFallback>
+                  </Avatar>
+                </div>
+                
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-xl font-bold">John Spivey</h3>
+                  <p className="text-muted-foreground">Global Administrator</p>
+                  
+                  <div className="mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-sm"
+                    >
+                      <Upload className="mr-1 h-3 w-3" />
+                      Upload profile picture
+                    </Button>
+                  </div>
+                </div>
               </div>
               
               <div className="grid gap-6">
