@@ -147,6 +147,22 @@ export interface IStorage {
   updatePlanningCenterLastSync(userId: string, churchId: string): Promise<void>;
   bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number>;
   removeDuplicateMembers(churchId: string): Promise<number>;
+  
+  // Subscription operations
+  getSubscription(churchId: string): Promise<Subscription | undefined>;
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscription(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
+  checkSubscriptionStatus(churchId: string): Promise<{
+    isActive: boolean;
+    isTrialExpired: boolean;
+    status: string;
+    daysRemaining: number | null;
+    trialEndDate: Date | null;
+  }>;
+  upgradeSubscription(churchId: string, plan: string, stripeData?: {
+    stripeCustomerId: string;
+    stripeSubscriptionId: string;
+  }): Promise<Subscription | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2778,6 +2794,153 @@ PlateSync Reporting System
     } catch (error) {
       console.error("Error migrating to church table:", error);
       return 0;
+    }
+  }
+  
+  // Subscription operations
+  async getSubscription(churchId: string): Promise<Subscription | undefined> {
+    try {
+      const [subscription] = await db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.churchId, churchId));
+      
+      return subscription;
+    } catch (error) {
+      console.error("Error getting subscription:", error);
+      return undefined;
+    }
+  }
+  
+  async createSubscription(subscriptionData: InsertSubscription): Promise<Subscription> {
+    try {
+      // Calculate the trial end date (30 days from now) if not provided
+      const now = new Date();
+      const trialEndDate = new Date(now);
+      trialEndDate.setDate(trialEndDate.getDate() + 30);
+      
+      const [subscription] = await db
+        .insert(subscriptions)
+        .values({
+          ...subscriptionData,
+          trialEndDate: subscriptionData.trialEndDate || trialEndDate
+        })
+        .returning();
+        
+      return subscription;
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      throw error;
+    }
+  }
+  
+  async updateSubscription(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined> {
+    try {
+      // Update the subscription data
+      const [updatedSubscription] = await db
+        .update(subscriptions)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(subscriptions.churchId, churchId))
+        .returning();
+        
+      return updatedSubscription;
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      return undefined;
+    }
+  }
+  
+  async checkSubscriptionStatus(churchId: string): Promise<{
+    isActive: boolean;
+    isTrialExpired: boolean;
+    status: string;
+    daysRemaining: number | null;
+    trialEndDate: Date | null;
+  }> {
+    try {
+      const subscription = await this.getSubscription(churchId);
+      
+      if (!subscription) {
+        return {
+          isActive: false,
+          isTrialExpired: true,
+          status: "NO_SUBSCRIPTION",
+          daysRemaining: null,
+          trialEndDate: null
+        };
+      }
+      
+      const now = new Date();
+      let isActive = true;
+      let isTrialExpired = false;
+      let daysRemaining: number | null = null;
+      
+      // Check if it's a trial subscription
+      if (subscription.status === "TRIAL") {
+        const trialEndDate = new Date(subscription.trialEndDate);
+        daysRemaining = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Trial is expired if days remaining is less than or equal to 0
+        isTrialExpired = daysRemaining <= 0;
+        isActive = !isTrialExpired;
+      } else if (subscription.status === "ACTIVE") {
+        // Paid subscription
+        isActive = true;
+        isTrialExpired = true;
+      } else {
+        // Expired or canceled subscriptions
+        isActive = false;
+        isTrialExpired = true;
+      }
+      
+      return {
+        isActive,
+        isTrialExpired,
+        status: subscription.status,
+        daysRemaining,
+        trialEndDate: subscription.trialEndDate
+      };
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+      // Default to inactive when there's an error
+      return {
+        isActive: false,
+        isTrialExpired: true,
+        status: "ERROR",
+        daysRemaining: null,
+        trialEndDate: null
+      };
+    }
+  }
+  
+  async upgradeSubscription(churchId: string, plan: string, stripeData?: {
+    stripeCustomerId: string;
+    stripeSubscriptionId: string;
+  }): Promise<Subscription | undefined> {
+    try {
+      const now = new Date();
+      
+      // Update the subscription with paid plan info
+      const [updatedSubscription] = await db
+        .update(subscriptions)
+        .set({
+          plan,
+          status: "ACTIVE",
+          startDate: now,
+          stripeCustomerId: stripeData?.stripeCustomerId,
+          stripeSubscriptionId: stripeData?.stripeSubscriptionId,
+          updatedAt: now
+        })
+        .where(eq(subscriptions.churchId, churchId))
+        .returning();
+        
+      return updatedSubscription;
+    } catch (error) {
+      console.error("Error upgrading subscription:", error);
+      return undefined;
     }
   }
 }
