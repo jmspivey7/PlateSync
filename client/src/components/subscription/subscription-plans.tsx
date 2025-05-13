@@ -27,7 +27,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
     if (selectedPlan === "MONTHLY" || selectedPlan === "ANNUAL") {
       try {
         const result = await initiateUpgrade(selectedPlan);
-        if (result && result.clientSecret) {
+        if (result?.clientSecret) {
           setClientSecret(result.clientSecret);
           setShowPaymentForm(true);
         }

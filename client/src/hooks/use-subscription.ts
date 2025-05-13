@@ -71,24 +71,16 @@ export function useSubscription() {
 
   // Mutation to initiate upgrade process
   const { 
-    mutate: initiateUpgrade,
+    mutateAsync: initiateUpgrade,
     isPending: isInitiatingUpgrade 
   } = useMutation<UpgradeInitResponse, Error, string>({
     mutationFn: async (plan: string) => {
       const response = await apiRequest("/api/subscription/upgrade/init", "POST", { plan });
-      return await response.json();
-    },
-    onSuccess: (data: UpgradeInitResponse) => {
-      toast({
-        title: "Payment Processing",
-        description: "Please complete the payment process to upgrade your subscription.",
-      });
-
-      // Return the client secret if available for Stripe
-      if (data.clientSecret) {
-        // Will eventually use this with Stripe Elements
-        console.log("Client secret received:", data.clientSecret);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to initiate upgrade");
       }
+      return await response.json();
     },
     onError: (error: Error) => {
       toast({

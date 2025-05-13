@@ -4513,6 +4513,46 @@ PlateSync Reporting System`;
     res.json({ received: true });
   });
   
+  // Endpoint to manually confirm a subscription payment (for testing only)
+  // In production, this would be handled by the Stripe webhook
+  app.post('/api/subscription/confirm-payment', isAuthenticated, isAccountOwner, async (req: any, res) => {
+    try {
+      const { paymentIntentId, plan } = req.body;
+      
+      if (!paymentIntentId || !plan) {
+        return res.status(400).json({ message: 'Missing payment intent ID or plan' });
+      }
+      
+      const userId = req.user.claims.sub;
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      if (!churchId) {
+        return res.status(404).json({ message: 'Church not found for user' });
+      }
+      
+      // Get current subscription
+      const subscription = await storage.getSubscription(churchId);
+      if (!subscription) {
+        return res.status(404).json({ message: 'No subscription found' });
+      }
+      
+      // Manually upgrade the subscription - in production this would be done by Stripe webhook
+      const updatedSubscription = await storage.upgradeSubscription(churchId, plan, {
+        stripeCustomerId: subscription.stripeCustomerId || 'cus_manual', // Use existing or placeholder
+        stripeSubscriptionId: paymentIntentId
+      });
+      
+      res.json({
+        success: true,
+        message: 'Subscription upgraded successfully',
+        subscription: updatedSubscription
+      });
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      res.status(500).json({ message: 'Error confirming payment' });
+    }
+  });
+  
   // Initialize subscription upgrade with Stripe integration
   app.post('/api/subscription/upgrade/init', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
