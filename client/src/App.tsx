@@ -27,6 +27,7 @@ import ServiceOptions from "@/pages/service-options";
 import EmailSettings from "@/pages/email-settings";
 import EmailTemplateEditor from "@/pages/email-template-editor";
 import Subscription from "@/pages/subscription";
+import SubscriptionPage from "@/pages/subscription-page";
 
 // Global Admin pages
 import GlobalAdminLogin from "@/pages/global-admin/login";
@@ -134,7 +135,7 @@ function Router() {
       <Route path="/user-management" component={UserManagement} />
       <Route path="/service-options" component={ServiceOptions} />
       <Route path="/email-settings" component={EmailSettings} />
-      <Route path="/subscription" component={Subscription} />
+      <Route path="/subscription" component={SubscriptionPage} />
 
       <Route path="/email-template/:id" component={EmailTemplateEditor} />
       
