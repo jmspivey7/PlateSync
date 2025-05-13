@@ -46,6 +46,7 @@ export default function Onboarding() {
   const [progress, setProgress] = useState(0);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { startTrial, isStartingTrial } = useSubscription();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1302,8 +1303,8 @@ export default function Onboarding() {
         return (
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Step 5: Donor Notifications</h2>
-              <div className="text-sm text-gray-500">Step 5 of 6</div>
+              <h2 className="text-2xl font-bold">Step 6: Donor Notifications</h2>
+              <div className="text-sm text-gray-500">Step 6 of 7</div>
             </div>
             
             <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
@@ -1730,9 +1731,22 @@ export default function Onboarding() {
               
               <Button 
                 className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
-                onClick={handleNextStep}
+                onClick={() => {
+                  startTrial();
+                  handleNextStep();
+                }}
+                disabled={isStartingTrial}
               >
-                Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                {isStartingTrial ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Starting Trial...
+                  </>
+                ) : (
+                  <>
+                    Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </div>
