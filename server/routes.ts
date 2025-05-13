@@ -15,6 +15,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { generateCountReportPDF } from "./pdf-generator";
+import Stripe from "stripe";
 import { 
   subscriptions, 
   subscriptionStatusEnum, 
@@ -22,6 +23,11 @@ import {
   type Subscription, 
   type InsertSubscription 
 } from "@shared/schema";
+
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-08-16'
+});
 
 // Password hashing function using scrypt
 async function scryptHash(password: string): Promise<string> {
@@ -4453,7 +4459,61 @@ PlateSync Reporting System`;
     }
   });
   
-  // Initialize subscription upgrade (placeholder for future Stripe integration)
+  // Handle Stripe webhook events
+  app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const signature = req.headers['stripe-signature'];
+    
+    if (!signature) {
+      return res.status(400).send('Missing Stripe signature');
+    }
+    
+    let event;
+    
+    try {
+      const payload = req.body;
+      const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      
+      // Verify the event came from Stripe
+      if (endpointSecret) {
+        event = stripe.webhooks.constructEvent(payload, signature, endpointSecret);
+      } else {
+        // For testing without a webhook secret
+        event = JSON.parse(payload.toString());
+      }
+    } catch (err: any) {
+      console.error(`Webhook Error: ${err.message}`);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+    
+    // Handle payment intent succeeded
+    if (event.type === 'payment_intent.succeeded') {
+      try {
+        const paymentIntent = event.data.object;
+        const { churchId, plan } = paymentIntent.metadata;
+        
+        if (!churchId || !plan) {
+          console.error('Missing metadata in payment intent', paymentIntent.id);
+          return res.status(400).send('Missing metadata in payment intent');
+        }
+        
+        // Create or update subscription record
+        const subscription = await storage.upgradeSubscription(churchId, plan, {
+          stripeCustomerId: paymentIntent.customer,
+          stripeSubscriptionId: paymentIntent.id
+        });
+        
+        console.log(`Subscription upgraded for church ${churchId} to ${plan} plan`);
+      } catch (error) {
+        console.error('Error processing payment intent success:', error);
+        // We still return a 200 to acknowledge receipt of the webhook
+      }
+    }
+    
+    // Return success to acknowledge receipt of the webhook
+    res.json({ received: true });
+  });
+  
+  // Initialize subscription upgrade with Stripe integration
   app.post('/api/subscription/upgrade/init', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
@@ -4475,14 +4535,62 @@ PlateSync Reporting System`;
         return res.status(404).json({ message: 'No subscription found. Please start a trial first.' });
       }
       
-      // Return success with a pending status - the actual Stripe payment process
-      // will be implemented when we have the Stripe API keys
-      res.json({
-        status: 'pending',
-        message: 'Ready to upgrade subscription',
-        plan,
-        // This is where we would return clientSecret from Stripe
-      });
+      // Get user information for Stripe customer
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Calculate the amount in cents based on the plan
+      const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00
+      
+      try {
+        // Create or retrieve Stripe customer
+        let stripeCustomerId = existingSubscription.stripeCustomerId;
+        
+        if (!stripeCustomerId) {
+          // Create a new customer
+          const customer = await stripe.customers.create({
+            email: user.email,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || user.email,
+            metadata: {
+              userId,
+              churchId
+            }
+          });
+          stripeCustomerId = customer.id;
+        }
+        
+        // Create a payment intent for the subscription
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: 'usd',
+          customer: stripeCustomerId,
+          metadata: {
+            churchId,
+            plan,
+            subscriptionType: 'PlateSync'
+          },
+          description: `PlateSync ${plan.toLowerCase()} subscription`
+        });
+        
+        // Update the subscription record with the Stripe customer ID
+        await storage.updateSubscription(churchId, {
+          stripeCustomerId
+        });
+        
+        res.json({
+          status: 'pending',
+          message: 'Ready to upgrade subscription',
+          plan,
+          clientSecret: paymentIntent.client_secret
+        });
+      } catch (stripeError: any) {
+        console.error('Stripe error:', stripeError);
+        return res.status(400).json({ 
+          message: `Stripe error: ${stripeError.message}` 
+        });
+      }
     } catch (error) {
       console.error('Error initializing subscription upgrade:', error);
       res.status(500).json({ message: 'Error initializing subscription upgrade' });

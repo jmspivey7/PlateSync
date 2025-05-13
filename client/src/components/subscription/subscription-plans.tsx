@@ -6,6 +6,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { PaymentForm } from "./payment-form";
+
+// Initialize Stripe with the public key
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface SubscriptionPlansProps {
   onCancel: () => void;
@@ -13,14 +19,59 @@ interface SubscriptionPlansProps {
 
 export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
   const [selectedPlan, setSelectedPlan] = useState<string>("MONTHLY");
-  const { initiateUpgrade, isInitiatingUpgrade } = useSubscription();
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const { initiateUpgrade, isInitiatingUpgrade, refetch } = useSubscription();
 
-  const handleUpgrade = () => {
+  const handleContinueToPayment = async () => {
     if (selectedPlan === "MONTHLY" || selectedPlan === "ANNUAL") {
-      initiateUpgrade(selectedPlan);
+      try {
+        const result = await initiateUpgrade(selectedPlan);
+        if (result && result.clientSecret) {
+          setClientSecret(result.clientSecret);
+          setShowPaymentForm(true);
+        }
+      } catch (error) {
+        console.error("Error initiating upgrade:", error);
+      }
     }
   };
 
+  const handlePaymentSuccess = () => {
+    refetch();
+    onCancel();
+  };
+
+  const handleBackToPlans = () => {
+    setShowPaymentForm(false);
+    setClientSecret(null);
+  };
+
+  // When in payment form mode
+  if (showPaymentForm && clientSecret) {
+    return (
+      <Elements 
+        stripe={stripePromise} 
+        options={{ 
+          clientSecret,
+          appearance: {
+            theme: 'stripe',
+            variables: {
+              colorPrimary: '#69ad4c',
+            }
+          }
+        }}
+      >
+        <PaymentForm 
+          onSuccess={handlePaymentSuccess} 
+          onCancel={handleBackToPlans}
+          plan={selectedPlan}
+        />
+      </Elements>
+    );
+  }
+
+  // Plan selection mode
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -147,7 +198,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
           Cancel
         </Button>
         <Button 
-          onClick={handleUpgrade} 
+          onClick={handleContinueToPayment} 
           disabled={isInitiatingUpgrade}
           className="w-full bg-green-600 hover:bg-green-700"
         >
