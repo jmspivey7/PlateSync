@@ -1119,31 +1119,33 @@ export default function Onboarding() {
               </label>
             </div>
             
-            <div className="flex justify-between mt-8">
-              <Button
-                variant="outline"
-                onClick={handleSkip}
+            <div className="flex justify-between pt-4 border-t mt-8">
+              <Button 
+                variant="outline" 
+                onClick={handleBackStep}
+                disabled={true} // Back button disabled for this step (as mentioned in handleBackStep)
               >
-                Skip for Now
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
               </Button>
               
-              <div className="space-x-4">
-                {logoFile && (
+              <div className="space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSkip}
+                >
+                  Skip for now
+                </Button>
+                
+                {logoFile && !uploadSuccess && (
                   <Button
-                    variant="default"
-                    className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                     onClick={handleLogoUpload}
-                    disabled={isUploading || uploadSuccess}
+                    disabled={isUploading}
                   >
                     {isUploading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Uploading...
-                      </>
-                    ) : uploadSuccess ? (
-                      <>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Saved
                       </>
                     ) : (
                       <>Save Logo</>
@@ -1151,12 +1153,15 @@ export default function Onboarding() {
                   </Button>
                 )}
                 
-                <Button
-                  variant="default"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                <Button 
+                  className={`${uploadSuccess ? "bg-[#69ad4c] hover:bg-[#5c9a42]" : "bg-blue-600 hover:bg-blue-700"} text-white`}
                   onClick={handleNextStep}
                 >
-                  Next Step <ArrowRight className="ml-2 h-4 w-4" />
+                  {uploadSuccess ? (
+                    <>Save & Continue <ArrowRight className="ml-2 h-4 w-4" /></>
+                  ) : (
+                    <>Next Step <ArrowRight className="ml-2 h-4 w-4" /></>
+                  )}
                 </Button>
               </div>
             </div>
@@ -1269,32 +1274,29 @@ export default function Onboarding() {
               </div>
             </div>
             
-            <div className="flex justify-between mt-8">
-              <div className="space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={handleBackStep}
-                  className="space-x-2"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  <span>Back</span>
-                </Button>
-                
+            <div className="flex justify-between pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={handleBackStep}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              
+              <div className="space-x-2">
                 <Button
                   variant="outline"
                   onClick={handleSkip}
                 >
-                  Skip for Now
+                  Skip for now
+                </Button>
+                
+                <Button 
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                  onClick={handleNextStep}
+                >
+                  Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-              
-              <Button
-                variant="default"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={handleNextStep}
-              >
-                Next Step <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
             </div>
           </div>
         );
