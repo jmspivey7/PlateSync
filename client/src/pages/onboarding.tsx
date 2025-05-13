@@ -1183,14 +1183,10 @@ export default function Onboarding() {
                 )}
                 
                 <Button 
-                  className={`${uploadSuccess ? "bg-[#69ad4c] hover:bg-[#5c9a42]" : "bg-blue-600 hover:bg-blue-700"} text-white`}
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                   onClick={handleNextStep}
                 >
-                  {uploadSuccess ? (
-                    <>Save & Continue <ArrowRight className="ml-2 h-4 w-4" /></>
-                  ) : (
-                    <>Next Step <ArrowRight className="ml-2 h-4 w-4" /></>
-                  )}
+                  Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -1621,7 +1617,7 @@ export default function Onboarding() {
                               setIsPlanningCenterConnected(true);
                             }, 2000);
                           }}
-                          className="w-full"
+                          className="w-full text-white"
                           style={{ backgroundColor: '#2176FF' }}
                           disabled={isPlanningCenterConnecting}
                         >
