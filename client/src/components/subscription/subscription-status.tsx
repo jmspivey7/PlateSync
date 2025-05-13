@@ -14,7 +14,8 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
   const { 
     subscriptionStatus, 
     isLoading, 
-    startTrial, 
+    startTrial,
+    startTrialAsync,
     isStartingTrial,
     formatTrialRemaining
   } = useSubscription();
@@ -84,7 +85,13 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         </CardContent>
         <CardFooter>
           <Button 
-            onClick={() => startTrial()} 
+            onClick={async () => {
+              try {
+                await startTrialAsync();
+              } catch (error) {
+                console.error("Failed to start trial:", error);
+              }
+            }} 
             disabled={isStartingTrial}
             className="w-full bg-green-600 hover:bg-green-700"
           >

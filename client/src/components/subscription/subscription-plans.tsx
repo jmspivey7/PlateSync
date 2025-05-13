@@ -12,7 +12,7 @@ interface SubscriptionPlansProps {
 
 export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const { upgradePlan } = useSubscription();
+  const { upgradePlanAsync, isUpgrading } = useSubscription();
 
   const handleSelectPlan = (plan: string) => {
     setSelectedPlan(plan);

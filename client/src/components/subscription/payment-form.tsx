@@ -10,7 +10,17 @@ import { useSubscription } from "@/hooks/use-subscription";
 
 // Make sure to call loadStripe outside of a component's render to avoid
 // recreating the Stripe object on every render.
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+let stripePromise;
+try {
+  const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+  if (!stripeKey) {
+    console.error("Missing Stripe public key");
+  } else {
+    stripePromise = loadStripe(stripeKey);
+  }
+} catch (error) {
+  console.error("Error initializing Stripe:", error);
+}
 
 interface PaymentFormProps {
   onSuccess: () => void;
