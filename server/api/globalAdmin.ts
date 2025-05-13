@@ -1,7 +1,7 @@
 import express from "express";
 import { Router } from "express";
 import { db } from "../db";
-import { churches, users } from "@shared/schema";
+import { churches, users, members, donations } from "@shared/schema";
 import { validateSchema } from "../middleware/validationMiddleware";
 import { eq, desc, and, asc, SQL, ilike, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -137,18 +137,40 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
           .from(users)
           .where(eq(users.churchId, church.id));
         
-        // In a real implementation, we would get member count, donation totals, etc.
-        // This is just an example
-        const totalMembers = Math.floor(Math.random() * 500) + 50; // Placeholder
-        const totalDonations = (Math.random() * 50000 + 5000).toFixed(2); // Placeholder
-        const lastActivityDate = new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000); // Random date within last 30 days
+        // Get member count for this church
+        const [{ memberCount = 0 }] = await db
+          .select({
+            memberCount: sql<number>`count(*)`
+          })
+          .from(members)
+          .where(eq(members.churchId, church.id));
+        
+        // Get total donations for this church
+        const [{ donationSum = "0.00" }] = await db
+          .select({
+            donationSum: sql<string>`COALESCE(SUM(amount)::text, '0.00')`
+          })
+          .from(donations)
+          .where(eq(donations.churchId, church.id));
+          
+        // Get the most recent login date (using updatedAt as a proxy) from any user in this church
+        const [mostRecentUser] = await db
+          .select({
+            updatedAt: users.updatedAt
+          })
+          .from(users)
+          .where(eq(users.churchId, church.id))
+          .orderBy(desc(users.updatedAt))
+          .limit(1);
+        
+        const lastLoginDate = mostRecentUser?.updatedAt || church.updatedAt;
         
         return {
           ...church,
           userCount,
-          totalMembers,
-          totalDonations,
-          lastActivity: lastActivityDate.toISOString(),
+          totalMembers: memberCount,
+          totalDonations: donationSum,
+          lastActivity: lastLoginDate.toISOString(),
         };
       })
     );
