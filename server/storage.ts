@@ -66,6 +66,7 @@ export interface IStorage {
   // Global Admin operations
   getAllChurches(): Promise<Church[]>;
   getChurch(id: string): Promise<Church | undefined>;
+  getChurchesByAccountOwner(accountOwnerId: string): Promise<Church[]>;
   getChurchWithStats(id: string): Promise<Church & { 
     totalMembers: number; 
     totalDonations: string;
