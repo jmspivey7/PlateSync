@@ -94,8 +94,21 @@ export default function ChurchDetail() {
         variant: "destructive",
       });
       setLocation("/global-admin/login");
+      return;
     }
-  }, [toast, setLocation]);
+    
+    // If we have a token but are getting a 404, try refreshing the token
+    const refreshToken = () => {
+      // Simple refresh by checking localStorage again
+      const currentToken = localStorage.getItem("globalAdminToken");
+      if (currentToken) {
+        // Force a data refetch
+        refetchChurch?.();
+      }
+    };
+    
+    refreshToken();
+  }, [toast, setLocation, refetchChurch]);
   
   // Function to fetch church details
   const fetchChurchDetails = async (): Promise<Church> => {
@@ -321,73 +334,7 @@ export default function ChurchDetail() {
           </Button>
         </div>
         
-        <div className="mb-6">
-          <Card>
-            <CardHeader className="pb-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex-1">
-                  <CardTitle className="text-xl flex items-center">
-                    Overview
-                  </CardTitle>
-                  {!isLoadingChurch && (
-                    <CardDescription className="mt-2 flex items-center">
-                      <Mail className="h-4 w-4 mr-1 text-muted-foreground" />
-                      {church?.contactEmail}
-                    </CardDescription>
-                  )}
-                </div>
-                
-                <div className="flex flex-wrap gap-3 items-center">
-                  <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
-                    <span className="text-xs text-muted-foreground">Users</span>
-                    <span className="text-xl font-semibold">
-                      {isLoadingChurch ? (
-                        <Skeleton className="h-6 w-8" />
-                      ) : (
-                        church?.userCount || 0
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
-                    <span className="text-xs text-muted-foreground">Members</span>
-                    <span className="text-xl font-semibold">
-                      {isLoadingChurch ? (
-                        <Skeleton className="h-6 w-8" />
-                      ) : (
-                        church?.totalMembers || 0
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center px-4 py-2 bg-gray-50 rounded-lg">
-                    <span className="text-xs text-muted-foreground">Total Donations</span>
-                    <span className="text-xl font-semibold">
-                      {isLoadingChurch ? (
-                        <Skeleton className="h-6 w-16" />
-                      ) : (
-                        new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
-                        }).format(parseFloat(church?.totalDonations || "0"))
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex flex-col sm:flex-row gap-4 mt-2 text-sm text-muted-foreground">
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  <span>Created: {isLoadingChurch ? <Skeleton className="h-4 w-24 inline-block" /> : formatDate(church?.createdAt || "")}</span>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  <span>Last Updated: {isLoadingChurch ? <Skeleton className="h-4 w-24 inline-block" /> : formatDate(church?.updatedAt || "")}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+
         
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
@@ -407,8 +354,64 @@ export default function ChurchDetail() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-10 text-muted-foreground">
-                  Detailed overview is coming soon.
+                <div className="flex items-center mb-4">
+                  <Mail className="h-5 w-5 mr-2 text-muted-foreground" />
+                  <span className="text-base">
+                    {isLoadingChurch ? <Skeleton className="h-5 w-48 inline-block" /> : church?.contactEmail}
+                  </span>
+                </div>
+                
+                <div className="flex flex-wrap gap-6 mb-6">
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Users</span>
+                    <span className="text-2xl font-semibold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-12" />
+                      ) : (
+                        church?.userCount || 0
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Members</span>
+                    <span className="text-2xl font-semibold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-12" />
+                      ) : (
+                        church?.totalMembers || 0
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Total Donations</span>
+                    <span className="text-2xl font-semibold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-24" />
+                      ) : (
+                        new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                        }).format(parseFloat(church?.totalDonations || "0"))
+                      )}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-6 mb-6 text-sm">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    <div>
+                      <span className="text-muted-foreground">Created:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.createdAt || "")}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2" />
+                    <div>
+                      <span className="text-muted-foreground">Last Updated:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.updatedAt || "")}</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
               <CardFooter className="border-t pt-4 flex justify-end space-x-2">
