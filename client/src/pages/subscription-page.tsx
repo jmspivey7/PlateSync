@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/use-subscription";
 import { SubscriptionStatus } from "@/components/subscription/subscription-status";
 import { SubscriptionPlans } from "@/components/subscription/subscription-plans";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function SubscriptionPage() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [showPlans, setShowPlans] = useState(false);
   
   // Check if the user is logged in
@@ -21,14 +24,21 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
+    const paymentIntent = params.get("payment_intent");
     
-    if (success === "true") {
+    if (success === "true" || paymentIntent) {
+      // Refresh subscription status data
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      
       // Clean up URL params
       const url = new URL(window.location.href);
       url.search = "";
       window.history.replaceState({}, "", url.toString());
+      
+      // Close the plans view if open
+      setShowPlans(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const handleUpgradeClick = () => {
     setShowPlans(true);

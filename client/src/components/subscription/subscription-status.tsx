@@ -17,7 +17,8 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
     startTrial,
     startTrialAsync,
     isStartingTrial,
-    formatTrialRemaining
+    formatTrialRemaining,
+    isSubscriptionReady
   } = useSubscription();
   
   const [showExpiredAlert, setShowExpiredAlert] = useState(false);
@@ -31,7 +32,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
     }
   }, [subscriptionStatus]);
 
-  if (isLoading) {
+  if (!isSubscriptionReady()) {
     return (
       <Card>
         <CardHeader>
@@ -50,7 +51,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
   }
 
   // No subscription exists yet
-  if (!subscriptionStatus || subscriptionStatus.status === "NO_SUBSCRIPTION") {
+  if (subscriptionStatus?.status === "NO_SUBSCRIPTION") {
     return (
       <Card>
         <CardHeader>
@@ -104,7 +105,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
   }
 
   // Active trial
-  if (subscriptionStatus.status === "TRIAL" && !subscriptionStatus.isTrialExpired) {
+  if (subscriptionStatus?.status === "TRIAL" && !subscriptionStatus?.isTrialExpired) {
     return (
       <Card>
         <CardHeader>
@@ -156,7 +157,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
   }
 
   // Expired trial
-  if (subscriptionStatus.status === "TRIAL" && subscriptionStatus.isTrialExpired) {
+  if (subscriptionStatus?.status === "TRIAL" && subscriptionStatus?.isTrialExpired) {
     return (
       <Card>
         <CardHeader>

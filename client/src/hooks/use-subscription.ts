@@ -173,5 +173,6 @@ export function useSubscription() {
     upgradePlanAsync,
     isUpgrading,
     formatTrialRemaining,
+    isSubscriptionReady,
   };
 }
