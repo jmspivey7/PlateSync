@@ -10,7 +10,9 @@ import { useSubscription } from "@/hooks/use-subscription";
 
 // Make sure to call loadStripe outside of a component's render to avoid
 // recreating the Stripe object on every render.
-let stripePromise;
+import type { Stripe as StripeType } from '@stripe/stripe-js';
+
+let stripePromise: Promise<StripeType | null> | null = null;
 try {
   const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
   if (!stripeKey) {
@@ -72,6 +74,53 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
     });
   }, [stripe]);
 
+  // Helper function to handle payment confirmation and backend notification
+  const confirmPaymentAsync = async (): Promise<boolean> => {
+    if (!stripe || !elements) {
+      console.error("Stripe or Elements not initialized");
+      return false;
+    }
+    
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + "/subscription?success=true",
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        setMessage(error.message || "An unexpected error occurred.");
+        return false;
+      } 
+      
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        // Notify backend about successful payment
+        try {
+          await apiRequest("/api/subscription/confirm-payment", {
+            method: "POST", 
+            body: { 
+              plan,
+              paymentIntentId: paymentIntent.id || 'unknown'
+            }
+          });
+        } catch (err) {
+          console.error("Failed to confirm payment with server:", err);
+          // Continue with success UI even if server confirmation fails
+          // The webhook should handle this case
+        }
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      console.error("Error confirming payment:", err);
+      setMessage("An unexpected error occurred while processing payment.");
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -84,30 +133,11 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
     setMessage(null);
 
     try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + "/subscription?success=true",
-        },
-        redirect: "if_required",
-      });
-
-      if (error) {
-        setMessage(error.message || "An unexpected error occurred.");
-      } else {
-        // Payment succeeded without redirect
+      const success = await confirmPaymentAsync();
+      
+      if (success) {
         setPaymentSucceeded(true);
-        
-        // Notify backend about successful payment
-        try {
-          await fetch("/api/subscription/confirm-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plan })
-          });
-        } catch (err) {
-          console.error("Failed to confirm payment with server:", err);
-        }
+        onSuccess(); // Inform parent component of success
       }
     } catch (err) {
       setMessage("An unexpected error occurred.");
@@ -196,6 +226,22 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
 export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const { upgradePlanAsync, isUpgrading } = useSubscription();
+
+  // Check if Stripe is properly configured
+  if (!stripePromise) {
+    return (
+      <div className="p-8 text-center">
+        <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Payment Not Available</h3>
+        <p className="text-muted-foreground mb-4">
+          Stripe integration is not properly configured. Please check your Stripe API keys.
+        </p>
+        <Button variant="outline" onClick={onCancel}>
+          Go Back
+        </Button>
+      </div>
+    );
+  }
 
   useEffect(() => {
     // Initiate the payment intent
