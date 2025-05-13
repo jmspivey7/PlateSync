@@ -433,6 +433,12 @@ export default function Onboarding() {
         localStorage.setItem('userVerified', 'true');
       }
       
+      // Store the churchId for later use in trial subscription creation
+      if (churchId) {
+        localStorage.setItem('onboardingChurchId', churchId);
+        console.log('Church ID stored for subscription:', churchId);
+      }
+      
       toast({
         title: "Email verified",
         description: "Your email has been verified successfully",
