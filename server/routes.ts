@@ -197,6 +197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use church name from request or fall back to a default
       const nameToUse = churchName || 'Your Church';
       
+      // Try to find a user with this email to get their name
+      // We'll still continue even if no user is found (just won't personalize the email)
+      
       const result = await sendVerificationEmail(email, churchId, nameToUse);
       
       if (result) {

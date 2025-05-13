@@ -92,7 +92,7 @@ export async function sendVerificationEmail(email: string, churchId: string, chu
           </div>
           
           <div style="padding: 0 30px 30px;">
-            <p style="margin-top: 0;">Hello {{firstName}} {{lastName}},</p>
+            <p style="margin-top: 0;">Hello,</p>
             
             <p>To finish setting up your PlateSync account, please enter the verification code below in the Email Verification page:</p>
             
@@ -110,7 +110,7 @@ export async function sendVerificationEmail(email: string, churchId: string, chu
         </div>
       `,
       text: `
-Hello {{firstName}} {{lastName}},
+Hello,
 
 To finish setting up your PlateSync account, please enter the verification code below in the Email Verification page:
 
