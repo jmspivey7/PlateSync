@@ -200,16 +200,7 @@ export default function GlobalAdminChurches() {
             <div className="h-6 w-px bg-gray-300 mx-2"></div>
             <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="border-gray-300"
-              onClick={() => setLocation("/global-admin/dashboard")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Dashboard
-            </Button>
+          <div className="flex items-center">
             <GlobalAdminAccountDropdown 
               adminName="John Spivey" 
               adminEmail="jspivey@spiveyco.com" 
@@ -313,10 +304,10 @@ export default function GlobalAdminChurches() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[200px] font-bold">Church Name</TableHead>
-                          <TableHead className="font-bold">Status</TableHead>
+                          <TableHead className="w-[350px] font-bold">Church Name</TableHead>
+                          <TableHead className="font-bold text-center">Status</TableHead>
                           <TableHead className="text-center font-bold">Users</TableHead>
-                          <TableHead className="hidden md:table-cell font-bold">Last Login</TableHead>
+                          <TableHead className="hidden md:table-cell text-right font-bold">Last Login</TableHead>
                           <TableHead className="hidden lg:table-cell text-right font-bold">Donations</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -327,10 +318,10 @@ export default function GlobalAdminChurches() {
                             onClick={() => handleDetailView(church.id)} 
                             className="cursor-pointer hover:bg-[#69ad4c]/5 transition-colors"
                           >
-                            <TableCell className="font-medium truncate max-w-[200px]">
+                            <TableCell className="font-medium truncate max-w-[350px]">
                               {church.name}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-center">
                               <Badge variant={getStatusBadgeVariant(church.status)}>
                                 {church.status}
                               </Badge>
@@ -341,7 +332,7 @@ export default function GlobalAdminChurches() {
                                 {church.userCount}
                               </div>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">
+                            <TableCell className="hidden md:table-cell text-right">
                               {formatDate(church.lastActivity || church.updatedAt)}
                             </TableCell>
                             <TableCell className="hidden lg:table-cell text-right">
