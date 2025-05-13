@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
 import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, CreditCard, CheckCircle } from "lucide-react";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Loader2, CreditCard, AlertCircle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSubscription } from "@/hooks/use-subscription";
+
+// Make sure to call loadStripe outside of a component's render to avoid
+// recreating the Stripe object on every render.
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface PaymentFormProps {
   onSuccess: () => void;
@@ -12,47 +18,36 @@ interface PaymentFormProps {
   plan: string;
 }
 
-export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
+function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isStripeReady, setIsStripeReady] = useState(false);
   const [paymentSucceeded, setPaymentSucceeded] = useState(false);
 
+  // Wait for Stripe and Elements to be ready
   useEffect(() => {
-    if (elements) {
+    if (stripe && elements) {
       setIsStripeReady(true);
     }
-  }, [elements]);
+  }, [stripe, elements]);
 
-  // Check for a successful payment return from redirect
+  // Check if the payment has succeeded immediately upon loading
   useEffect(() => {
-    if (!stripe) {
-      return;
-    }
+    if (!stripe) return;
 
-    // Extract the payment intent client secret from the URL
+    // Check the URL for payment status
     const clientSecret = new URLSearchParams(window.location.search).get(
-      'payment_intent_client_secret'
+      "payment_intent_client_secret"
     );
 
-    // If there's no client secret, we're not returning from a redirect
-    if (!clientSecret) {
-      return;
-    }
+    if (!clientSecret) return;
 
-    // Retrieve payment intent to check status
     stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-      if (!paymentIntent) {
-        return;
-      }
-
-      switch (paymentIntent.status) {
+      switch (paymentIntent?.status) {
         case "succeeded":
-          // Payment succeeded, call the confirm endpoint
-          confirmPayment(paymentIntent.id);
+          setPaymentSucceeded(true);
           break;
         case "processing":
           setMessage("Your payment is processing.");
@@ -67,36 +62,11 @@ export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
     });
   }, [stripe]);
 
-  const confirmPayment = async (paymentIntentId: string) => {
-    try {
-      // Call our manual confirmation endpoint
-      const response = await apiRequest(
-        "/api/subscription/confirm-payment", 
-        "POST", 
-        { paymentIntentId, plan }
-      );
-      
-      if (response.ok) {
-        setPaymentSucceeded(true);
-        toast({
-          title: "Subscription Activated",
-          description: `Your ${plan.toLowerCase()} subscription has been successfully activated!`,
-          variant: "default",
-        });
-        setTimeout(() => onSuccess(), 2000); // Give user a moment to see success message
-      } else {
-        const errorData = await response.json();
-        setMessage(errorData.message || "Failed to confirm payment on the server.");
-      }
-    } catch (error: any) {
-      setMessage(error.message || "An unexpected error occurred confirming payment.");
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements) {
+      // Stripe.js hasn't yet loaded.
       return;
     }
 
@@ -104,22 +74,30 @@ export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
     setMessage(null);
 
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
+      const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/subscription?success=true`,
+          return_url: window.location.origin + "/subscription?success=true",
         },
         redirect: "if_required",
       });
 
       if (error) {
         setMessage(error.message || "An unexpected error occurred.");
-      } else if (paymentIntent && paymentIntent.status === "succeeded") {
-        // If payment immediately succeeds without redirect
-        await confirmPayment(paymentIntent.id);
+      } else {
+        // Payment succeeded without redirect
+        setPaymentSucceeded(true);
+        
+        // Notify backend about successful payment
+        try {
+          await apiRequest("POST", "/api/subscription/confirm-payment", { plan });
+        } catch (err) {
+          console.error("Failed to confirm payment with server:", err);
+        }
       }
-    } catch (error: any) {
-      setMessage(error.message || "An unexpected error occurred.");
+    } catch (err) {
+      setMessage("An unexpected error occurred.");
+      console.error(err);
     } finally {
       setIsProcessing(false);
     }
@@ -198,5 +176,47 @@ export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
         </div>
       </form>
     </div>
+  );
+}
+
+export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const { upgradePlan } = useSubscription();
+
+  useEffect(() => {
+    // Initiate the payment intent
+    const initPayment = async () => {
+      try {
+        const data = await upgradePlan(plan);
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+        } else {
+          throw new Error("No client secret received");
+        }
+      } catch (error) {
+        console.error("Failed to initiate payment:", error);
+      }
+    };
+
+    initPayment();
+  }, [plan, upgradePlan]);
+
+  if (!clientSecret) {
+    return (
+      <div className="h-80 flex flex-col items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-gray-600">Initializing payment...</p>
+      </div>
+    );
+  }
+
+  return (
+    <Elements stripe={stripePromise} options={{ clientSecret }}>
+      <PaymentFormContent 
+        plan={plan} 
+        onSuccess={onSuccess} 
+        onCancel={onCancel} 
+      />
+    </Elements>
   );
 }

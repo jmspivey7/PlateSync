@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { differenceInDays } from "date-fns";
 
 interface SubscriptionStatus {
   isActive: boolean;
@@ -31,94 +31,98 @@ interface UpgradeInitResponse {
 export function useSubscription() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
-  // Query to get subscription status
+
+  // Fetch current subscription status
   const { 
-    data: subscriptionStatus,
-    isLoading,
-    error,
-    refetch
+    data: subscriptionStatus, 
+    isLoading, 
+    error 
   } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
-    retry: 1
+    retry: false,
   });
 
-  // Mutation to start a trial
+  // Start a free trial
   const { 
-    mutate: startTrial,
-    isPending: isStartingTrial 
-  } = useMutation<CreateTrialResponse>({
+    mutate: startTrial, 
+    isPending: isStartingTrial
+  } = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("/api/subscription/trial", "POST");
-      return await response.json();
+      const res = await apiRequest("POST", "/api/subscription/start-trial", {});
+      const data = await res.json();
+      return data as CreateTrialResponse;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
       toast({
         title: "Trial Started",
-        description: "Your 30-day free trial has been started successfully",
-        variant: "default",
+        description: "Your 30-day free trial has been activated!",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error Starting Trial",
-        description: error.message || "Failed to start your trial. Please try again.",
+        title: "Could not start trial",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Mutation to initiate upgrade process
+  // Initiate upgrade to paid plan
   const { 
-    mutateAsync: initiateUpgrade,
-    isPending: isInitiatingUpgrade 
-  } = useMutation<UpgradeInitResponse, Error, string>({
+    mutate: upgradePlan, 
+    isPending: isUpgrading 
+  } = useMutation({
     mutationFn: async (plan: string) => {
-      const response = await apiRequest("/api/subscription/upgrade/init", "POST", { plan });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to initiate upgrade");
-      }
-      return await response.json();
+      const res = await apiRequest("POST", "/api/subscription/init-upgrade", { plan });
+      const data = await res.json();
+      return data as UpgradeInitResponse;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      toast({
+        title: "Payment initiated",
+        description: data.message,
+      });
     },
     onError: (error: Error) => {
       toast({
-        title: "Upgrade Failed",
-        description: error.message || "Failed to initiate upgrade. Please try again.",
+        title: "Could not process payment",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Helper function to format the remaining trial days
+  // Helper to format the remaining days in the trial
   const formatTrialRemaining = () => {
-    if (!subscriptionStatus || subscriptionStatus.daysRemaining === null) {
+    if (!subscriptionStatus || !subscriptionStatus.trialEndDate) {
       return "Unknown";
     }
-    
-    if (subscriptionStatus.daysRemaining <= 0) {
+
+    if (subscriptionStatus.isTrialExpired) {
       return "Expired";
     }
+
+    const daysLeft = subscriptionStatus.daysRemaining || 0;
     
-    if (subscriptionStatus.daysRemaining === 1) {
+    if (daysLeft <= 0) {
+      return "Expires today";
+    } else if (daysLeft === 1) {
       return "1 day left";
+    } else {
+      return `${daysLeft} days left`;
     }
-    
-    return `${subscriptionStatus.daysRemaining} days left`;
   };
 
   return {
     subscriptionStatus,
     isLoading,
     error,
-    refetch,
-    // Trial functions
     startTrial,
     isStartingTrial,
+    upgradePlan,
+    isUpgrading,
     formatTrialRemaining,
-    // Upgrade functions
-    initiateUpgrade,
-    isInitiatingUpgrade
   };
 }
