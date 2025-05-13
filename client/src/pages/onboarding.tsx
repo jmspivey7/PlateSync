@@ -1795,8 +1795,14 @@ export default function Onboarding() {
                       return;
                     }
                     
+                    // Get church name too if available
+                    const storedChurchName = localStorage.getItem('churchName');
+                    
                     // Start the trial without authentication requirement
-                    await startOnboardingTrial(churchId);
+                    await startOnboardingTrial({ 
+                      churchId, 
+                      churchName: storedChurchName || undefined
+                    });
                     handleNextStep();
                   } catch (error) {
                     toast({

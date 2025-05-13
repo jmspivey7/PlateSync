@@ -175,10 +175,12 @@ export function useSubscription() {
   };
   
   // Start trial during onboarding (no auth)
-  const startOnboardingTrialAsync = async (churchId: string): Promise<CreateTrialResponse> => {
+  const startOnboardingTrialAsync = async (
+    params: { churchId: string, churchName?: string }
+  ): Promise<CreateTrialResponse> => {
     try {
       return await new Promise<CreateTrialResponse>((resolve, reject) => {
-        startOnboardingTrial(churchId, {
+        startOnboardingTrial(params, {
           onSuccess: (data) => resolve(data),
           onError: (error) => reject(error),
         });
