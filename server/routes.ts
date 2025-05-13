@@ -4417,7 +4417,36 @@ PlateSync Reporting System`;
         return res.status(404).json({ message: 'Church not found for user' });
       }
       
-      const subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+      // Get user role to check if they're an account owner
+      const user = await storage.getUser(userId);
+      const isAccountOwner = user?.role === "ACCOUNT_OWNER" || (user?.role === "ADMIN" && user?.isAccountOwner === true);
+      
+      // Check if subscription exists
+      let subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+      
+      // If user is an account owner and no subscription exists, auto-create a trial
+      if (isAccountOwner && subscriptionStatus.status === "NO_SUBSCRIPTION") {
+        console.log(`Auto-creating trial subscription for account owner ${userId} of church ${churchId}`);
+        
+        // Calculate trial end date (30 days from user creation or today)
+        const now = new Date();
+        const trialStartDate = user?.createdAt ? new Date(user.createdAt) : now;
+        const trialEndDate = new Date(trialStartDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 30);
+        
+        // Create the subscription
+        await storage.createSubscription({
+          churchId,
+          plan: "TRIAL",
+          status: "TRIAL",
+          trialStartDate,
+          trialEndDate
+        });
+        
+        // Get updated subscription status
+        subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+        console.log(`Auto-created trial subscription for church ${churchId}, ending on ${trialEndDate.toISOString()}`);
+      }
       
       res.json(subscriptionStatus);
     } catch (error) {
