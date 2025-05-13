@@ -435,3 +435,52 @@ export interface ChurchWithStats extends Church {
   userCount: number;
   lastActivity: string | null;
 }
+
+// Subscription plan enum
+export const subscriptionPlanEnum = z.enum(["NONE", "TRIAL", "MONTHLY", "ANNUAL"]);
+export type SubscriptionPlan = z.infer<typeof subscriptionPlanEnum>;
+
+// Subscription status enum
+export const subscriptionStatusEnum = z.enum(["TRIAL", "ACTIVE", "EXPIRED", "CANCELED"]);
+export type SubscriptionStatus = z.infer<typeof subscriptionStatusEnum>;
+
+// Subscriptions table
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  churchId: varchar("church_id").references(() => churches.id, { onDelete: "cascade" }).notNull(),
+  plan: varchar("plan", { length: 20 }).default("TRIAL").notNull(),
+  status: varchar("status", { length: 20 }).default("TRIAL").notNull(),
+  trialStartDate: timestamp("trial_start_date").defaultNow().notNull(),
+  trialEndDate: timestamp("trial_end_date").notNull(),
+  startDate: timestamp("start_date"), // When paid plan starts
+  endDate: timestamp("end_date"),     // When paid plan ends/renews
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations between churches and subscriptions
+export const churchSubscriptionRelations = relations(churches, ({ one }) => ({
+  subscription: one(subscriptions, {
+    fields: [churches.id],
+    references: [subscriptions.churchId],
+  }),
+}));
+
+export const subscriptionChurchRelations = relations(subscriptions, ({ one }) => ({
+  church: one(churches, {
+    fields: [subscriptions.churchId],
+    references: [churches.id],
+  }),
+}));
+
+// Schema for subscription creation
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;

@@ -9,6 +9,7 @@ import {
   emailTemplates,
   planningCenterTokens,
   churches,
+  subscriptions,
   type User,
   type UpsertUser,
   type Member,
@@ -29,7 +30,9 @@ import {
   type PlanningCenterTokens,
   type InsertPlanningCenterTokens,
   type Church,
-  type InsertChurch
+  type InsertChurch,
+  type Subscription,
+  type InsertSubscription
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, sum, count, asc, ne } from "drizzle-orm";
