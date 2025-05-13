@@ -4424,7 +4424,7 @@ PlateSync Reporting System`;
   });
   
   // Create a trial subscription
-  app.post('/api/subscription/trial', isAuthenticated, isAccountOwner, async (req: any, res) => {
+  app.post('/api/subscription/start-trial', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const churchId = await storage.getChurchIdForUser(userId);
