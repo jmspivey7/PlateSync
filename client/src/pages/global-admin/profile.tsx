@@ -26,13 +26,30 @@ export default function GlobalAdminProfile() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [profileData, setProfileData] = useState({
+    firstName: "John",
+    lastName: "Spivey",
+    email: "jmspivey@icloud.com",
+    profileImageUrl: null as string | null
+  });
   
   // Check for authentication
   useEffect(() => {
     const token = localStorage.getItem("globalAdminToken");
     if (!token) {
       setLocation("/global-admin/login");
+    } else {
+      // Load profile data from localStorage if available
+      const savedProfileData = localStorage.getItem("globalAdminProfile");
+      if (savedProfileData) {
+        try {
+          const parsedData = JSON.parse(savedProfileData);
+          setProfileData(parsedData);
+        } catch (error) {
+          console.error("Error parsing saved profile data:", error);
+        }
+      }
     }
   }, [setLocation]);
   
@@ -70,10 +87,20 @@ export default function GlobalAdminProfile() {
         
         const result = await response.json();
         
-        // Create a local URL for the uploaded image to display immediately
+        // Update profile data with the new avatar URL
         if (result.success) {
-          const imageUrl = URL.createObjectURL(file);
-          setProfileImage(imageUrl);
+          // Update the profile data with the new avatar URL from the server
+          setProfileData(prevData => {
+            const updatedData = {
+              ...prevData,
+              profileImageUrl: result.profileImageUrl
+            };
+            
+            // Save to localStorage for persistence
+            localStorage.setItem("globalAdminProfile", JSON.stringify(updatedData));
+            
+            return updatedData;
+          });
           
           toast({
             title: 'Success',
@@ -159,10 +186,14 @@ export default function GlobalAdminProfile() {
               <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
                 <div>
                   <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
-                    {profileImage ? (
-                      <AvatarImage src={profileImage} alt="Profile" />
+                    {profileData.profileImageUrl ? (
+                      <AvatarImage src={profileData.profileImageUrl} alt="Profile" />
                     ) : (
-                      <AvatarFallback className="bg-[#69ad4c] text-white text-xl">JS</AvatarFallback>
+                      <AvatarFallback className="bg-[#69ad4c] text-white text-xl">
+                        {profileData.firstName && profileData.lastName 
+                          ? `${profileData.firstName[0]}${profileData.lastName[0]}`
+                          : "GA"}
+                      </AvatarFallback>
                     )}
                   </Avatar>
                   
@@ -176,7 +207,9 @@ export default function GlobalAdminProfile() {
                 </div>
                 
                 <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-xl font-bold">John Spivey</h3>
+                  <h3 className="text-xl font-bold">
+                    {profileData.firstName} {profileData.lastName}
+                  </h3>
                   <p className="text-muted-foreground">Global Administrator</p>
                   
                   <div className="mt-2">
@@ -207,17 +240,30 @@ export default function GlobalAdminProfile() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" defaultValue="John" />
+                    <Input 
+                      id="firstName" 
+                      value={profileData.firstName}
+                      onChange={(e) => setProfileData({...profileData, firstName: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" defaultValue="Spivey" />
+                    <Input 
+                      id="lastName" 
+                      value={profileData.lastName}
+                      onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" defaultValue="jspivey@spiveyco.com" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={profileData.email}
+                    onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                  />
                 </div>
                 
                 <div className="space-y-2">
@@ -253,8 +299,54 @@ export default function GlobalAdminProfile() {
           </Card>
           
           <div className="flex justify-end space-x-3">
-            <Button variant="outline">Cancel</Button>
-            <Button className="bg-[#69ad4c] hover:bg-[#5a9740]">Save Changes</Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                // Reset to last saved data
+                const savedProfileData = localStorage.getItem("globalAdminProfile");
+                if (savedProfileData) {
+                  try {
+                    setProfileData(JSON.parse(savedProfileData));
+                    toast({
+                      title: 'Changes discarded',
+                      description: 'Your changes have been reset',
+                    });
+                  } catch (error) {
+                    console.error("Error parsing saved profile data:", error);
+                  }
+                }
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-[#69ad4c] hover:bg-[#5a9740]"
+              onClick={() => {
+                setIsSaving(true);
+                
+                // Save profile data to localStorage
+                localStorage.setItem("globalAdminProfile", JSON.stringify(profileData));
+                
+                // Simulate API call
+                setTimeout(() => {
+                  setIsSaving(false);
+                  toast({
+                    title: 'Success',
+                    description: 'Your profile has been updated',
+                  });
+                }, 500);
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
           </div>
         </div>
       </main>
