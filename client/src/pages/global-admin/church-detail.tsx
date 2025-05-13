@@ -276,15 +276,6 @@ export default function ChurchDetail() {
             <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
           </div>
           <div className="flex-1 flex justify-end">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="border-gray-300"
-              onClick={() => setLocation("/global-admin/churches")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Churches
-            </Button>
             <GlobalAdminAccountDropdown 
               adminName="John Spivey" 
               adminEmail="jspivey@spiveyco.com" 
@@ -295,31 +286,48 @@ export default function ChurchDetail() {
       
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+            <Building2 className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <h2 className="text-2xl font-bold">
+              {isLoadingChurch ? (
+                <Skeleton className="h-8 w-64" />
+              ) : (
+                church?.name
+              )}
+              {church?.status && (
+                <Badge 
+                  className={`ml-3 ${
+                    church.status === "ACTIVE" 
+                      ? "bg-green-500" 
+                      : church.status === "SUSPENDED" 
+                      ? "bg-amber-500" 
+                      : "bg-red-500"
+                  }`}
+                >
+                  {church.status}
+                </Badge>
+              )}
+            </h2>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="border-gray-300"
+            onClick={() => setLocation("/global-admin/churches")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Churches
+          </Button>
+        </div>
+        
         <div className="mb-6">
           <Card>
             <CardHeader className="pb-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex-1">
-                  <CardTitle className="text-2xl flex items-center">
-                    <Building2 className="h-6 w-6 text-[#69ad4c] mr-2" />
-                    {isLoadingChurch ? (
-                      <Skeleton className="h-8 w-64" />
-                    ) : (
-                      church?.name
-                    )}
-                    {church?.status && (
-                      <Badge 
-                        className={`ml-3 ${
-                          church.status === "ACTIVE" 
-                            ? "bg-green-500" 
-                            : church.status === "SUSPENDED" 
-                            ? "bg-amber-500" 
-                            : "bg-red-500"
-                        }`}
-                      >
-                        {church.status}
-                      </Badge>
-                    )}
+                  <CardTitle className="text-xl flex items-center">
+                    Overview
                   </CardTitle>
                   {!isLoadingChurch && (
                     <CardDescription className="mt-2 flex items-center">
