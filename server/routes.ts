@@ -4396,6 +4396,99 @@ PlateSync Reporting System`;
     }
   });
 
+  // Subscription endpoints
+  
+  // Get subscription status
+  app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      if (!churchId) {
+        return res.status(404).json({ message: 'Church not found for user' });
+      }
+      
+      const subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+      
+      res.json(subscriptionStatus);
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      res.status(500).json({ message: 'Error checking subscription status' });
+    }
+  });
+  
+  // Create a trial subscription
+  app.post('/api/subscription/trial', isAuthenticated, isAccountOwner, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      if (!churchId) {
+        return res.status(404).json({ message: 'Church not found for user' });
+      }
+      
+      // Check if there's already a subscription
+      const existingSubscription = await storage.getSubscription(churchId);
+      if (existingSubscription) {
+        return res.status(400).json({ message: 'Subscription already exists for this church' });
+      }
+      
+      // Calculate trial end date (30 days from now)
+      const now = new Date();
+      const trialEndDate = new Date(now);
+      trialEndDate.setDate(trialEndDate.getDate() + 30);
+      
+      const subscription = await storage.createSubscription({
+        churchId,
+        plan: 'TRIAL',
+        status: 'TRIAL',
+        trialStartDate: now,
+        trialEndDate
+      });
+      
+      res.status(201).json(subscription);
+    } catch (error) {
+      console.error('Error creating trial subscription:', error);
+      res.status(500).json({ message: 'Error creating trial subscription' });
+    }
+  });
+  
+  // Initialize subscription upgrade (placeholder for future Stripe integration)
+  app.post('/api/subscription/upgrade/init', isAuthenticated, isAccountOwner, async (req: any, res) => {
+    try {
+      const { plan } = req.body;
+      
+      if (!plan || !['MONTHLY', 'ANNUAL'].includes(plan)) {
+        return res.status(400).json({ message: 'Invalid plan selected' });
+      }
+      
+      const userId = req.user.claims.sub;
+      const churchId = await storage.getChurchIdForUser(userId);
+      
+      if (!churchId) {
+        return res.status(404).json({ message: 'Church not found for user' });
+      }
+      
+      // Get current subscription status
+      const existingSubscription = await storage.getSubscription(churchId);
+      if (!existingSubscription) {
+        return res.status(404).json({ message: 'No subscription found. Please start a trial first.' });
+      }
+      
+      // Return success with a pending status - the actual Stripe payment process
+      // will be implemented when we have the Stripe API keys
+      res.json({
+        status: 'pending',
+        message: 'Ready to upgrade subscription',
+        plan,
+        // This is where we would return clientSecret from Stripe
+      });
+    } catch (error) {
+      console.error('Error initializing subscription upgrade:', error);
+      res.status(500).json({ message: 'Error initializing subscription upgrade' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
