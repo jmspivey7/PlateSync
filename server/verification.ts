@@ -72,13 +72,24 @@ export async function verifyCode(email: string, churchId: string, code: string):
 }
 
 // Send verification email
-export async function sendVerificationEmail(email: string, churchId: string, churchName: string): Promise<boolean> {
+export async function sendVerificationEmail(
+  email: string, 
+  churchId: string, 
+  churchName: string, 
+  firstName: string = '', 
+  lastName: string = ''
+): Promise<boolean> {
   try {
     // Generate and store verification code
     const code = await storeVerificationCode(email, churchId);
     
     // Get sender email from environment variable with fallback
     const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'verification@platesync.app';
+    
+    // Create greeting based on name availability
+    const greeting = firstName ? 
+      (lastName ? `Hello ${firstName} ${lastName},` : `Hello ${firstName},`) : 
+      `Hello,`;
     
     // Send email with the code
     const result = await sendEmail({
@@ -92,7 +103,7 @@ export async function sendVerificationEmail(email: string, churchId: string, chu
           </div>
           
           <div style="padding: 0 30px 30px;">
-            <p style="margin-top: 0;">Hello,</p>
+            <p style="margin-top: 0;">${greeting}</p>
             
             <p>To finish setting up your PlateSync account, please enter the verification code below in the Email Verification page:</p>
             
@@ -110,7 +121,7 @@ export async function sendVerificationEmail(email: string, churchId: string, chu
         </div>
       `,
       text: `
-Hello,
+${greeting}
 
 To finish setting up your PlateSync account, please enter the verification code below in the Email Verification page:
 

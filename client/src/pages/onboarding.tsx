@@ -343,6 +343,10 @@ export default function Onboarding() {
     setVerificationError(null);
     
     try {
+      // Try to get any stored user data from localStorage
+      const storedFirstName = localStorage.getItem('firstName');
+      const storedLastName = localStorage.getItem('lastName');
+      
       const response = await fetch('/api/send-verification-code', {
         method: 'POST',
         headers: {
@@ -351,7 +355,9 @@ export default function Onboarding() {
         body: JSON.stringify({
           email,
           churchId,
-          churchName
+          churchName,
+          firstName: storedFirstName || '',
+          lastName: storedLastName || ''
         }),
       });
       
@@ -472,7 +478,8 @@ export default function Onboarding() {
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      setCurrentStep(OnboardingStep.COMPLETE);
+      // Send to subscription page instead of complete page
+      setCurrentStep(OnboardingStep.SUBSCRIPTION);
     } else {
       // If on last step or otherwise, redirect to login page
       setLocation("/login-local");

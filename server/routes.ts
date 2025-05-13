@@ -188,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Verification code endpoints for onboarding (no authentication required)
   app.post('/api/send-verification-code', async (req, res) => {
     try {
-      const { email, churchId, churchName } = req.body;
+      const { email, churchId, churchName, firstName, lastName } = req.body;
       
       if (!email || !churchId) {
         return res.status(400).json({ message: 'Email and churchId are required' });
@@ -197,10 +197,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use church name from request or fall back to a default
       const nameToUse = churchName || 'Your Church';
       
-      // Try to find a user with this email to get their name
-      // We'll still continue even if no user is found (just won't personalize the email)
+      // Try to find a user with this email to get their name if not provided
+      let userFirstName = firstName || '';
+      let userLastName = lastName || '';
       
-      const result = await sendVerificationEmail(email, churchId, nameToUse);
+      // If firstName/lastName weren't provided, try to find the user
+      if (!userFirstName || !userLastName) {
+        try {
+          const userResult = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
+            
+          if (userResult.length > 0) {
+            userFirstName = userFirstName || userResult[0].firstName || '';
+            userLastName = userLastName || userResult[0].lastName || '';
+          }
+        } catch (error) {
+          console.log('Error finding user for email personalization:', error);
+          // Continue without user data
+        }
+      }
+      
+      const result = await sendVerificationEmail(
+        email, 
+        churchId, 
+        nameToUse, 
+        userFirstName, 
+        userLastName
+      );
       
       if (result) {
         return res.status(200).json({ message: 'Verification email sent successfully' });
