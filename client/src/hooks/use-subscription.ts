@@ -79,11 +79,11 @@ export function useSubscription() {
     mutate: startOnboardingTrial, 
     isPending: isStartingOnboardingTrial
   } = useMutation({
-    mutationFn: async (churchId: string) => {
+    mutationFn: async (params: { churchId: string, churchName?: string }) => {
       try {
         return await apiRequest<CreateTrialResponse>("/api/subscription/onboarding-trial", { 
           method: "POST",
-          body: { churchId } 
+          body: params
         });
       } catch (error) {
         console.error("Error starting onboarding trial:", error);
