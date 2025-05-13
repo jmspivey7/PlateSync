@@ -16,7 +16,8 @@ import {
   Settings, 
   Users, 
   UserPlus, 
-  LogOut
+  LogOut,
+  CreditCard
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,6 +73,11 @@ const AccountDropdown = () => {
           <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/profile")}>
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/subscription")}>
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Subscription</span>
           </DropdownMenuItem>
           
           <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/help")}>
