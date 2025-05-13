@@ -19,6 +19,7 @@ import Stripe from "stripe";
 import { createTrialSubscriptionForOnboarding } from "./subscription-helper";
 import { 
   subscriptions, 
+  churches,
   subscriptionStatusEnum, 
   subscriptionPlanEnum, 
   type Subscription, 
@@ -4245,6 +4246,27 @@ PlateSync Reporting System`;
           .where(eq(emailTemplates.churchId, userId));
       }
       
+      // Delete subscriptions associated with churches owned by these users
+      for (const userId of userIds) {
+        // First, find all churches where this user is the account owner
+        const churchesOwned = await db
+          .select()
+          .from(churches)
+          .where(eq(churches.accountOwnerId, userId));
+          
+        // Delete subscriptions for these churches
+        for (const church of churchesOwned) {
+          await db
+            .delete(subscriptions)
+            .where(eq(subscriptions.churchId, church.id));
+        }
+        
+        // Now delete the churches themselves
+        await db
+          .delete(churches)
+          .where(eq(churches.accountOwnerId, userId));
+      }
+      
       // Handle users with church_id foreign key dependencies first
       // Find all users that reference any of the userIds as their churchId
       const usersWithChurchDependency = await db
@@ -4269,6 +4291,7 @@ PlateSync Reporting System`;
         message: 'Test user deleted successfully', 
         email: email,
         deletedUserIds: userIds,
+        churchesDeleted: true,
         dependentUsersUpdated: usersWithChurchDependency.length
       });
     } catch (error) {
