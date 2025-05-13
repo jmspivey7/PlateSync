@@ -708,43 +708,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isActive: !dbUser.email?.startsWith('INACTIVE_')
           };
           
-          // If this is a STANDARD user, we need to fetch church settings from their Account Owner
-          if (user.role === "STANDARD" && user.churchId && user.churchId !== user.id) {
+          // If this user has a churchId association, fetch church settings from that church's account owner
+          if (user.churchId) {
             try {
-              // Use the explicitly assigned churchId if available
-              const churchId = user.churchId;
+              console.log(`User ${userId} has churchId ${user.churchId} directly assigned`);
               
-              // Get the Account Owner or any Admin for this church to inherit settings from
-              const accountOwnerQuery = await db.execute(
+              // Get the Account Owner for this church to inherit settings from
+              // First, look for the account with the same ID as the churchId (which is usually the admin/owner)
+              let accountOwnerQuery = await db.execute(
                 sql`SELECT * FROM users 
-                    WHERE id = ${churchId}
-                    OR (role = 'ACCOUNT_OWNER' AND is_account_owner = true AND id IN (
-                      SELECT DISTINCT church_id FROM users WHERE church_id IS NOT NULL
-                    ))
+                    WHERE id = ${user.churchId}
                     LIMIT 1`
               );
               
+              // If no results, try to find the account owner through role-based lookup
+              if (accountOwnerQuery.rows.length === 0) {
+                accountOwnerQuery = await db.execute(
+                  sql`SELECT * FROM users 
+                      WHERE church_id = ${user.churchId} 
+                      AND role IN ('ACCOUNT_OWNER', 'ADMIN') 
+                      AND is_account_owner = true
+                      LIMIT 1`
+                );
+              }
+              
               if (accountOwnerQuery.rows.length > 0) {
                 const adminUser = accountOwnerQuery.rows[0];
+                console.log(`Found admin user for church: ${adminUser.id}`);
                 
                 // Copy church settings from the admin
                 if (adminUser.church_name) {
                   user.churchName = adminUser.church_name;
+                  console.log(`Inherited church name: ${user.churchName}`);
                 }
                 
                 if (adminUser.church_logo_url) {
                   user.churchLogoUrl = adminUser.church_logo_url;
+                  console.log(`Inherited church logo: ${user.churchLogoUrl}`);
                 }
-                
-                // Update this USHER's church ID if it's not set correctly
-                if (!user.churchId) {
-                  await db.execute(
-                    sql`UPDATE users 
-                        SET church_id = ${adminUser.id}
-                        WHERE id = ${userId}`
-                  );
-                  user.churchId = adminUser.id;
-                }
+              } else {
+                console.log(`No admin user found for church ID: ${user.churchId}`);
               }
             } catch (churchError) {
               console.error("Error fetching church info:", churchError);
