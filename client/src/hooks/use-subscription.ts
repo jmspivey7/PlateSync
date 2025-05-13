@@ -42,7 +42,7 @@ export function useSubscription() {
     retry: false,
   });
 
-  // Start a free trial
+  // Start a free trial (authenticated version)
   const { 
     mutate: startTrial, 
     isPending: isStartingTrial
@@ -60,6 +60,37 @@ export function useSubscription() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      toast({
+        title: "Trial Started",
+        description: "Your 30-day free trial has been activated!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Could not start trial",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Start a free trial during onboarding (no auth required)
+  const { 
+    mutate: startOnboardingTrial, 
+    isPending: isStartingOnboardingTrial
+  } = useMutation({
+    mutationFn: async (churchId: string) => {
+      try {
+        return await apiRequest<CreateTrialResponse>("/api/subscription/onboarding-trial", { 
+          method: "POST",
+          body: { churchId } 
+        });
+      } catch (error) {
+        console.error("Error starting onboarding trial:", error);
+        throw error instanceof Error ? error : new Error("Unknown error starting trial");
+      }
+    },
+    onSuccess: () => {
       toast({
         title: "Trial Started",
         description: "Your 30-day free trial has been activated!",
@@ -142,6 +173,21 @@ export function useSubscription() {
       throw error;
     }
   };
+  
+  // Start trial during onboarding (no auth)
+  const startOnboardingTrialAsync = async (churchId: string): Promise<CreateTrialResponse> => {
+    try {
+      return await new Promise<CreateTrialResponse>((resolve, reject) => {
+        startOnboardingTrial(churchId, {
+          onSuccess: (data) => resolve(data),
+          onError: (error) => reject(error),
+        });
+      });
+    } catch (error) {
+      console.error("Onboarding trial start error:", error);
+      throw error;
+    }
+  };
 
   const upgradePlanAsync = async (plan: string): Promise<UpgradeInitResponse> => {
     try {
@@ -169,6 +215,9 @@ export function useSubscription() {
     startTrial,
     startTrialAsync,
     isStartingTrial,
+    startOnboardingTrial,
+    startOnboardingTrialAsync,
+    isStartingOnboardingTrial,
     upgradePlan,
     upgradePlanAsync,
     isUpgrading,

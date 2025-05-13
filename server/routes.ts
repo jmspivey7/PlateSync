@@ -4555,6 +4555,41 @@ PlateSync Reporting System`;
     }
   });
   
+  // Create a trial subscription during onboarding (no auth required)
+  app.post('/api/subscription/onboarding-trial', async (req, res) => {
+    try {
+      const { churchId } = req.body;
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      // Check if there's already a subscription
+      const existingSubscription = await storage.getSubscription(churchId);
+      if (existingSubscription) {
+        return res.status(400).json({ message: 'Subscription already exists for this church' });
+      }
+      
+      // Calculate trial end date (30 days from now)
+      const now = new Date();
+      const trialEndDate = new Date(now);
+      trialEndDate.setDate(trialEndDate.getDate() + 30);
+      
+      const subscription = await storage.createSubscription({
+        churchId,
+        plan: 'TRIAL',
+        status: 'TRIAL',
+        trialStartDate: now,
+        trialEndDate
+      });
+      
+      res.status(201).json(subscription);
+    } catch (error) {
+      console.error('Error creating trial subscription during onboarding:', error);
+      res.status(500).json({ message: 'Error creating trial subscription' });
+    }
+  });
+  
   // Handle Stripe webhook events
   app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const signature = req.headers['stripe-signature'];

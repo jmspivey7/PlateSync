@@ -46,7 +46,7 @@ export default function Onboarding() {
   const [progress, setProgress] = useState(0);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { startTrial, isStartingTrial } = useSubscription();
+  const { startOnboardingTrial, isStartingOnboardingTrial } = useSubscription();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1776,13 +1776,33 @@ export default function Onboarding() {
               
               <Button 
                 className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
-                onClick={() => {
-                  startTrial();
-                  handleNextStep();
+                onClick={async () => {
+                  try {
+                    // Get churchId from localStorage during onboarding
+                    const churchId = localStorage.getItem('onboardingChurchId');
+                    if (!churchId) {
+                      toast({
+                        title: "Error starting trial",
+                        description: "Church ID not found. Please restart onboarding.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    // Start the trial without authentication requirement
+                    await startOnboardingTrial(churchId);
+                    handleNextStep();
+                  } catch (error) {
+                    toast({
+                      title: "Error starting trial",
+                      description: error instanceof Error ? error.message : "Unknown error",
+                      variant: "destructive"
+                    });
+                  }
                 }}
-                disabled={isStartingTrial}
+                disabled={isStartingOnboardingTrial}
               >
-                {isStartingTrial ? (
+                {isStartingOnboardingTrial ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Starting Trial...
