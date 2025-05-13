@@ -34,13 +34,17 @@ export default function GlobalAdminProfile() {
       {/* Header */}
       <header className="bg-white shadow-md border-b">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <img 
-            src="/logo-with-text.png" 
-            alt="PlateSync Logo" 
-            className="h-10 object-contain" 
-          />
-          <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
-          <div className="flex items-center">
+          <div className="flex-1">
+            <img 
+              src="/logo-with-text.png" 
+              alt="PlateSync Logo" 
+              className="h-10 object-contain" 
+            />
+          </div>
+          <div className="flex-1 text-center">
+            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
+          </div>
+          <div className="flex-1 flex justify-end">
             <GlobalAdminAccountDropdown 
               adminName="John Spivey" 
               adminEmail="jspivey@spiveyco.com" 
