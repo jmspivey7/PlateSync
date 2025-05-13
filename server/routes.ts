@@ -4464,9 +4464,9 @@ PlateSync Reporting System`;
   app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const churchId = await storage.getChurchIdForUser(userId);
+      const userChurchId = await storage.getChurchIdForUser(userId);
       
-      if (!churchId) {
+      if (!userChurchId) {
         return res.status(404).json({ message: 'Church not found for user' });
       }
       
@@ -4474,36 +4474,86 @@ PlateSync Reporting System`;
       const user = await storage.getUser(userId);
       const isAccountOwner = user?.role === "ACCOUNT_OWNER" || (user?.role === "ADMIN" && user?.isAccountOwner === true);
       
-      // Check if subscription exists
-      let subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+      // Get the actual church record to get the UUID
+      const church = await storage.getChurch(userChurchId);
       
-      // If user is an account owner and no subscription exists, auto-create a trial
-      if (isAccountOwner && subscriptionStatus.status === "NO_SUBSCRIPTION") {
-        console.log(`Auto-creating trial subscription for account owner ${userId} of church ${churchId}`);
+      // If we can't find the church record, try to auto-create it
+      if (!church && isAccountOwner) {
+        console.log(`Church record not found for ${userChurchId}. Attempting to create it.`);
         
-        // Get church name for better church record creation
-        const churchName = user?.churchName || 
-                           (await storage.getChurch(churchId))?.name || 
-                           "New Church";
+        const churchName = user?.churchName || "New Church";
         
         try {
-          // Use the helper function to ensure church exists before subscription
+          // Auto-create trial and church record
           await createTrialSubscriptionForOnboarding(
             storage,
-            churchId,
+            userChurchId,
             churchName
           );
           
-          // Get updated subscription status
-          subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+          // Get the newly created church record
+          const newChurch = await storage.getChurch(userChurchId);
+          
+          if (!newChurch) {
+            throw new Error("Failed to create church record");
+          }
+          
+          // Check subscription status using church UUID
+          const subscriptionStatus = await storage.checkSubscriptionStatus(newChurch.id);
+          return res.json(subscriptionStatus);
         } catch (error) {
-          console.error('Error auto-creating trial subscription:', error);
-          // If there's an error, we'll continue with the NO_SUBSCRIPTION status
+          console.error('Error auto-creating church and trial:', error);
+          return res.status(500).json({ 
+            message: 'Error creating church record and subscription',
+            isActive: false,
+            isTrialExpired: true,
+            status: "ERROR",
+            daysRemaining: null,
+            trialEndDate: null
+          });
         }
-        console.log(`Auto-created trial subscription for church ${churchId}`);
       }
       
-      res.json(subscriptionStatus);
+      // If church exists, use the UUID to check subscription
+      if (church) {
+        console.log(`Found church record: ${church.id} for user church ID: ${userChurchId}`);
+        
+        // Check if subscription exists using church UUID
+        let subscriptionStatus = await storage.checkSubscriptionStatus(church.id);
+        
+        // If user is an account owner and no subscription exists, auto-create a trial
+        if (isAccountOwner && subscriptionStatus.status === "NO_SUBSCRIPTION") {
+          console.log(`Auto-creating trial subscription for account owner ${userId} of church ${church.id}`);
+          
+          try {
+            // Use the helper function with the church UUID
+            await createTrialSubscriptionForOnboarding(
+              storage,
+              church.id,
+              church.name
+            );
+            
+            // Get updated subscription status
+            subscriptionStatus = await storage.checkSubscriptionStatus(church.id);
+          } catch (error) {
+            console.error('Error auto-creating trial subscription:', error);
+            // If there's an error, we'll continue with the NO_SUBSCRIPTION status
+          }
+          console.log(`Auto-created trial subscription for church ${church.id}`);
+        }
+        
+        return res.json(subscriptionStatus);
+      }
+      
+      // If we get here, we couldn't find or create the church record
+      return res.status(404).json({ 
+        message: 'Church record not found',
+        isActive: false,
+        isTrialExpired: true,
+        status: "NO_SUBSCRIPTION",
+        daysRemaining: null,
+        trialEndDate: null
+      });
     } catch (error) {
       console.error('Error fetching subscription status:', error);
       res.status(500).json({ message: 'Error checking subscription status' });
