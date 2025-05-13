@@ -4550,37 +4550,6 @@ PlateSync Reporting System`;
     }
   });
   
-        status: 'TRIAL',
-        trialStartDate: now,
-        trialEndDate
-      });
-      
-      res.status(201).json(subscription);
-    } catch (error) {
-      console.error('Error creating trial subscription during onboarding:', error);
-      res.status(500).json({ message: 'Error creating trial subscription' });
-    }
-  });
-  
-  // Handle Stripe webhook events
-  app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    const signature = req.headers['stripe-signature'];
-    
-    if (!signature) {
-      return res.status(400).send('Missing Stripe signature');
-    }
-    
-    let event;
-    
-    try {
-      const payload = req.body;
-      const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-      
-      // Verify the event came from Stripe
-      if (endpointSecret) {
-        event = stripe.webhooks.constructEvent(payload, signature, endpointSecret);
-      } else {
-        // For testing without a webhook secret
         event = JSON.parse(payload.toString());
       }
     } catch (err: any) {
