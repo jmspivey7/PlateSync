@@ -133,19 +133,9 @@ export default function GlobalAdminUsers() {
               alt="PlateSync Logo" 
               className="h-10 object-contain" 
             />
-            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Admin</h1>
+            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="border-gray-300"
-              onClick={() => setLocation("/global-admin/dashboard")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Dashboard
-            </Button>
+          <div className="flex items-center">
             <GlobalAdminAccountDropdown 
               adminName="John Spivey" 
               adminEmail="jspivey@spiveyco.com" 
@@ -156,9 +146,19 @@ export default function GlobalAdminUsers() {
       
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
-        <div className="flex items-center mb-6">
-          <UsersIcon className="h-7 w-7 text-[#69ad4c] mr-3" />
-          <h2 className="text-2xl font-bold">System Users</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <UsersIcon className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <h2 className="text-2xl font-bold">System Users</h2>
+          </div>
+          <Button 
+            variant="outline" 
+            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            onClick={() => setLocation("/global-admin/dashboard")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
         </div>
         
         <Card>
@@ -191,12 +191,12 @@ export default function GlobalAdminUsers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead className="w-16">Actions</TableHead>
+                    <TableHead className="font-bold">Name</TableHead>
+                    <TableHead className="font-bold">Email</TableHead>
+                    <TableHead className="font-bold">Role</TableHead>
+                    <TableHead className="font-bold">Status</TableHead>
+                    <TableHead className="font-bold">Last Login</TableHead>
+                    <TableHead className="w-16 font-bold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

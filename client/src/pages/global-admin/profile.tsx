@@ -40,16 +40,7 @@ export default function GlobalAdminProfile() {
             className="h-10 object-contain" 
           />
           <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="border-gray-300"
-              onClick={() => setLocation("/global-admin/dashboard")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Dashboard
-            </Button>
+          <div className="flex items-center">
             <GlobalAdminAccountDropdown 
               adminName="John Spivey" 
               adminEmail="jspivey@spiveyco.com" 
@@ -61,7 +52,17 @@ export default function GlobalAdminProfile() {
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Global Administrator Profile</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Global Administrator Profile</h2>
+            <Button 
+              variant="outline" 
+              className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+              onClick={() => setLocation("/global-admin/dashboard")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </div>
           
           <Card className="mb-6">
             <CardHeader>
