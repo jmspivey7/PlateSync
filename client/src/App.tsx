@@ -33,7 +33,6 @@ import GlobalAdminDashboard from "@/pages/global-admin/dashboard";
 import GlobalAdminChurches from "@/pages/global-admin/churches";
 import ChurchDetail from "@/pages/global-admin/church-detail";
 import GlobalAdminProfile from "@/pages/global-admin/profile";
-import GlobalAdminHelp from "@/pages/global-admin/help";
 import GlobalAdminUsers from "@/pages/global-admin/users";
 import GlobalAdminReports from "@/pages/global-admin/reports";
 
@@ -56,7 +55,6 @@ const GLOBAL_ADMIN_PATHS = [
   "/global-admin/churches",
   "/global-admin/church/",  // Updated to support all church detail pages with trailing slash
   "/global-admin/profile",
-  "/global-admin/help",
   "/global-admin/users",
   "/global-admin/reports"
 ];
@@ -144,7 +142,6 @@ function Router() {
       <Route path="/global-admin/churches" component={GlobalAdminChurches} />
       <Route path="/global-admin/church/:id" component={ChurchDetail} />
       <Route path="/global-admin/profile" component={GlobalAdminProfile} />
-      <Route path="/global-admin/help" component={GlobalAdminHelp} />
       <Route path="/global-admin/users" component={GlobalAdminUsers} />
       <Route path="/global-admin/reports" component={GlobalAdminReports} />
       

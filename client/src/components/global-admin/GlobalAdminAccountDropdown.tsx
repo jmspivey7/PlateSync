@@ -74,14 +74,6 @@ const GlobalAdminAccountDropdown = ({
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
-          
-          <DropdownMenuItem
-            className="cursor-pointer" 
-            onClick={() => setLocation("/global-admin/help")}
-          >
-            <HelpCircle className="mr-2 h-4 w-4" />
-            <span>Help</span>
-          </DropdownMenuItem>
         </DropdownMenuGroup>
         
         <DropdownMenuSeparator />
