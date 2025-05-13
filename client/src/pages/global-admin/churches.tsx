@@ -220,9 +220,19 @@ export default function GlobalAdminChurches() {
       
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
-        <div className="flex items-center mb-6">
-          <Building2 className="h-7 w-7 text-[#69ad4c] mr-3" />
-          <h2 className="text-2xl font-bold">Church Management</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Building2 className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <h2 className="text-2xl font-bold">Church Management</h2>
+          </div>
+          <Button
+            variant="outline"
+            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            onClick={() => setLocation("/global-admin/dashboard")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
         </div>
         
         <div className="mb-6">
@@ -303,12 +313,11 @@ export default function GlobalAdminChurches() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[200px]">Church Name</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-center">Users</TableHead>
-                          <TableHead className="hidden md:table-cell">Created</TableHead>
-                          <TableHead className="hidden md:table-cell">Last Activity</TableHead>
-                          <TableHead className="hidden lg:table-cell text-right">Donations</TableHead>
+                          <TableHead className="w-[200px] font-bold">Church Name</TableHead>
+                          <TableHead className="font-bold">Status</TableHead>
+                          <TableHead className="text-center font-bold">Users</TableHead>
+                          <TableHead className="hidden md:table-cell font-bold">Last Login</TableHead>
+                          <TableHead className="hidden lg:table-cell text-right font-bold">Donations</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -331,9 +340,6 @@ export default function GlobalAdminChurches() {
                                 <Users className="h-3 w-3 mr-1 text-muted-foreground" />
                                 {church.userCount}
                               </div>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {formatDate(church.createdAt)}
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               {formatDate(church.lastActivity || church.updatedAt)}
