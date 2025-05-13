@@ -364,4 +364,7 @@ router.get("/logout", (req, res) => {
   res.redirect("/global-admin/login");
 });
 
+// We'll add the profile avatar endpoint later when mounted in routes.ts
+// Using the same avatarUpload middleware
+
 export default router;

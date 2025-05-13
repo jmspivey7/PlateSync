@@ -1,5 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import GlobalAdminAccountDropdown from "@/components/global-admin/GlobalAdminAccountDropdown";
 import { 
   Card,
@@ -10,16 +12,21 @@ import {
 } from "@/components/ui/card";
 import { 
   Avatar,
-  AvatarFallback
+  AvatarFallback,
+  AvatarImage
 } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Loader2 } from "lucide-react";
 
 export default function GlobalAdminProfile() {
   const [_, setLocation] = useLocation();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   
   // Check for authentication
   useEffect(() => {
@@ -28,6 +35,81 @@ export default function GlobalAdminProfile() {
       setLocation("/global-admin/login");
     }
   }, [setLocation]);
+  
+  // Trigger file input click
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+  
+  // Upload avatar mutation
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      setIsUploading(true);
+      
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      try {
+        const token = localStorage.getItem("globalAdminToken");
+        if (!token) {
+          throw new Error("Authentication required");
+        }
+        
+        const response = await fetch('/api/global-admin/profile/avatar', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to upload avatar");
+        }
+        
+        const result = await response.json();
+        
+        // Create a local URL for the uploaded image to display immediately
+        if (result.success) {
+          const imageUrl = URL.createObjectURL(file);
+          setProfileImage(imageUrl);
+          
+          toast({
+            title: 'Success',
+            description: 'Your profile picture has been updated',
+          });
+        }
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to upload profile picture',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    },
+  });
+  
+  // Handle file change for avatar upload
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Error',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Upload the file
+    uploadAvatarMutation.mutate(file);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,8 +159,20 @@ export default function GlobalAdminProfile() {
               <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
                 <div>
                   <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
-                    <AvatarFallback className="bg-[#69ad4c] text-white text-xl">JS</AvatarFallback>
+                    {profileImage ? (
+                      <AvatarImage src={profileImage} alt="Profile" />
+                    ) : (
+                      <AvatarFallback className="bg-[#69ad4c] text-white text-xl">JS</AvatarFallback>
+                    )}
                   </Avatar>
+                  
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
                 </div>
                 
                 <div className="flex-1 text-center md:text-left">
@@ -90,9 +184,20 @@ export default function GlobalAdminProfile() {
                       variant="outline" 
                       size="sm" 
                       className="text-sm"
+                      onClick={triggerFileInput}
+                      disabled={isUploading}
                     >
-                      <Upload className="mr-1 h-3 w-3" />
-                      Upload profile picture
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-1 h-3 w-3" />
+                          Upload profile picture
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

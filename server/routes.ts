@@ -105,6 +105,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount Global Admin routes
   app.use('/api/global-admin', globalAdminRoutes);
+  
+  // Global Admin profile avatar upload
+  app.post('/api/global-admin/profile/avatar', async (req, res) => {
+    try {
+      // Get the authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      // Extract the token
+      const token = authHeader.split(' ')[1];
+      
+      // Verify the token - this simulates authentication
+      // In production, you would fully verify the JWT token
+      if (!token) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      // Use the avatarUpload middleware for this specific route
+      avatarUpload.single('avatar')(req, res, async (err) => {
+        if (err) {
+          return res.status(400).json({ message: err.message });
+        }
+        
+        if (!req.file) {
+          return res.status(400).json({ message: 'No image file provided' });
+        }
+        
+        // Get the relative path to the uploaded file
+        const avatarUrl = `/avatars/${req.file.filename}`;
+        
+        // Return the new avatar URL
+        res.json({
+          success: true,
+          message: 'Profile picture updated successfully',
+          profileImageUrl: avatarUrl
+        });
+      });
+    } catch (error) {
+      console.error('Error uploading global admin avatar:', error);
+      res.status(500).json({ 
+        success: false,
+        message: `Failed to upload avatar: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
 
   // Serve static files
   app.use(express.static('public'));
