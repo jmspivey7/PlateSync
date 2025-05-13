@@ -30,8 +30,8 @@ enum OnboardingStep {
   UPLOAD_LOGO = 2,
   SERVICE_OPTIONS = 3,
   IMPORT_MEMBERS = 4,
-  SUBSCRIPTION = 5,
-  EMAIL_NOTIFICATIONS = 6,
+  EMAIL_NOTIFICATIONS = 5,
+  SUBSCRIPTION = 6,
   COMPLETE = 7
 }
 
@@ -733,13 +733,13 @@ export default function Onboarding() {
       // Now proceed to member import step
       setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
-      // Member import is complete or skipped, move to subscription step
-      setCurrentStep(OnboardingStep.SUBSCRIPTION);
-    } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
-      // Subscription step is complete, move to email notifications
+      // Member import is complete or skipped, move to email notifications
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      // Email notifications configuration is complete, move to completion
+      // Email notifications configuration is complete, move to subscription
+      setCurrentStep(OnboardingStep.SUBSCRIPTION);
+    } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
+      // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
       // Redirect to login page after completing onboarding
@@ -759,12 +759,12 @@ export default function Onboarding() {
       setCurrentStep(OnboardingStep.UPLOAD_LOGO);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
-    } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
-      setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      setCurrentStep(OnboardingStep.SUBSCRIPTION);
-    } else if (currentStep === OnboardingStep.COMPLETE) {
+      setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
+    } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
+    } else if (currentStep === OnboardingStep.COMPLETE) {
+      setCurrentStep(OnboardingStep.SUBSCRIPTION);
     }
   };
   
@@ -951,10 +951,10 @@ export default function Onboarding() {
       case OnboardingStep.IMPORT_MEMBERS:
         setProgress(56);
         break;
-      case OnboardingStep.SUBSCRIPTION:
+      case OnboardingStep.EMAIL_NOTIFICATIONS:
         setProgress(70);
         break;
-      case OnboardingStep.EMAIL_NOTIFICATIONS:
+      case OnboardingStep.SUBSCRIPTION:
         setProgress(85);
         break;
       case OnboardingStep.COMPLETE:
@@ -1303,8 +1303,8 @@ export default function Onboarding() {
         return (
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Step 6: Donor Notifications</h2>
-              <div className="text-sm text-gray-500">Step 6 of 7</div>
+              <h2 className="text-2xl font-bold">Step 5: Donor Notifications</h2>
+              <div className="text-sm text-gray-500">Step 5 of 7</div>
             </div>
             
             <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
@@ -1644,8 +1644,8 @@ export default function Onboarding() {
         return (
           <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Step 5: Subscription Plan</h2>
-              <div className="text-sm text-gray-500">Step 5 of 7</div>
+              <h2 className="text-2xl font-bold">Step 6: Subscription Plan</h2>
+              <div className="text-sm text-gray-500">Step 6 of 7</div>
             </div>
             
             <div className="bg-white rounded-lg border p-6 mb-6">
@@ -1758,9 +1758,9 @@ export default function Onboarding() {
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
               <CheckCircle className="h-8 w-8 text-[#69ad4c]" />
             </div>
-            <h2 className="text-2xl font-bold">Setup Complete!</h2>
+            <h2 className="text-2xl font-bold">Your Free Trial is Now Active!</h2>
             <p className="text-gray-600 max-w-md">
-              Congratulations! Your PlateSync account is ready to use. Click the button below to sign in and start managing your donations.
+              Congratulations! Your PlateSync account is ready to use and your 30-day free trial has started. Click the button below to sign in and start managing your donations.
             </p>
             <Button
               variant="default"
