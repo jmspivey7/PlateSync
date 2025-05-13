@@ -1618,12 +1618,23 @@ export default function Onboarding() {
                 <ChevronLeft className="mr-2 h-4 w-4" /> Back
               </Button>
               
-              <Button 
-                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                onClick={handleNextStep}
-              >
-                {importStatus === 'success' ? 'Next' : 'Skip for now'} <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="space-x-2">
+                {importStatus !== 'success' && (
+                  <Button
+                    variant="outline"
+                    onClick={handleNextStep}
+                  >
+                    Skip for now
+                  </Button>
+                )}
+                
+                <Button 
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                  onClick={handleNextStep}
+                >
+                  Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         );
@@ -1731,25 +1742,34 @@ export default function Onboarding() {
                 <ChevronLeft className="mr-2 h-4 w-4" /> Back
               </Button>
               
-              <Button 
-                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
-                onClick={() => {
-                  startTrial();
-                  handleNextStep();
-                }}
-                disabled={isStartingTrial}
-              >
-                {isStartingTrial ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Starting Trial...
-                  </>
-                ) : (
-                  <>
-                    Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
+              <div className="space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSkip}
+                >
+                  Skip for now
+                </Button>
+                
+                <Button 
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
+                  onClick={() => {
+                    startTrial();
+                    handleNextStep();
+                  }}
+                  disabled={isStartingTrial}
+                >
+                  {isStartingTrial ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Starting Trial...
+                    </>
+                  ) : (
+                    <>
+                      Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         );
