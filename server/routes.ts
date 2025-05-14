@@ -176,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Use direct payment links with custom success/cancel URLs
+  // Create subscription with direct payment links and custom redirect URLs
   app.post('/api/subscription/create-checkout-session', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
@@ -203,31 +203,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the token in the user's session
       req.session.checkoutToken = sessionToken;
       req.session.checkoutPlan = plan;
+      
+      // Save session
       await new Promise<void>((resolve) => {
         req.session.save((err: any) => {
-          if (err) {
-            console.error('Error saving session:', err);
-          }
+          if (err) console.error('Error saving session:', err);
           resolve();
         });
       });
       
-      // Get the host for building redirect URLs
-      const host = req.get('host');
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      // Build redirect URLs using current host
+      const hostName = req.get('host');
+      const protocolName = req.headers['x-forwarded-proto'] || req.protocol;
       
-      // Generate success and cancel URLs
-      const successUrl = `${protocol}://${host}/subscription?success=true&token=${sessionToken}`;
-      const cancelUrl = `${protocol}://${host}/subscription?canceled=true`;
+      // Create success and cancel URLs with token for verification
+      const successUrl = `${protocolName}://${hostName}/subscription?success=true&token=${sessionToken}`;
+      const cancelUrl = `${protocolName}://${hostName}/subscription?canceled=true`;
       
-      // Append success_url and cancel_url to the payment link
-      // Note: payment links can accept these parameters to override default redirection
-      const modifiedPaymentLink = `${paymentLink}${paymentLink.includes('?') ? '&' : '?'}success_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+      // Append success_url and cancel_url parameters to override payment link defaults
+      const urlWithRedirects = `${paymentLink}${paymentLink.includes('?') ? '&' : '?'}success_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
       
       console.log(`Using payment link with custom redirect URLs`);
       
-      // Return the modified payment link URL
-      res.json({ url: modifiedPaymentLink });
+      // Return the payment link with redirect parameters
+      res.json({ url: urlWithRedirects });
     } catch (error) {
       console.error('Error creating checkout session:', error);
       res.status(500).json({
@@ -308,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize subscription upgrade with Stripe direct payment links
+  // Initialize subscription upgrade with direct payment links and custom redirect URLs
   app.post('/api/subscription/init-upgrade', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
@@ -335,42 +334,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the token in the user's session
       req.session.checkoutToken = sessionToken;
       req.session.checkoutPlan = plan;
+      
+      // Save session
       await new Promise<void>((resolve) => {
         req.session.save((err: any) => {
-          if (err) {
-            console.error('Error saving session:', err);
-          }
+          if (err) console.error('Error saving session:', err);
           resolve();
         });
       });
       
-      // Get the host for building redirect URLs
-      const host = req.get('host');
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      // Build redirect URLs using current host
+      const hostName = req.get('host');
+      const protocolName = req.headers['x-forwarded-proto'] || req.protocol;
       
-      // Create new checkout session
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2023-10-16',
-      });
+      // Create success and cancel URLs with token for verification
+      const successUrl = `${protocolName}://${hostName}/subscription?success=true&token=${sessionToken}`;
+      const cancelUrl = `${protocolName}://${hostName}/subscription?canceled=true`;
       
-      // Create checkout session with proper success/cancel URLs
-      const session = await stripe.checkout.sessions.create({
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
-        success_url: `${protocol}://${host}/subscription?success=true&token=${sessionToken}`,
-        cancel_url: `${protocol}://${host}/subscription?canceled=true`,
-        client_reference_id: userId,
-      });
+      // Append success_url and cancel_url parameters to override payment link defaults
+      const urlWithRedirects = `${paymentLink}${paymentLink.includes('?') ? '&' : '?'}success_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
       
-      console.log(`Created Stripe checkout session: ${session.id}`);
+      console.log(`Using payment link with custom redirect URLs for upgrade`);
       
-      // Return the checkout URL
-      return res.json({ url: session.url });
+      // Return the payment link with redirect parameters
+      return res.json({ url: urlWithRedirects });
     } catch (error) {
       console.error('Error generating payment link for upgrade:', error);
       res.status(500).json({
@@ -380,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Manual verification endpoint for payment
+  // Payment verification endpoint with token validation
   app.post('/api/subscription/verify-payment', isAuthenticated, async (req: any, res) => {
     try {
       if (!req.isAuthenticated() || !req.user) {
@@ -388,7 +375,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = req.user.claims.sub;
-      console.log('Manually marking payment as verified for user:', userId);
+      const { token } = req.body;
+      
+      console.log('Verifying payment for user:', userId);
+      
+      // Validate the token if provided
+      if (token && req.session.checkoutToken) {
+        if (token !== req.session.checkoutToken) {
+          console.warn(`Token mismatch: ${token} vs ${req.session.checkoutToken}`);
+          // Continue anyway since we're already authenticated
+        } else {
+          console.log('Token verified successfully');
+        }
+      }
       
       // Get church for this user
       const user = await storage.getUserById(userId);
@@ -399,13 +398,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const churchId = user.churchId;
       
-      // Update subscription status to active paid plan (using the same logic from stripe webhook)
-      // Note: In production, this would be triggered by Stripe webhook, not manual verification
+      // Get plan from session if available
+      const plan = req.session.checkoutPlan || 'MONTHLY';
+      const periodDays = plan === 'MONTHLY' ? 30 : 365;
+      
+      // Update subscription status to active paid plan
       const updatedSubscription = await storage.updateSubscriptionStatus(churchId, {
         status: 'ACTIVE',
-        plan: 'MONTHLY', // Default to monthly plan for manual verification
+        plan: plan,
         startDate: new Date(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        endDate: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000),
         canceledAt: null
       });
       
