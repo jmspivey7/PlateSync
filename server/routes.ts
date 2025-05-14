@@ -2,17 +2,19 @@ import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import 'express-session';
+import session from 'express-session';
 
 // Extend express-session with our user type
-declare module 'express-session' {
-  interface SessionData {
-    user?: {
-      userId: string;
-      churchId?: string;
-      role?: string;
-      isAccountOwner?: boolean;
-    };
+declare global {
+  namespace Express {
+    interface SessionData {
+      user?: {
+        userId: string;
+        churchId?: string;
+        role?: string;
+        isAccountOwner?: boolean;
+      };
+    }
   }
 }
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -753,13 +755,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set up session data
       const userData = {
         userId: user.id,
-        churchId: user.churchId,
+        churchId: user.churchId || undefined,
         role: user.role,
-        isAccountOwner: user.isAccountOwner
+        isAccountOwner: user.isAccountOwner !== null ? user.isAccountOwner : undefined
       };
       
       // Save session data
       req.session.user = userData;
+      
+      console.log("Setting session data:", userData);
       
       // Save the session before sending response
       req.session.save((err) => {
