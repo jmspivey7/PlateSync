@@ -147,7 +147,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             Upgrade to Paid Plan
           </Button>
@@ -206,7 +206,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-red-600 hover:bg-red-700 text-white"
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             Upgrade Now
           </Button>
@@ -249,9 +249,12 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           </div>
         </CardContent>
         <CardFooter>
-          <div className="text-center w-full text-sm text-gray-500">
-            Contact support to manage your subscription
-          </div>
+          <Button 
+            onClick={onUpgrade} 
+            className="w-full bg-red-600 hover:bg-red-700 text-white"
+          >
+            Cancel My Plan
+          </Button>
         </CardFooter>
       </Card>
     );
