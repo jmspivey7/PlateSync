@@ -240,14 +240,14 @@ const Dashboard = () => {
   const formatSafeDate = (dateStr: string | Date | null | undefined) => {
     try {
       if (!dateStr || !isValidDate(dateStr)) {
-        return "Unknown date";
+        return "Waiting on First Count";
       }
       const dateObj = new Date(dateStr);
       const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
       return format(correctedDate, 'EEEE, MMMM d, yyyy');
     } catch (error) {
       console.error("Error formatting date:", error);
-      return "Unknown date";
+      return "Waiting on First Count";
     }
   };
   
