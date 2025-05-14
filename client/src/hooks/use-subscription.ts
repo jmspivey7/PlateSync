@@ -112,10 +112,22 @@ export function useSubscription() {
   } = useMutation({
     mutationFn: async (plan: string) => {
       try {
-        return await apiRequest<UpgradeInitResponse>("/api/subscription/init-upgrade", {
+        const response = await fetch("/api/subscription/init-upgrade", {
           method: "POST",
-          body: { plan }
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ plan }),
+          credentials: "include"
         });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to upgrade plan");
+        }
+        
+        const data = await response.json();
+        return data as UpgradeInitResponse;
       } catch (error) {
         console.error("Error upgrading plan:", error);
         throw error instanceof Error ? error : new Error("Unknown error upgrading plan");
@@ -125,14 +137,22 @@ export function useSubscription() {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
       toast({
         title: "Payment initiated",
-        description: data.message,
+        description: data.message || "Your payment has been initiated",
       });
+      
+      // If we have a client secret, redirect to the Stripe payment form
+      if (data.clientSecret) {
+        // Navigate user to Stripe payment form or handle it in-place
+        console.log("Payment client secret:", data.clientSecret);
+        // We'll need to implement a Stripe payment form with this client secret
+      }
+      
       return data;
     },
     onError: (error: Error) => {
       toast({
         title: "Could not process payment",
-        description: error.message,
+        description: error.message || "An error occurred processing your payment",
         variant: "destructive",
       });
     },
