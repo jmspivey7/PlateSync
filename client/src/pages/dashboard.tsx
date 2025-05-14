@@ -226,8 +226,8 @@ const Dashboard = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : lastFinalizedBatch ? (
-            <Card className="border rounded-xl shadow-sm">
-              <CardContent className="p-4">
+            <Card className="border rounded-xl shadow-sm h-full">
+              <CardContent className="p-4 h-full">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg text-muted-foreground font-medium">Last Count Finalized</h2>
                   <div className="bg-background border rounded-full px-3 py-1 flex items-center text-sm font-medium">
@@ -261,8 +261,8 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-muted">
-              <CardContent className="p-4 text-center">
+            <Card className="bg-muted h-full">
+              <CardContent className="p-4 text-center flex flex-col items-center justify-center h-full">
                 <h2 className="text-lg font-medium mb-1">No Finalized Counts Yet</h2>
                 <p className="text-muted-foreground">Finalize a count to see it displayed here</p>
               </CardContent>
