@@ -86,11 +86,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function DonationChart() {
   // For navigation to counts page
   const [, navigate] = useLocation();
+  // Add state for tracking loading timeout
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  
+  // Set a timeout to prevent infinite loading
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setLoadingTimedOut(true);
+    }, 5000); // 5 seconds timeout
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
   
   // Fetch all batches
   const { data: batches, isLoading, error: batchError } = useQuery<Batch[]>({
     queryKey: ['/api/batches'],
-    retry: 3,
+    retry: 2, // Reduced retry count
     retryDelay: 1000,
     throwOnError: false,
     refetchOnMount: true,
@@ -107,6 +118,7 @@ export function DonationChart() {
     queryFn: async () => {
       try {
         if (!batches || !Array.isArray(batches) || batches.length === 0) {
+          console.log("No batches available for donations query");
           // Return empty object immediately if no batches
           return {}; 
         }
@@ -117,6 +129,7 @@ export function DonationChart() {
         );
         
         if (relevantBatches.length === 0) {
+          console.log("No relevant batches found (FINALIZED with positive amounts)");
           return {}; // Return empty object if no relevant batches
         }
         
@@ -163,8 +176,8 @@ export function DonationChart() {
     retryDelay: 1000
   });
 
-  // Handle loading and error states - simpler approach without timeout
-  if (isLoading || isDonationsLoading || !batches) {
+  // Handle loading and error states with timeout protection
+  if ((isLoading || isDonationsLoading || !batches) && !loadingTimedOut) {
     return (
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
@@ -190,7 +203,7 @@ export function DonationChart() {
   }
   
   // Handle error states or no data - show empty chart with view history option
-  if (batchError || donationsError || !Array.isArray(batches) || batches.length === 0 || (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
+  if (loadingTimedOut || batchError || donationsError || !Array.isArray(batches) || batches.length === 0 || (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
     return (
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
