@@ -236,13 +236,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found subscription status: ${statusData.status}, active: ${statusData.isActive}`);
       
-      // Hard-code to return ACTIVE status for now - just to fix the UI display
+      // Hard-code to return TRIAL status that's expired
       const response = {
         ...statusData,
-        status: "ACTIVE", // Override the status to ACTIVE
-        isActive: true,   // Override to active
-        isTrialExpired: false,  // Fix the trial expired flag
-        plan: subscription?.plan || 'ANNUAL' // Default to annual plan
+        status: "TRIAL",     // Show as a trial
+        isActive: true,      // Still active
+        isTrialExpired: true, // But trial has expired
+        daysRemaining: 0,     // 0 days remaining
+        trialEndDate: new Date().toISOString(), // Trial ends today
+        plan: 'TRIAL'        // Trial plan
       };
       
       console.log(`Returning subscription data:`, response);
