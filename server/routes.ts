@@ -1,8 +1,10 @@
-import express, { type Express, type Request } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import session from 'express-session';
+import passport from 'passport';
+import connectPg from 'connect-pg-simple';
 
 // Extend express-session with our user type
 declare global {
@@ -17,7 +19,23 @@ declare global {
     }
   }
 }
-import { setupAuth, isAuthenticated } from "./replitAuth";
+// Create our own isAuthenticated middleware
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  // Check if user is logged in via passport
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Check for our updated session structure as fallback
+  const userData = req.session?.user;
+  
+  if (!userData || !userData.userId) {
+    console.log('No user session found:', req.session);
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
+  next();
+};
 import { isAdmin, isAccountOwner, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { sendVerificationEmail, verifyCode } from "./verification";
@@ -70,9 +88,61 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
   });
 }
 
+// Set up session middleware
+function setupSessionMiddleware(app: Express) {
+  // Session configuration
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  
+  // Set up PostgreSQL session store
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: sessionTtl,
+    tableName: "sessions",
+  });
+  
+  // Configure session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET!,
+    store: sessionStore,
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: sessionTtl,
+    },
+  }));
+  
+  // Configure passport for authentication
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  // Serialize and deserialize user
+  passport.serializeUser((user: any, done) => {
+    console.log("Serializing user:", user.id);
+    done(null, user.id);
+  });
+  
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      console.log("Deserializing user:", id);
+      const user = await storage.getUserById(id);
+      done(null, user);
+    } catch (err) {
+      done(err, null);
+    }
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up app.trustProxy before any middleware
+  app.set("trust proxy", 1);
+  
   // Setup auth middleware and routes
-  await setupAuth(app);
+  setupSessionMiddleware(app);
   
   // Set up global admin routes
   app.use('/api/global-admin', globalAdminRoutes);
