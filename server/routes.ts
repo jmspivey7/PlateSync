@@ -176,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Use direct payment links for subscription
+  // Use Stripe checkout sessions with proper success/cancel URLs
   app.post('/api/subscription/create-checkout-session', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
@@ -186,25 +186,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = req.user.claims.sub;
-      console.log(`Redirecting user ${userId} to Stripe payment link for ${plan} plan`);
+      console.log(`Creating Stripe session for user ${userId} for ${plan} plan`);
       
-      // Get the direct payment link based on the plan
-      const paymentLink = plan === 'MONTHLY' 
-        ? process.env.STRIPE_MONTHLY_PAYMENT_LINK 
-        : process.env.STRIPE_ANNUAL_PAYMENT_LINK;
+      // Get the price ID based on the plan
+      const priceId = plan === 'MONTHLY' 
+        ? process.env.STRIPE_MONTHLY_PRICE_ID 
+        : process.env.STRIPE_ANNUAL_PRICE_ID;
       
-      if (!paymentLink) {
-        throw new Error(`Payment link for ${plan} plan not found`);
+      if (!priceId) {
+        throw new Error(`Price ID for ${plan} plan not found`);
       }
       
-      console.log(`Using payment link for ${plan} plan`);
+      // Generate a session token
+      const sessionToken = Math.random().toString(36).substring(2, 15);
       
-      // Return the payment link URL
-      res.json({ url: paymentLink });
+      // Store the token in the user's session
+      req.session.checkoutToken = sessionToken;
+      req.session.checkoutPlan = plan;
+      await new Promise<void>((resolve) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Error saving session:', err);
+          }
+          resolve();
+        });
+      });
+      
+      // Get the host for building redirect URLs
+      const host = req.get('host');
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      
+      // Create new checkout session
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2023-10-16',
+      });
+      
+      // Create checkout session with proper success/cancel URLs
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: `${protocol}://${host}/subscription?success=true&token=${sessionToken}`,
+        cancel_url: `${protocol}://${host}/subscription?canceled=true`,
+        client_reference_id: userId,
+      });
+      
+      console.log(`Created Stripe checkout session: ${session.id}`);
+      
+      // Return the checkout URL
+      res.json({ url: session.url });
     } catch (error) {
-      console.error('Error generating payment link:', error);
+      console.error('Error creating checkout session:', error);
       res.status(500).json({
-        message: 'Error generating payment link',
+        message: 'Error creating checkout session',
         error: error instanceof Error ? error.message : String(error)
       });
     }
@@ -281,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize subscription upgrade with Stripe direct payment links
+  // Initialize subscription upgrade with Stripe checkout sessions
   app.post('/api/subscription/init-upgrade', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
@@ -291,21 +329,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = req.user.claims.sub;
-      console.log(`Redirecting user ${userId} to Stripe payment link for ${plan} plan upgrade`);
+      console.log(`Creating Stripe session for user ${userId} for ${plan} plan upgrade`);
       
-      // Get the direct payment link based on the plan
-      const paymentLink = plan === 'MONTHLY' 
-        ? process.env.STRIPE_MONTHLY_PAYMENT_LINK 
-        : process.env.STRIPE_ANNUAL_PAYMENT_LINK;
+      // Get the price ID based on the plan
+      const priceId = plan === 'MONTHLY' 
+        ? process.env.STRIPE_MONTHLY_PRICE_ID 
+        : process.env.STRIPE_ANNUAL_PRICE_ID;
       
-      if (!paymentLink) {
-        throw new Error(`Payment link for ${plan} plan not found`);
+      if (!priceId) {
+        throw new Error(`Price ID for ${plan} plan not found`);
       }
       
-      console.log(`Using payment link for ${plan} plan upgrade`);
+      // Generate a session token
+      const sessionToken = Math.random().toString(36).substring(2, 15);
       
-      // Return the payment link URL - client will redirect to this URL
-      return res.json({ url: paymentLink });
+      // Store the token in the user's session
+      req.session.checkoutToken = sessionToken;
+      req.session.checkoutPlan = plan;
+      await new Promise<void>((resolve) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Error saving session:', err);
+          }
+          resolve();
+        });
+      });
+      
+      // Get the host for building redirect URLs
+      const host = req.get('host');
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      
+      // Create new checkout session
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2023-10-16',
+      });
+      
+      // Create checkout session with proper success/cancel URLs
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: `${protocol}://${host}/subscription?success=true&token=${sessionToken}`,
+        cancel_url: `${protocol}://${host}/subscription?canceled=true`,
+        client_reference_id: userId,
+      });
+      
+      console.log(`Created Stripe checkout session: ${session.id}`);
+      
+      // Return the checkout URL
+      return res.json({ url: session.url });
     } catch (error) {
       console.error('Error generating payment link for upgrade:', error);
       res.status(500).json({
