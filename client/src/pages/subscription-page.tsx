@@ -27,54 +27,42 @@ export default function SubscriptionPage() {
 
   // Check URL parameters for success flag from payment redirect
   useEffect(() => {
-    // Function to verify payment with the server
-    const verifyPayment = async (token?: string) => {
-      try {
-        setIsVerifying(true);
-        const res = await fetch('/api/subscription/verify-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-          credentials: 'include'
-        });
-        
-        if (!res.ok) {
-          throw new Error('Failed to verify payment');
-        }
-        
-        // Refresh subscription status data after a successful payment
-        await queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-        
-        // Show a success toast
-        toast({
-          title: "Payment Successful!",
-          description: "Your subscription has been upgraded successfully.",
-          variant: "default",
-          className: "bg-green-50 border-green-600 text-green-800",
-        });
-      } catch (error) {
-        console.error('Error verifying payment:', error);
-        // Still show a positive message since payment likely went through
-        toast({
-          title: "Payment Processed",
-          description: "Your payment has been processed. It may take a moment to update your account.",
-          variant: "default",
-        });
-      } finally {
-        setIsVerifying(false);
-      }
-    };
-    
     // Parse URL parameters
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
     const token = params.get("token");
     const canceled = params.get("canceled");
+    const error = params.get("error");
     
-    // Auto-verify if we detect success parameters
+    // Handle success case
     if (success === "true") {
-      // Call the verification function with token if available
-      verifyPayment(token || undefined);
+      setIsVerifying(true);
+      
+      // Show initial processing message
+      toast({
+        title: "Payment Successful!",
+        description: "Finalizing your subscription...",
+        variant: "default",
+        className: "bg-green-50 border-green-600 text-green-800",
+      });
+      
+      // Refresh the subscription data
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] })
+        .then(() => {
+          // Show completion toast
+          toast({
+            title: "Subscription Activated!",
+            description: "Your account has been successfully upgraded.",
+            variant: "default",
+            className: "bg-green-50 border-green-600 text-green-800",
+          });
+          
+          setIsVerifying(false);
+        })
+        .catch(error => {
+          console.error("Error refreshing subscription data:", error);
+          setIsVerifying(false);
+        });
       
       // Clean up URL params
       const url = new URL(window.location.href);
@@ -83,12 +71,45 @@ export default function SubscriptionPage() {
       
       // Close the plans view if open
       setShowPlans(false);
-    } else if (canceled === "true") {
+    } 
+    // Handle canceled case
+    else if (canceled === "true") {
       // Show a canceled toast
       toast({
         title: "Payment Canceled",
         description: "Your subscription upgrade was canceled. You can try again anytime.",
         variant: "default",
+      });
+      
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.search = "";
+      window.history.replaceState({}, "", url.toString());
+    }
+    // Handle error case
+    else if (error) {
+      let errorMessage = "An unexpected error occurred.";
+      
+      // Map error codes to user-friendly messages
+      switch(error) {
+        case "invalid_token":
+          errorMessage = "Invalid verification token. Please try again.";
+          break;
+        case "church_not_found":
+          errorMessage = "Your church account couldn't be found.";
+          break;
+        case "invalid_plan":
+          errorMessage = "Invalid subscription plan selected.";
+          break;
+        default:
+          errorMessage = "There was a problem processing your payment.";
+      }
+      
+      // Show error toast
+      toast({
+        title: "Payment Verification Failed",
+        description: errorMessage,
+        variant: "destructive",
       });
       
       // Clean up URL params
