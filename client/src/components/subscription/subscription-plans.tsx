@@ -48,8 +48,10 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Monthly Plan */}
-        <Card className="relative overflow-hidden border-2 hover:border-green-600 hover:shadow-md transition-all">
-          {/* Removed Most Popular tag */}
+        <Card className="relative overflow-hidden border-2 hover:border-green-600 hover:shadow-md transition-all flex flex-col">
+          <div className="absolute top-0 right-0 px-3 py-1 bg-blue-600 text-white text-xs font-medium">
+            Most Popular
+          </div>
           <CardHeader>
             <CardTitle>Monthly Plan</CardTitle>
             <CardDescription>Perfect for churches trying PlateSync</CardDescription>
@@ -58,7 +60,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
               <span className="text-gray-500 ml-1">/month</span>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-grow">
             <ul className="space-y-2">
               <li className="flex items-start">
                 <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -82,10 +84,10 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
               </li>
             </ul>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button 
               onClick={() => handleSelectPlan('MONTHLY')} 
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
               Select Monthly Plan
             </Button>
@@ -93,7 +95,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
         </Card>
 
         {/* Annual Plan */}
-        <Card className="relative overflow-hidden border-2 hover:border-green-600 hover:shadow-md transition-all">
+        <Card className="relative overflow-hidden border-2 hover:border-green-600 hover:shadow-md transition-all flex flex-col">
           <div className="absolute top-0 right-0 px-3 py-1 bg-green-600 text-white text-xs font-medium">
             Best Value
           </div>
@@ -108,7 +110,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-grow">
             <ul className="space-y-2">
               <li className="flex items-start">
                 <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -136,10 +138,10 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
               </li>
             </ul>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button 
               onClick={() => handleSelectPlan('ANNUAL')} 
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
               Select Annual Plan
             </Button>
@@ -148,9 +150,6 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
       </div>
 
       <div className="text-center text-sm text-gray-500 mt-8">
-        <p className="mb-2">
-          All plans include a 30-day free trial. No credit card required to start.
-        </p>
         <p>
           SSL secured payment through Stripe. Your payment information is encrypted and never stored on our servers.
         </p>
