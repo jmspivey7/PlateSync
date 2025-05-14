@@ -35,24 +35,30 @@ export function setupTestEndpoints(app: Express) {
         });
       }
       
-      // Delete the user and related data
-      // First get the church ID associated with this user
-      const churchId = user.churchId;
+      // Get all relationships for this user
+      const userId = user.id;
+      console.log(`Found user with ID: ${userId}`);
       
-      // Delete in order to respect foreign key constraints
-      if (churchId) {
-        // Delete related data here (you may need to add more tables as needed)
-        console.log(`Deleting data for church ID: ${churchId}`);
+      // Check if this user is an account owner in the churches table
+      const accountOwnerResult = await db.execute(
+        sql`SELECT * FROM churches WHERE account_owner_id = ${userId}`
+      );
+      
+      const isAccountOwner = accountOwnerResult.rows.length > 0;
+      
+      if (isAccountOwner) {
+        console.log(`User ${email} is an account owner for ${accountOwnerResult.rows.length} churches`);
         
-        // Delete the user
-        await db.delete(users).where(eq(users.id, user.id));
-        
-        console.log(`Successfully deleted test user: ${email}`);
-      } else {
-        // Just delete the user if no church is associated
-        await db.delete(users).where(eq(users.id, user.id));
-        console.log(`Deleted user without church: ${email}`);
+        // Update churches to remove this user as account owner (set to NULL)
+        await db.execute(
+          sql`UPDATE churches SET account_owner_id = NULL WHERE account_owner_id = ${userId}`
+        );
+        console.log(`Removed user as account owner from churches`);
       }
+      
+      // Now we can safely delete the user
+      await db.delete(users).where(eq(users.id, user.id));
+      console.log(`Successfully deleted test user: ${email}`);
       
       return res.json({
         success: true,
