@@ -69,8 +69,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     setupTestEndpoints(app);
   }
   
-  // Add user auth endpoint
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Add user auth endpoint that also works for non-authenticated users
+  app.get('/api/auth/user', async (req: any, res) => {
+    // If not authenticated, return null (not an error)
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(200).json(null);
+    }
     try {
       // Get user ID from session
       const userId = req.user.claims.sub;
@@ -105,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             churchId: dbUser.church_id,
             isAccountOwner: dbUser.is_account_owner,
             // Add virtual properties
-            isActive: !dbUser.email?.startsWith('INACTIVE_')
+            isActive: typeof dbUser.email === 'string' ? !dbUser.email.startsWith('INACTIVE_') : true
           };
           
           // If this user has a churchId association, fetch church settings from that church's account owner
