@@ -167,7 +167,7 @@ const CreateUserForm = ({
                 </SelectContent>
               </Select>
               <FormDescription>
-                Administrators can manage most aspects of the system. Standard Users can only record donations.
+                Administrators can manage most aspects of the system. Ushers can only record and count donations.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -305,7 +305,14 @@ const UserManagement = () => {
 
   // Handle create user form submission
   const handleCreateUser = (values: FormValues) => {
-    createUser(values);
+    // Ensure new users are not account owners by default
+    const userData = { 
+      ...values, 
+      isAccountOwner: false,
+      // Make sure churchId is set from the current user's church
+      churchId: currentUser?.churchId || currentUser?.id
+    };
+    createUser(userData);
   };
 
   // Handle delete user confirmation
@@ -501,8 +508,10 @@ const UserManagement = () => {
                           <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
                         ) : user.role === "ADMIN" ? (
                           <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
+                        ) : user.role === "USHER" ? (
+                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Usher</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
+                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{user.role}</Badge>
                         )}
                       </TableCell>
                       <TableCell>
@@ -564,8 +573,10 @@ const UserManagement = () => {
                         <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
                       ) : selectedUser.role === "ADMIN" ? (
                         <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
+                      ) : selectedUser.role === "USHER" ? (
+                        <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Usher</Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
+                        <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{selectedUser.role}</Badge>
                       )}
                     </div>
                   </div>
@@ -596,7 +607,7 @@ const UserManagement = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="ADMIN">Administrator</SelectItem>
-                            <SelectItem value="STANDARD">Standard User</SelectItem>
+                            <SelectItem value="USHER">Usher</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
