@@ -50,12 +50,6 @@ export function useAuth() {
       queryClient.clear();
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
-      // Show success message
-      toast({
-        title: "Login successful",
-        description: "Welcome back to PlateSync!",
-      });
-      
       // Force navigate to dashboard after successful login
       console.log("Login successful, redirecting to dashboard", userData);
       

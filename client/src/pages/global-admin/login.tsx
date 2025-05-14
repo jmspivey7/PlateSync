@@ -79,11 +79,6 @@ export default function GlobalAdminLogin() {
       // Save token to localStorage
       localStorage.setItem("globalAdminToken", data.token);
       
-      toast({
-        title: "Login successful",
-        description: "Welcome to the PlateSync Global Admin Portal",
-      });
-      
       // Redirect to dashboard
       setLocation("/global-admin/dashboard");
     } catch (error) {
