@@ -7,13 +7,15 @@ import { SubscriptionPlans } from "@/components/subscription/subscription-plans"
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import PageLayout from "@/components/layout/PageLayout";
-import { CreditCard } from "lucide-react";
+import { CreditCard, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SubscriptionPage() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showPlans, setShowPlans] = useState(false);
+  const { toast } = useToast();
   
   // Check if the user is logged in
   useEffect(() => {
@@ -26,11 +28,19 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
-    const paymentIntent = params.get("payment_intent");
+    const sessionId = params.get("session_id");
+    const canceled = params.get("canceled");
     
-    if (success === "true" || paymentIntent) {
-      // Refresh subscription status data
+    if (success === "true" || sessionId) {
+      // Refresh subscription status data after a successful payment
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      
+      // Show a success toast
+      toast({
+        title: "Payment Successful!",
+        description: "Your subscription has been upgraded successfully.",
+        variant: "success",
+      });
       
       // Clean up URL params
       const url = new URL(window.location.href);
@@ -39,8 +49,20 @@ export default function SubscriptionPage() {
       
       // Close the plans view if open
       setShowPlans(false);
+    } else if (canceled === "true") {
+      // Show a canceled toast
+      toast({
+        title: "Payment Canceled",
+        description: "Your subscription upgrade was canceled. You can try again anytime.",
+        variant: "default",
+      });
+      
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.search = "";
+      window.history.replaceState({}, "", url.toString());
     }
-  }, [queryClient]);
+  }, [queryClient, toast]);
 
   const handleUpgradeClick = () => {
     setShowPlans(true);

@@ -4667,28 +4667,101 @@ PlateSync Reporting System`;
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
     
-    // Handle payment intent succeeded
-    if (event.type === 'payment_intent.succeeded') {
-      try {
-        const paymentIntent = event.data.object;
-        const { churchId, plan } = paymentIntent.metadata;
-        
-        if (!churchId || !plan) {
-          console.error('Missing metadata in payment intent', paymentIntent.id);
-          return res.status(400).send('Missing metadata in payment intent');
+    console.log(`Processing Stripe webhook event: ${event.type}`);
+    
+    // Handle different webhook events
+    switch (event.type) {
+      case 'checkout.session.completed':
+        try {
+          // Handle successful checkout completion
+          const session = event.data.object;
+          console.log(`Checkout session completed: ${session.id}`);
+          
+          // Get metadata from the session
+          const metadata = session.metadata || {};
+          const { userId, churchId, plan } = metadata;
+          
+          if (!userId || !churchId || !plan) {
+            console.error('Missing metadata in checkout session', session.id);
+            break;
+          }
+          
+          // Get subscription details from the session
+          const stripeSubscriptionId = session.subscription;
+          const stripeCustomerId = session.customer;
+          
+          if (!stripeSubscriptionId || !stripeCustomerId) {
+            console.error('Missing subscription or customer ID in session', session.id);
+            break;
+          }
+          
+          // Upgrade the subscription in our database
+          const subscription = await storage.upgradeSubscription(churchId, plan, {
+            stripeCustomerId,
+            stripeSubscriptionId
+          });
+          
+          console.log(`Subscription upgraded for church ${churchId} to ${plan} plan via checkout`);
+        } catch (error) {
+          console.error('Error processing checkout.session.completed webhook:', error);
         }
+        break;
         
-        // Create or update subscription record
-        const subscription = await storage.upgradeSubscription(churchId, plan, {
-          stripeCustomerId: paymentIntent.customer,
-          stripeSubscriptionId: paymentIntent.id
-        });
+      case 'payment_intent.succeeded':
+        try {
+          // Handle successful payment (may be redundant with checkout session)
+          const paymentIntent = event.data.object;
+          console.log(`Payment intent succeeded: ${paymentIntent.id}`);
+          
+          const metadata = paymentIntent.metadata || {};
+          const { churchId, plan } = metadata;
+          
+          if (!churchId || !plan) {
+            console.error('Missing metadata in payment intent', paymentIntent.id);
+            break;
+          }
+          
+          // Create or update subscription record
+          const subscription = await storage.upgradeSubscription(churchId, plan, {
+            stripeCustomerId: paymentIntent.customer,
+            stripeSubscriptionId: paymentIntent.id
+          });
+          
+          console.log(`Subscription upgraded for church ${churchId} to ${plan} plan via payment intent`);
+        } catch (error) {
+          console.error('Error processing payment intent success:', error);
+        }
+        break;
         
-        console.log(`Subscription upgraded for church ${churchId} to ${plan} plan`);
-      } catch (error) {
-        console.error('Error processing payment intent success:', error);
-        // We still return a 200 to acknowledge receipt of the webhook
-      }
+      case 'invoice.payment_succeeded':
+        // Handle successful invoice payment (recurring subscriptions)
+        console.log(`Invoice payment succeeded: ${event.data.object.id}`);
+        break;
+        
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        // Handle subscription creation/update
+        console.log(`Subscription ${event.type}: ${event.data.object.id}`);
+        break;
+        
+      case 'customer.subscription.deleted':
+        try {
+          // Handle subscription cancellation
+          const subscription = event.data.object;
+          console.log(`Subscription was canceled: ${subscription.id}`);
+          
+          const metadata = subscription.metadata || {};
+          if (metadata.churchId) {
+            await storage.cancelSubscription(metadata.churchId);
+            console.log(`Canceled subscription for church ${metadata.churchId}`);
+          }
+        } catch (error) {
+          console.error('Error processing subscription cancellation:', error);
+        }
+        break;
+        
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
     
     // Return success to acknowledge receipt of the webhook
@@ -4773,6 +4846,79 @@ PlateSync Reporting System`;
       console.error('Error confirming payment:', error);
       res.status(500).json({ 
         message: 'Error confirming payment',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Create a Stripe Checkout session for the hosted payment page
+  app.post('/api/subscription/create-checkout-session', isAuthenticated, isAccountOwner, async (req: any, res) => {
+    try {
+      const { plan } = req.body;
+      
+      if (!plan || !['MONTHLY', 'ANNUAL'].includes(plan)) {
+        return res.status(400).json({ message: 'Invalid plan selected' });
+      }
+      
+      const userId = req.user.claims.sub;
+      console.log(`Creating Stripe checkout session for user ${userId} with plan ${plan}`);
+      
+      // Get all churches this user owns to find the right one
+      const userChurches = await storage.getChurchesByAccountOwner(userId);
+      console.log(`Found ${userChurches.length} churches for account owner ${userId}`);
+      
+      if (userChurches.length === 0) {
+        return res.status(404).json({ message: 'No churches found for user' });
+      }
+      
+      // For simplicity, we'll use the first church
+      const church = userChurches[0];
+      
+      // Get user information
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Calculate the price based on the plan
+      const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00 in cents
+      const interval = plan === 'MONTHLY' ? 'month' : 'year';
+      
+      // Create a checkout session
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `PlateSync ${plan.toLowerCase()} subscription`,
+                description: `${plan.toLowerCase()} access to all PlateSync features`,
+              },
+              unit_amount: amount,
+              recurring: {
+                interval: interval,
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          userId: userId,
+          churchId: church.id,
+          plan: plan,
+        },
+        customer_email: user.email || undefined,
+        mode: 'subscription',
+        success_url: `${req.protocol}://${req.get('host')}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.protocol}://${req.get('host')}/subscription?canceled=true`,
+      });
+      
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      res.status(500).json({
+        message: 'Error creating checkout session',
         error: error instanceof Error ? error.message : String(error)
       });
     }

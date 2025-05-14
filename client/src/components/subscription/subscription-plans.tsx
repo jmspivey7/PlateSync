@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/use-subscription";
 import { Check, ChevronLeft } from "lucide-react";
-import { PaymentForm } from "./payment-form";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionPlansProps {
   onCancel: () => void;
