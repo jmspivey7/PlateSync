@@ -331,123 +331,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Add user auth endpoint that also works for non-authenticated users
-  app.get('/api/auth/user', async (req: any, res) => {
-    // If not authenticated, return null (not an error)
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(200).json(null);
-    }
+  // Endpoint to get Stripe payment link
+  app.post('/api/checkout/payment-link', async (req: any, res) => {
     try {
       // Get user ID from session
-      const userId = req.user.claims.sub;
-      
-      try {
-        // First try to get user data from database with all fields including is_master_admin
-        const userQuery = await db.execute(
-          sql`SELECT * FROM users WHERE id = ${userId} LIMIT 1`
-        );
-        
-        if (userQuery.rows.length > 0) {
-          // Transform snake_case database column names to camelCase for the API
-          const dbUser = userQuery.rows[0];
-          const user = {
-            id: dbUser.id,
-            username: dbUser.username,
-            email: dbUser.email,
-            firstName: dbUser.first_name,
-            lastName: dbUser.last_name,
-            bio: dbUser.bio,
-            profileImageUrl: dbUser.profile_image_url,
-            role: dbUser.role,
-            password: dbUser.password,
-            isVerified: dbUser.is_verified,
-            passwordResetToken: dbUser.password_reset_token,
-            passwordResetExpires: dbUser.password_reset_expires,
-            createdAt: dbUser.created_at,
-            updatedAt: dbUser.updated_at,
-            churchName: dbUser.church_name,
-            churchLogoUrl: dbUser.church_logo_url,
-            emailNotificationsEnabled: dbUser.email_notifications_enabled,
-            churchId: dbUser.church_id,
-            isAccountOwner: dbUser.is_account_owner,
-            // Add virtual properties
-            isActive: typeof dbUser.email === 'string' ? !dbUser.email.startsWith('INACTIVE_') : true
-          };
-          
-          // If this user has a churchId association, fetch church settings from that church's account owner
-          if (user.churchId) {
-            try {
-              console.log(`User ${userId} has churchId ${user.churchId} directly assigned`);
-              
-              // Get the Account Owner for this church to inherit settings from
-              // First, look for the account with the same ID as the churchId (which is usually the admin/owner)
-              let accountOwnerQuery = await db.execute(
-                sql`SELECT * FROM users 
-                    WHERE id = ${user.churchId}
-                    LIMIT 1`
-              );
-              
-              // If no results, try to find the account owner through role-based lookup
-              if (accountOwnerQuery.rows.length === 0) {
-                accountOwnerQuery = await db.execute(
-                  sql`SELECT * FROM users 
-                      WHERE church_id = ${user.churchId} 
-                      AND role IN ('ACCOUNT_OWNER', 'ADMIN') 
-                      AND is_account_owner = true
-                      LIMIT 1`
-                );
-              }
-              
-              if (accountOwnerQuery.rows.length > 0) {
-                const adminUser = accountOwnerQuery.rows[0];
-                console.log(`Found admin user for church: ${adminUser.id}`);
-                
-                // Copy church settings from the admin
-                if (adminUser.church_name) {
-                  user.churchName = adminUser.church_name;
-                  console.log(`Inherited church name: ${user.churchName}`);
-                }
-                
-                if (adminUser.church_logo_url) {
-                  user.churchLogoUrl = adminUser.church_logo_url;
-                  console.log(`Inherited church logo: ${user.churchLogoUrl}`);
-                }
-              } else {
-                console.log(`No admin user found for church ID: ${user.churchId}`);
-              }
-            } catch (churchError) {
-              console.error("Error fetching church info:", churchError);
-              // Continue with the user's original data
-            }
-          }
-          
-          res.json(user);
-        } else {
-          // No user found
-          res.status(404).json({ message: "User not found" });
-        }
-      } catch (dbError) {
-        console.error("Database error in /api/auth/user:", dbError);
-        
-        // Return error since user was not found in database
-        res.status(500).json({ message: "Database error fetching user" });
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
       }
-    } catch (error) {
-      console.error("Error in /api/auth/user:", error);
-      res.status(500).json({ message: "Failed to fetch user data" });
-    }
-  });
-
-  // Create subscription with direct payment links and custom redirect URLs
-  app.post('/api/subscription/create-checkout-session', isAuthenticated, isAccountOwner, async (req: any, res) => {
-    try {
+      
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized - no user ID' });
+      }
+      
+      // Get plan from request body
       const { plan } = req.body;
-      
-      if (!plan || !['MONTHLY', 'ANNUAL'].includes(plan)) {
-        return res.status(400).json({ message: 'Invalid plan selected' });
+      if (!plan || (plan !== 'MONTHLY' && plan !== 'ANNUAL')) {
+        return res.status(400).json({ message: 'Invalid plan specified' });
       }
       
-      const userId = req.user.claims.sub;
       console.log(`Redirecting user ${userId} to Stripe payment link for ${plan} plan`);
       
       // Get the direct payment link based on the plan
@@ -891,18 +793,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add the /api/auth/user endpoint for client authentication checks
-  app.get('/api/auth/user', async (req, res) => {
+  // Consolidated /api/auth/user endpoint - supports both passport and session auth
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Check for our updated session structure
+      // CASE 1: Check for passport auth
+      if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        console.log("User authenticated via passport:", req.user.id);
+        
+        // If req.user is already a complete user object from storage (via deserializer)
+        if (req.user.email) {
+          // Remove sensitive data
+          const { password, ...userWithoutPassword } = req.user;
+          return res.status(200).json(userWithoutPassword);
+        }
+        
+        // Otherwise, get full user data using the ID
+        const userId = req.user.id;
+        console.log(`Getting full user data for ID: ${userId}`);
+        
+        const user = await storage.getUserById(userId);
+        
+        if (!user) {
+          console.log("User not found in database:", userId);
+          return res.status(200).json(null);
+        }
+        
+        // Remove sensitive data
+        const { password, ...userWithoutPassword } = user;
+        return res.status(200).json(userWithoutPassword);
+      }
+      
+      // CASE 2: Check for legacy session format
       const userData = req.session?.user;
       
       if (!userData || !userData.userId) {
-        console.log('No user session found:', req.session);
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(200).json(null); // Return null instead of error for unauthenticated users
       }
       
-      console.log(`Auth check for user ID: ${userData.userId}`);
+      console.log(`Auth check for user ID from session: ${userData.userId}`);
       
       // Get user from database
       const [user] = await db
@@ -912,21 +840,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         console.log(`User with ID ${userData.userId} not found in database`);
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(200).json(null); // Return null instead of error
       }
       
-      console.log(`User found: ${user.id}, returning user data`);
+      console.log(`User found: ${user.id}`);
       
-      // Remove password before sending user data
-      const { password: _, ...userWithoutPassword } = user;
+      // Remove password before sending
+      const { password, ...userWithoutPassword } = user;
+      return res.status(200).json(userWithoutPassword);
       
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error('Error getting user:', error);
-      res.status(500).json({ 
-        message: 'Error retrieving user data',
-        error: error instanceof Error ? error.message : String(error)
-      });
+    } catch (err) {
+      console.error('Error in /api/auth/user:', err);
+      return res.status(200).json(null); // Return null instead of error on failure
     }
   });
 
