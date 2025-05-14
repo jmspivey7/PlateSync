@@ -210,6 +210,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get subscription status
+  app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.churchId) {
+        return res.status(400).json({ message: 'User or church not found' });
+      }
+      
+      const statusData = await storage.checkSubscriptionStatus(user.churchId);
+      
+      // Get additional subscription details like plan
+      const subscription = await storage.getSubscription(user.churchId);
+      
+      res.json({
+        ...statusData,
+        plan: subscription?.plan || 'FREE'
+      });
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      res.status(500).json({
+        message: 'Error fetching subscription status',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Initialize subscription upgrade with Stripe direct payment links
   app.post('/api/subscription/init-upgrade', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
