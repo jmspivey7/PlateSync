@@ -288,8 +288,9 @@ export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
         }
       } catch (error) {
         console.error("Failed to initiate payment:", error);
-        // Only set error if not already set by specific conditions above
-        if (!paymentError) {
+        // Only set error if we haven't already set a specific error
+        if (!error.message.includes("Failed to initialize payment") && 
+            !error.message.includes("No client secret received")) {
           setPaymentError(
             "An unexpected error occurred. Please try again later or contact support."
           );
@@ -298,7 +299,7 @@ export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
     };
 
     initPayment();
-  }, [plan, paymentError]);
+  }, [plan]);
 
   // Show an error state if we run into issues
   if (paymentError) {
