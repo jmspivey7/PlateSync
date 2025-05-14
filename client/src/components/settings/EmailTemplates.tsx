@@ -156,7 +156,7 @@ export default function EmailTemplates() {
           
           <div className="border border-gray-400 rounded-md overflow-hidden">
             <div className="divide-y">
-              {[...templates]
+              {Array.isArray(templates) && templates.length > 0 ? [...templates]
                 .sort((a, b) => {
                   // Define the order of template types
                   const templateOrder = {
@@ -199,7 +199,9 @@ export default function EmailTemplates() {
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+              : <div className="p-4 text-gray-500 italic">No email templates available</div>
+              }
             </div>
           </div>
         </div>

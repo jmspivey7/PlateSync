@@ -380,7 +380,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           {/* Only configured service options */}
                           {isLoadingServiceOptions ? (
                             <SelectItem value="loading" disabled>Loading options...</SelectItem>
-                          ) : serviceOptions.length > 0 ? (
+                          ) : Array.isArray(serviceOptions) && serviceOptions.length > 0 ? (
                             // Sort service options to put default option first
                             [...serviceOptions]
                               .sort((a, b) => {

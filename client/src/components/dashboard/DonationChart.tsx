@@ -249,6 +249,8 @@ export function DonationChart() {
       };
       
       // Filter batches with valid dates first
+      if (!Array.isArray(finalizedBatches)) return [];
+      
       const batchesWithValidDates = finalizedBatches.filter(b => isValidDate(b.date));
       
       if (batchesWithValidDates.length === 0) return [];
