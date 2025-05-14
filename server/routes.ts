@@ -4880,26 +4880,23 @@ PlateSync Reporting System`;
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Set up simple parameters for checkout
-      const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00 in cents
-      const interval = plan === 'MONTHLY' ? 'month' : 'year';
+      // Get the price ID based on the plan
+      const priceId = plan === 'MONTHLY' 
+        ? process.env.STRIPE_MONTHLY_PRICE_ID 
+        : process.env.STRIPE_ANNUAL_PRICE_ID;
+      
+      if (!priceId) {
+        throw new Error(`Price ID for ${plan} plan not found`);
+      }
+      
+      console.log(`Using price ID ${priceId} for ${plan} plan`);
       
       // Create a simple checkout session
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
           {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: `PlateSync ${plan.toLowerCase()} subscription`,
-                description: `${plan.toLowerCase()} access to all PlateSync features`,
-              },
-              unit_amount: amount,
-              recurring: {
-                interval: interval,
-              },
-            },
+            price: priceId,
             quantity: 1,
           },
         ],
