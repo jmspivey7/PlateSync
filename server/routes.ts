@@ -322,7 +322,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      console.log('Manually marking payment as verified for user:', req.user.claims.sub);
+      const userId = req.user.claims.sub;
+      console.log('Manually marking payment as verified for user:', userId);
+      
+      // Get church for this user
+      const user = await storage.getUserById(userId);
+      
+      if (!user?.churchId) {
+        throw new Error('User has no associated church');
+      }
+      
+      const churchId = user.churchId;
+      
+      // Update subscription status to active paid plan (using the same logic from stripe webhook)
+      // Note: In production, this would be triggered by Stripe webhook, not manual verification
+      const updatedSubscription = await storage.updateSubscriptionStatus(churchId, {
+        isActive: true,
+        status: 'ACTIVE',
+        plan: 'MONTHLY', // Default to monthly plan for manual verification
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        canceledAt: null
+      });
+      
+      console.log('Updated subscription:', updatedSubscription);
       
       // Update session to mark payment as verified
       req.session.paymentVerified = true;
@@ -339,10 +362,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
       
-      res.json({ success: true, message: 'Payment verification updated' });
+      res.json({ 
+        success: true, 
+        message: 'Payment verification updated',
+        subscription: updatedSubscription
+      });
     } catch (error) {
       console.error('Error verifying payment:', error);
-      res.status(500).json({ message: 'Failed to verify payment' });
+      res.status(500).json({ 
+        message: 'Failed to verify payment',
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

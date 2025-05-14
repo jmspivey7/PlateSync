@@ -5,6 +5,8 @@ import { Loader2, AlertCircle, CheckCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionStatusProps {
   onUpgrade?: () => void;
@@ -22,6 +24,44 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
   } = useSubscription();
   
   const [showExpiredAlert, setShowExpiredAlert] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
+  // Function to verify payment manually (for testing)
+  const verifyPayment = async () => {
+    setIsVerifying(true);
+    try {
+      const res = await fetch('/api/subscription/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to verify payment');
+      }
+      
+      // Refresh subscription data
+      await queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
+      
+      toast({
+        title: "Payment Verified",
+        description: "Your subscription has been manually verified.",
+        variant: "default",
+        className: "bg-green-50 border-green-600 text-green-800",
+      });
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      toast({
+        title: "Verification Failed",
+        description: error instanceof Error ? error.message : "Failed to verify payment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
   
   // Show expired trial alert if trial is expired
   useEffect(() => {
@@ -203,12 +243,21 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
             </div>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col gap-2">
           <Button 
             onClick={onUpgrade} 
             className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             Upgrade Now
+          </Button>
+          <Button 
+            onClick={verifyPayment}
+            disabled={isVerifying}
+            variant="outline" 
+            className="w-full"
+          >
+            {isVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            I Just Completed Payment
           </Button>
         </CardFooter>
       </Card>
