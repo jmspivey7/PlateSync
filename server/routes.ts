@@ -173,6 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Created default service options for church: ${userId}`);
       
       // Create a trial subscription for this church
+      // Since userId is used as churchId in our registration flow
       await createTrialSubscriptionForOnboarding(userId, churchName);
       console.log(`Created trial subscription for church: ${userId}`);
       
