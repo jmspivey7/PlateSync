@@ -28,12 +28,13 @@ export default function SubscriptionPage() {
   // Check URL parameters for success flag from payment redirect
   useEffect(() => {
     // Function to verify payment with the server
-    const verifyPayment = async () => {
+    const verifyPayment = async (token?: string) => {
       try {
         setIsVerifying(true);
         const res = await fetch('/api/subscription/verify-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
           credentials: 'include'
         });
         
@@ -67,13 +68,13 @@ export default function SubscriptionPage() {
     // Parse URL parameters
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
-    const sessionId = params.get("session_id");
+    const token = params.get("token");
     const canceled = params.get("canceled");
     
     // Auto-verify if we detect success parameters
-    if (success === "true" || sessionId) {
-      // Call the verification function
-      verifyPayment();
+    if (success === "true") {
+      // Call the verification function with token if available
+      verifyPayment(token || undefined);
       
       // Clean up URL params
       const url = new URL(window.location.href);
