@@ -598,15 +598,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Church ID is required' });
       }
       
-      // Check if there's already a subscription
-      const existingSubscription = await storage.getSubscription(churchId);
-      if (existingSubscription) {
-        return res.status(200).json(existingSubscription); // Return existing subscription if found
-      }
+      console.log(`Onboarding trial request for churchId: ${churchId}, churchName: ${churchName || 'not provided'}`);
       
       // Call the subscription helper function to create a trial
+      // The helper will check for existing subscriptions
       const subscription = await createTrialSubscriptionForOnboarding(churchId, churchName);
       
+      console.log(`Subscription created/found: ${JSON.stringify(subscription)}`);
       res.status(201).json(subscription);
     } catch (error) {
       console.error('Error creating trial subscription during onboarding:', error);
