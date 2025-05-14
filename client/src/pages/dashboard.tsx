@@ -9,6 +9,8 @@ import CountModal from "@/components/counts/CountModal";
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import { DonationChart } from "@/components/dashboard/DonationChart";
+// Import the Thumbs Up icon directly
+import thumbsUpIcon from "../../../public/assets/ThumbsUp.png";
 
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -194,7 +196,7 @@ const Dashboard = () => {
             onClick={handleNewCount}
           >
             <span className="flex-shrink-0 w-20 h-16 flex items-center justify-center overflow-hidden">
-              <img src="/assets/ThumbsUp.png" alt="Thumbs Up" className="w-20 h-20 object-contain" />
+              <img src={thumbsUpIcon} alt="Thumbs Up" className="w-20 h-20 object-contain" />
             </span>
             <span className="whitespace-nowrap text-3xl">New Count</span>
           </Button>
@@ -208,7 +210,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center justify-center flex-col gap-2 py-3">
                   <span className="flex-shrink-0 w-16 h-16 flex items-center justify-center overflow-hidden">
-                    <img src="/assets/ThumbsUp.png" alt="Thumbs Up" className="w-16 h-16 object-contain" />
+                    <img src={thumbsUpIcon} alt="Thumbs Up" className="w-16 h-16 object-contain" />
                   </span>
                   <span className="whitespace-nowrap text-2xl font-bold">New Count</span>
                 </div>
