@@ -498,6 +498,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email verification code sending endpoint
+  app.post('/api/send-verification-code', async (req, res) => {
+    try {
+      const { email, churchId, churchName, firstName, lastName } = req.body;
+      
+      if (!email || !churchId) {
+        return res.status(400).json({ message: 'Email and churchId are required' });
+      }
+      
+      // Use church name from request or fall back to a default
+      const nameToUse = churchName || 'Your Church';
+      
+      // Try to find a user with this email to get their name if not provided
+      let userFirstName = firstName || '';
+      let userLastName = lastName || '';
+      
+      // If firstName/lastName weren't provided, try to find the user
+      if (!userFirstName || !userLastName) {
+        try {
+          const userResult = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
+            
+          if (userResult.length > 0) {
+            userFirstName = userFirstName || userResult[0].firstName || '';
+            userLastName = userLastName || userResult[0].lastName || '';
+          }
+        } catch (error) {
+          console.log('Error finding user for email personalization:', error);
+          // Continue without user data
+        }
+      }
+      
+      const result = await sendVerificationEmail(
+        email, 
+        churchId, 
+        nameToUse, 
+        userFirstName, 
+        userLastName
+      );
+      
+      if (result) {
+        return res.status(200).json({ message: 'Verification email sent successfully' });
+      } else {
+        return res.status(500).json({ message: 'Failed to send verification email' });
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Verify email verification code
+  app.post('/api/verify-code', async (req, res) => {
+    try {
+      const { email, churchId, code } = req.body;
+      
+      if (!email || !churchId || !code) {
+        return res.status(400).json({ message: 'Email, churchId, and code are required' });
+      }
+      
+      const result = await verifyCode(email, churchId, code);
+      
+      if (result) {
+        // Mark user as verified if successful
+        try {
+          await db
+            .update(users)
+            .set({ isVerified: true })
+            .where(and(
+              eq(users.email, email),
+              eq(users.churchId, churchId)
+            ));
+        } catch (dbError) {
+          console.error('Error updating user verification status:', dbError);
+          // Continue anyway, verification was successful
+        }
+        
+        return res.status(200).json({ message: 'Verification successful', verified: true });
+      } else {
+        return res.status(400).json({ message: 'Invalid or expired verification code', verified: false });
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Payment verification endpoint with token validation
   app.post('/api/subscription/verify-payment', isAuthenticated, async (req: any, res) => {
     try {
