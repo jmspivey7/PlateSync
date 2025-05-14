@@ -163,7 +163,7 @@ const CreateUserForm = ({
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="ADMIN">Administrator</SelectItem>
-                  <SelectItem value="STANDARD">Standard User</SelectItem>
+                  <SelectItem value="USHER">Usher</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
@@ -228,24 +228,22 @@ const UserManagement = () => {
         console.error("User Management: Error fetching from test endpoint:", error);
         console.log("Falling back to hardcoded users");
         
-        // Return hardcoded fallback data
+        // Return hardcoded fallback data - only showing currentUser
+        // and making sure they are correctly marked as Account Owner
+        // Global Admin is explicitly excluded
+        
+        // Since we're in hardcoded mode, make sure currentUser is correctly displayed
+        // as an Account Owner
         return [
           {
-            id: "40829937",
-            username: "jspivey",
-            email: "jspivey@spiveyco.com",
-            firstName: "John",
-            lastName: "Spivey",
+            id: currentUser?.id || "current-user",
+            username: currentUser?.username || "current-user",
+            email: currentUser?.email || "user@example.com",
+            firstName: currentUser?.firstName || "Current",
+            lastName: currentUser?.lastName || "User",
             role: "ADMIN",
-            profileImageUrl: "/logos/admin-profile.jpg"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER"
+            isAccountOwner: true,
+            createdAt: new Date().toISOString()
           }
         ];
       }

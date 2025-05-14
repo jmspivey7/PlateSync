@@ -1112,6 +1112,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test users endpoint - used by the User Management page
+  app.get('/api/test-users', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      let userId = req.user.id;
+      if (!userId && req.user.claims && req.user.claims.sub) {
+        userId = req.user.claims.sub;
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      // Get the current user to determine role & church
+      const currentUser = await storage.getUserById(userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Get church ID to ensure proper data sharing between admins and users
+      const churchId = currentUser.churchId || userId;
+      console.log(`Filtering users by churchId: ${churchId}`);
+      
+      // Get users from the database
+      const allUsers = await db.select().from(users);
+      
+      // Filter by church_id to only show users from the same organization
+      // Explicitly remove Global Admin accounts from church user management view
+      const churchUsers = allUsers.filter(user => {
+        // Only include users that belong to this church
+        const isChurchMember = user.churchId === churchId;
+        
+        // Filter out any users where role is MASTER_ADMIN
+        const isNotGlobalAdmin = user.role !== "MASTER_ADMIN";
+        
+        // Only include users that are church members and not global admins
+        return isChurchMember && isNotGlobalAdmin;
+      });
+      
+      // Remove password field before sending response
+      const safeUsers = churchUsers.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      return res.status(200).json(safeUsers);
+    } catch (error) {
+      console.error('Error in /api/test-users:', error);
+      return res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
