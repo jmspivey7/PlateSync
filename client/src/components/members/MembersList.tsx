@@ -51,16 +51,21 @@ const MembersList = ({}: MembersListProps) => {
     });
   }
   
-  // Filter and sort members
-  const filteredMembers = members?.filter(member => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      member.firstName.toLowerCase().includes(searchLower) ||
-      member.lastName.toLowerCase().includes(searchLower) ||
-      (member.email && member.email.toLowerCase().includes(searchLower)) ||
-      (member.phone && member.phone.toLowerCase().includes(searchLower))
-    );
-  }) || [];
+  // Check if members is an array before filtering
+  const isValidMembersArray = Array.isArray(members);
+  
+  // Filter members if it's a valid array, otherwise use empty array
+  const filteredMembers = isValidMembersArray 
+    ? members.filter(member => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          member.firstName.toLowerCase().includes(searchLower) ||
+          member.lastName.toLowerCase().includes(searchLower) ||
+          (member.email && member.email.toLowerCase().includes(searchLower)) ||
+          (member.phone && member.phone.toLowerCase().includes(searchLower))
+        );
+      }) 
+    : [];
   
   // Sort members based on the selected option
   const sortedMembers = [...filteredMembers].sort((a, b) => {
