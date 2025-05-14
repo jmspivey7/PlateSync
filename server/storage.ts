@@ -2962,6 +2962,28 @@ PlateSync Reporting System
       return undefined;
     }
   }
+  
+  async cancelSubscription(churchId: string): Promise<Subscription | undefined> {
+    try {
+      const now = new Date();
+      
+      // Update the subscription to canceled status
+      const [canceledSubscription] = await db
+        .update(subscriptions)
+        .set({
+          status: "CANCELED",
+          canceledAt: now,
+          updatedAt: now
+        })
+        .where(eq(subscriptions.churchId, churchId))
+        .returning();
+        
+      return canceledSubscription;
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      return undefined;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

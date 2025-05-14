@@ -13,6 +13,7 @@ interface SubscriptionPlansProps {
 export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { upgradePlanAsync, isUpgrading } = useSubscription();
+  const { toast } = useToast();
 
   const handleSelectPlan = async (plan: string) => {
     try {
@@ -30,15 +31,36 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
       });
       
       if (!response.ok) {
-        throw new Error("Failed to create checkout session");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData?.message || "Failed to create checkout session";
+        throw new Error(errorMessage);
       }
       
       const { url } = await response.json();
+      
+      if (!url) {
+        throw new Error("No checkout URL received from server");
+      }
+      
+      // Show redirecting toast
+      toast({
+        title: "Redirecting to Secure Checkout",
+        description: "You'll be taken to Stripe's secure payment page",
+        variant: "default",
+      });
       
       // Redirect to Stripe Checkout
       window.location.href = url;
     } catch (error) {
       console.error("Error creating checkout session:", error);
+      
+      // Show error toast
+      toast({
+        title: "Checkout Error",
+        description: error instanceof Error ? error.message : "Failed to set up payment session",
+        variant: "destructive",
+      });
+      
       // Reset selected plan on error
       setSelectedPlan(null);
     }

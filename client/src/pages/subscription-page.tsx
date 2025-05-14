@@ -39,7 +39,8 @@ export default function SubscriptionPage() {
       toast({
         title: "Payment Successful!",
         description: "Your subscription has been upgraded successfully.",
-        variant: "success",
+        variant: "default",
+        className: "bg-green-50 border-green-600 text-green-800",
       });
       
       // Clean up URL params
