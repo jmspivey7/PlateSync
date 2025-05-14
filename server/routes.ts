@@ -27,9 +27,7 @@ import {
 } from "@shared/schema";
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // Password hashing function using scrypt
 async function scryptHash(password: string): Promise<string> {

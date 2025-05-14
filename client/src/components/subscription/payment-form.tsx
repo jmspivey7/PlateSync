@@ -225,6 +225,7 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
 
 export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const { upgradePlanAsync, isUpgrading } = useSubscription();
 
   // Check if Stripe is properly configured
@@ -247,20 +248,71 @@ export function PaymentForm({ onSuccess, onCancel, plan }: PaymentFormProps) {
     // Initiate the payment intent
     const initPayment = async () => {
       try {
-        // Use the async mutation
-        const data = await upgradePlanAsync(plan);
+        setPaymentError(null); // Clear any previous errors
+        
+        // Use direct fetch instead of the mutation to avoid CORS issues
+        console.log("Initiating payment for plan:", plan);
+        const response = await fetch("/api/subscription/init-upgrade", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ plan }),
+          credentials: "include"
+        });
+        
+        // Log the response status to help with debugging
+        console.log("Payment upgrade response status:", response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Server error response:", errorText);
+          
+          // Set a user-friendly error message
+          setPaymentError(
+            "We couldn't process your payment request. Please try again or contact support."
+          );
+          throw new Error(errorText || "Failed to initialize payment");
+        }
+        
+        const data = await response.json();
+        console.log("Payment intent created:", data);
+        
         if (data.clientSecret) {
+          // Log the client secret (redacted for security)
+          console.log("Payment client secret:", data.clientSecret);
           setClientSecret(data.clientSecret);
         } else {
+          setPaymentError("The payment system returned an invalid response. Please try again.");
           throw new Error("No client secret received");
         }
       } catch (error) {
         console.error("Failed to initiate payment:", error);
+        // Only set error if not already set by specific conditions above
+        if (!paymentError) {
+          setPaymentError(
+            "An unexpected error occurred. Please try again later or contact support."
+          );
+        }
       }
     };
 
     initPayment();
-  }, [plan, upgradePlanAsync]);
+  }, [plan, paymentError]);
+
+  // Show an error state if we run into issues
+  if (paymentError) {
+    return (
+      <div className="h-80 flex flex-col items-center justify-center">
+        <AlertCircle className="h-10 w-10 text-destructive mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Payment Error</h3>
+        <p className="text-gray-600 text-center mb-4 max-w-md">{paymentError}</p>
+        <Button variant="outline" onClick={onCancel}>
+          Go Back
+        </Button>
+      </div>
+    );
+  }
 
   if (!clientSecret) {
     return (
