@@ -216,7 +216,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
   }
 
   // Active paid subscription
-  if (subscriptionStatus.status === "ACTIVE") {
+  if (subscriptionStatus?.status === "ACTIVE") {
     return (
       <Card>
         <CardHeader>
@@ -236,7 +236,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           <div className="grid gap-2">
             <div className="flex items-center justify-between border-b pb-2">
               <span className="font-medium">Plan:</span>
-              <span>{subscriptionStatus.plan || 'Standard'}</span>
+              <span>{subscriptionStatus?.plan || 'Standard'}</span>
             </div>
             <div className="flex items-center justify-between border-b pb-2">
               <span className="font-medium">Status:</span>
@@ -244,7 +244,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium">Billing:</span>
-              <span>{subscriptionStatus.plan === 'MONTHLY' ? 'Monthly' : 'Annual'}</span>
+              <span>{subscriptionStatus?.plan === 'MONTHLY' ? 'Monthly' : 'Annual'}</span>
             </div>
           </div>
         </CardContent>
@@ -264,7 +264,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <div className="flex justify-between items-center mb-2">
           <CardTitle>Subscription</CardTitle>
           <Badge variant="outline">
-            {subscriptionStatus.status}
+            {subscriptionStatus?.status || 'Unknown'}
           </Badge>
         </div>
         <CardDescription>
@@ -273,7 +273,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
       </CardHeader>
       <CardContent>
         <p className="text-gray-600 mb-4">
-          {subscriptionStatus.status === "CANCELED" 
+          {subscriptionStatus?.status === "CANCELED" 
             ? "Your subscription has been canceled." 
             : "Your subscription has expired."}
         </p>
@@ -281,7 +281,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <div className="grid gap-2">
           <div className="flex items-center justify-between border-b pb-2">
             <span className="font-medium">Plan:</span>
-            <span>{subscriptionStatus.plan || 'Unknown'}</span>
+            <span>{subscriptionStatus?.plan || 'Unknown'}</span>
           </div>
           <div className="flex items-center justify-between border-b pb-2">
             <span className="font-medium">Status:</span>

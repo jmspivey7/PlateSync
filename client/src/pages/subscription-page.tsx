@@ -51,35 +51,31 @@ export default function SubscriptionPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Subscription Management</h1>
-          <p className="text-muted-foreground">Manage your PlateSync subscription</p>
+    <PageLayout
+      title="Subscription Management"
+      subtitle="Manage your PlateSync subscription"
+      icon={<CreditCard className="h-6 w-6 text-[#69ad4c]" />}
+    >
+      <div className="space-y-6">
+        <div className="max-w-2xl mx-auto">
+          {showPlans ? (
+            <SubscriptionPlans onCancel={handleCancelUpgrade} />
+          ) : (
+            <SubscriptionStatus onUpgrade={handleUpgradeClick} />
+          )}
         </div>
-        <Button variant="outline" onClick={() => navigate("/")}>
-          Back to Dashboard
-        </Button>
+        
+        <div className="border-t pt-6 max-w-2xl mx-auto">
+          <h3 className="text-lg font-medium mb-2">Need Help?</h3>
+          <p className="text-gray-600 mb-4">
+            If you have any questions about your subscription or need assistance,
+            please don't hesitate to contact our support team.
+          </p>
+          <Button variant="outline" asChild>
+            <a href="mailto:support@platesync.com">Contact Support</a>
+          </Button>
+        </div>
       </div>
-      
-      <div className="max-w-2xl mx-auto">
-        {showPlans ? (
-          <SubscriptionPlans onCancel={handleCancelUpgrade} />
-        ) : (
-          <SubscriptionStatus onUpgrade={handleUpgradeClick} />
-        )}
-      </div>
-      
-      <div className="border-t pt-6 max-w-2xl mx-auto">
-        <h3 className="text-lg font-medium mb-2">Need Help?</h3>
-        <p className="text-gray-600 mb-4">
-          If you have any questions about your subscription or need assistance,
-          please don't hesitate to contact our support team.
-        </p>
-        <Button variant="outline" asChild>
-          <a href="mailto:support@platesync.com">Contact Support</a>
-        </Button>
-      </div>
-    </div>
+    </PageLayout>
   );
 }
