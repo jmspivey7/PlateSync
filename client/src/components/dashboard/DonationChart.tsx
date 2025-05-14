@@ -89,9 +89,11 @@ export function DonationChart() {
   // Fetch all batches
   const { data: batches, isLoading, error: batchError } = useQuery<Batch[]>({
     queryKey: ['/api/batches'],
+    retry: false,
+    throwOnError: false,
     select: (data) => {
-      console.log("Chart received batch data:", data);
-      return data;
+      console.log("Chart received batch data:", data || []);
+      return data || [];
     }
   });
   

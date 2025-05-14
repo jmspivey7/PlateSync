@@ -2,6 +2,11 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // Skip error if it's a 404 for the latest finalized batch - we handle it elsewhere
+    if (res.status === 404 && res.url.includes('/api/batches/latest-finalized')) {
+      return;
+    }
+    
     try {
       // Try to parse as JSON first (most API errors will be JSON)
       const contentType = res.headers.get('content-type');
@@ -102,6 +107,12 @@ export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401
         } else {
           throw new Error("Unauthorized: Please sign in to continue");
         }
+      }
+      
+      // Return null for 404 errors when fetching latest finalized batch
+      if (res.status === 404 && queryKey[0] === '/api/batches/latest-finalized') {
+        console.log('No finalized batches found, returning null');
+        return null as any;
       }
 
       await throwIfResNotOk(res);
