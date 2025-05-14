@@ -429,20 +429,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get subscription status
-  app.get('/api/subscription/status', async (req: any, res) => {
+  app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
     try {
-      // If the user is not logged in, return 401
-      if (!req.isAuthenticated() || !req.user || !req.user.claims || !req.user.claims.sub) {
-        return res.status(401).json({ message: 'Unauthorized' });
+      let userId;
+      
+      // Handle both authentication methods
+      if (req.user) {
+        // Passport-based auth
+        userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      } else if (req.session?.user?.userId) {
+        // Session-based auth
+        userId = req.session.user.userId;
       }
       
-      const userId = req.user.claims.sub;
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized - User ID not found' });
+      }
+      
       console.log(`Fetching subscription status for user: ${userId}`);
       
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       
       if (!user || !user.churchId) {
-        return res.status(400).json({ message: 'User or church not found' });
+        console.log(`User ${userId} not found or has no church ID`);
+        return res.status(200).json({ 
+          isActive: false,
+          status: "NO_SUBSCRIPTION",
+          daysRemaining: null,
+          trialEndDate: null,
+          isTrialExpired: true
+        });
       }
       
       console.log(`Found user with churchId: ${user.churchId}, checking subscription status`);
