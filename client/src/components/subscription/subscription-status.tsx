@@ -94,7 +94,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
               }
             }} 
             disabled={isStartingTrial}
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             {isStartingTrial && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Start 30-Day Free Trial
@@ -111,7 +111,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardHeader>
           <div className="flex justify-between items-center mb-2">
             <CardTitle>Trial Subscription</CardTitle>
-            <Badge className="bg-blue-500">
+            <Badge className="bg-blue-500 text-white">
               <Clock className="h-3 w-3 mr-1" />
               {formatTrialRemaining()}
             </Badge>
@@ -147,7 +147,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             Upgrade to Paid Plan
           </Button>
@@ -206,7 +206,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             Upgrade Now
           </Button>
@@ -222,7 +222,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardHeader>
           <div className="flex justify-between items-center mb-2">
             <CardTitle>Active Subscription</CardTitle>
-            <Badge className="bg-green-600">Active</Badge>
+            <Badge className="bg-green-600 text-white">Active</Badge>
           </div>
           <CardDescription>
             Your subscription is active
@@ -292,7 +292,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
       <CardFooter>
         <Button 
           onClick={onUpgrade} 
-          className="w-full bg-green-600 hover:bg-green-700"
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
         >
           Reactivate Subscription
         </Button>
