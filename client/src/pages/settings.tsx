@@ -1408,9 +1408,11 @@ const Settings = () => {
                     
                     {/* Service options as tags - sort to show default first */}
                     <div className="flex flex-wrap gap-2">
-                      {serviceOptions
-                        .sort((a, b) => Number(b.isDefault) - Number(a.isDefault)) // Sort to show default option first
-                        .map((option: ServiceOption) => (
+                      {Array.isArray(serviceOptions) && serviceOptions.length > 0 
+                        ? serviceOptions
+                            .slice() // Create a copy of the array before sorting
+                            .sort((a, b) => Number(b.isDefault) - Number(a.isDefault)) // Sort to show default option first
+                            .map((option: ServiceOption) => (
                         <div 
                           key={option.id} 
                           className={`group inline-flex items-center rounded-full border px-2.5 py-1.5 text-sm font-medium
@@ -1468,7 +1470,13 @@ const Settings = () => {
                             </Button>
                           </div>
                         </div>
-                      ))}
+                      ))
+                        : (
+                          <div className="text-gray-500 italic">
+                            No service options available
+                          </div>
+                        )
+                      }
                       
                       {/* Removed "Add option" button as it was confusing - input field with add button is sufficient */}
                     </div>
