@@ -236,16 +236,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found subscription status: ${statusData.status}, active: ${statusData.isActive}`);
       
-      // Hard-code to return TRIAL status that's expired
-      const response = {
-        ...statusData,
-        status: "TRIAL",     // Show as a trial
-        isActive: true,      // Still active
-        isTrialExpired: true, // But trial has expired
-        daysRemaining: 0,     // 0 days remaining
-        trialEndDate: new Date().toISOString(), // Trial ends today
-        plan: 'TRIAL'        // Trial plan
-      };
+      // Proper implementation would check Stripe subscription status
+      // For now, check for a local file marker that payment was completed
+      let paymentVerified = false;
+      
+      try {
+        // Check if user has made a payment in this session
+        if (req.session.paymentVerified) {
+          paymentVerified = true;
+          console.log('Found payment verification in session');
+        }
+      } catch (verifyError) {
+        console.error('Error checking payment verification:', verifyError);
+      }
+      
+      const response = paymentVerified ? 
+        {
+          ...statusData,
+          status: "ACTIVE",
+          isActive: true,
+          isTrialExpired: false,
+          plan: 'MONTHLY',
+          nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+        } : 
+        {
+          ...statusData,
+          status: "TRIAL",     // Show as a trial
+          isActive: true,      // Still active
+          isTrialExpired: true, // But trial has expired
+          daysRemaining: 0,     // 0 days remaining
+          trialEndDate: new Date().toISOString(), // Trial ends today
+          plan: 'TRIAL'        // Trial plan
+        };
       
       console.log(`Returning subscription data:`, response);
       
@@ -290,6 +312,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Error generating payment link for upgrade',
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+
+  // Manual verification endpoint for payment
+  app.post('/api/subscription/verify-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      console.log('Manually marking payment as verified for user:', req.user.claims.sub);
+      
+      // Update session to mark payment as verified
+      req.session.paymentVerified = true;
+      
+      // Save the session
+      await new Promise<void>((resolve) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Error saving session:', err);
+          } else {
+            console.log('Session saved with payment verification');
+          }
+          resolve();
+        });
+      });
+      
+      res.json({ success: true, message: 'Payment verification updated' });
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      res.status(500).json({ message: 'Failed to verify payment' });
     }
   });
 
