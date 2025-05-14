@@ -44,13 +44,13 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
       
       // Show redirecting toast
       toast({
-        title: "Redirecting to Secure Checkout",
-        description: "You'll be taken to Stripe's secure payment page",
+        title: "Opening Secure Checkout",
+        description: "Stripe's secure payment page will open in a new tab",
         variant: "default",
       });
       
-      // Redirect to Stripe Checkout
-      window.location.href = url;
+      // Open Stripe Checkout in a new tab
+      window.open(url, '_blank')?.focus();
     } catch (error) {
       console.error("Error creating checkout session:", error);
       
