@@ -14,27 +14,37 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { upgradePlanAsync, isUpgrading } = useSubscription();
 
-  const handleSelectPlan = (plan: string) => {
-    setSelectedPlan(plan);
+  const handleSelectPlan = async (plan: string) => {
+    try {
+      // Set loading state
+      setSelectedPlan(plan);
+      
+      // Get the checkout URL from the server
+      const response = await fetch("/api/subscription/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ plan }),
+        credentials: "include"
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to create checkout session");
+      }
+      
+      const { url } = await response.json();
+      
+      // Redirect to Stripe Checkout
+      window.location.href = url;
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      // Reset selected plan on error
+      setSelectedPlan(null);
+    }
   };
-
-  const handlePaymentSuccess = () => {
-    onCancel();
-  };
-
-  const handlePaymentCancel = () => {
-    setSelectedPlan(null);
-  };
-
-  if (selectedPlan) {
-    return (
-      <PaymentForm 
-        plan={selectedPlan} 
-        onSuccess={handlePaymentSuccess} 
-        onCancel={handlePaymentCancel} 
-      />
-    );
-  }
+  
+  // No need for the custom payment form since we're redirecting to Stripe
 
   return (
     <div className="space-y-6">
@@ -88,8 +98,16 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
             <Button 
               onClick={() => handleSelectPlan('MONTHLY')} 
               className="w-full bg-green-600 hover:bg-green-700 text-white"
+              disabled={selectedPlan === 'MONTHLY'}
             >
-              Select Monthly Plan
+              {selectedPlan === 'MONTHLY' ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Processing...
+                </>
+              ) : (
+                'Select Monthly Plan'
+              )}
             </Button>
           </CardFooter>
         </Card>
@@ -142,8 +160,16 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
             <Button 
               onClick={() => handleSelectPlan('ANNUAL')} 
               className="w-full bg-green-600 hover:bg-green-700 text-white"
+              disabled={selectedPlan === 'ANNUAL'}
             >
-              Select Annual Plan
+              {selectedPlan === 'ANNUAL' ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Processing...
+                </>
+              ) : (
+                'Select Annual Plan'
+              )}
             </Button>
           </CardFooter>
         </Card>

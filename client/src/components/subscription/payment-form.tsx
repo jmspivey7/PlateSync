@@ -124,6 +124,10 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
           } else {
             const data = await response.json();
             console.log("Payment confirmation data:", data);
+            
+            // Force a page reload to refresh subscription status
+            window.location.href = "/subscription?success=true";
+            return true;
           }
         } catch (err) {
           console.error("Failed to confirm payment with server:", err);
