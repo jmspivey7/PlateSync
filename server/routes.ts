@@ -24,7 +24,6 @@ import {
   members, 
   reportRecipients, 
   serviceOptions, 
-  settings, 
   subscriptions, 
   users 
 } from "@shared/schema";
@@ -69,6 +68,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (process.env.NODE_ENV === 'development') {
     setupTestEndpoints(app);
   }
+  
+  // Add user auth endpoint
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      // Get user ID from session
+      const userId = req.user.claims.sub;
+      
+      try {
+        // First try to get user data from database with all fields including is_master_admin
+        const userQuery = await db.execute(
+          sql`SELECT * FROM users WHERE id = ${userId} LIMIT 1`
+        );
+        
+        if (userQuery.rows.length > 0) {
+          // Transform snake_case database column names to camelCase for the API
+          const dbUser = userQuery.rows[0];
+          const user = {
+            id: dbUser.id,
+            username: dbUser.username,
+            email: dbUser.email,
+            firstName: dbUser.first_name,
+            lastName: dbUser.last_name,
+            bio: dbUser.bio,
+            profileImageUrl: dbUser.profile_image_url,
+            role: dbUser.role,
+            password: dbUser.password,
+            isVerified: dbUser.is_verified,
+            passwordResetToken: dbUser.password_reset_token,
+            passwordResetExpires: dbUser.password_reset_expires,
+            createdAt: dbUser.created_at,
+            updatedAt: dbUser.updated_at,
+            churchName: dbUser.church_name,
+            churchLogoUrl: dbUser.church_logo_url,
+            emailNotificationsEnabled: dbUser.email_notifications_enabled,
+            churchId: dbUser.church_id,
+            isAccountOwner: dbUser.is_account_owner,
+            // Add virtual properties
+            isActive: !dbUser.email?.startsWith('INACTIVE_')
+          };
+          
+          // If this user has a churchId association, fetch church settings from that church's account owner
+          if (user.churchId) {
+            try {
+              console.log(`User ${userId} has churchId ${user.churchId} directly assigned`);
+              
+              // Get the Account Owner for this church to inherit settings from
+              // First, look for the account with the same ID as the churchId (which is usually the admin/owner)
+              let accountOwnerQuery = await db.execute(
+                sql`SELECT * FROM users 
+                    WHERE id = ${user.churchId}
+                    LIMIT 1`
+              );
+              
+              // If no results, try to find the account owner through role-based lookup
+              if (accountOwnerQuery.rows.length === 0) {
+                accountOwnerQuery = await db.execute(
+                  sql`SELECT * FROM users 
+                      WHERE church_id = ${user.churchId} 
+                      AND role IN ('ACCOUNT_OWNER', 'ADMIN') 
+                      AND is_account_owner = true
+                      LIMIT 1`
+                );
+              }
+              
+              if (accountOwnerQuery.rows.length > 0) {
+                const adminUser = accountOwnerQuery.rows[0];
+                console.log(`Found admin user for church: ${adminUser.id}`);
+                
+                // Copy church settings from the admin
+                if (adminUser.church_name) {
+                  user.churchName = adminUser.church_name;
+                  console.log(`Inherited church name: ${user.churchName}`);
+                }
+                
+                if (adminUser.church_logo_url) {
+                  user.churchLogoUrl = adminUser.church_logo_url;
+                  console.log(`Inherited church logo: ${user.churchLogoUrl}`);
+                }
+              } else {
+                console.log(`No admin user found for church ID: ${user.churchId}`);
+              }
+            } catch (churchError) {
+              console.error("Error fetching church info:", churchError);
+              // Continue with the user's original data
+            }
+          }
+          
+          res.json(user);
+        } else {
+          // No user found
+          res.status(404).json({ message: "User not found" });
+        }
+      } catch (dbError) {
+        console.error("Database error in /api/auth/user:", dbError);
+        
+        // Return error since user was not found in database
+        res.status(500).json({ message: "Database error fetching user" });
+      }
+    } catch (error) {
+      console.error("Error in /api/auth/user:", error);
+      res.status(500).json({ message: "Failed to fetch user data" });
+    }
+  });
 
   // Use direct payment links for subscription
   app.post('/api/subscription/create-checkout-session', isAuthenticated, isAccountOwner, async (req: any, res) => {
