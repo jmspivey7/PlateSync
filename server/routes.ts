@@ -589,6 +589,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create a trial subscription during onboarding (no auth required)
+  app.post('/api/subscription/onboarding-trial', async (req, res) => {
+    try {
+      const { churchId, churchName } = req.body;
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      // Check if there's already a subscription
+      const existingSubscription = await storage.getSubscription(churchId);
+      if (existingSubscription) {
+        return res.status(200).json(existingSubscription); // Return existing subscription if found
+      }
+      
+      // Call the subscription helper function to create a trial
+      const subscription = await createTrialSubscriptionForOnboarding(churchId, churchName);
+      
+      res.status(201).json(subscription);
+    } catch (error) {
+      console.error('Error creating trial subscription during onboarding:', error);
+      res.status(500).json({ 
+        message: 'Error creating trial subscription',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Payment verification endpoint with token validation
   app.post('/api/subscription/verify-payment', isAuthenticated, async (req: any, res) => {
     try {
