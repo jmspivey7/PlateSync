@@ -8,6 +8,65 @@ import { db } from './db';
 import crypto from 'crypto';
 
 export function setupTestEndpoints(app: Express) {
+  // DELETE Test User endpoint - allows cleaning up test user data
+  app.delete('/api/dev/delete-test-user', async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email parameter is required"
+        });
+      }
+      
+      console.log(`Attempting to delete test user with email: ${email}`);
+      
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found with this email"
+        });
+      }
+      
+      // Delete the user and related data
+      // First get the church ID associated with this user
+      const churchId = user.churchId;
+      
+      // Delete in order to respect foreign key constraints
+      if (churchId) {
+        // Delete related data here (you may need to add more tables as needed)
+        console.log(`Deleting data for church ID: ${churchId}`);
+        
+        // Delete the user
+        await db.delete(users).where(eq(users.id, user.id));
+        
+        console.log(`Successfully deleted test user: ${email}`);
+      } else {
+        // Just delete the user if no church is associated
+        await db.delete(users).where(eq(users.id, user.id));
+        console.log(`Deleted user without church: ${email}`);
+      }
+      
+      return res.json({
+        success: true,
+        message: `Successfully deleted user with email: ${email}`
+      });
+    } catch (error) {
+      console.error("Error deleting test user:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error deleting test user"
+      });
+    }
+  });
+  
   // Generate new verification token for an existing user
   app.post('/api/regenerate-verification-token', async (req, res) => {
     try {
