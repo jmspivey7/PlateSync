@@ -285,7 +285,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           </div>
           <div className="flex items-center justify-between border-b pb-2">
             <span className="font-medium">Status:</span>
-            <span className="text-amber-600 font-medium">{subscriptionStatus.status}</span>
+            <span className="text-amber-600 font-medium">{subscriptionStatus?.status || 'Unknown'}</span>
           </div>
         </div>
       </CardContent>
