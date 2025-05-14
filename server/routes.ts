@@ -690,6 +690,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Local authentication endpoints
+  app.post('/api/login-local', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+      }
+      
+      // Look up user by email (username is actually the email in the client)
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, username));
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      
+      // Verify password
+      const passwordValid = await verifyPassword(password, user.password);
+      if (!passwordValid) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      
+      // If church is suspended, check if the user is a global admin
+      if (user.churchId) {
+        const [church] = await db
+          .select()
+          .from(churches)
+          .where(eq(churches.id, user.churchId));
+          
+        if (church && church.suspended && user.role !== 'GLOBAL_ADMIN') {
+          return res.status(403).json({ 
+            message: 'Your account has been suspended. Please contact support.' 
+          });
+        }
+      }
+      
+      // Set session
+      req.session.userId = user.id;
+      req.session.churchId = user.churchId;
+      req.session.role = user.role;
+      req.session.isAccountOwner = user.isAccountOwner;
+      
+      // Remove password from returned user object
+      const { password: _, ...userWithoutPassword } = user;
+      
+      // Return user data
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ 
+        message: 'An error occurred during login',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Add the /api/auth/user endpoint for client authentication checks
+  app.get('/api/auth/user', async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Get user from database
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Remove password before sending user data
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Error getting user:', error);
+      res.status(500).json({ 
+        message: 'Error retrieving user data',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
