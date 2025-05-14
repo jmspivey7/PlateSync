@@ -23,13 +23,13 @@ export async function createTrialSubscriptionForOnboarding(
     if (isUuid) {
       // If it's already a UUID format, we can try to create the church with this ID directly
       console.log(`churchId ${churchId} is in UUID format, using it directly`);
+      // For UUID format, pass the ID as a separate parameter
       church = await storage.createChurch({
-        id: churchId, // Explicitly use the UUID as church ID
         name: churchName || 'New Church',
         contactEmail: 'admin@example.com', // Required field but will be updated later
         status: 'ACTIVE',
         accountOwnerId: null // We don't know the account owner yet
-      });
+      }, churchId); // Pass the churchId as the custom ID
     } else {
       // Get user information to associate with the church
       const user = await storage.getUser(churchId);

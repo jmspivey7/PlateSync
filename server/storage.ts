@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { eq, desc, and, or, asc, isNull, not, inArray } from 'drizzle-orm';
+import { eq, desc, and, or, asc, isNull, not, inArray, gte, sql, sum, count, ne } from 'drizzle-orm';
 import {
   users,
   members,
@@ -36,7 +36,6 @@ import {
   type InsertSubscription
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, sum, count, asc, ne } from "drizzle-orm";
 import { format } from "date-fns";
 
 // Interface for storage operations
@@ -75,7 +74,7 @@ export interface IStorage {
     userCount: number;
     lastActivity: Date | null;
   } | undefined>;
-  createChurch(churchData: InsertChurch): Promise<Church>;
+  createChurch(churchData: InsertChurch, customId?: string): Promise<Church>;
   updateChurch(id: string, data: Partial<Church>): Promise<Church | undefined>;
   suspendChurch(id: string): Promise<Church | undefined>;
   activateChurch(id: string): Promise<Church | undefined>;
@@ -2658,10 +2657,10 @@ PlateSync Reporting System
   /**
    * Create a new church
    */
-  async createChurch(churchData: InsertChurch): Promise<Church> {
+  async createChurch(churchData: InsertChurch, customId?: string): Promise<Church> {
     try {
-      // Generate unique ID for the church
-      const churchId = crypto.randomUUID();
+      // Use provided ID or generate a new UUID
+      const churchId = customId || crypto.randomUUID();
       
       const [church] = await db
         .insert(churches)

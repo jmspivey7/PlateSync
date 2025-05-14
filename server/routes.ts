@@ -117,19 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Using username: ${username}`);
       
-      // Create church record
-      const [church] = await db.insert(churches)
-        .values({
-          id: userId,
-          name: churchName,
-          contactEmail: email,
-          accountOwnerId: userId
-        })
-        .returning();
-        
-      console.log(`Created church record with ID: ${church.id}`);
-      
-      // Create user record
+      // Create user record first
       const [user] = await db.insert(users)
         .values({
           id: userId,
@@ -144,6 +132,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isAccountOwner: true
         })
         .returning();
+        
+      console.log(`Created user record with ID: ${user.id}`);
+      
+      // Then create church record with the user as owner
+      const [church] = await db.insert(churches)
+        .values({
+          id: userId,
+          name: churchName,
+          contactEmail: email,
+          accountOwnerId: userId
+        })
+        .returning();
+        
+      console.log(`Created church record with ID: ${church.id}`);
         
       console.log(`Created user record with ID: ${user.id}`);
       
