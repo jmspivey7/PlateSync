@@ -94,7 +94,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
               }
             }} 
             disabled={isStartingTrial}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
           >
             {isStartingTrial && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Start 30-Day Free Trial
@@ -147,7 +147,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
           >
             Upgrade to Paid Plan
           </Button>
@@ -186,15 +186,15 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           
           <div className="grid gap-2">
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium">Plan</span>
+              <span className="font-medium">Plan:</span>
               <span>Trial (Expired)</span>
             </div>
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium">Status</span>
+              <span className="font-medium">Status:</span>
               <span className="text-red-600 font-medium">Expired</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-medium">Expired On</span>
+              <span className="font-medium">Expired On:</span>
               <span>
                 {subscriptionStatus.trialEndDate ? 
                   new Date(subscriptionStatus.trialEndDate).toLocaleDateString() : 
@@ -206,7 +206,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-red-600 hover:bg-red-700 text-white"
           >
             Upgrade Now
           </Button>
@@ -235,15 +235,15 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           
           <div className="grid gap-2">
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium">Plan</span>
+              <span className="font-medium">Plan:</span>
               <span>{subscriptionStatus.plan || 'Standard'}</span>
             </div>
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium">Status</span>
+              <span className="font-medium">Status:</span>
               <span className="text-green-600 font-medium">Active</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-medium">Billing</span>
+              <span className="font-medium">Billing:</span>
               <span>{subscriptionStatus.plan === 'MONTHLY' ? 'Monthly' : 'Annual'}</span>
             </div>
           </div>
@@ -280,11 +280,11 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         
         <div className="grid gap-2">
           <div className="flex items-center justify-between border-b pb-2">
-            <span className="font-medium">Plan</span>
+            <span className="font-medium">Plan:</span>
             <span>{subscriptionStatus.plan || 'Unknown'}</span>
           </div>
           <div className="flex items-center justify-between border-b pb-2">
-            <span className="font-medium">Status</span>
+            <span className="font-medium">Status:</span>
             <span className="text-amber-600 font-medium">{subscriptionStatus.status}</span>
           </div>
         </div>
@@ -292,7 +292,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
       <CardFooter>
         <Button 
           onClick={onUpgrade} 
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
+          className="w-full bg-red-600 hover:bg-red-700 text-white"
         >
           Reactivate Subscription
         </Button>
