@@ -337,7 +337,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update subscription status to active paid plan (using the same logic from stripe webhook)
       // Note: In production, this would be triggered by Stripe webhook, not manual verification
       const updatedSubscription = await storage.updateSubscriptionStatus(churchId, {
-        isActive: true,
         status: 'ACTIVE',
         plan: 'MONTHLY', // Default to monthly plan for manual verification
         startDate: new Date(),

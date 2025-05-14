@@ -2894,13 +2894,12 @@ PlateSync Reporting System
           churchId,
           status: data.status || 'ACTIVE',
           plan: data.plan || 'MONTHLY',
-          isActive: data.isActive !== undefined ? data.isActive : true,
+          trialStartDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+          trialEndDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago (trial already ended)
           startDate: data.startDate || new Date(),
           endDate: data.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days by default
           stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          stripeSubscriptionId: null
         });
       }
       

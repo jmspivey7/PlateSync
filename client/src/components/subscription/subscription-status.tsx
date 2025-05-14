@@ -243,21 +243,12 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2">
+        <CardFooter>
           <Button 
             onClick={onUpgrade} 
             className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             Upgrade Now
-          </Button>
-          <Button 
-            onClick={verifyPayment}
-            disabled={isVerifying}
-            variant="outline" 
-            className="w-full"
-          >
-            {isVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            I Just Completed Payment
           </Button>
         </CardFooter>
       </Card>
