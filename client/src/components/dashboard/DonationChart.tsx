@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { 
   Area, 
@@ -162,7 +163,7 @@ export function DonationChart() {
     retryDelay: 1000
   });
 
-  // Handle loading and error states
+  // Handle loading and error states - simpler approach without timeout
   if (isLoading || isDonationsLoading || !batches) {
     return (
       <Card>
@@ -188,8 +189,8 @@ export function DonationChart() {
     );
   }
   
-  // Handle error states - show empty chart with view history option
-  if (batchError || donationsError || (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
+  // Handle error states or no data - show empty chart with view history option
+  if (batchError || donationsError || !Array.isArray(batches) || batches.length === 0 || (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
     return (
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
