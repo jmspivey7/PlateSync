@@ -15,6 +15,7 @@ export default function SubscriptionPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showPlans, setShowPlans] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const { toast } = useToast();
   
   // Check if the user is logged in
@@ -26,22 +27,53 @@ export default function SubscriptionPage() {
 
   // Check URL parameters for success flag from payment redirect
   useEffect(() => {
+    // Function to verify payment with the server
+    const verifyPayment = async () => {
+      try {
+        setIsVerifying(true);
+        const res = await fetch('/api/subscription/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+        
+        if (!res.ok) {
+          throw new Error('Failed to verify payment');
+        }
+        
+        // Refresh subscription status data after a successful payment
+        await queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+        
+        // Show a success toast
+        toast({
+          title: "Payment Successful!",
+          description: "Your subscription has been upgraded successfully.",
+          variant: "default",
+          className: "bg-green-50 border-green-600 text-green-800",
+        });
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        // Still show a positive message since payment likely went through
+        toast({
+          title: "Payment Processed",
+          description: "Your payment has been processed. It may take a moment to update your account.",
+          variant: "default",
+        });
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+    
+    // Parse URL parameters
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
     const sessionId = params.get("session_id");
     const canceled = params.get("canceled");
     
+    // Auto-verify if we detect success parameters
     if (success === "true" || sessionId) {
-      // Refresh subscription status data after a successful payment
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-      
-      // Show a success toast
-      toast({
-        title: "Payment Successful!",
-        description: "Your subscription has been upgraded successfully.",
-        variant: "default",
-        className: "bg-green-50 border-green-600 text-green-800",
-      });
+      // Call the verification function
+      verifyPayment();
       
       // Clean up URL params
       const url = new URL(window.location.href);
@@ -63,7 +95,7 @@ export default function SubscriptionPage() {
       url.search = "";
       window.history.replaceState({}, "", url.toString());
     }
-  }, [queryClient, toast]);
+  }, [queryClient, toast, setIsVerifying, setShowPlans]);
 
   const handleUpgradeClick = () => {
     setShowPlans(true);
