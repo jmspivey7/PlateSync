@@ -2,6 +2,19 @@ import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
+import 'express-session';
+
+// Extend express-session with our user type
+declare module 'express-session' {
+  interface SessionData {
+    user?: {
+      userId: string;
+      churchId?: string;
+      role?: string;
+      isAccountOwner?: boolean;
+    };
+  }
+}
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { isAdmin, isAccountOwner, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
@@ -699,6 +712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Email and password are required' });
       }
       
+      console.log(`Login attempt for email: ${username}`);
+      
       // Look up user by email (username is actually the email in the client)
       const [user] = await db
         .select()
@@ -706,14 +721,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(users.email, username));
       
       if (!user) {
+        console.log(`User not found for email: ${username}`);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
+      console.log(`User found: ${user.id}, verifying password...`);
+      
       // Verify password
-      const passwordValid = await verifyPassword(password, user.password);
+      const passwordValid = await verifyPassword(password, user.password || '');
       if (!passwordValid) {
+        console.log(`Invalid password for user: ${user.id}`);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
+      
+      console.log(`Password verified successfully for user: ${user.id}`);
       
       // If church is suspended, check if the user is a global admin
       if (user.churchId) {
@@ -722,24 +743,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(churches)
           .where(eq(churches.id, user.churchId));
           
-        if (church && church.suspended && user.role !== 'GLOBAL_ADMIN') {
+        if (church && church.status === 'SUSPENDED' && user.role !== 'GLOBAL_ADMIN') {
           return res.status(403).json({ 
             message: 'Your account has been suspended. Please contact support.' 
           });
         }
       }
       
-      // Set session
-      req.session.userId = user.id;
-      req.session.churchId = user.churchId;
-      req.session.role = user.role;
-      req.session.isAccountOwner = user.isAccountOwner;
+      // Set up session data
+      const userData = {
+        userId: user.id,
+        churchId: user.churchId,
+        role: user.role,
+        isAccountOwner: user.isAccountOwner
+      };
       
-      // Remove password from returned user object
-      const { password: _, ...userWithoutPassword } = user;
+      // Save session data
+      req.session.user = userData;
       
-      // Return user data
-      res.status(200).json(userWithoutPassword);
+      // Save the session before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Failed to create session' });
+        }
+        
+        console.log(`Session saved successfully for user: ${user.id}`);
+        
+        // Remove password from returned user object
+        const { password: _, ...userWithoutPassword } = user;
+        
+        // Return user data
+        res.status(200).json(userWithoutPassword);
+      });
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ 
@@ -752,21 +788,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add the /api/auth/user endpoint for client authentication checks
   app.get('/api/auth/user', async (req, res) => {
     try {
-      const userId = req.session?.userId;
+      // Check for our updated session structure
+      const userData = req.session?.user;
       
-      if (!userId) {
+      if (!userData || !userData.userId) {
+        console.log('No user session found:', req.session);
         return res.status(404).json({ message: 'User not found' });
       }
+      
+      console.log(`Auth check for user ID: ${userData.userId}`);
       
       // Get user from database
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.id, userId));
+        .where(eq(users.id, userData.userId));
       
       if (!user) {
+        console.log(`User with ID ${userData.userId} not found in database`);
         return res.status(404).json({ message: 'User not found' });
       }
+      
+      console.log(`User found: ${user.id}, returning user data`);
       
       // Remove password before sending user data
       const { password: _, ...userWithoutPassword } = user;

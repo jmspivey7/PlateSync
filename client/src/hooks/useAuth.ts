@@ -35,10 +35,12 @@ export function useAuth() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (userData) => {
       // Invalidate user query to refetch user data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      // Login toast removed as requested - it was distracting, especially on mobile
+      // Force navigate to dashboard after successful login
+      console.log("Login successful, redirecting to dashboard", userData);
+      window.location.href = "/dashboard";
     },
     onError: (error: Error) => {
       toast({
