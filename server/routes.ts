@@ -574,6 +574,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Create checkout session endpoint - matches the client expectation
+  app.post('/api/subscription/create-checkout-session', async (req: any, res) => {
+    try {
+      // Check authentication
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      const { plan } = req.body;
+      
+      console.log(`Creating checkout session for plan: ${plan}`);
+      
+      // Validate plan type
+      if (!plan || !['MONTHLY', 'ANNUAL'].includes(plan)) {
+        return res.status(400).json({ message: 'Invalid plan selected' });
+      }
+      
+      // Get user info
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized - User ID not found' });
+      }
+      
+      // Get the direct payment link based on the plan
+      const paymentLink = plan === 'MONTHLY' 
+        ? process.env.STRIPE_MONTHLY_PAYMENT_LINK 
+        : process.env.STRIPE_ANNUAL_PAYMENT_LINK;
+      
+      if (!paymentLink) {
+        return res.status(500).json({ message: `Payment link for ${plan} plan not configured` });
+      }
+      
+      // Generate a session token
+      const sessionToken = Math.random().toString(36).substring(2, 15);
+      
+      // Store the token in the user's session
+      req.session.checkoutToken = sessionToken;
+      req.session.checkoutPlan = plan;
+      
+      // Save session
+      await new Promise<void>((resolve) => {
+        req.session.save((err: any) => {
+          if (err) console.error('Error saving session:', err);
+          resolve();
+        });
+      });
+      
+      // Build redirect URLs using current host
+      const hostName = req.get('host');
+      const protocolName = req.headers['x-forwarded-proto'] || req.protocol;
+      
+      // Create success and cancel URLs with token for verification
+      const successUrl = `${protocolName}://${hostName}/subscription?success=true&token=${sessionToken}`;
+      const cancelUrl = `${protocolName}://${hostName}/subscription?canceled=true`;
+      
+      // Append success_url and cancel_url parameters to override payment link defaults
+      const urlWithRedirects = `${paymentLink}${paymentLink.includes('?') ? '&' : '?'}success_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+      
+      console.log(`Redirecting to payment link: ${urlWithRedirects}`);
+      
+      // Return the payment link with redirect parameters
+      return res.json({ url: urlWithRedirects });
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      res.status(500).json({
+        message: 'Error creating checkout session',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Email verification code sending endpoint
   app.post('/api/send-verification-code', async (req, res) => {
