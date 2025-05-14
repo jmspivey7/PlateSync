@@ -418,6 +418,18 @@ export const verificationCodes = pgTable("verification_codes", {
   usedAt: timestamp("used_at"),
 });
 
+// Verification tokens for various verification processes (payment, etc.)
+export const verificationTokens = pgTable("verification_tokens", {
+  id: serial("id").primaryKey(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // PAYMENT, EMAIL, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expires: timestamp("expires").notNull(),
+  usedAt: timestamp("used_at"),
+  metadata: text("metadata"), // JSON string for additional info
+});
+
 export const insertVerificationCodeSchema = createInsertSchema(verificationCodes).pick({
   email: true,
   churchId: true,

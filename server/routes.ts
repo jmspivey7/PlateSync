@@ -59,7 +59,8 @@ import {
   reportRecipients, 
   serviceOptions, 
   subscriptions, 
-  users 
+  users,
+  verificationTokens
 } from "@shared/schema";
 
 // Initialize Stripe if API key is available
@@ -607,12 +608,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: `Payment link for ${plan} plan not configured` });
       }
       
-      // Generate a session token
-      const sessionToken = Math.random().toString(36).substring(2, 15);
+      // Generate a unique session token
+      const randomBytes = await crypto.randomBytes(24);
+      const sessionToken = randomBytes.toString('hex');
       
-      // Store the token in the user's session
-      req.session.checkoutToken = sessionToken;
-      req.session.checkoutPlan = plan;
+      // Store additional checkout information in session
+      req.session.checkoutInfo = {
+        token: sessionToken,
+        plan: plan,
+        userId: userId,
+        timestamp: Date.now()
+      };
       
       // Save session
       await new Promise<void>((resolve) => {
@@ -621,6 +627,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           resolve();
         });
       });
+      
+      // Store checkout token in database for later verification
+      // This helps ensure we can verify even if session is lost
+      try {
+        await db.insert(verificationTokens).values({
+          token: sessionToken,
+          userId: userId,
+          type: 'PAYMENT',
+          expires: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours
+          metadata: JSON.stringify({ plan })
+        });
+        console.log(`Stored checkout token in database: ${sessionToken.substring(0, 8)}...`);
+      } catch (tokenError) {
+        console.error('Error storing token in database:', tokenError);
+        // Continue anyway - we have the session as backup
+      }
       
       // Build redirect URLs using current host
       const hostName = req.get('host');
