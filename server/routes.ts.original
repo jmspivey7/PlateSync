@@ -19,6 +19,7 @@ import Stripe from "stripe";
 import { createTrialSubscriptionForOnboarding } from "./subscription-helper";
 import { 
   subscriptions, 
+  churches,
   subscriptionStatusEnum, 
   subscriptionPlanEnum, 
   type Subscription, 
@@ -26,9 +27,7 @@ import {
 } from "@shared/schema";
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-04-30.basil'
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // Password hashing function using scrypt
 async function scryptHash(password: string): Promise<string> {
@@ -4245,6 +4244,27 @@ PlateSync Reporting System`;
           .where(eq(emailTemplates.churchId, userId));
       }
       
+      // Delete subscriptions associated with churches owned by these users
+      for (const userId of userIds) {
+        // First, find all churches where this user is the account owner
+        const churchesOwned = await db
+          .select()
+          .from(churches)
+          .where(eq(churches.accountOwnerId, userId));
+          
+        // Delete subscriptions for these churches
+        for (const church of churchesOwned) {
+          await db
+            .delete(subscriptions)
+            .where(eq(subscriptions.churchId, church.id));
+        }
+        
+        // Now delete the churches themselves
+        await db
+          .delete(churches)
+          .where(eq(churches.accountOwnerId, userId));
+      }
+      
       // Handle users with church_id foreign key dependencies first
       // Find all users that reference any of the userIds as their churchId
       const usersWithChurchDependency = await db
@@ -4269,6 +4289,7 @@ PlateSync Reporting System`;
         message: 'Test user deleted successfully', 
         email: email,
         deletedUserIds: userIds,
+        churchesDeleted: true,
         dependentUsersUpdated: usersWithChurchDependency.length
       });
     } catch (error) {
@@ -4441,9 +4462,9 @@ PlateSync Reporting System`;
   app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const churchId = await storage.getChurchIdForUser(userId);
+      const userChurchId = await storage.getChurchIdForUser(userId);
       
-      if (!churchId) {
+      if (!userChurchId) {
         return res.status(404).json({ message: 'Church not found for user' });
       }
       
@@ -4451,34 +4472,104 @@ PlateSync Reporting System`;
       const user = await storage.getUser(userId);
       const isAccountOwner = user?.role === "ACCOUNT_OWNER" || (user?.role === "ADMIN" && user?.isAccountOwner === true);
       
-      // Check if subscription exists
-      let subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
+      // Get the actual church record to get the UUID
+      const church = await storage.getChurch(userChurchId);
       
-      // If user is an account owner and no subscription exists, auto-create a trial
-      if (isAccountOwner && subscriptionStatus.status === "NO_SUBSCRIPTION") {
-        console.log(`Auto-creating trial subscription for account owner ${userId} of church ${churchId}`);
+      // If we can't find the church record, try to auto-create it
+      if (!church && isAccountOwner) {
+        console.log(`Church record not found for ${userChurchId}. Attempting to create it.`);
         
-        // Calculate trial end date (30 days from user creation or today)
-        const now = new Date();
-        const trialStartDate = user?.createdAt ? new Date(user.createdAt) : now;
-        const trialEndDate = new Date(trialStartDate);
-        trialEndDate.setDate(trialEndDate.getDate() + 30);
+        const churchName = user?.churchName || "Church 555"; // Use a more specific default
         
-        // Create the subscription
-        await storage.createSubscription({
-          churchId,
-          plan: "TRIAL",
-          status: "TRIAL",
-          trialStartDate,
-          trialEndDate
-        });
-        
-        // Get updated subscription status
-        subscriptionStatus = await storage.checkSubscriptionStatus(churchId);
-        console.log(`Auto-created trial subscription for church ${churchId}, ending on ${trialEndDate.toISOString()}`);
+        try {
+          // Auto-create trial and church record
+          await createTrialSubscriptionForOnboarding(
+            storage,
+            userChurchId,
+            churchName
+          );
+          
+          // Get the newly created church record - instead of looking up by user id, 
+          // look for all churches associated with this account owner
+          const churches = await storage.getChurchesByAccountOwner(userId);
+          let newChurch = null;
+          
+          if (churches && churches.length > 0) {
+            console.log(`Found ${churches.length} churches for account owner ${userId}`);
+            // Use the most recently created church
+            newChurch = churches[0];
+          }
+          
+          if (!newChurch) {
+            console.log(`No churches found for account owner ${userId}. Using default status.`);
+            // If we still can't find a church, return a default status
+            return res.json({
+              isActive: true,
+              isTrialExpired: false,
+              status: "TRIAL",
+              daysRemaining: 30,
+              trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              plan: "TRIAL"
+            });
+          }
+          
+          // Check subscription status using church UUID
+          const subscriptionStatus = await storage.checkSubscriptionStatus(newChurch.id);
+          return res.json(subscriptionStatus);
+        } catch (error) {
+          console.error('Error auto-creating church and trial:', error);
+          // Return a valid subscription status even on error, so UI doesn't hang
+          return res.json({
+            isActive: true,
+            isTrialExpired: false,
+            status: "TRIAL",
+            daysRemaining: 30,
+            trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            plan: "TRIAL"
+          });
+        }
       }
       
-      res.json(subscriptionStatus);
+      // If church exists, use the UUID to check subscription
+      if (church) {
+        console.log(`Found church record: ${church.id} for user church ID: ${userChurchId}`);
+        
+        // Check if subscription exists using church UUID
+        let subscriptionStatus = await storage.checkSubscriptionStatus(church.id);
+        
+        // If user is an account owner and no subscription exists, auto-create a trial
+        if (isAccountOwner && subscriptionStatus.status === "NO_SUBSCRIPTION") {
+          console.log(`Auto-creating trial subscription for account owner ${userId} of church ${church.id}`);
+          
+          try {
+            // Use the helper function with the church UUID
+            await createTrialSubscriptionForOnboarding(
+              storage,
+              church.id,
+              church.name
+            );
+            
+            // Get updated subscription status
+            subscriptionStatus = await storage.checkSubscriptionStatus(church.id);
+          } catch (error) {
+            console.error('Error auto-creating trial subscription:', error);
+            // If there's an error, we'll continue with the NO_SUBSCRIPTION status
+          }
+          console.log(`Auto-created trial subscription for church ${church.id}`);
+        }
+        
+        return res.json(subscriptionStatus);
+      }
+      
+      // If we get here, we couldn't find or create the church record
+      return res.status(404).json({ 
+        message: 'Church record not found',
+        isActive: false,
+        isTrialExpired: true,
+        status: "NO_SUBSCRIPTION",
+        daysRemaining: null,
+        trialEndDate: null
+      });
     } catch (error) {
       console.error('Error fetching subscription status:', error);
       res.status(500).json({ message: 'Error checking subscription status' });
@@ -4549,19 +4640,7 @@ PlateSync Reporting System`;
       res.status(500).json({ message: 'Error creating trial subscription' });
     }
   });
-  
-        status: 'TRIAL',
-        trialStartDate: now,
-        trialEndDate
-      });
-      
-      res.status(201).json(subscription);
-    } catch (error) {
-      console.error('Error creating trial subscription during onboarding:', error);
-      res.status(500).json({ message: 'Error creating trial subscription' });
-    }
-  });
-  
+
   // Handle Stripe webhook events
   app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const signature = req.headers['stripe-signature'];
@@ -4588,28 +4667,101 @@ PlateSync Reporting System`;
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
     
-    // Handle payment intent succeeded
-    if (event.type === 'payment_intent.succeeded') {
-      try {
-        const paymentIntent = event.data.object;
-        const { churchId, plan } = paymentIntent.metadata;
-        
-        if (!churchId || !plan) {
-          console.error('Missing metadata in payment intent', paymentIntent.id);
-          return res.status(400).send('Missing metadata in payment intent');
+    console.log(`Processing Stripe webhook event: ${event.type}`);
+    
+    // Handle different webhook events
+    switch (event.type) {
+      case 'checkout.session.completed':
+        try {
+          // Handle successful checkout completion
+          const session = event.data.object;
+          console.log(`Checkout session completed: ${session.id}`);
+          
+          // Get metadata from the session
+          const metadata = session.metadata || {};
+          const { userId, churchId, plan } = metadata;
+          
+          if (!userId || !churchId || !plan) {
+            console.error('Missing metadata in checkout session', session.id);
+            break;
+          }
+          
+          // Get subscription details from the session
+          const stripeSubscriptionId = session.subscription;
+          const stripeCustomerId = session.customer;
+          
+          if (!stripeSubscriptionId || !stripeCustomerId) {
+            console.error('Missing subscription or customer ID in session', session.id);
+            break;
+          }
+          
+          // Upgrade the subscription in our database
+          const subscription = await storage.upgradeSubscription(churchId, plan, {
+            stripeCustomerId,
+            stripeSubscriptionId
+          });
+          
+          console.log(`Subscription upgraded for church ${churchId} to ${plan} plan via checkout`);
+        } catch (error) {
+          console.error('Error processing checkout.session.completed webhook:', error);
         }
+        break;
         
-        // Create or update subscription record
-        const subscription = await storage.upgradeSubscription(churchId, plan, {
-          stripeCustomerId: paymentIntent.customer,
-          stripeSubscriptionId: paymentIntent.id
-        });
+      case 'payment_intent.succeeded':
+        try {
+          // Handle successful payment (may be redundant with checkout session)
+          const paymentIntent = event.data.object;
+          console.log(`Payment intent succeeded: ${paymentIntent.id}`);
+          
+          const metadata = paymentIntent.metadata || {};
+          const { churchId, plan } = metadata;
+          
+          if (!churchId || !plan) {
+            console.error('Missing metadata in payment intent', paymentIntent.id);
+            break;
+          }
+          
+          // Create or update subscription record
+          const subscription = await storage.upgradeSubscription(churchId, plan, {
+            stripeCustomerId: paymentIntent.customer,
+            stripeSubscriptionId: paymentIntent.id
+          });
+          
+          console.log(`Subscription upgraded for church ${churchId} to ${plan} plan via payment intent`);
+        } catch (error) {
+          console.error('Error processing payment intent success:', error);
+        }
+        break;
         
-        console.log(`Subscription upgraded for church ${churchId} to ${plan} plan`);
-      } catch (error) {
-        console.error('Error processing payment intent success:', error);
-        // We still return a 200 to acknowledge receipt of the webhook
-      }
+      case 'invoice.payment_succeeded':
+        // Handle successful invoice payment (recurring subscriptions)
+        console.log(`Invoice payment succeeded: ${event.data.object.id}`);
+        break;
+        
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        // Handle subscription creation/update
+        console.log(`Subscription ${event.type}: ${event.data.object.id}`);
+        break;
+        
+      case 'customer.subscription.deleted':
+        try {
+          // Handle subscription cancellation
+          const subscription = event.data.object;
+          console.log(`Subscription was canceled: ${subscription.id}`);
+          
+          const metadata = subscription.metadata || {};
+          if (metadata.churchId) {
+            await storage.cancelSubscription(metadata.churchId);
+            console.log(`Canceled subscription for church ${metadata.churchId}`);
+          }
+        } catch (error) {
+          console.error('Error processing subscription cancellation:', error);
+        }
+        break;
+        
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
     
     // Return success to acknowledge receipt of the webhook
@@ -4627,23 +4779,63 @@ PlateSync Reporting System`;
       }
       
       const userId = req.user.claims.sub;
-      const churchId = await storage.getChurchIdForUser(userId);
+      console.log(`Processing payment confirmation for user ${userId} with plan ${plan}`);
       
-      if (!churchId) {
-        return res.status(404).json({ message: 'Church not found for user' });
+      // Get all churches this user owns to find the right one
+      const userChurches = await storage.getChurchesByAccountOwner(userId);
+      console.log(`Found ${userChurches.length} churches for user ${userId}`);
+      
+      if (userChurches.length === 0) {
+        return res.status(404).json({ message: 'No churches found for user' });
       }
       
-      // Get current subscription
-      const subscription = await storage.getSubscription(churchId);
-      if (!subscription) {
-        return res.status(404).json({ message: 'No subscription found' });
+      // Try to find a subscription for any of the user's churches
+      let subscription = null;
+      let churchWithSubscription = null;
+      
+      for (const church of userChurches) {
+        const churchSubscription = await storage.getSubscription(church.id);
+        if (churchSubscription) {
+          subscription = churchSubscription;
+          churchWithSubscription = church;
+          break;
+        }
       }
+      
+      // If we still haven't found a subscription, default to the first church and create one
+      if (!subscription && userChurches.length > 0) {
+        const church = userChurches[0];
+        console.log(`Creating a new trial subscription for church ${church.id} before upgrading`);
+        
+        // Create a trial subscription first
+        const trialStartDate = new Date();
+        const trialEndDate = new Date(trialStartDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 day trial
+        
+        subscription = await storage.createSubscription({
+          churchId: church.id,
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          trialStartDate: trialStartDate,
+          trialEndDate: trialEndDate
+        });
+        
+        churchWithSubscription = church;
+      }
+      
+      if (!subscription || !churchWithSubscription) {
+        return res.status(404).json({ message: 'Failed to find or create subscription' });
+      }
+      
+      console.log(`Upgrading subscription for church ${churchWithSubscription.id} from ${subscription.plan} to ${plan}`);
       
       // Manually upgrade the subscription - in production this would be done by Stripe webhook
-      const updatedSubscription = await storage.upgradeSubscription(churchId, plan, {
+      const updatedSubscription = await storage.upgradeSubscription(churchWithSubscription.id, plan, {
         stripeCustomerId: subscription.stripeCustomerId || 'cus_manual', // Use existing or placeholder
         stripeSubscriptionId: paymentIntentId
       });
+      
+      console.log(`Successfully upgraded subscription:`, updatedSubscription);
       
       res.json({
         success: true,
@@ -4652,11 +4844,48 @@ PlateSync Reporting System`;
       });
     } catch (error) {
       console.error('Error confirming payment:', error);
-      res.status(500).json({ message: 'Error confirming payment' });
+      res.status(500).json({ 
+        message: 'Error confirming payment',
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
-  // Initialize subscription upgrade with Stripe integration
+  // Use direct payment links for subscription
+  app.post('/api/subscription/create-checkout-session', isAuthenticated, isAccountOwner, async (req: any, res) => {
+    try {
+      const { plan } = req.body;
+      
+      if (!plan || !['MONTHLY', 'ANNUAL'].includes(plan)) {
+        return res.status(400).json({ message: 'Invalid plan selected' });
+      }
+      
+      const userId = req.user.claims.sub;
+      console.log(`Redirecting user ${userId} to Stripe payment link for ${plan} plan`);
+      
+      // Get the direct payment link based on the plan
+      const paymentLink = plan === 'MONTHLY' 
+        ? process.env.STRIPE_MONTHLY_PAYMENT_LINK 
+        : process.env.STRIPE_ANNUAL_PAYMENT_LINK;
+      
+      if (!paymentLink) {
+        throw new Error(`Payment link for ${plan} plan not found`);
+      }
+      
+      console.log(`Using payment link for ${plan} plan`);
+      
+      // Return the payment link URL
+      res.json({ url: paymentLink });
+    } catch (error) {
+      console.error('Error generating payment link:', error);
+      res.status(500).json({
+        message: 'Error generating payment link',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Initialize subscription upgrade with Stripe direct payment links
   app.post('/api/subscription/init-upgrade', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
@@ -4666,28 +4895,109 @@ PlateSync Reporting System`;
       }
       
       const userId = req.user.claims.sub;
-      const churchId = await storage.getChurchIdForUser(userId);
+      console.log(`Redirecting user ${userId} to Stripe payment link for ${plan} plan upgrade`);
       
-      if (!churchId) {
-        return res.status(404).json({ message: 'Church not found for user' });
+      // Get the direct payment link based on the plan
+      const paymentLink = plan === 'MONTHLY' 
+        ? process.env.STRIPE_MONTHLY_PAYMENT_LINK 
+        : process.env.STRIPE_ANNUAL_PAYMENT_LINK;
+      
+      if (!paymentLink) {
+        throw new Error(`Payment link for ${plan} plan not found`);
       }
       
-      // Get current subscription status
-      const existingSubscription = await storage.getSubscription(churchId);
-      if (!existingSubscription) {
-        return res.status(404).json({ message: 'No subscription found. Please start a trial first.' });
+      console.log(`Using payment link for ${plan} plan upgrade`);
+      
+      // Return the payment link URL - client will redirect to this URL
+      return res.json({ url: paymentLink });
+    } catch (error) {
+      console.error('Error generating payment link for upgrade:', error);
+      res.status(500).json({
+        message: 'Error generating payment link for upgrade',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+        
+        // Get user information for Stripe customer and church creation
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Create a new church for this user
+        const newChurch = await storage.createChurch({
+          name: user.churchName || user.firstName ? `${user.firstName}'s Church` : "PlateSync Church",
+          status: 'ACTIVE',
+          contactEmail: user.email || 'no-email@example.com',
+          accountOwnerId: userId
+        });
+        
+        console.log(`Successfully created church record:`, newChurch);
+        
+        // Create a trial subscription for the new church
+        const trialStartDate = new Date();
+        const trialEndDate = new Date(trialStartDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 day trial
+        
+        const newSubscription = await storage.createSubscription({
+          churchId: newChurch.id,
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          trialStartDate: trialStartDate,
+          trialEndDate: trialEndDate
+        });
+        
+        console.log(`Successfully created trial subscription:`, newSubscription);
+        
+        // Use this new church and subscription
+        userChurches.push(newChurch);
+      }
+      
+      // Try to find a subscription for any of the user's churches
+      let existingSubscription = null;
+      let actualChurchId = null;
+      
+      for (const church of userChurches) {
+        const churchSubscription = await storage.getSubscription(church.id);
+        if (churchSubscription) {
+          existingSubscription = churchSubscription;
+          actualChurchId = church.id;
+          break;
+        }
+      }
+      
+      // If no subscription was found for any church, create one for the first church
+      if (!existingSubscription && userChurches.length > 0) {
+        console.log(`No subscription found for any church. Creating trial for church ${userChurches[0].id}`);
+        
+        const trialStartDate = new Date();
+        const trialEndDate = new Date(trialStartDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 day trial
+        
+        existingSubscription = await storage.createSubscription({
+          churchId: userChurches[0].id,
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          trialStartDate: trialStartDate,
+          trialEndDate: trialEndDate
+        });
+        
+        actualChurchId = userChurches[0].id;
+        console.log(`Created new trial subscription for church ${actualChurchId}:`, existingSubscription);
+      }
+      
+      if (!existingSubscription || !actualChurchId) {
+        return res.status(500).json({ message: 'Failed to find or create subscription' });
       }
       
       // Get user information for Stripe customer
       const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      // Calculate the amount in cents based on the plan
-      const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00
       
       try {
+        // Calculate the amount in cents based on the plan
+        const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00
+      
         // Create or retrieve Stripe customer
         let stripeCustomerId = existingSubscription.stripeCustomerId;
         
@@ -4698,7 +5008,7 @@ PlateSync Reporting System`;
             name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || user.email,
             metadata: {
               userId,
-              churchId
+              churchId: actualChurchId
             }
           });
           stripeCustomerId = customer.id;
@@ -4710,7 +5020,7 @@ PlateSync Reporting System`;
           currency: 'usd',
           customer: stripeCustomerId,
           metadata: {
-            churchId,
+            churchId: actualChurchId,
             plan,
             subscriptionType: 'PlateSync'
           },
@@ -4718,7 +5028,7 @@ PlateSync Reporting System`;
         });
         
         // Update the subscription record with the Stripe customer ID
-        await storage.updateSubscription(churchId, {
+        await storage.updateSubscription(actualChurchId, {
           stripeCustomerId
         });
         
