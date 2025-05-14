@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Created default service options for church: ${userId}`);
       
       // Create a trial subscription for this church
-      await createTrialSubscriptionForOnboarding(userId, "TRIAL");
+      await createTrialSubscriptionForOnboarding(userId, churchName);
       console.log(`Created trial subscription for church: ${userId}`);
       
       return res.status(201).json({

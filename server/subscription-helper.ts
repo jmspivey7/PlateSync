@@ -1,4 +1,4 @@
-import { DatabaseStorage } from './storage';
+import { storage } from './storage';
 import { User, Church, Subscription } from '@shared/schema';
 
 /**
@@ -6,7 +6,6 @@ import { User, Church, Subscription } from '@shared/schema';
  * This addresses the foreign key constraint issue where subscriptions require valid church records
  */
 export async function createTrialSubscriptionForOnboarding(
-  storage: DatabaseStorage,
   churchId: string,
   churchName?: string,
 ): Promise<Subscription> {
