@@ -230,33 +230,57 @@ export function DonationChart() {
 
   // Get all FINALIZED batches from the last 12 months
   const recentBatches = (() => {
-    if (!Array.isArray(batches) || batches.length === 0) return [];
-    
-    // First, find all finalized batches with positive amounts
-    const finalizedBatches = batches.filter(b => 
-      b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0
-    );
-    
-    if (finalizedBatches.length === 0) return [];
-    
-    // Get the most recent finalized batch date
-    const sortedByDate = [...finalizedBatches].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    
-    const mostRecentDate = new Date(sortedByDate[0].date);
-    
-    // Calculate the date 12 months ago from the most recent batch
-    const twelveMonthsAgo = new Date(mostRecentDate);
-    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-    
-    // Filter to get only batches within the 12-month period
-    return finalizedBatches
-      .filter(batch => {
-        const batchDate = new Date(batch.date);
-        return batchDate >= twelveMonthsAgo;
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    try {
+      if (!Array.isArray(batches) || batches.length === 0) return [];
+      
+      // First, find all finalized batches with positive amounts
+      const finalizedBatches = batches.filter(b => 
+        b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0
+      );
+      
+      if (finalizedBatches.length === 0) return [];
+      
+      // Safely parse dates
+      const isValidDate = (dateStr: string | Date | null | undefined): boolean => {
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        // Check if the date is valid and not NaN
+        return !isNaN(d.getTime());
+      };
+      
+      // Filter batches with valid dates first
+      const batchesWithValidDates = finalizedBatches.filter(b => isValidDate(b.date));
+      
+      if (batchesWithValidDates.length === 0) return [];
+      
+      // Get the most recent finalized batch date
+      const sortedByDate = [...batchesWithValidDates].sort((a, b) => {
+        const dateA = new Date(a.date || new Date());
+        const dateB = new Date(b.date || new Date());
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      const mostRecentDate = new Date(sortedByDate[0].date || new Date());
+      
+      // Calculate the date 12 months ago from the most recent batch
+      const twelveMonthsAgo = new Date(mostRecentDate);
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+      
+      // Filter to get only batches within the 12-month period
+      return batchesWithValidDates
+        .filter(batch => {
+          const batchDate = new Date(batch.date || new Date());
+          return batchDate >= twelveMonthsAgo;
+        })
+        .sort((a, b) => {
+          const dateA = new Date(a.date || new Date());
+          const dateB = new Date(b.date || new Date());
+          return dateA.getTime() - dateB.getTime();
+        });
+    } catch (error) {
+      console.error("Error processing batch dates:", error);
+      return []; // Return empty array on error
+    }
   })();
 
   console.log("Recent batches for chart:", recentBatches.map(b => b.id));
