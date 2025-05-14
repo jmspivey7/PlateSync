@@ -49,9 +49,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
       <div className="grid md:grid-cols-2 gap-6">
         {/* Monthly Plan */}
         <Card className="relative overflow-hidden border-2 hover:border-green-600 hover:shadow-md transition-all">
-          <div className="absolute top-0 right-0 px-3 py-1 bg-blue-600 text-white text-xs font-medium">
-            Most Popular
-          </div>
+          {/* Removed Most Popular tag */}
           <CardHeader>
             <CardTitle>Monthly Plan</CardTitle>
             <CardDescription>Perfect for churches trying PlateSync</CardDescription>
