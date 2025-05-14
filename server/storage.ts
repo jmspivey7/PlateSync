@@ -43,6 +43,7 @@ import { format } from "date-fns";
 export interface IStorage {
   // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>; // Alias for getUser for clarity
   getUserByEmail(email: string): Promise<User | undefined>;
   getUsers(churchId: string): Promise<User[]>;
   getUserRole(userId: string): Promise<string | null>;
@@ -154,6 +155,7 @@ export interface IStorage {
   getSubscription(churchId: string): Promise<Subscription | undefined>;
   createSubscription(subscription: InsertSubscription): Promise<Subscription>;
   updateSubscription(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
+  updateSubscriptionStatus(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
   checkSubscriptionStatus(churchId: string): Promise<{
     isActive: boolean;
     isTrialExpired: boolean;
@@ -169,6 +171,11 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   // User operations
+  async getUserById(id: string): Promise<User | undefined> {
+    // This is an alias for getUser for clarity
+    return this.getUser(id);
+  }
+  
   async getUser(id: string): Promise<User | undefined> {
     try {
       // Use a raw SQL query with basic columns to avoid schema issues
@@ -2868,6 +2875,42 @@ PlateSync Reporting System
       return updatedSubscription;
     } catch (error) {
       console.error("Error updating subscription:", error);
+      return undefined;
+    }
+  }
+  
+  async updateSubscriptionStatus(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined> {
+    try {
+      // This method is an alias for updateSubscription with additional logging specific to status updates
+      console.log(`Updating subscription status for church ${churchId}:`, JSON.stringify(data));
+      
+      // First check if subscription exists
+      const existingSubscription = await this.getSubscription(churchId);
+      
+      if (!existingSubscription) {
+        console.log(`No subscription found for church ${churchId}, creating a new one`);
+        // Create new subscription if it doesn't exist
+        return await this.createSubscription({
+          churchId,
+          status: data.status || 'ACTIVE',
+          plan: data.plan || 'MONTHLY',
+          isActive: data.isActive !== undefined ? data.isActive : true,
+          startDate: data.startDate || new Date(),
+          endDate: data.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days by default
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      
+      // Update the existing subscription
+      return await this.updateSubscription(churchId, {
+        ...data,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error("Error updating subscription status:", error);
       return undefined;
     }
   }
