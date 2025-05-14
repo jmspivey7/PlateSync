@@ -19,6 +19,8 @@ const Dashboard = () => {
   const { data: lastFinalizedBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
     queryKey: ['/api/batches/latest-finalized'],
     enabled: isAuthenticated,
+    retry: false, // Don't retry 404 errors
+    throwOnError: false, // Don't throw on any error
     select: (data) => {
       console.log("Latest finalized batch from API:", data);
       return data;
