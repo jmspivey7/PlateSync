@@ -122,17 +122,62 @@ function setupSessionMiddleware(app: Express) {
   
   // Serialize and deserialize user
   passport.serializeUser((user: any, done) => {
-    console.log("Serializing user:", user.id);
-    done(null, user.id);
+    // Handle complex user object format from existing sessions
+    if (user && typeof user === 'object') {
+      if (user.id) {
+        console.log("Serializing user by id:", user.id);
+        return done(null, user.id);
+      } else if (user.userId) {
+        console.log("Serializing user by userId:", user.userId);
+        return done(null, user.userId);
+      } else if (user.claims && user.claims.sub) {
+        console.log("Serializing user by claims.sub:", user.claims.sub);
+        return done(null, user.claims.sub);
+      }
+    }
+    
+    console.log("Failed to serialize user, using fallback:", user);
+    done(null, user);
   });
   
-  passport.deserializeUser(async (id: string, done) => {
+  passport.deserializeUser(async (id: any, done) => {
     try {
       console.log("Deserializing user:", id);
+      
+      // Handle object format (legacy sessions)
+      if (typeof id === 'object') {
+        if (id.id) {
+          console.log("Using id from object:", id.id);
+          id = id.id;
+        } else if (id.userId) {
+          console.log("Using userId from object:", id.userId);
+          id = id.userId;
+        } else if (id.claims && id.claims.sub) {
+          console.log("Using claims.sub from object:", id.claims.sub);
+          id = id.claims.sub;
+        } else {
+          console.log("Cannot extract ID from object:", id);
+          return done(null, false);
+        }
+      }
+      
+      if (!id || typeof id !== 'string') {
+        console.log("Invalid ID type:", typeof id, id);
+        return done(null, false);
+      }
+      
       const user = await storage.getUserById(id);
+      
+      if (!user) {
+        console.log("No user found with ID:", id);
+        return done(null, false);
+      }
+      
+      console.log("User deserialized successfully:", user.id);
       done(null, user);
     } catch (err) {
-      done(err, null);
+      console.error("Error deserializing user:", err);
+      done(null, false);
     }
   });
 }
