@@ -189,6 +189,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth middleware and routes
   setupSessionMiddleware(app);
   
+  // Add logout routes (supports both GET and POST)
+  const handleLogout = (req: Request, res: Response) => {
+    // Completely destroy the session
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destruction error:", err);
+      }
+      
+      // Clear all cookies
+      res.clearCookie('connect.sid');
+      
+      // For GET requests or if 'redirect' is true in the POST body, redirect to login
+      const isGetRequest = req.method === 'GET';
+      const wantsRedirect = isGetRequest || (req.body && req.body.redirect);
+      
+      if (wantsRedirect) {
+        res.redirect('/login-local');
+      } else {
+        // For API calls that don't want redirect, just send a success response
+        res.status(200).json({ success: true, message: "Logged out successfully" });
+      }
+    });
+  };
+  
+  // Support both GET and POST for logout
+  app.get("/api/logout", handleLogout);
+  app.post("/api/logout", handleLogout);
+  
   // Set up global admin routes
   app.use('/api/global-admin', globalAdminRoutes);
   
