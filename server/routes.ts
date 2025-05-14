@@ -4747,16 +4747,10 @@ PlateSync Reporting System`;
       }
       
       const userId = req.user.claims.sub;
-      const churchId = await storage.getChurchIdForUser(userId);
+      const userChurchId = await storage.getChurchIdForUser(userId);
       
-      if (!churchId) {
+      if (!userChurchId) {
         return res.status(404).json({ message: 'Church not found for user' });
-      }
-      
-      // Get current subscription status
-      const existingSubscription = await storage.getSubscription(churchId);
-      if (!existingSubscription) {
-        return res.status(404).json({ message: 'No subscription found. Please start a trial first.' });
       }
       
       // Get user information for Stripe customer
@@ -4765,10 +4759,57 @@ PlateSync Reporting System`;
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Calculate the amount in cents based on the plan
-      const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00
+      // First get the actual church record
+      const church = await storage.getChurch(userChurchId);
+      let actualChurchId = userChurchId;
+      let existingSubscription;
+      
+      // If no church record found, create one
+      if (!church) {
+        console.log(`Church record not found for ${userChurchId}. Attempting to create it.`);
+        
+        console.log(`Creating church record for ID ${userChurchId} before subscription creation`);
+        // Create church record with the info we have
+        const churchUuid = crypto.randomUUID();
+        const newChurch = await storage.createChurch({
+          name: user.churchName || `${user.firstName || user.username}'s Church`,
+          status: 'ACTIVE',
+          contactEmail: user.email || 'no-email@example.com',
+          accountOwnerId: userId
+        });
+        
+        console.log(`Successfully created church record:`, newChurch);
+        actualChurchId = newChurch.id;
+        
+        // Create a trial subscription for the new church
+        // Create a trial subscription for the new church with proper trial dates
+        const trialStartDate = new Date();
+        const trialEndDate = new Date(trialStartDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 day trial
+        
+        existingSubscription = await storage.createSubscription({
+          churchId: newChurch.id,
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          trialStartDate: trialStartDate,
+          trialEndDate: trialEndDate
+        });
+        
+        console.log(`Successfully created trial subscription:`, existingSubscription);
+      } else {
+        // Church exists, look for existing subscription
+        actualChurchId = church.id;
+        existingSubscription = await storage.getSubscription(church.id);
+        
+        if (!existingSubscription) {
+          return res.status(404).json({ message: 'No subscription found. Please start a trial first.' });
+        }
+      }
       
       try {
+        // Calculate the amount in cents based on the plan
+        const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00
+      
         // Create or retrieve Stripe customer
         let stripeCustomerId = existingSubscription.stripeCustomerId;
         
@@ -4779,7 +4820,7 @@ PlateSync Reporting System`;
             name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || user.email,
             metadata: {
               userId,
-              churchId
+              churchId: actualChurchId
             }
           });
           stripeCustomerId = customer.id;
@@ -4791,7 +4832,7 @@ PlateSync Reporting System`;
           currency: 'usd',
           customer: stripeCustomerId,
           metadata: {
-            churchId,
+            churchId: actualChurchId,
             plan,
             subscriptionType: 'PlateSync'
           },
@@ -4799,7 +4840,7 @@ PlateSync Reporting System`;
         });
         
         // Update the subscription record with the Stripe customer ID
-        await storage.updateSubscription(churchId, {
+        await storage.updateSubscription(actualChurchId, {
           stripeCustomerId
         });
         
