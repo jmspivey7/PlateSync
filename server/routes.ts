@@ -4706,23 +4706,63 @@ PlateSync Reporting System`;
       }
       
       const userId = req.user.claims.sub;
-      const churchId = await storage.getChurchIdForUser(userId);
+      console.log(`Processing payment confirmation for user ${userId} with plan ${plan}`);
       
-      if (!churchId) {
-        return res.status(404).json({ message: 'Church not found for user' });
+      // Get all churches this user owns to find the right one
+      const userChurches = await storage.getChurchesByAccountOwner(userId);
+      console.log(`Found ${userChurches.length} churches for user ${userId}`);
+      
+      if (userChurches.length === 0) {
+        return res.status(404).json({ message: 'No churches found for user' });
       }
       
-      // Get current subscription
-      const subscription = await storage.getSubscription(churchId);
-      if (!subscription) {
-        return res.status(404).json({ message: 'No subscription found' });
+      // Try to find a subscription for any of the user's churches
+      let subscription = null;
+      let churchWithSubscription = null;
+      
+      for (const church of userChurches) {
+        const churchSubscription = await storage.getSubscription(church.id);
+        if (churchSubscription) {
+          subscription = churchSubscription;
+          churchWithSubscription = church;
+          break;
+        }
       }
+      
+      // If we still haven't found a subscription, default to the first church and create one
+      if (!subscription && userChurches.length > 0) {
+        const church = userChurches[0];
+        console.log(`Creating a new trial subscription for church ${church.id} before upgrading`);
+        
+        // Create a trial subscription first
+        const trialStartDate = new Date();
+        const trialEndDate = new Date(trialStartDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 day trial
+        
+        subscription = await storage.createSubscription({
+          churchId: church.id,
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          trialStartDate: trialStartDate,
+          trialEndDate: trialEndDate
+        });
+        
+        churchWithSubscription = church;
+      }
+      
+      if (!subscription || !churchWithSubscription) {
+        return res.status(404).json({ message: 'Failed to find or create subscription' });
+      }
+      
+      console.log(`Upgrading subscription for church ${churchWithSubscription.id} from ${subscription.plan} to ${plan}`);
       
       // Manually upgrade the subscription - in production this would be done by Stripe webhook
-      const updatedSubscription = await storage.upgradeSubscription(churchId, plan, {
+      const updatedSubscription = await storage.upgradeSubscription(churchWithSubscription.id, plan, {
         stripeCustomerId: subscription.stripeCustomerId || 'cus_manual', // Use existing or placeholder
         stripeSubscriptionId: paymentIntentId
       });
+      
+      console.log(`Successfully upgraded subscription:`, updatedSubscription);
       
       res.json({
         success: true,
@@ -4731,7 +4771,10 @@ PlateSync Reporting System`;
       });
     } catch (error) {
       console.error('Error confirming payment:', error);
-      res.status(500).json({ message: 'Error confirming payment' });
+      res.status(500).json({ 
+        message: 'Error confirming payment',
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
@@ -4745,47 +4788,38 @@ PlateSync Reporting System`;
       }
       
       const userId = req.user.claims.sub;
-      const userChurchId = await storage.getChurchIdForUser(userId);
+      console.log(`Initializing subscription upgrade for user ${userId} with plan ${plan}`);
       
-      if (!userChurchId) {
-        return res.status(404).json({ message: 'Church not found for user' });
-      }
+      // Get all churches this user owns to find the right one
+      const userChurches = await storage.getChurchesByAccountOwner(userId);
+      console.log(`Found ${userChurches.length} churches for account owner ${userId}`);
       
-      // Get user information for Stripe customer
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      // First get the actual church record
-      const church = await storage.getChurch(userChurchId);
-      let actualChurchId = userChurchId;
-      let existingSubscription;
-      
-      // If no church record found, create one
-      if (!church) {
-        console.log(`Church record not found for ${userChurchId}. Attempting to create it.`);
+      if (userChurches.length === 0) {
+        // No churches found for this user, create one
+        console.log(`No churches found for user ${userId}. Creating a new church.`);
         
-        console.log(`Creating church record for ID ${userChurchId} before subscription creation`);
-        // Create church record with the info we have
-        const churchUuid = crypto.randomUUID();
+        // Get user information for Stripe customer and church creation
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Create a new church for this user
         const newChurch = await storage.createChurch({
-          name: user.churchName || `${user.firstName || user.username}'s Church`,
+          name: user.churchName || user.firstName ? `${user.firstName}'s Church` : "PlateSync Church",
           status: 'ACTIVE',
           contactEmail: user.email || 'no-email@example.com',
           accountOwnerId: userId
         });
         
         console.log(`Successfully created church record:`, newChurch);
-        actualChurchId = newChurch.id;
         
         // Create a trial subscription for the new church
-        // Create a trial subscription for the new church with proper trial dates
         const trialStartDate = new Date();
         const trialEndDate = new Date(trialStartDate);
         trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 day trial
         
-        existingSubscription = await storage.createSubscription({
+        const newSubscription = await storage.createSubscription({
           churchId: newChurch.id,
           plan: 'TRIAL',
           status: 'TRIAL',
@@ -4793,16 +4827,51 @@ PlateSync Reporting System`;
           trialEndDate: trialEndDate
         });
         
-        console.log(`Successfully created trial subscription:`, existingSubscription);
-      } else {
-        // Church exists, look for existing subscription
-        actualChurchId = church.id;
-        existingSubscription = await storage.getSubscription(church.id);
+        console.log(`Successfully created trial subscription:`, newSubscription);
         
-        if (!existingSubscription) {
-          return res.status(404).json({ message: 'No subscription found. Please start a trial first.' });
+        // Use this new church and subscription
+        userChurches.push(newChurch);
+      }
+      
+      // Try to find a subscription for any of the user's churches
+      let existingSubscription = null;
+      let actualChurchId = null;
+      
+      for (const church of userChurches) {
+        const churchSubscription = await storage.getSubscription(church.id);
+        if (churchSubscription) {
+          existingSubscription = churchSubscription;
+          actualChurchId = church.id;
+          break;
         }
       }
+      
+      // If no subscription was found for any church, create one for the first church
+      if (!existingSubscription && userChurches.length > 0) {
+        console.log(`No subscription found for any church. Creating trial for church ${userChurches[0].id}`);
+        
+        const trialStartDate = new Date();
+        const trialEndDate = new Date(trialStartDate);
+        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 day trial
+        
+        existingSubscription = await storage.createSubscription({
+          churchId: userChurches[0].id,
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          trialStartDate: trialStartDate,
+          trialEndDate: trialEndDate
+        });
+        
+        actualChurchId = userChurches[0].id;
+        console.log(`Created new trial subscription for church ${actualChurchId}:`, existingSubscription);
+      }
+      
+      if (!existingSubscription || !actualChurchId) {
+        return res.status(500).json({ message: 'Failed to find or create subscription' });
+      }
+      
+      // Get user information for Stripe customer
+      const user = await storage.getUser(userId);
       
       try {
         // Calculate the amount in cents based on the plan

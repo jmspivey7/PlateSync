@@ -82,6 +82,7 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
     }
     
     try {
+      console.log("Attempting to confirm payment for plan:", plan);
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -91,25 +92,45 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
       });
 
       if (error) {
+        console.error("Stripe confirmation error:", error);
         setMessage(error.message || "An unexpected error occurred.");
         return false;
       } 
       
       if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Notify backend about successful payment
+        console.log("Payment intent succeeded:", paymentIntent.id);
+        
+        // Notify backend about successful payment using direct fetch to avoid CORS issues
         try {
-          await apiRequest("/api/subscription/confirm-payment", {
-            method: "POST", 
-            body: { 
+          const response = await fetch("/api/subscription/confirm-payment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ 
               plan,
               paymentIntentId: paymentIntent.id || 'unknown'
-            }
+            }),
+            credentials: "include"
           });
+          
+          console.log("Confirm payment response status:", response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Server error response for payment confirmation:", errorText);
+            // Continue with success UI even if server confirmation fails
+            // The webhook should handle this case
+          } else {
+            const data = await response.json();
+            console.log("Payment confirmation data:", data);
+          }
         } catch (err) {
           console.error("Failed to confirm payment with server:", err);
-          // Continue with success UI even if server confirmation fails
-          // The webhook should handle this case
         }
+        
+        // Return true to show success UI even if server confirmation fails
+        // The webhook should handle this case
         return true;
       }
       
@@ -203,7 +224,7 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
           <Button
             type="submit"
             disabled={!stripe || !elements || isProcessing}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
             {isProcessing ? (
               <>
