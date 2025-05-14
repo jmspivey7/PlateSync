@@ -103,8 +103,10 @@ export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401
 
       if (res.status === 401) {
         if (options.on401 === "returnNull") {
+          console.log(`Auth check failed for ${queryKey[0]}, returning null as configured`);
           return null as any;
         } else {
+          console.error(`Auth check failed for ${queryKey[0]}, throwing error`);
           throw new Error("Unauthorized: Please sign in to continue");
         }
       }
@@ -115,14 +117,39 @@ export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401
         return null as any;
       }
 
-      await throwIfResNotOk(res);
+      // Handle other non-OK responses
+      if (!res.ok) {
+        // Try to get response contents for better error messages
+        try {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await res.json();
+            console.error(`API error (${res.status}):`, errorData);
+            throw new Error(errorData.message || `API error: ${res.statusText}`);
+          } else {
+            const text = await res.text();
+            console.error(`API error (${res.status}):`, text);
+            throw new Error(`API error (${res.status}): ${text || res.statusText}`);
+          }
+        } catch (parseErr) {
+          // If we can't parse the response, just throw a generic error
+          console.error(`API error (${res.status}):`, parseErr);
+          throw new Error(`API error (${res.status}): ${res.statusText}`);
+        }
+      }
       
       // For 204 No Content responses, return an empty object
       if (res.status === 204) {
         return {} as T;
       }
       
-      return await res.json();
+      try {
+        return await res.json();
+      } catch (jsonError) {
+        console.error("Error parsing JSON response:", jsonError);
+        // If JSON parsing fails but response was OK, return empty object
+        return {} as T;
+      }
     } catch (error) {
       console.error(`Error fetching ${queryKey[0]}:`, error);
       throw error;

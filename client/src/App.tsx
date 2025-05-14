@@ -85,15 +85,35 @@ function Router() {
     }
     
     const currentPathIsPublic = isPublicPath(location);
+    console.log('Auth check:', { 
+      currentPath: location, 
+      isPublicPath: currentPathIsPublic, 
+      isAuthenticated: !!user,
+      redirectInProgress
+    });
     
-    if (!user && !currentPathIsPublic) {
-      setRedirectInProgress(true);
-      setLocation("/login-local");
-    } else if (user && currentPathIsPublic && location !== "/verify") {
-      // If user is logged in and on a public page (except verify), redirect to dashboard
-      setRedirectInProgress(true);
-      setLocation("/dashboard");
-    } else {
+    try {
+      if (!user && !currentPathIsPublic) {
+        // User is not authenticated and trying to access a protected route
+        console.log('Redirecting unauthenticated user to login page');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/login-local"); 
+          setRedirectInProgress(false);
+        }, 100);
+      } else if (user && currentPathIsPublic && location !== "/verify") {
+        // User is authenticated and trying to access a public page (except verify)
+        console.log('Redirecting authenticated user to dashboard');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/dashboard");
+          setRedirectInProgress(false);
+        }, 100);
+      } else {
+        setRedirectInProgress(false);
+      }
+    } catch (error) {
+      console.error('Error during authentication redirect:', error);
       setRedirectInProgress(false);
     }
   }, [user, isLoading, location, setLocation, redirectInProgress]);

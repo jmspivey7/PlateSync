@@ -50,10 +50,18 @@ export default function LoginLocal() {
     e.preventDefault();
     
     if (!email || !password) {
+      toast({
+        title: "Missing information",
+        description: "Please enter your email and password",
+        variant: "destructive",
+      });
       return;
     }
 
+    // Use the login function from useAuth hook
     login({ username: email, password });
+    
+    // The redirect will happen automatically in the useAuth hook
   };
   
   const handleRegister = async (e: React.FormEvent) => {

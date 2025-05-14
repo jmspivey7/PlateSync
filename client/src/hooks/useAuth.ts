@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
 import type { User } from "../../../shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 type LoginCredentials = {
   username: string;
@@ -15,32 +16,53 @@ export function useAuth() {
   const { 
     data: user, 
     isLoading,
-    refetch 
+    refetch,
+    error
   } = useQuery<User>({
     queryKey: ["/api/auth/user"],
-    retry: false,
-    staleTime: 30000, // 30 seconds
+    retry: 1,
+    staleTime: 10000, // 10 seconds
     refetchInterval: false,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
+
+  // Debug user data issues
+  useEffect(() => {
+    if (error) {
+      console.error("Error fetching user data:", error);
+    }
+  }, [error]);
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       try {
-        return await apiRequest<any>("/api/login-local", "POST", credentials);
+        const response = await apiRequest<any>("/api/login-local", "POST", credentials);
+        return response;
       } catch (error) {
         console.error("Login error:", error);
         throw error;
       }
     },
     onSuccess: (userData) => {
-      // Invalidate user query to refetch user data
+      // Clear and refetch user query after successful login
+      queryClient.clear();
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Show success message
+      toast({
+        title: "Login successful",
+        description: "Welcome back to PlateSync!",
+      });
+      
       // Force navigate to dashboard after successful login
       console.log("Login successful, redirecting to dashboard", userData);
-      window.location.href = "/dashboard";
+      
+      // Use setTimeout to ensure that the query client has time to invalidate and refetch
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 500);
     },
     onError: (error: Error) => {
       toast({
@@ -58,12 +80,15 @@ export function useAuth() {
       return;
     },
     onSuccess: () => {
-      // Clear user data from cache
+      // Clear all cached data
+      queryClient.clear();
       queryClient.setQueryData(["/api/auth/user"], null);
+      
       toast({
         title: "Logged out",
         description: "You have been logged out successfully.",
       });
+      
       // Force reload to clear any other cached data
       window.location.href = "/login-local";
     },
