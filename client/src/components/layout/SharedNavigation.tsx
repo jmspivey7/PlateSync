@@ -10,7 +10,8 @@ import {
   Users, 
   UserPlus,
   LogOut,
-  ChevronDown 
+  ChevronDown,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -154,6 +155,19 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                 <span>Profile</span>
               </Button>
               
+              {/* Subscription */}
+              <Button 
+                variant="ghost" 
+                className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
+                onClick={() => {
+                  setLocation("/subscription");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <CreditCard className="mr-4 h-5 w-5" />
+                <span>Subscription</span>
+              </Button>
+
               {/* Help */}
               <Button 
                 variant="ghost" 
