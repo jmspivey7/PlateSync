@@ -6,6 +6,8 @@ import { SubscriptionStatus } from "@/components/subscription/subscription-statu
 import { SubscriptionPlans } from "@/components/subscription/subscription-plans";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import PageLayout from "@/components/layout/PageLayout";
+import { CreditCard } from "lucide-react";
 
 export default function SubscriptionPage() {
   const [location, navigate] = useLocation();
