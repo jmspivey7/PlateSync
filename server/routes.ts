@@ -4912,6 +4912,15 @@ PlateSync Reporting System`;
         mode: 'subscription',
         success_url: `${req.protocol}://${req.get('host')}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/subscription?canceled=true`,
+        billing_address_collection: 'auto',
+        allow_promotion_codes: true,
+        payment_intent_data: {
+          metadata: {
+            userId: userId,
+            churchId: church.id,
+            plan: plan,
+          }
+        }
       });
       
       res.json({ url: session.url });

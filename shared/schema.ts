@@ -454,6 +454,7 @@ export const subscriptions = pgTable("subscriptions", {
   trialEndDate: timestamp("trial_end_date").notNull(),
   startDate: timestamp("start_date"), // When paid plan starts
   endDate: timestamp("end_date"),     // When paid plan ends/renews
+  canceledAt: timestamp("canceled_at"), // When subscription was canceled
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
