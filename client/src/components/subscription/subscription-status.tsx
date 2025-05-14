@@ -111,7 +111,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardHeader>
           <div className="flex justify-between items-center mb-2">
             <CardTitle>Trial Subscription</CardTitle>
-            <Badge className="bg-blue-500 text-white">
+            <Badge className="bg-yellow-500 text-white">
               <Clock className="h-3 w-3 mr-1" />
               {formatTrialRemaining()}
             </Badge>
@@ -127,15 +127,15 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           </p>
           <div className="grid gap-2">
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium">Plan</span>
+              <span className="font-medium">Plan:</span>
               <span>Trial</span>
             </div>
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium">Status</span>
+              <span className="font-medium">Status:</span>
               <span className="text-green-600 font-medium">Active</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-medium">Ends On</span>
+              <span className="font-medium">Ends On:</span>
               <span>
                 {subscriptionStatus.trialEndDate ? 
                   new Date(subscriptionStatus.trialEndDate).toLocaleDateString() : 
@@ -163,7 +163,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardHeader>
           <div className="flex justify-between items-center mb-2">
             <CardTitle>Trial Expired</CardTitle>
-            <Badge variant="destructive">Expired</Badge>
+            <Badge className="bg-red-600 text-white">Expired</Badge>
           </div>
           <CardDescription>
             Your free trial has ended
