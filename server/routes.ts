@@ -785,21 +785,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Payment verification endpoint with token validation
+  // POST endpoint for manual verification (requires authentication)
   app.post('/api/subscription/verify-payment', isAuthenticated, async (req: any, res) => {
     try {
       if (!req.isAuthenticated() || !req.user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const userId = req.user.claims.sub;
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
       const { token } = req.body;
       
-      console.log('Verifying payment for user:', userId);
+      console.log('Manually verifying payment for authenticated user:', userId);
       
       // Validate the token if provided
-      if (token && req.session.checkoutToken) {
-        if (token !== req.session.checkoutToken) {
-          console.warn(`Token mismatch: ${token} vs ${req.session.checkoutToken}`);
+      if (token && req.session.checkoutInfo?.token) {
+        if (token !== req.session.checkoutInfo.token) {
+          console.warn(`Token mismatch: ${token} vs ${req.session.checkoutInfo.token}`);
           // Continue anyway since we're already authenticated
         } else {
           console.log('Token verified successfully');
@@ -807,7 +808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get church for this user
-      const user = await storage.getUserById(userId);
+      const user = await storage.getUser(userId);
       
       if (!user?.churchId) {
         throw new Error('User has no associated church');
@@ -816,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const churchId = user.churchId;
       
       // Get plan from session if available
-      const plan = req.session.checkoutPlan || 'MONTHLY';
+      const plan = req.session.checkoutInfo?.plan || 'MONTHLY';
       const periodDays = plan === 'MONTHLY' ? 30 : 365;
       
       // Update subscription status to active paid plan
@@ -830,8 +831,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Updated subscription:', updatedSubscription);
       
-      // Update session to mark payment as verified
-      req.session.paymentVerified = true;
+      // Clean up session checkout info
+      delete req.session.checkoutInfo;
       
       // Save the session
       await new Promise<void>((resolve) => {
@@ -839,7 +840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (err) {
             console.error('Error saving session:', err);
           } else {
-            console.log('Session saved with payment verification');
+            console.log('Session saved after payment verification');
           }
           resolve();
         });
@@ -856,6 +857,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Failed to verify payment',
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+  
+  // GET endpoint for automatic verification (public, used for redirects from Stripe)
+  app.get('/api/subscription/verify-payment', async (req: any, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).json({ message: 'Missing verification token' });
+      }
+      
+      console.log(`Verifying payment with token: ${token.substring(0, 8)}...`);
+      
+      // First check if token exists in the database
+      const [verificationRecord] = await db
+        .select()
+        .from(verificationTokens)
+        .where(eq(verificationTokens.token, token));
+      
+      if (!verificationRecord) {
+        console.log('No verification token found in database');
+        
+        // Check session as fallback if database lookup fails
+        if (!req.session?.checkoutInfo?.token || req.session.checkoutInfo.token !== token) {
+          // If not in session, redirect to subscription page with error flag
+          return res.redirect('/subscription?error=invalid_token');
+        }
+        
+        // Use session data as fallback
+        const checkoutInfo = req.session.checkoutInfo;
+        const userId = checkoutInfo.userId;
+        const plan = checkoutInfo.plan;
+        
+        // Clear checkout info from session
+        delete req.session.checkoutInfo;
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) console.error('Error saving session after verification:', err);
+            resolve();
+          });
+        });
+        
+        // Get user and church info
+        const user = await storage.getUser(userId);
+        if (!user?.churchId) {
+          return res.redirect('/subscription?error=church_not_found');
+        }
+        
+        // Update subscription status
+        const subscription = await storage.updateSubscriptionStatus(user.churchId, {
+          status: 'ACTIVE',
+          plan: plan,
+          startDate: new Date(),
+          endDate: plan === 'MONTHLY'
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+            : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        });
+        
+        console.log(`Updated subscription for church ${user.churchId} using session data:`, subscription);
+        return res.redirect('/subscription?success=true');
+      }
+      
+      // Token found in database, use it
+      const { userId, type, metadata, usedAt } = verificationRecord;
+      
+      // Check if this is a payment token
+      if (type !== 'PAYMENT') {
+        return res.redirect('/subscription?error=invalid_token_type');
+      }
+      
+      // Check if token has already been used
+      if (usedAt) {
+        return res.redirect('/subscription?success=true&already_processed=true');
+      }
+      
+      // Parse metadata to get the plan
+      let plan;
+      try {
+        const parsedMetadata = JSON.parse(metadata || '{}');
+        plan = parsedMetadata.plan;
+      } catch (e) {
+        console.error('Error parsing token metadata:', e);
+        return res.redirect('/subscription?error=invalid_metadata');
+      }
+      
+      if (!plan || !['MONTHLY', 'ANNUAL'].includes(plan)) {
+        return res.redirect('/subscription?error=invalid_plan');
+      }
+      
+      // Get user info
+      const user = await storage.getUser(userId);
+      if (!user?.churchId) {
+        return res.redirect('/subscription?error=church_not_found');
+      }
+      
+      // Mark token as used
+      await db
+        .update(verificationTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(verificationTokens.token, token));
+      
+      // Update subscription status
+      const subscription = await storage.updateSubscriptionStatus(user.churchId, {
+        status: 'ACTIVE',
+        plan: plan,
+        startDate: new Date(),
+        endDate: plan === 'MONTHLY'
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+      });
+      
+      console.log(`Updated subscription for church ${user.churchId}:`, subscription);
+      
+      // Redirect back to subscription page with success parameter
+      return res.redirect('/subscription?success=true');
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      return res.redirect('/subscription?error=server_error');
     }
   });
 
