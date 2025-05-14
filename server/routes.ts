@@ -22,6 +22,7 @@ import {
   churches, 
   donations, 
   members, 
+  registerChurchSchema,
   reportRecipients, 
   serviceOptions, 
   subscriptions, 
@@ -68,6 +69,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (process.env.NODE_ENV === 'development') {
     setupTestEndpoints(app);
   }
+  
+  // Church registration endpoint
+  app.post('/api/register-church', async (req, res) => {
+    try {
+      // Validate request data
+      const registerData = registerChurchSchema.parse(req.body);
+      const { email, password, churchName, firstName, lastName } = registerData;
+      
+      // Check if email already exists
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (existingUser.length > 0) {
+        return res.status(409).json({ message: "A user with this email already exists" });
+      }
+      
+      // Generate a unique ID for the user (which will also be the church ID)
+      const userId = crypto.randomBytes(8).toString('hex');
+      
+      // Hash the password
+      const hashedPassword = await scryptHash(password);
+      
+      console.log(`Creating church account with ID: ${userId}`);
+      
+      // Generate a base username from email
+      const usernameBase = email.split('@')[0];
+      let username = usernameBase;
+      
+      // Check if username already exists
+      const checkUsername = async (name: string) => {
+        const result = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, name));
+        return result.length > 0;
+      };
+      
+      // If username exists, add a random suffix
+      let counter = 0;
+      while (await checkUsername(username)) {
+        counter++;
+        username = `${usernameBase}${counter}`;
+      }
+      
+      console.log(`Using username: ${username}`);
+      
+      // Create church record
+      const [church] = await db.insert(churches)
+        .values({
+          id: userId,
+          name: churchName,
+          contactEmail: email,
+          accountOwnerId: userId
+        })
+        .returning();
+        
+      console.log(`Created church record with ID: ${church.id}`);
+      
+      // Create user record
+      const [user] = await db.insert(users)
+        .values({
+          id: userId,
+          username: username,
+          email: email,
+          password: hashedPassword,
+          firstName: firstName,
+          lastName: lastName,
+          role: "ADMIN",
+          churchName: churchName,
+          churchId: userId,
+          isAccountOwner: true
+        })
+        .returning();
+        
+      console.log(`Created user record with ID: ${user.id}`);
+      
+      // Create initial service options for this church
+      await db.insert(serviceOptions)
+        .values([
+          { 
+            name: "Service Type", 
+            value: "Sunday Morning", 
+            isDefault: true, 
+            churchId: userId 
+          },
+          { 
+            name: "Service Type", 
+            value: "Sunday Evening", 
+            isDefault: false, 
+            churchId: userId 
+          },
+          { 
+            name: "Service Type", 
+            value: "Wednesday Evening", 
+            isDefault: false, 
+            churchId: userId 
+          }
+        ]);
+      
+      console.log(`Created default service options for church: ${userId}`);
+      
+      // Create a trial subscription for this church
+      await createTrialSubscriptionForOnboarding(userId, "TRIAL");
+      console.log(`Created trial subscription for church: ${userId}`);
+      
+      return res.status(201).json({
+        message: "Church registered successfully!",
+        onboarding: {
+          churchId: userId,
+          churchName: churchName,
+          email: email
+        }
+      });
+      
+    } catch (error: any) {
+      console.error("Error registering church:", error);
+      
+      // Handle Zod validation errors
+      if (error.issues) {
+        return res.status(400).json({ 
+          message: error.issues[0].message || "Validation error",
+          field: error.issues[0].path?.join('.') 
+        });
+      }
+      
+      return res.status(500).json({ message: "Failed to register church" });
+    }
+  });
   
   // Add user auth endpoint that also works for non-authenticated users
   app.get('/api/auth/user', async (req: any, res) => {
