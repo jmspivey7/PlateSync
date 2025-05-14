@@ -4851,7 +4851,7 @@ PlateSync Reporting System`;
     }
   });
   
-  // Create a Stripe Payment Link instead of a Checkout session
+  // Create a Stripe Checkout session
   app.post('/api/subscription/create-checkout-session', isAuthenticated, isAccountOwner, async (req: any, res) => {
     try {
       const { plan } = req.body;
@@ -4861,7 +4861,7 @@ PlateSync Reporting System`;
       }
       
       const userId = req.user.claims.sub;
-      console.log(`Creating Stripe payment link for user ${userId} with plan ${plan}`);
+      console.log(`Creating Stripe checkout session for user ${userId} with plan ${plan}`);
       
       // Get all churches this user owns to find the right one
       const userChurches = await storage.getChurchesByAccountOwner(userId);
@@ -4880,61 +4880,45 @@ PlateSync Reporting System`;
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Create a temporary product for this subscription
-      const productName = `PlateSync ${plan.toLowerCase()} subscription`;
+      // Set up simple parameters for checkout
       const amount = plan === 'MONTHLY' ? 299 : 2500; // $2.99 or $25.00 in cents
       const interval = plan === 'MONTHLY' ? 'month' : 'year';
       
-      // Create a product
-      const product = await stripe.products.create({
-        name: productName,
-        description: `${plan.toLowerCase()} access to all PlateSync features`,
-        metadata: {
-          userId: userId,
-          churchId: church.id,
-          plan: plan
-        }
-      });
-      
-      // Create a price for the product
-      const price = await stripe.prices.create({
-        product: product.id,
-        unit_amount: amount,
-        currency: 'usd',
-        recurring: { interval },
-        metadata: {
-          userId: userId,
-          churchId: church.id,
-          plan: plan
-        }
-      });
-      
-      // Create a payment link
-      const paymentLink = await stripe.paymentLinks.create({
+      // Create a simple checkout session
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
         line_items: [
           {
-            price: price.id,
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `PlateSync ${plan.toLowerCase()} subscription`,
+                description: `${plan.toLowerCase()} access to all PlateSync features`,
+              },
+              unit_amount: amount,
+              recurring: {
+                interval: interval,
+              },
+            },
             quantity: 1,
           },
         ],
-        after_completion: {
-          type: 'redirect',
-          redirect: {
-            url: `${req.protocol}://${req.get('host')}/subscription?success=true&link_id={CHECKOUT_SESSION_ID}`,
-          },
-        },
         metadata: {
           userId: userId,
           churchId: church.id,
-          plan: plan
-        }
+          plan: plan,
+        },
+        customer_email: user.email || undefined,
+        mode: 'subscription',
+        success_url: `${req.protocol}://${req.get('host')}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.protocol}://${req.get('host')}/subscription?canceled=true`,
       });
       
-      res.json({ url: paymentLink.url });
+      res.json({ url: session.url });
     } catch (error) {
-      console.error('Error creating payment link:', error);
+      console.error('Error creating checkout session:', error);
       res.status(500).json({
-        message: 'Error creating payment link',
+        message: 'Error creating checkout session',
         error: error instanceof Error ? error.message : String(error)
       });
     }
