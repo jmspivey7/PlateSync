@@ -89,8 +89,11 @@ export function DonationChart() {
   // Fetch all batches
   const { data: batches, isLoading, error: batchError } = useQuery<Batch[]>({
     queryKey: ['/api/batches'],
-    retry: false,
+    retry: 3,
+    retryDelay: 1000,
     throwOnError: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     select: (data) => {
       console.log("Chart received batch data:", data || []);
       return data || [];
@@ -102,18 +105,27 @@ export function DonationChart() {
     queryKey: ['/api/batches/donations'],
     queryFn: async () => {
       try {
-        if (!batches || !Array.isArray(batches) || batches.length === 0) return {};
+        if (!batches || !Array.isArray(batches) || batches.length === 0) {
+          // Return empty object immediately if no batches
+          return {}; 
+        }
         
         // Fetch donations only for FINALIZED batches that have a totalAmount > 0
         const relevantBatches = batches.filter((batch: Batch) => 
           batch.status === 'FINALIZED' && parseFloat(batch.totalAmount?.toString() || '0') > 0
         );
         
+        if (relevantBatches.length === 0) {
+          return {}; // Return empty object if no relevant batches
+        }
+        
         // Create a map of batchId to donations
         const donationsMap: Record<number, Donation[]> = {};
         
         // Fetch donations for each batch in parallel
         await Promise.all(relevantBatches.map(async (batch: Batch) => {
+          if (!batch.id) return; // Skip batches without ID
+          
           try {
             const response = await fetch(`/api/batches/${batch.id}/donations`, {
               credentials: "include" // Ensure cookies are sent with the request
@@ -124,13 +136,17 @@ export function DonationChart() {
               donationsMap[batch.id] = donations;
             } else if (response.status === 401) {
               console.warn("Authentication required for batch donations");
-              // Don't throw, just continue with empty donations for this batch
+              // Initialize with empty array instead of skipping
+              donationsMap[batch.id] = [];
             } else {
               console.error(`Error response for batch ${batch.id}:`, response.status);
+              // Initialize with empty array
+              donationsMap[batch.id] = [];
             }
           } catch (error) {
             console.error(`Network error fetching donations for batch ${batch.id}:`, error);
-            // Don't throw, just continue with other batches
+            // Initialize with empty array
+            donationsMap[batch.id] = [];
           }
         }));
         
@@ -141,7 +157,9 @@ export function DonationChart() {
         return {}; // Return empty object on error
       }
     },
-    enabled: !!batches && Array.isArray(batches) && batches.length > 0
+    enabled: !!batches && Array.isArray(batches) && batches.length > 0,
+    retry: 1,
+    retryDelay: 1000
   });
 
   // Handle loading and error states
