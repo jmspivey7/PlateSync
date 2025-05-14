@@ -146,8 +146,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .returning();
         
       console.log(`Created church record with ID: ${church.id}`);
-        
-      console.log(`Created user record with ID: ${user.id}`);
       
       // Create initial service options for this church
       await db.insert(serviceOptions)

@@ -39,31 +39,95 @@ export function setupTestEndpoints(app: Express) {
       const userId = user.id;
       console.log(`Found user with ID: ${userId}`);
       
-      // Check if this user is an account owner in the churches table
-      const accountOwnerResult = await db.execute(
-        sql`SELECT * FROM churches WHERE account_owner_id = ${userId}`
-      );
-      
-      const isAccountOwner = accountOwnerResult.rows.length > 0;
-      
-      if (isAccountOwner) {
-        console.log(`User ${email} is an account owner for ${accountOwnerResult.rows.length} churches`);
+      // Use a transaction to ensure all deletions happen together
+      try {
+        await db.transaction(async (tx) => {
+          console.log("Starting transaction for test user deletion");
+          
+          // 1. Delete subscriptions related to this user's church
+          // Note: this uses CASCADE for churchId -> churches.id
+          console.log("Cleaning up subscriptions...");
+          await tx.execute(
+            sql`DELETE FROM subscriptions WHERE church_id = ${userId}`
+          );
+          
+          // 2. Delete batches and their dependencies (donations)
+          console.log("Cleaning up batches and donations...");
+          await tx.execute(
+            sql`DELETE FROM donations WHERE church_id = ${userId}`
+          );
+          await tx.execute(
+            sql`DELETE FROM batches WHERE church_id = ${userId}`
+          );
+          
+          // 3. Delete service options
+          console.log("Cleaning up service options...");
+          await tx.execute(
+            sql`DELETE FROM service_options WHERE church_id = ${userId}`
+          );
+          
+          // 4. Delete members
+          console.log("Cleaning up members...");
+          await tx.execute(
+            sql`DELETE FROM members WHERE church_id = ${userId}`
+          );
+          
+          // 5. Delete report recipients (uses cascade)
+          console.log("Cleaning up report recipients...");
+          await tx.execute(
+            sql`DELETE FROM report_recipients WHERE church_id = ${userId}`
+          );
+          
+          // 6. Delete email templates (uses cascade)
+          console.log("Cleaning up email templates...");
+          await tx.execute(
+            sql`DELETE FROM email_templates WHERE church_id = ${userId}`
+          );
+          
+          // 7. Delete planning center tokens (uses cascade)
+          console.log("Cleaning up planning center tokens...");
+          await tx.execute(
+            sql`DELETE FROM planning_center_tokens WHERE church_id = ${userId}`
+          );
+          
+          // 8. Delete verification codes
+          console.log("Cleaning up verification codes...");
+          await tx.execute(
+            sql`DELETE FROM verification_codes WHERE church_id = ${userId}`
+          );
+          
+          // 9. Handle churches table - check if this user is an account owner
+          console.log("Handling church relationship...");
+          const accountOwnerResult = await tx.execute(
+            sql`SELECT * FROM churches WHERE account_owner_id = ${userId}`
+          );
+          
+          const isAccountOwner = accountOwnerResult.rows.length > 0;
+          
+          // Delete the church if this user is the account owner
+          if (isAccountOwner) {
+            console.log(`User ${email} is an account owner for ${accountOwnerResult.rows.length} churches`);
+            await tx.execute(
+              sql`DELETE FROM churches WHERE id = ${userId}`
+            );
+            console.log(`Deleted church with ID: ${userId}`);
+          }
+          
+          // 10. Finally delete the user
+          console.log("Deleting user...");
+          await tx.delete(users).where(eq(users.id, userId));
+          
+          console.log(`Successfully deleted test user: ${email} and all related data`);
+        });
         
-        // Update churches to remove this user as account owner (set to NULL)
-        await db.execute(
-          sql`UPDATE churches SET account_owner_id = NULL WHERE account_owner_id = ${userId}`
-        );
-        console.log(`Removed user as account owner from churches`);
+        return res.json({
+          success: true,
+          message: `Successfully deleted user with email: ${email} and all related data`
+        });
+      } catch (txError) {
+        console.error("Transaction error:", txError);
+        throw txError; // Re-throw to be caught by the outer try/catch
       }
-      
-      // Now we can safely delete the user
-      await db.delete(users).where(eq(users.id, user.id));
-      console.log(`Successfully deleted test user: ${email}`);
-      
-      return res.json({
-        success: true,
-        message: `Successfully deleted user with email: ${email}`
-      });
     } catch (error) {
       console.error("Error deleting test user:", error);
       return res.status(500).json({
