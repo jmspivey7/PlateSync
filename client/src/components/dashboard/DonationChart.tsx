@@ -220,9 +220,27 @@ export function DonationChart() {
             All Counts
           </Button>
         </CardHeader>
-        <CardContent className="h-[300px] flex flex-col items-center justify-center">
-          <p className="text-muted-foreground mb-4">No finalized counts available to display</p>
-          <p className="text-sm text-muted-foreground">Finalize a count to see donation trends</p>
+        <CardContent className="h-[300px] relative">
+          {/* Skeleton chart background */}
+          <div className="absolute inset-0 opacity-20">
+            <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
+              <path 
+                d="M0,150 C100,100 200,190 300,120 C400,90 500,170 600,140 C700,110 800,160 900,130 L1000,120 L1000,300 L0,300 Z" 
+                fill="#3b82f6" 
+                opacity="0.6"
+              />
+              <path 
+                d="M0,200 C100,180 200,220 300,190 C400,210 500,180 600,220 C700,190 800,230 900,210 L1000,220 L1000,300 L0,300 Z" 
+                fill="#69ad4c" 
+                opacity="0.6"
+              />
+            </svg>
+          </div>
+          
+          {/* Overlay message */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 backdrop-blur-[1px]">
+            <p className="text-lg font-bold mb-2 text-center px-4">Counts Trends will graph here once you complete them</p>
+          </div>
         </CardContent>
       </Card>
     );
