@@ -239,7 +239,7 @@ export function DonationChart() {
           
           {/* Overlay message */}
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10 backdrop-blur-[0.5px]">
-            <p className="text-lg font-bold mb-2 text-center px-4 -mt-[110px]">Counts Trends will graph here once you complete them.</p>
+            <p className="text-lg font-bold mb-2 text-center px-4 -mt-[110px] text-black/50">Counts Trends will graph here once you complete them.</p>
           </div>
         </CardContent>
       </Card>
