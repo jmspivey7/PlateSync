@@ -1325,6 +1325,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'Failed to fetch users' });
     }
   });
+  
+  // Endpoint to programmatically link a Stripe subscription to a user account
+  app.post('/api/subscription/link-stripe', isAuthenticated, async (req: any, res) => {
+    try {
+      const { stripeSubscriptionId } = req.body;
+      
+      if (!stripeSubscriptionId) {
+        return res.status(400).json({ message: 'Stripe subscription ID is required' });
+      }
+      
+      let userId;
+      
+      // Handle both authentication methods
+      if (req.user) {
+        // Passport-based auth
+        userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      } else if (req.session?.user?.userId) {
+        // Session-based auth
+        userId = req.session.user.userId;
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized - User ID not found' });
+      }
+      
+      const user = await storage.getUserById(userId);
+      
+      if (!user || !user.churchId) {
+        return res.status(404).json({ message: 'User or church not found' });
+      }
+      
+      // Verify the subscription with Stripe
+      const verificationResult = await verifyStripeSubscription(stripeSubscriptionId);
+      
+      if (!verificationResult || !verificationResult.isActive) {
+        return res.status(400).json({ 
+          message: 'Invalid or inactive Stripe subscription', 
+          verificationResult 
+        });
+      }
+      
+      // Update the subscription in the database
+      const updated = await storage.upgradeSubscription(user.churchId, verificationResult.plan, {
+        stripeCustomerId: '',  // Set this if available
+        stripeSubscriptionId
+      });
+      
+      if (!updated) {
+        return res.status(500).json({ message: 'Failed to update subscription' });
+      }
+      
+      res.status(200).json({ 
+        message: 'Stripe subscription linked successfully',
+        subscription: updated
+      });
+    } catch (error) {
+      console.error('Error linking Stripe subscription:', error);
+      res.status(500).json({ 
+        message: 'Error linking Stripe subscription',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

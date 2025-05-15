@@ -2,16 +2,20 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, HelpCircle, LinkIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 export function StripeVerificationTest() {
   const [subscriptionId, setSubscriptionId] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("test");
+  const { toast } = useToast();
   
   const handleTest = async () => {
     if (!subscriptionId.trim()) {
@@ -40,6 +44,57 @@ export function StripeVerificationTest() {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleLinkSubscription = async () => {
+    if (!subscriptionId.trim()) {
+      setError("Please enter a subscription ID");
+      return;
+    }
+    
+    setLinking(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/subscription/link-stripe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ stripeSubscriptionId: subscriptionId }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to link subscription: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Invalidate subscription status to force re-fetch
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
+      
+      toast({
+        title: "Subscription Linked",
+        description: "The Stripe subscription has been linked to your account.",
+        variant: "default",
+      });
+      
+      // Update the result display
+      handleTest();
+    } catch (err) {
+      console.error("Error linking subscription:", err);
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      
+      toast({
+        title: "Failed to Link Subscription",
+        description: err instanceof Error ? err.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLinking(false);
     }
   };
   
@@ -149,6 +204,33 @@ export function StripeVerificationTest() {
         <TabsContent value="result">
           <CardContent>
             {renderResultStatus()}
+            
+            {/* Add Link Subscription button when verification is successful */}
+            {result?.verificationResult?.isActive && (
+              <div className="mb-4">
+                <Button 
+                  onClick={handleLinkSubscription} 
+                  disabled={linking}
+                  variant="outline" 
+                  className="w-full text-green-600 border-green-200 bg-green-50 hover:bg-green-100 hover:text-green-700 mb-2"
+                >
+                  {linking ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Linking subscription...
+                    </>
+                  ) : (
+                    <>
+                      <LinkIcon className="mr-2 h-4 w-4" />
+                      Link Subscription to My Account
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  This will update your account to use this active subscription
+                </p>
+              </div>
+            )}
             
             <div className="space-y-2">
               <h3 className="text-sm font-medium">Raw Response</h3>
