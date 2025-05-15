@@ -46,8 +46,59 @@ export default function SubscriptionPage() {
         className: "bg-green-50 border-green-600 text-green-800",
       });
       
-      // Refresh the subscription data
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] })
+      // If we have a verification token, call the API to verify the payment
+      if (token) {
+        console.log(`Verifying payment with token: ${token.substring(0, 8)}...`);
+        
+        // Call the verification endpoint with the token
+        fetch('/api/subscription/verify-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+          credentials: 'include'
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Payment verification failed');
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Payment verification successful:', data);
+          
+          // Now refresh the subscription data
+          return queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+        })
+        .then(() => {
+          // Show completion toast
+          toast({
+            title: "Subscription Activated!",
+            description: "Your account has been successfully upgraded.",
+            variant: "default",
+            className: "bg-green-50 border-green-600 text-green-800",
+          });
+          
+          setIsVerifying(false);
+        })
+        .catch(error => {
+          console.error("Error verifying payment:", error);
+          
+          // Still try to refresh subscription data as a fallback
+          queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+          
+          toast({
+            title: "Verification Issue",
+            description: "We'll check your subscription status and update it shortly.",
+            variant: "default",
+          });
+          
+          setIsVerifying(false);
+        });
+      } else {
+        // No token, just refresh subscription data
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] })
         .then(() => {
           // Show completion toast
           toast({
@@ -63,6 +114,7 @@ export default function SubscriptionPage() {
           console.error("Error refreshing subscription data:", error);
           setIsVerifying(false);
         });
+      }
       
       // Clean up URL params
       const url = new URL(window.location.href);

@@ -472,38 +472,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found subscription status: ${statusData.status}, active: ${statusData.isActive}`);
       
-      // Proper implementation would check Stripe subscription status
-      // For now, check for a local file marker that payment was completed
-      let paymentVerified = false;
+      // Check if there's a Stripe subscription ID in the database
+      let stripeVerified = false;
+      let stripeData: any = null;
       
+      if (subscription && subscription.stripeSubscriptionId) {
+        try {
+          console.log(`Verifying Stripe subscription: ${subscription.stripeSubscriptionId}`);
+          
+          // Verify the subscription with Stripe
+          stripeData = await verifyStripeSubscription(subscription.stripeSubscriptionId);
+          
+          if (stripeData && stripeData.isActive) {
+            stripeVerified = true;
+            console.log('Stripe subscription verified as active');
+            
+            // Update our local subscription data if needed
+            if (subscription.status !== 'ACTIVE' || subscription.plan !== stripeData.plan) {
+              console.log(`Updating local subscription data to match Stripe verification`);
+              await updateSubscriptionFromStripe(user.churchId, subscription.stripeSubscriptionId);
+            }
+          } else {
+            console.log('Stripe subscription is not active or verification failed');
+          }
+        } catch (stripeError) {
+          console.error('Error verifying Stripe subscription:', stripeError);
+        }
+      } else {
+        console.log('No Stripe subscription ID in database record');
+      }
+      
+      // Also check session verification as a backup
+      let sessionVerified = false;
       try {
-        // Check if user has made a payment in this session
         if (req.session.paymentVerified) {
-          paymentVerified = true;
+          sessionVerified = true;
           console.log('Found payment verification in session');
         }
       } catch (verifyError) {
-        console.error('Error checking payment verification:', verifyError);
+        console.error('Error checking session payment verification:', verifyError);
       }
       
-      const response = paymentVerified ? 
-        {
+      // Determine final subscription status
+      const isVerified = stripeVerified || sessionVerified;
+      
+      // Generate the appropriate response
+      let response;
+      
+      if (stripeVerified && stripeData) {
+        // Use data directly from Stripe
+        response = {
+          ...statusData,
+          status: stripeData.status,
+          isActive: stripeData.isActive,
+          isTrialExpired: true, // Paid subscription, not a trial
+          plan: stripeData.plan,
+          nextBillingDate: stripeData.currentPeriodEnd?.toISOString(),
+          canceledAt: stripeData.canceledAt?.toISOString()
+        };
+      } else if (isVerified) {
+        // Use session verification
+        response = {
           ...statusData,
           status: "ACTIVE",
           isActive: true,
           isTrialExpired: false,
           plan: 'MONTHLY',
           nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
-        } : 
-        {
+        };
+      } else {
+        // Default to trial expired
+        response = {
           ...statusData,
           status: "TRIAL",     // Show as a trial
-          isActive: true,      // Still active
+          isActive: true,      // Still active 
           isTrialExpired: true, // But trial has expired
           daysRemaining: 0,     // 0 days remaining
           trialEndDate: new Date().toISOString(), // Trial ends today
           plan: 'TRIAL'        // Trial plan
         };
+      }
       
       console.log(`Returning subscription data:`, response);
       

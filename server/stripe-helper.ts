@@ -10,6 +10,21 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
+// Stripe subscription type with the fields we need
+interface StripeSubscription {
+  id: string;
+  status: string;
+  current_period_end: number;
+  canceled_at: number | null;
+  items: {
+    data: Array<{
+      price: {
+        id: string;
+      };
+    }>;
+  };
+}
+
 interface SubscriptionStatusResult {
   isActive: boolean;
   status: string;
@@ -26,12 +41,10 @@ export async function verifyStripeSubscription(stripeSubscriptionId: string): Pr
     console.log(`Verifying Stripe subscription: ${stripeSubscriptionId}`);
     
     // Fetch the subscription from Stripe
-    const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    const stripeResponse = await stripe.subscriptions.retrieve(stripeSubscriptionId);
     
-    if (!subscription) {
-      console.log(`No subscription found with ID: ${stripeSubscriptionId}`);
-      return null;
-    }
+    // Cast to our known type
+    const subscription = stripeResponse as unknown as StripeSubscription;
     
     console.log(`Found subscription: ${subscription.id}, status: ${subscription.status}`);
     
@@ -64,12 +77,21 @@ export async function verifyStripeSubscription(stripeSubscriptionId: string): Pr
       plan = 'ANNUAL';
     }
     
+    // Get end of current period and canceled date (if any)
+    const currentPeriodEnd = subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000) 
+      : undefined;
+      
+    const canceledAt = subscription.canceled_at 
+      ? new Date(subscription.canceled_at * 1000) 
+      : null;
+    
     return {
       isActive,
       status,
       plan,
-      currentPeriodEnd: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : undefined,
-      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+      currentPeriodEnd,
+      canceledAt,
     };
   } catch (error) {
     console.error('Error verifying Stripe subscription:', error);
