@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { SubscriptionStatus } from "@/components/subscription/subscription-status";
 import { SubscriptionPlans } from "@/components/subscription/subscription-plans";
+import { StripeVerificationTest } from "@/components/subscription/StripeVerificationTest";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import PageLayout from "@/components/layout/PageLayout";

@@ -430,6 +430,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for Stripe subscription verification
+  app.get('/api/subscription/test-stripe-verification', isAuthenticated, async (req: any, res) => {
+    try {
+      // Get the subscription ID from query parameters
+      const subscriptionId = req.query.subscriptionId;
+      
+      if (!subscriptionId) {
+        return res.status(400).json({ message: 'Subscription ID is required' });
+      }
+      
+      // Call the verification function with the provided subscription ID
+      const verificationResult = await verifyStripeSubscription(subscriptionId as string);
+      
+      // Return the verification result
+      res.json({
+        verificationResult,
+        message: 'Stripe subscription verification test completed'
+      });
+    } catch (error) {
+      console.error('Error testing Stripe verification:', error);
+      res.status(500).json({ message: 'Error testing Stripe verification' });
+    }
+  });
+  
   // Get subscription status
   app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
     try {
