@@ -166,6 +166,7 @@ export interface IStorage {
     stripeCustomerId: string;
     stripeSubscriptionId: string;
   }): Promise<Subscription | undefined>;
+  cancelSubscription(churchId: string): Promise<Subscription | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {

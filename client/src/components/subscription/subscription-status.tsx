@@ -391,7 +391,66 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
     );
   }
 
-  // Other states (canceled, expired paid subscription)
+  // Canceled subscription state
+  if (subscriptionStatus?.status === "CANCELED") {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center mb-2">
+            <CardTitle>Subscription Canceled</CardTitle>
+            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+              Canceled
+            </Badge>
+          </div>
+          <CardDescription>
+            Your subscription has been canceled
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 mb-4">
+            Your subscription has been canceled. You'll still have access until the end of your current billing period.
+          </p>
+          
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="font-medium">Plan:</span>
+              <span>{subscriptionStatus?.plan || 'Unknown'}</span>
+            </div>
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="font-medium">Status:</span>
+              <span className="text-amber-600 font-medium">Canceled</span>
+            </div>
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="font-medium">Canceled On:</span>
+              <span>
+                {subscriptionStatus?.canceledAt 
+                  ? new Date(subscriptionStatus.canceledAt).toLocaleDateString() 
+                  : 'Unknown'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Access Until:</span>
+              <span>
+                {subscriptionStatus?.nextBillingDate 
+                  ? new Date(subscriptionStatus.nextBillingDate).toLocaleDateString() 
+                  : 'Unknown'}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            onClick={onUpgrade} 
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
+          >
+            Create a New Plan
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  // Other states (expired paid subscription)
   return (
     <Card>
       <CardHeader>
@@ -407,9 +466,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
       </CardHeader>
       <CardContent>
         <p className="text-gray-600 mb-4">
-          {subscriptionStatus?.status === "CANCELED" 
-            ? "Your subscription has been canceled." 
-            : "Your subscription has expired."}
+          Your subscription has expired. Please select a new plan to continue using PlateSync.
         </p>
         
         <div className="grid gap-2">
@@ -426,9 +483,9 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
       <CardFooter>
         <Button 
           onClick={onUpgrade} 
-          className="w-full bg-red-600 hover:bg-red-700 text-white"
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
         >
-          Reactivate Subscription
+          Select a New Plan
         </Button>
       </CardFooter>
     </Card>

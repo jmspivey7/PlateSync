@@ -50,7 +50,7 @@ import * as path from "path";
 import { generateCountReportPDF } from "./pdf-generator";
 import Stripe from "stripe";
 import { createTrialSubscriptionForOnboarding } from "./subscription-helper";
-import { verifyStripeSubscription, updateSubscriptionFromStripe } from "./stripe-helper";
+import { verifyStripeSubscription, updateSubscriptionFromStripe, cancelStripeSubscription } from "./stripe-helper";
 import { 
   batches, 
   churches, 
