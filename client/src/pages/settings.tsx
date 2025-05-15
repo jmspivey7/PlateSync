@@ -107,7 +107,7 @@ type FormValues = z.infer<typeof formSchema>;
 const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isAdmin, isMasterAdmin } = useAuth();
+  const { user, isAdmin, isAccountOwner } = useAuth();
   const search = useSearch();
   // Removed showSuccessToast state to eliminate duplicate notifications
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -860,20 +860,20 @@ const Settings = () => {
     >
       
       <div className="grid grid-cols-1 gap-6">
-        {/* Master Admin Information Card */}
-        {isMasterAdmin && (
+        {/* Account Owner Information Card */}
+        {isAccountOwner && (
           <Card className="border-[#69ad4c]/40 bg-[#69ad4c]/5">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
-                <span className="bg-[#69ad4c] text-white p-1 rounded-md text-xs font-bold">M</span>
-                Master Admin Access
+                <span className="bg-[#69ad4c] text-white p-1 rounded-md text-xs font-bold">O</span>
+                Account Owner Access
               </CardTitle>
               <CardDescription>
-                As the Master Admin, you have additional privileges:
+                As the Account Owner, you have additional privileges:
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Any settings you update will apply to all users in your church</li>
                   <li>You can manage all users, batches, and settings across your church</li>
-                  <li>You are the primary administrator for your church's account</li>
+                  <li>You are the owner of your church's account</li>
                 </ul>
               </CardDescription>
             </CardHeader>
