@@ -302,6 +302,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
   
   // Active paid subscription
   if (subscriptionStatus?.status === "ACTIVE") {
+    
     return (
       <Card>
         <CardHeader>
@@ -453,45 +454,43 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
     );
   }
 
-  // Default fallback
+  // Other states (expired paid subscription)
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscription Status</CardTitle>
+        <div className="flex justify-between items-center mb-2">
+          <CardTitle>Subscription</CardTitle>
+          <Badge variant="outline">
+            {subscriptionStatus?.status || 'Unknown'}
+          </Badge>
+        </div>
         <CardDescription>
-          Your subscription status could not be determined
+          Your subscription status
         </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-gray-600 mb-4">
-          There was an issue determining your subscription status. Please try refreshing the page
-          or contact support if the problem persists.
+          Your subscription has expired. Please select a new plan to continue using PlateSync.
         </p>
+        
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <span className="font-medium">Plan:</span>
+            <span>{subscriptionStatus?.plan || 'Unknown'}</span>
+          </div>
+          <div className="flex items-center justify-between border-b pb-2">
+            <span className="font-medium">Status:</span>
+            <span className="text-amber-600 font-medium">{subscriptionStatus?.status || 'Unknown'}</span>
+          </div>
+        </div>
       </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
+      <CardFooter>
         <Button 
-          onClick={() => window.location.reload()} 
-          variant="outline" 
-          className="w-full"
+          onClick={onUpgrade} 
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
         >
-          Refresh Page
+          Select a New Plan
         </Button>
-        {process.env.NODE_ENV === 'development' && (
-          <Button
-            onClick={verifyPayment}
-            disabled={isVerifying}
-            className="w-full"
-          >
-            {isVerifying ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verifying...
-              </>
-            ) : (
-              "Verify Payment (Dev Only)"
-            )}
-          </Button>
-        )}
       </CardFooter>
     </Card>
   );
