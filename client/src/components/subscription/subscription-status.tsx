@@ -345,7 +345,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
                 <p className="text-sm">You'll still have access until the current billing period ends.</p>
                 <div className="flex gap-2 justify-end mt-2">
                   <Button 
-                    variant="outline" 
+                    className="bg-green-600 hover:bg-green-700 text-white"
                     size="sm" 
                     onClick={() => setShowCancelConfirm(false)}
                     disabled={isCanceling}
@@ -353,7 +353,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
                     No, Keep My Plan
                   </Button>
                   <Button 
-                    variant="destructive" 
+                    className="bg-red-600 hover:bg-red-700 text-white"
                     size="sm" 
                     onClick={handleCancelSubscription}
                     disabled={isCanceling}
@@ -383,8 +383,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           ) : (
             <Button 
               onClick={() => setShowCancelConfirm(false)} 
-              variant="outline"
-              className="w-full"
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
               Back to Subscription Details
             </Button>
