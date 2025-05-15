@@ -257,6 +257,48 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
 
   // Active paid subscription
   if (subscriptionStatus?.status === "ACTIVE") {
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [isCanceling, setIsCanceling] = useState(false);
+    
+    // Function to handle subscription cancellation
+    const handleCancelSubscription = async () => {
+      setIsCanceling(true);
+      try {
+        const response = await fetch('/api/subscription/cancel', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to cancel subscription');
+        }
+        
+        // Refresh subscription data
+        await queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
+        
+        toast({
+          title: "Subscription Canceled",
+          description: "Your subscription has been canceled. You'll still have access until the end of the billing period.",
+          variant: "default",
+        });
+        
+        setShowCancelConfirm(false);
+      } catch (error) {
+        console.error('Error canceling subscription:', error);
+        toast({
+          title: "Cancellation Failed",
+          description: error instanceof Error ? error.message : "An error occurred during cancellation",
+          variant: "destructive",
+        });
+      } finally {
+        setIsCanceling(false);
+      }
+    };
+    
     return (
       <Card>
         <CardHeader>
@@ -291,14 +333,59 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
               </span>
             </div>
           </div>
+          
+          {showCancelConfirm && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="space-y-4">
+                <p>Are you sure you want to cancel your subscription?</p>
+                <p className="text-sm">You'll still have access until the current billing period ends.</p>
+                <div className="flex gap-2 justify-end mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowCancelConfirm(false)}
+                    disabled={isCanceling}
+                  >
+                    No, Keep My Plan
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={handleCancelSubscription}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Canceling...
+                      </>
+                    ) : (
+                      "Yes, Cancel"
+                    )}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
         <CardFooter>
-          <Button 
-            onClick={onUpgrade} 
-            className="w-full bg-red-600 hover:bg-red-700 text-white"
-          >
-            Cancel My Plan
-          </Button>
+          {!showCancelConfirm ? (
+            <Button 
+              onClick={() => setShowCancelConfirm(true)} 
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+            >
+              Cancel My Plan
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => setShowCancelConfirm(false)} 
+              variant="outline"
+              className="w-full"
+            >
+              Back to Subscription Details
+            </Button>
+          )}
         </CardFooter>
       </Card>
     );

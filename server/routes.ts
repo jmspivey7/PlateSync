@@ -1388,6 +1388,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Endpoint to cancel a subscription
+  app.post('/api/subscription/cancel', isAuthenticated, async (req: any, res) => {
+    try {
+      let userId;
+      
+      // Handle both authentication methods
+      if (req.user) {
+        // Passport-based auth
+        userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      } else if (req.session?.user?.userId) {
+        // Session-based auth
+        userId = req.session.user.userId;
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized - User ID not found' });
+      }
+      
+      const user = await storage.getUserById(userId);
+      
+      if (!user || !user.churchId) {
+        return res.status(404).json({ message: 'User or church not found' });
+      }
+      
+      // Get the subscription from database
+      const subscription = await storage.getSubscription(user.churchId);
+      
+      if (!subscription) {
+        return res.status(404).json({ message: 'No subscription found' });
+      }
+      
+      if (subscription.status === 'CANCELED') {
+        return res.status(400).json({ message: 'Subscription is already canceled' });
+      }
+      
+      if (!subscription.stripeSubscriptionId) {
+        // If no Stripe subscription ID, just update our database directly
+        const updated = await storage.cancelSubscription(user.churchId);
+        
+        return res.status(200).json({
+          message: 'Subscription canceled successfully',
+          subscription: updated
+        });
+      }
+      
+      // Cancel the subscription in Stripe
+      const canceled = await cancelStripeSubscription(
+        subscription.stripeSubscriptionId, 
+        user.churchId
+      );
+      
+      if (!canceled) {
+        return res.status(500).json({ message: 'Failed to cancel subscription' });
+      }
+      
+      // Get the updated subscription
+      const updatedSubscription = await storage.getSubscription(user.churchId);
+      
+      res.status(200).json({
+        message: 'Subscription canceled successfully',
+        subscription: updatedSubscription
+      });
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      res.status(500).json({
+        message: 'Error canceling subscription',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -189,6 +189,44 @@ export async function updateSubscriptionFromStripe(churchId: string, stripeSubsc
 }
 
 /**
+ * Cancel a subscription in Stripe and update the database
+ */
+export async function cancelStripeSubscription(stripeSubscriptionId: string, churchId: string): Promise<boolean> {
+  try {
+    console.log(`Canceling Stripe subscription: ${stripeSubscriptionId}`);
+    
+    // Cancel the subscription in Stripe
+    const canceledSubscription = await stripe.subscriptions.cancel(stripeSubscriptionId);
+    
+    if (!canceledSubscription) {
+      console.error('Failed to cancel subscription in Stripe');
+      return false;
+    }
+    
+    // Get the canceled date from Stripe
+    const canceledAt = canceledSubscription.canceled_at 
+      ? new Date(canceledSubscription.canceled_at * 1000) 
+      : new Date();
+    
+    // Update our database with cancellation info
+    await db
+      .update(subscriptions)
+      .set({
+        status: 'CANCELED',
+        canceledAt,
+        updatedAt: new Date()
+      })
+      .where(eq(subscriptions.churchId, churchId));
+    
+    console.log(`Successfully canceled subscription for church ${churchId}`);
+    return true;
+  } catch (error) {
+    console.error('Error canceling Stripe subscription:', error);
+    return false;
+  }
+}
+
+/**
  * Get customer ID for a user, or create one if needed
  */
 export async function getOrCreateStripeCustomer(email: string, name?: string): Promise<string | null> {

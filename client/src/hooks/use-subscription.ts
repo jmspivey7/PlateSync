@@ -10,6 +10,8 @@ interface SubscriptionStatus {
   daysRemaining: number | null;
   trialEndDate: string | null;
   plan?: string;
+  nextBillingDate?: string;
+  canceledAt?: string | null;
 }
 
 interface CreateTrialResponse {
