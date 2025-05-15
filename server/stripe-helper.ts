@@ -6,9 +6,18 @@ import { eq } from 'drizzle-orm';
 // Initialize Stripe with the API key
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('Missing STRIPE_SECRET_KEY environment variable');
+} else {
+  const keyType = process.env.STRIPE_SECRET_KEY.startsWith('sk_test_') ? 'TEST' : 
+                  process.env.STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'UNKNOWN';
+  console.log(`Initializing Stripe with ${keyType} mode API key: ${process.env.STRIPE_SECRET_KEY.substring(0, 8)}...`);
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+// Initialize Stripe with configuration options
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2023-10-16' as any, // Set specific API version
+  maxNetworkRetries: 2,             // Retry API calls on network failure
+  timeout: 30000,                   // Timeout in ms (30 sec)
+});
 
 // Stripe subscription type with the fields we need
 interface StripeSubscription {
@@ -45,6 +54,15 @@ export async function verifyStripeSubscription(stripeSubscriptionId: string): Pr
     try {
       stripeResponse = await stripe.subscriptions.retrieve(stripeSubscriptionId);
     } catch (stripeError: any) {
+      // Log the full error details for debugging
+      console.log('Stripe API error details:', {
+        type: stripeError.type,
+        code: stripeError.code,
+        message: stripeError.message,
+        apiKey: process.env.STRIPE_SECRET_KEY?.substring(0, 8) + '...',
+        requestParams: { subscriptionId: stripeSubscriptionId }
+      });
+      
       // If the subscription doesn't exist in Stripe
       if (stripeError.type === 'StripeInvalidRequestError' && 
           stripeError.code === 'resource_missing') {
@@ -57,8 +75,28 @@ export async function verifyStripeSubscription(stripeSubscriptionId: string): Pr
           canceledAt: new Date()
         };
       }
-      // For other Stripe errors, rethrow
-      throw stripeError;
+      
+      // Check for authentication errors
+      if (stripeError.type === 'StripeAuthenticationError') {
+        console.error('Stripe authentication error - check API key');
+        return {
+          isActive: false,
+          status: 'API_ERROR',
+          plan: 'NONE',
+          currentPeriodEnd: undefined,
+          canceledAt: null
+        };
+      }
+      
+      // For other Stripe errors, return an error result instead of throwing
+      console.error('Stripe API error:', stripeError.message);
+      return {
+        isActive: false,
+        status: 'API_ERROR',
+        plan: 'NONE',
+        currentPeriodEnd: undefined,
+        canceledAt: null
+      };
     }
     
     // Cast to our known type

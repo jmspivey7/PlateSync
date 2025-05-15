@@ -725,6 +725,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const successUrl = `${protocolName}://${hostName}/subscription?success=true&token=${sessionToken}`;
       const cancelUrl = `${protocolName}://${hostName}/subscription?canceled=true`;
       
+      // Check Stripe API key environment to log configuration
+      const stripeKeyType = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'TEST' : 
+                            process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') ? 'LIVE' : 'UNKNOWN';
+      console.log(`Using ${stripeKeyType} mode Stripe API for checkout`);
+      
+      // Safety check: make sure payment link environment matches API key environment
+      const paymentLinkEnv = paymentLink.includes('test') ? 'TEST' : 'LIVE';
+      if (stripeKeyType !== 'UNKNOWN' && paymentLinkEnv !== stripeKeyType) {
+        console.warn(`⚠️ WARNING: Payment link environment (${paymentLinkEnv}) doesn't match Stripe API key environment (${stripeKeyType})`);
+      } else {
+        console.log(`✓ Payment link environment (${paymentLinkEnv}) matches Stripe API key environment (${stripeKeyType})`);
+      }
+      
       // Append success_url and cancel_url parameters to override payment link defaults
       const urlWithRedirects = `${paymentLink}${paymentLink.includes('?') ? '&' : '?'}success_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
       
