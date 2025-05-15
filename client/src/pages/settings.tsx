@@ -1248,39 +1248,47 @@ const Settings = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {reportRecipients.map((recipient) => (
-                              <TableRow key={recipient.id}>
-                                <TableCell className="py-3 text-sm">
-                                  {recipient.firstName} {recipient.lastName}
-                                </TableCell>
-                                <TableCell className="py-3 text-sm">{recipient.email}</TableCell>
-                                <TableCell className="py-3">
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      onClick={() => openEditRecipientDialog(recipient)}
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
-                                      disabled={deleteReportRecipientMutation.isPending}
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                                    >
-                                      {deleteReportRecipientMutation.isPending && deleteReportRecipientMutation.variables === recipient.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </div>
+                            {Array.isArray(reportRecipients) && reportRecipients.length > 0 ? (
+                              reportRecipients.map((recipient) => (
+                                <TableRow key={recipient.id}>
+                                  <TableCell className="py-3 text-sm">
+                                    {recipient.firstName} {recipient.lastName}
+                                  </TableCell>
+                                  <TableCell className="py-3 text-sm">{recipient.email}</TableCell>
+                                  <TableCell className="py-3">
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        onClick={() => openEditRecipientDialog(recipient)}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
+                                        disabled={deleteReportRecipientMutation.isPending}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                      >
+                                        {deleteReportRecipientMutation.isPending && deleteReportRecipientMutation.variables === recipient.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={3} className="text-center py-4 text-gray-500">
+                                  No report recipients found
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            )}
                           </TableBody>
                         </Table>
                       </div>
