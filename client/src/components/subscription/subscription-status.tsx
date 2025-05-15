@@ -283,8 +283,12 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
               <span className="text-green-600 font-medium">Active</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-medium">Billing:</span>
-              <span>{subscriptionStatus?.plan === 'MONTHLY' ? 'Monthly' : 'Annual'}</span>
+              <span className="font-medium">Renewal Date:</span>
+              <span>
+                {subscriptionStatus?.nextBillingDate 
+                  ? new Date(subscriptionStatus.nextBillingDate).toLocaleDateString() 
+                  : 'Unknown'}
+              </span>
             </div>
           </div>
         </CardContent>
