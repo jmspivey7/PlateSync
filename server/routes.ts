@@ -869,14 +869,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plan = req.session.checkoutInfo?.plan || 'MONTHLY';
       const periodDays = plan === 'MONTHLY' ? 30 : 365;
       
-      // Update subscription status to active paid plan
-      const updatedSubscription = await storage.updateSubscriptionStatus(churchId, {
+      // Create an update object for the subscription
+      const updateData: any = {
         status: 'ACTIVE',
         plan: plan,
         startDate: new Date(),
         endDate: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000),
         canceledAt: null
-      });
+      };
+
+      // If we have Stripe subscription info in session, include it
+      if (req.session.stripeData) {
+        console.log('Including Stripe subscription data:', req.session.stripeData);
+        updateData.stripeCustomerId = req.session.stripeData.customerId;
+        updateData.stripeSubscriptionId = req.session.stripeData.subscriptionId;
+        
+        // Clean up Stripe data from session
+        delete req.session.stripeData;
+      }
+      
+      // Update subscription status to active paid plan
+      const updatedSubscription = await storage.updateSubscriptionStatus(churchId, updateData);
       
       console.log('Updated subscription:', updatedSubscription);
       

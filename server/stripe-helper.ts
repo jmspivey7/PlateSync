@@ -41,7 +41,25 @@ export async function verifyStripeSubscription(stripeSubscriptionId: string): Pr
     console.log(`Verifying Stripe subscription: ${stripeSubscriptionId}`);
     
     // Fetch the subscription from Stripe
-    const stripeResponse = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    let stripeResponse;
+    try {
+      stripeResponse = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    } catch (stripeError: any) {
+      // If the subscription doesn't exist in Stripe
+      if (stripeError.type === 'StripeInvalidRequestError' && 
+          stripeError.code === 'resource_missing') {
+        console.log(`Subscription not found in Stripe: ${stripeSubscriptionId}`);
+        return {
+          isActive: false,
+          status: 'INVALID',
+          plan: 'NONE',
+          currentPeriodEnd: undefined,
+          canceledAt: new Date()
+        };
+      }
+      // For other Stripe errors, rethrow
+      throw stripeError;
+    }
     
     // Cast to our known type
     const subscription = stripeResponse as unknown as StripeSubscription;
