@@ -222,7 +222,7 @@ export function DonationChart() {
         </CardHeader>
         <CardContent className="h-[300px] relative">
           {/* Skeleton chart background */}
-          <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 opacity-30">
             <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
               <path 
                 d="M0,150 C100,100 200,190 300,120 C400,90 500,170 600,140 C700,110 800,160 900,130 L1000,120 L1000,300 L0,300 Z" 
@@ -238,8 +238,8 @@ export function DonationChart() {
           </div>
           
           {/* Overlay message */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 backdrop-blur-[1px]">
-            <p className="text-lg font-bold mb-2 text-center px-4">Counts Trends will graph here once you complete them</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 backdrop-blur-[0.5px]">
+            <p className="text-lg font-bold mb-2 text-center px-4 -mt-10">Counts Trends will graph here once you complete them.</p>
           </div>
         </CardContent>
       </Card>
