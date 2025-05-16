@@ -201,9 +201,9 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Get user count - use string interpolation for consistency
+    // Get user count - exclude GLOBAL_ADMIN users from the count
     const userResult = await db.execute(
-      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${id}'`
+      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${id}' AND role != 'GLOBAL_ADMIN'`
     );
     const userCount = parseInt(userResult.rows[0]?.userCount || '0');
       
