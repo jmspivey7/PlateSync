@@ -335,7 +335,19 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   
   // Form submission handler
   const onSubmit = (values: FormValues) => {
-    createBatchMutation.mutate(values);
+    // If the service is the default fallback service (-1), make sure it gets processed correctly
+    if (values.service === "-1") {
+      console.log("Using default service option for submission");
+      // Making a copy to avoid directly modifying the form values
+      const submissionValues = {
+        ...values,
+        // We flag this as a default service so the backend knows to handle it appropriately
+        useDefaultService: true
+      };
+      createBatchMutation.mutate(submissionValues);
+    } else {
+      createBatchMutation.mutate(values);
+    }
   };
   
   return (
