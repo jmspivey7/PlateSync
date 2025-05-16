@@ -93,7 +93,7 @@ export function formatCurrency(amount: string): string {
  * @param expiresIn How long the token should be valid
  * @returns A signed JWT token
  */
-export function generateToken(payload: any, expiresIn: string = "1h"): string {
+export function generateToken(payload: any, expiresIn: string = "7d"): string {
   if (!process.env.SESSION_SECRET) {
     throw new Error("SESSION_SECRET environment variable is required");
   }

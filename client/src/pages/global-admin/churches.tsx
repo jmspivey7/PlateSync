@@ -108,18 +108,31 @@ export default function GlobalAdminChurches() {
       url += `&status=${encodeURIComponent(statusFilter)}`;
     }
     
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch churches");
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      if (response.status === 401) {
+        // Token expired or invalid
+        localStorage.removeItem("globalAdminToken");
+        setLocation("/global-admin/login");
+        throw new Error("Session expired. Please log in again.");
+      }
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Unknown error occurred" }));
+        throw new Error(error.message || "Failed to fetch churches");
+      }
+      
+      return response.json();
+    } catch (err) {
+      console.error("Error fetching churches:", err);
+      throw err;
     }
-    
-    return response.json();
   };
   
   // Query to fetch churches
