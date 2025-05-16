@@ -48,9 +48,19 @@ export default function GlobalAdminReports() {
       
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
-        <div className="flex items-center mb-6">
-          <FileText className="h-7 w-7 text-[#69ad4c] mr-3" />
-          <h2 className="text-2xl font-bold">System Reports</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <FileText className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <h2 className="text-2xl font-bold">System Reports</h2>
+          </div>
+          <Button 
+            variant="outline" 
+            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            onClick={() => setLocation("/global-admin/dashboard")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
         </div>
         
         <div className="flex justify-between items-center mb-6">
