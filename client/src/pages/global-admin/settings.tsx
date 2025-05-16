@@ -27,6 +27,7 @@ import {
   RotateCw,
   Check
 } from "lucide-react";
+import plateSyncLogo from '@assets/PlateSync_Flavicon.png';
 
 // Define the template types
 type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
@@ -52,47 +53,62 @@ const initialTemplates: EmailTemplate[] = [
   <meta charset="utf-8">
   <title>Welcome to PlateSync</title>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .logo { max-width: 200px; }
-    .button { display: inline-block; background-color: #69ad4c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }
-    .footer { margin-top: 30px; font-size: 12px; color: #777; text-align: center; }
+    .header { background-color: #69ad4c; padding: 20px; text-align: center; }
+    .header img { max-width: 150px; }
+    .header h1 { color: white; margin-top: 15px; margin-bottom: 5px; }
+    .header p { color: white; margin-top: 0; opacity: 0.9; }
+    .content { padding: 20px; background-color: #f8f8f8; }
+    .section { background-color: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .button { display: inline-block; background-color: #69ad4c; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 15px 0; }
+    .button:hover { background-color: #5a9440; }
+    .footer { margin-top: 30px; font-size: 12px; color: #777; text-align: center; padding: 20px; background-color: #f1f1f1; }
+    .features { margin: 20px 0; }
+    .features li { margin-bottom: 10px; }
+    h2 { color: #69ad4c; margin-top: 0; }
+    a { color: #69ad4c; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <img src="{{churchLogoUrl}}" alt="{{churchName}} Logo" class="logo">
+      <img src="https://replit.com/cdn-cgi/image/width=2048,quality=80/https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
       <h1>Welcome to PlateSync!</h1>
+      <p>Your church donation management solution</p>
     </div>
     
-    <p>Hello {{userName}},</p>
-    
-    <p>Welcome to PlateSync! Your account for <strong>{{churchName}}</strong> has been successfully created.</p>
-    
-    <p>PlateSync is a comprehensive donation management system designed to help churches like yours streamline the process of tracking and managing donations.</p>
-    
-    <p>To get started, please click the button below to log in:</p>
-    
-    <p style="text-align: center;">
-      <a href="{{loginUrl}}" class="button">Log In to PlateSync</a>
-    </p>
-    
-    <p>Here are a few things you can do with PlateSync:</p>
-    <ul>
-      <li>Record and track donations</li>
-      <li>Manage member information</li>
-      <li>Process donation batches</li>
-      <li>Generate reports</li>
-    </ul>
-    
-    <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-    
-    <p>Thank you for choosing PlateSync!</p>
-    
-    <p>Best regards,<br>
-    The PlateSync Team</p>
+    <div class="content">
+      <div class="section">
+        <h2>Hello {{userName}},</h2>
+        
+        <p>Welcome to PlateSync! Your account for <strong>{{churchName}}</strong> has been successfully created.</p>
+        
+        <p>PlateSync is a comprehensive donation management system designed to help churches like yours streamline the process of tracking and managing donations.</p>
+        
+        <div style="text-align: center;">
+          <a href="{{loginUrl}}" class="button">Log In to PlateSync</a>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>What You Can Do With PlateSync</h2>
+        <ul class="features">
+          <li><strong>Record Donations:</strong> Easily track all your church donations in one place</li>
+          <li><strong>Manage Members:</strong> Keep your member database updated and organized</li>
+          <li><strong>Process Batches:</strong> Handle donation batches efficiently with our batch processing system</li>
+          <li><strong>Generate Reports:</strong> Create comprehensive reports for your church leadership</li>
+          <li><strong>Email Notifications:</strong> Automatically send donation receipts and other notifications</li>
+        </ul>
+      </div>
+      
+      <div class="section">
+        <h2>Need Help?</h2>
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        <p>Thank you for choosing PlateSync!</p>
+        <p>Best regards,<br>The PlateSync Team</p>
+      </div>
+    </div>
     
     <div class="footer">
       <p>© 2025 PlateSync. All rights reserved.</p>
@@ -115,41 +131,57 @@ const initialTemplates: EmailTemplate[] = [
   <meta charset="utf-8">
   <title>Reset Your PlateSync Password</title>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .logo { max-width: 200px; }
-    .button { display: inline-block; background-color: #69ad4c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }
-    .code { font-family: monospace; font-size: 24px; letter-spacing: 0.5em; text-align: center; margin: 20px 0; }
-    .footer { margin-top: 30px; font-size: 12px; color: #777; text-align: center; }
+    .header { background-color: #69ad4c; padding: 20px; text-align: center; }
+    .header img { max-width: 150px; }
+    .header h1 { color: white; margin-top: 15px; margin-bottom: 5px; }
+    .header p { color: white; margin-top: 0; opacity: 0.9; }
+    .content { padding: 20px; background-color: #f8f8f8; }
+    .section { background-color: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .button { display: inline-block; background-color: #69ad4c; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 15px 0; }
+    .button:hover { background-color: #5a9440; }
+    .resetUrl { word-break: break-all; padding: 10px; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 3px; font-family: monospace; font-size: 14px; margin: 15px 0; }
+    .footer { margin-top: 30px; font-size: 12px; color: #777; text-align: center; padding: 20px; background-color: #f1f1f1; }
+    h2 { color: #69ad4c; margin-top: 0; }
+    a { color: #69ad4c; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <img src="{{churchLogoUrl}}" alt="{{churchName}} Logo" class="logo">
+      <img src="https://replit.com/cdn-cgi/image/width=2048,quality=80/https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
       <h1>Password Reset Request</h1>
+      <p>Follow the instructions below to reset your password</p>
     </div>
     
-    <p>Hello {{userName}},</p>
-    
-    <p>We received a request to reset your password for your PlateSync account at <strong>{{churchName}}</strong>.</p>
-    
-    <p>To reset your password, please click the button below:</p>
-    
-    <p style="text-align: center;">
-      <a href="{{resetUrl}}" class="button">Reset Password</a>
-    </p>
-    
-    <p>Alternatively, you can copy and paste the following URL into your browser:</p>
-    <p style="word-break: break-all;">{{resetUrl}}</p>
-    
-    <p>This password reset link will expire in 24 hours. If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
-    
-    <p>Thank you for using PlateSync!</p>
-    
-    <p>Best regards,<br>
-    The PlateSync Team</p>
+    <div class="content">
+      <div class="section">
+        <h2>Hello {{userName}},</h2>
+        
+        <p>We received a request to reset your password for your PlateSync account at <strong>{{churchName}}</strong>.</p>
+        
+        <p>To reset your password, please click the button below:</p>
+        
+        <div style="text-align: center;">
+          <a href="{{resetUrl}}" class="button">Reset Password</a>
+        </div>
+        
+        <p>If the button above doesn't work, you can copy and paste the following URL into your browser:</p>
+        <div class="resetUrl">{{resetUrl}}</div>
+        
+        <p><strong>Important:</strong> This password reset link will expire in 24 hours.</p>
+        
+        <p>If you did not request a password reset, please ignore this email or contact support if you have concerns about your account security.</p>
+      </div>
+      
+      <div class="section">
+        <h2>Need Help?</h2>
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        <p>Thank you for using PlateSync!</p>
+        <p>Best regards,<br>The PlateSync Team</p>
+      </div>
+    </div>
     
     <div class="footer">
       <p>© 2025 PlateSync. All rights reserved.</p>
