@@ -95,12 +95,15 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
     // Build query conditions
     let conditions: SQL[] = [];
     
-    if (search) {
-      conditions.push(ilike(churches.name, `%${search}%`));
-    }
-    
+    // Always exclude churches with DELETED status unless specifically requested
     if (status) {
       conditions.push(eq(churches.status, status));
+    } else {
+      conditions.push(sql`status != 'DELETED'`);
+    }
+    
+    if (search) {
+      conditions.push(ilike(churches.name, `%${search}%`));
     }
     
     // Get all churches with pagination, search, and sorting
