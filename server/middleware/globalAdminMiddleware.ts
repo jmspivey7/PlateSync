@@ -5,28 +5,42 @@ import { verifyToken } from "../util";
  * Middleware to restrict access to routes for non-global admins
  */
 export const requireGlobalAdmin = (req: Request, res: Response, next: NextFunction) => {
-  // Check for JWT token in the Authorization header
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized - No token provided" });
+  try {
+    // Check for JWT token in the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("Missing authorization header");
+      return res.status(401).json({ message: "Unauthorized - No token provided" });
+    }
+
+    // Extract and verify the token
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      console.log("Empty token provided");
+      return res.status(401).json({ message: "Unauthorized - Empty token" });
+    }
+
+    // Verify the token
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      console.log("Token verification failed");
+      return res.status(401).json({ message: "Unauthorized - Invalid token" });
+    }
+
+    // Ensure the token is for a global admin
+    if (decoded.role !== "GLOBAL_ADMIN") {
+      console.log("User role is not GLOBAL_ADMIN:", decoded.role);
+      return res.status(403).json({ message: "Forbidden - Global admin access required" });
+    }
+
+    // Set user info on request
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error("Global admin middleware error:", error);
+    return res.status(500).json({ message: "Internal server error during authentication" });
   }
-
-  // Extract and verify the token
-  const token = authHeader.split(" ")[1];
-  const decoded = verifyToken(token);
-
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized - Invalid token" });
-  }
-
-  // Ensure the token is for a global admin
-  if (decoded.role !== "GLOBAL_ADMIN") {
-    return res.status(403).json({ message: "Forbidden - Global admin access required" });
-  }
-
-  // Set user info on request
-  req.user = decoded;
-  next();
 };
 
 /**
@@ -40,7 +54,7 @@ export const restrictSuspendedChurchAccess = (req: Request, res: Response, next:
   }
 
   // Skip if no user is logged in yet
-  if (!req.session || !req.session.userId) {
+  if (!req.session || !req.session.passport?.user) {
     return next();
   }
 
@@ -50,7 +64,7 @@ export const restrictSuspendedChurchAccess = (req: Request, res: Response, next:
   }
 
   // Check if the church is suspended (this would be retrieved from the database in reality)
-  const churchStatus = req.user.churchStatus;
+  const churchStatus = req.user.status || 'ACTIVE';
 
   if (churchStatus === "SUSPENDED") {
     return res.status(403).json({
