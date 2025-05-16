@@ -117,9 +117,7 @@ export function verifyToken(token: string): any | null {
   }
   
   try {
-    // Convert string to Buffer for JWT verify function to avoid TypeScript errors
-    const secret = Buffer.from(process.env.SESSION_SECRET, 'utf8');
-    return jwt.verify(token, secret);
+    return jwt.verify(token, process.env.SESSION_SECRET as jwt.Secret);
   } catch (error) {
     console.error("Token verification failed:", error);
     return null;

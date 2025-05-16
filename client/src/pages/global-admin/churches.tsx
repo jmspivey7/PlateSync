@@ -109,10 +109,14 @@ export default function GlobalAdminChurches() {
     }
     
     try {
+      console.log("Fetching churches with token:", token.substring(0, 10) + "...");
+      
       const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
         },
       });
       

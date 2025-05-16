@@ -25,6 +25,22 @@ export const requireGlobalAdmin = (req: Request, res: Response, next: NextFuncti
     
     if (!decoded) {
       console.log("Token verification failed");
+      
+      // Detailed logging for debugging
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          // Log first part of payload (without revealing sensitive data)
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          console.log("Token payload (partial):", {
+            exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'none',
+            role: payload.role || 'none'
+          });
+        }
+      } catch (e) {
+        console.log("Error parsing token:", e);
+      }
+      
       return res.status(401).json({ message: "Unauthorized - Invalid token" });
     }
 
