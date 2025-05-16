@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { useGlobalAdminAuthContext } from "@/context/GlobalAdminAuthProvider";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import EmailTemplatePreview from "@/components/global-admin/EmailTemplatePreview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -179,7 +178,7 @@ const initialTemplates: EmailTemplate[] = [
 export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user, isLoading, isAuthenticated } = useGlobalAdminAuthContext();
+  const [isLoading, setIsLoading] = useState(true);
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
   const [activeTemplate, setActiveTemplate] = useState<EmailTemplate | null>(null);
   const [currentView, setCurrentView] = useState<"list" | "edit">("list");
@@ -188,21 +187,57 @@ export default function GlobalAdminSettings() {
   
   // Check if the global admin is authenticated
   useEffect(() => {
-    if (isLoading) return;
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem("globalAdminToken");
+        
+        if (!token) {
+          toast({
+            title: "Authentication required",
+            description: "Please log in to access the global admin portal",
+            variant: "destructive",
+          });
+          setLocation("/global-admin/login");
+          return;
+        }
+        
+        // We have a token, verify if it's valid by trying to decode it
+        try {
+          // Basic token validation (checking if it's properly formatted)
+          const parts = token.split('.');
+          if (parts.length !== 3) {
+            throw new Error('Invalid token format');
+          }
+          
+          // Check token expiration
+          const payload = JSON.parse(atob(parts[1]));
+          const currentTime = Math.floor(Date.now() / 1000);
+          
+          if (payload.exp && payload.exp < currentTime) {
+            throw new Error('Token has expired');
+          }
+          
+          // Token seems valid, proceed with loading the page
+          console.log("Global admin authenticated, loading settings page");
+          setIsLoading(false);
+        } catch (err) {
+          console.error('Token validation error:', err);
+          localStorage.removeItem("globalAdminToken");
+          toast({
+            title: "Session expired",
+            description: "Please log in again to access the global admin portal",
+            variant: "destructive",
+          });
+          setLocation("/global-admin/login");
+        }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        setIsLoading(false);
+      }
+    };
     
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to access the global admin portal",
-        variant: "destructive",
-      });
-      setLocation("/global-admin/login");
-      return;
-    }
-    
-    // If authenticated, continue loading the page
-    console.log("Global admin authenticated, loading settings page");
-  }, [isLoading, isAuthenticated, toast, setLocation]);
+    checkAuth();
+  }, [toast, setLocation]);
   
   // Handle template edit
   const handleEditTemplate = (template: EmailTemplate) => {
@@ -267,11 +302,6 @@ export default function GlobalAdminSettings() {
         </div>
       </div>
     );
-  }
-  
-  // If not authenticated, don't render anything (redirect happens in useEffect)
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (
