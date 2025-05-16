@@ -2,10 +2,22 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
-import StatsCard from "@/components/global-admin/dashboard/StatsCard";
-import SubscriptionChart from "@/components/global-admin/dashboard/SubscriptionChart";
-import PieChart from "@/components/global-admin/dashboard/PieChart";
-import LineChart from "@/components/global-admin/dashboard/LineChart";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  Cell
+} from "recharts";
 import { 
   TrendingUp, 
   Users, 
@@ -14,6 +26,46 @@ import {
   Utensils, 
   ClipboardCheck 
 } from "lucide-react";
+
+// Stats Card Component
+const StatsCard = ({ 
+  title, 
+  value, 
+  description, 
+  icon, 
+  trend 
+}: { 
+  title: string; 
+  value: string | number; 
+  description?: string; 
+  icon?: React.ReactNode; 
+  trend?: { value: number; isPositive: boolean; }; 
+}) => {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+        {icon && <div className="text-[#69ad4c]">{icon}</div>}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {description && (
+          <CardDescription className="mt-1">{description}</CardDescription>
+        )}
+        {trend && (
+          <div className="flex items-center mt-1 text-xs">
+            <span className={trend.isPositive ? "text-green-600 mr-1" : "text-red-600 mr-1"}>
+              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}%
+            </span>
+            <span className="text-muted-foreground">from last month</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function GlobalAdminDashboard() {
   const { toast } = useToast();
@@ -71,6 +123,8 @@ export default function GlobalAdminDashboard() {
       }, 800);
     }
   }, [toast, setLocation]);
+
+  const COLORS = ["#69ad4c", "#132433", "#8884d8", "#82ca9d"];
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,7 +141,7 @@ export default function GlobalAdminDashboard() {
               <div key={index} className="h-32 bg-gray-200 rounded-lg"></div>
             ))}
             {[...Array(2)].map((_, index) => (
-              <div key={index} className="h-80 bg-gray-200 rounded-lg col-span-2"></div>
+              <div key={`chart-${index}`} className="h-80 bg-gray-200 rounded-lg col-span-2"></div>
             ))}
           </div>
         ) : (
@@ -126,63 +180,127 @@ export default function GlobalAdminDashboard() {
 
             {/* Charts - First Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-              <SubscriptionChart 
-                data={subscriptionData}
-                title="Trials vs. Subscribers"
-                description="Monthly comparison of trials and paid subscribers"
-              />
-              <PieChart 
-                data={subscriptionTypeData}
-                title="Annual vs. Monthly"
-                description="Distribution of subscription types"
-              />
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Trials vs. Subscribers</CardTitle>
+                  <CardDescription>Monthly comparison of trials and paid subscribers</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={subscriptionData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="trial" name="Trials" fill="#69ad4c" />
+                      <Bar dataKey="subscriber" name="Subscribers" fill="#132433" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Annual vs. Monthly</CardTitle>
+                  <CardDescription>Distribution of subscription types</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={subscriptionTypeData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {subscriptionTypeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Charts - Second Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-              <div className="lg:col-span-2">
-                <LineChart 
-                  data={conversionRateData}
-                  title="Conversion Rate"
-                  description="Monthly trial-to-paid conversion rate"
-                  dataKeys={[
-                    { key: "rate", name: "Conversion Rate (%)", color: "#69ad4c" }
-                  ]}
-                  xAxisDataKey="month"
-                  yAxisFormatter={(value) => `${value}%`}
-                />
-              </div>
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Conversion Rate</CardTitle>
+                  <CardDescription>Monthly trial-to-paid conversion rate</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={conversionRateData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis tickFormatter={(value) => `${value}%`} />
+                      <Tooltip formatter={(value) => [`${value}%`]} />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="rate" 
+                        name="Conversion Rate (%)" 
+                        stroke="#69ad4c" 
+                        strokeWidth={2}
+                        activeDot={{ r: 8 }} 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              
               <StatsCard 
                 title="Conversion Rate" 
                 value="35%"
                 description="Current trial-to-paid conversion" 
                 icon={<Percent className="h-4 w-4" />}
                 trend={{ value: 3, isPositive: true }}
-                className="h-full"
               />
             </div>
 
             {/* Charts - Third Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">
-                <LineChart 
-                  data={churnRateData}
-                  title="Churn Rate"
-                  description="Monthly subscription churn rate"
-                  dataKeys={[
-                    { key: "rate", name: "Churn Rate (%)", color: "#ff6b6b" }
-                  ]}
-                  xAxisDataKey="month"
-                  yAxisFormatter={(value) => `${value}%`}
-                />
-              </div>
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Churn Rate</CardTitle>
+                  <CardDescription>Monthly subscription churn rate</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={churnRateData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis tickFormatter={(value) => `${value}%`} />
+                      <Tooltip formatter={(value) => [`${value}%`]} />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="rate" 
+                        name="Churn Rate (%)" 
+                        stroke="#ff6b6b" 
+                        strokeWidth={2}
+                        activeDot={{ r: 8 }} 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              
               <StatsCard 
                 title="Churn Rate" 
                 value="3.2%"
                 description="Current monthly subscriber churn" 
                 icon={<ClipboardCheck className="h-4 w-4" />}
                 trend={{ value: 0.3, isPositive: true }}
-                className="h-full"
               />
             </div>
           </>
