@@ -11,7 +11,7 @@ const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({ subject, ht
     .replace(/{{userName}}/g, "John Smith")
     .replace(/{{userEmail}}/g, "john.smith@example.com") 
     .replace(/{{churchName}}/g, "First Church") 
-    .replace(/{{churchLogoUrl}}/g, "/logo-with-text.png")
+    .replace(/{{churchLogoUrl}}/g, "https://platesync.replit.app/logo-with-text.png")
     .replace(/{{loginUrl}}/g, "https://platesync.app/login")
     .replace(/{{resetUrl}}/g, "https://platesync.app/reset-password?token=example-token-123456")
     .replace(/{{verificationUrl}}/g, "https://platesync.app/verify?token=example-token-123456");
