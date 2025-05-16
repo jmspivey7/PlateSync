@@ -230,6 +230,333 @@ export async function registerRoutes(app: Express): Promise<Server> {
     setupTestEndpoints(app);
   }
   
+  // Email Template Routes
+  
+  // Get all email templates for a church
+  app.get('/api/email-templates', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const churchId = req.user.churchId || userId;
+      
+      const templates = await storage.getEmailTemplates(churchId);
+      
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching email templates:', error);
+      res.status(500).json({ message: 'Failed to fetch email templates' });
+    }
+  });
+  
+  // Get email template by ID
+  app.get('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const churchId = req.user.churchId || userId;
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      const template = await storage.getEmailTemplate(templateId, churchId);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'Email template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching email template:', error);
+      res.status(500).json({ message: 'Failed to fetch email template' });
+    }
+  });
+  
+  // Get email template by type
+  app.get('/api/email-templates/type/:type', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const churchId = req.user.churchId || userId;
+      const templateType = req.params.type;
+      
+      const template = await storage.getEmailTemplateByType(templateType, churchId);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'Email template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching email template by type:', error);
+      res.status(500).json({ message: 'Failed to fetch email template' });
+    }
+  });
+  
+  // Update email template
+  app.put('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const churchId = req.user.churchId || userId;
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      const { subject, bodyHtml, bodyText } = req.body;
+      
+      if (!subject || !bodyHtml || !bodyText) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      const updatedTemplate = await storage.updateEmailTemplate(templateId, {
+        subject,
+        bodyHtml,
+        bodyText
+      }, churchId);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: 'Email template not found' });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating email template:', error);
+      res.status(500).json({ message: 'Failed to update email template' });
+    }
+  });
+  
+  // Initialize default email templates for a church
+  app.post('/api/email-templates/initialize', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const churchId = req.user.churchId || userId;
+      const church = await storage.getChurch(churchId);
+      
+      if (!church) {
+        return res.status(404).json({ message: 'Church not found' });
+      }
+      
+      // Create donation confirmation template
+      const donationTemplate = await storage.createEmailTemplate({
+        templateType: 'DONATION_CONFIRMATION',
+        subject: 'Thank you for your donation to {{churchName}}',
+        bodyHtml: `<p>Dear {{donorName}},</p>
+<p>Thank you for your donation of ${{amount}} on {{date}}.</p>
+<p>Your generosity helps support our ministry and community outreach.</p>
+<p>Sincerely,<br/>{{churchName}}</p>`,
+        bodyText: `Dear {{donorName}},
+
+Thank you for your donation of ${{amount}} on {{date}}.
+
+Your generosity helps support our ministry and community outreach.
+
+Sincerely,
+{{churchName}}`,
+        churchId: churchId
+      });
+      
+      // Create count report template
+      const countReportTemplate = await storage.createEmailTemplate({
+        templateType: 'COUNT_REPORT',
+        subject: '{{churchName}} Donation Count Report - {{date}}',
+        bodyHtml: `<p>Hello,</p>
+<p>Please find attached the donation count report for {{date}} at {{churchName}}.</p>
+<p><strong>Service:</strong> {{serviceType}}<br/>
+<strong>Total Amount:</strong> ${{totalAmount}}<br/>
+<strong>Total Donations:</strong> {{totalDonations}}</p>
+<p>Counters: {{counterNames}}</p>
+<p>Sincerely,<br/>{{churchName}} Team</p>`,
+        bodyText: `Hello,
+
+Please find attached the donation count report for {{date}} at {{churchName}}.
+
+Service: {{serviceType}}
+Total Amount: ${{totalAmount}}
+Total Donations: {{totalDonations}}
+
+Counters: {{counterNames}}
+
+Sincerely,
+{{churchName}} Team`,
+        churchId: churchId
+      });
+      
+      // Get the system templates
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      let welcomeTemplate = await storage.getEmailTemplateByType('WELCOME_EMAIL', systemChurchId);
+      let passwordResetTemplate = await storage.getEmailTemplateByType('PASSWORD_RESET', systemChurchId);
+      
+      // If system templates don't exist, create them
+      if (!welcomeTemplate) {
+        welcomeTemplate = await storage.createEmailTemplate({
+          templateType: 'WELCOME_EMAIL',
+          subject: 'Welcome to {{churchName}} - Your Account Has Been Created',
+          bodyHtml: `<p>Hello {{userName}},</p>
+<p>Welcome to {{churchName}}! Your account has been created successfully.</p>
+<p>You can now log in using your email address and the temporary password we provided.</p>
+<p>Please log in and change your password as soon as possible.</p>
+<p>Sincerely,<br/>{{churchName}} Team</p>`,
+          bodyText: `Hello {{userName}},
+
+Welcome to {{churchName}}! Your account has been created successfully.
+
+You can now log in using your email address and the temporary password we provided.
+
+Please log in and change your password as soon as possible.
+
+Sincerely,
+{{churchName}} Team`,
+          churchId: systemChurchId
+        });
+      }
+      
+      if (!passwordResetTemplate) {
+        passwordResetTemplate = await storage.createEmailTemplate({
+          templateType: 'PASSWORD_RESET',
+          subject: 'Password Reset Request for {{churchName}}',
+          bodyHtml: `<p>Hello {{userName}},</p>
+<p>We received a request to reset your password for your account at {{churchName}}.</p>
+<p>Please click the link below to reset your password. This link will expire in 24 hours.</p>
+<p><a href="{{resetLink}}">Reset your password</a></p>
+<p>If you did not request a password reset, please ignore this email or contact your administrator.</p>
+<p>Sincerely,<br/>{{churchName}} Team</p>`,
+          bodyText: `Hello {{userName}},
+
+We received a request to reset your password for your account at {{churchName}}.
+
+Please click the link below to reset your password. This link will expire in 24 hours.
+
+{{resetLink}}
+
+If you did not request a password reset, please ignore this email or contact your administrator.
+
+Sincerely,
+{{churchName}} Team`,
+          churchId: systemChurchId
+        });
+      }
+      
+      // Return the created templates - only account owner templates
+      res.status(201).json([donationTemplate, countReportTemplate]);
+    } catch (error) {
+      console.error('Error initializing email templates:', error);
+      res.status(500).json({ message: 'Failed to initialize email templates' });
+    }
+  });
+  
+  // System Email Template Routes (for Global Admin)
+  
+  // Get system-wide email templates
+  app.get('/api/email-templates/system', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      // System templates use the special SYSTEM_TEMPLATES churchId
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      
+      // Check if templates exist
+      let templates = await storage.getEmailTemplates(systemChurchId);
+      
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching system email templates:', error);
+      res.status(500).json({ message: 'Failed to fetch system email templates' });
+    }
+  });
+  
+  // Initialize system email templates
+  app.post('/api/email-templates/initialize-system', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      // System templates use the special SYSTEM_TEMPLATES churchId
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      
+      // Create welcome email template
+      const welcomeTemplate = await storage.createEmailTemplate({
+        templateType: 'WELCOME_EMAIL',
+        subject: 'Welcome to {{churchName}} - Your Account Has Been Created',
+        bodyHtml: `<p>Hello {{userName}},</p>
+<p>Welcome to {{churchName}}! Your account has been created successfully.</p>
+<p>You can now log in using your email address and the temporary password we provided.</p>
+<p>Please log in and change your password as soon as possible.</p>
+<p>Sincerely,<br/>{{churchName}} Team</p>`,
+        bodyText: `Hello {{userName}},
+
+Welcome to {{churchName}}! Your account has been created successfully.
+
+You can now log in using your email address and the temporary password we provided.
+
+Please log in and change your password as soon as possible.
+
+Sincerely,
+{{churchName}} Team`,
+        churchId: systemChurchId
+      });
+      
+      // Create password reset template
+      const passwordResetTemplate = await storage.createEmailTemplate({
+        templateType: 'PASSWORD_RESET',
+        subject: 'Password Reset Request for {{churchName}}',
+        bodyHtml: `<p>Hello {{userName}},</p>
+<p>We received a request to reset your password for your account at {{churchName}}.</p>
+<p>Please click the link below to reset your password. This link will expire in 24 hours.</p>
+<p><a href="{{resetLink}}">Reset your password</a></p>
+<p>If you did not request a password reset, please ignore this email or contact your administrator.</p>
+<p>Sincerely,<br/>{{churchName}} Team</p>`,
+        bodyText: `Hello {{userName}},
+
+We received a request to reset your password for your account at {{churchName}}.
+
+Please click the link below to reset your password. This link will expire in 24 hours.
+
+{{resetLink}}
+
+If you did not request a password reset, please ignore this email or contact your administrator.
+
+Sincerely,
+{{churchName}} Team`,
+        churchId: systemChurchId
+      });
+      
+      // Return the created templates
+      res.status(201).json([welcomeTemplate, passwordResetTemplate]);
+    } catch (error) {
+      console.error('Error initializing system email templates:', error);
+      res.status(500).json({ message: 'Failed to initialize system email templates' });
+    }
+  });
+  
+  // Update system email template
+  app.put('/api/email-templates/system/:id', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      const { subject, bodyHtml, bodyText } = req.body;
+      
+      if (!subject || !bodyHtml || !bodyText) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      
+      const updatedTemplate = await storage.updateEmailTemplate(templateId, {
+        subject,
+        bodyHtml,
+        bodyText
+      }, systemChurchId);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: 'Email template not found' });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating system email template:', error);
+      res.status(500).json({ message: 'Failed to update system email template' });
+    }
+  });
+  
   // Church registration endpoint
   app.post('/api/register-church', async (req, res) => {
     try {
