@@ -56,10 +56,10 @@ const initialTemplates: EmailTemplate[] = [
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #69ad4c; padding: 20px; text-align: center; }
+    .header { text-align: center; padding: 20px; }
     .header img { max-width: 150px; }
-    .header h1 { color: white; margin-top: 15px; margin-bottom: 5px; }
-    .header p { color: white; margin-top: 0; opacity: 0.9; }
+    .header h1 { color: #333; margin-top: 15px; margin-bottom: 5px; }
+    .header p { color: #666; margin-top: 0; }
     .content { padding: 20px; background-color: #f8f8f8; }
     .section { background-color: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .button { display: inline-block; background-color: #69ad4c; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 15px 0; }
@@ -74,7 +74,7 @@ const initialTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://replit.com/cdn-cgi/image/width=2048,quality=80/https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
+      <img src="https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
       <h1>Welcome to PlateSync!</h1>
       <p>Your church donation management solution</p>
     </div>
@@ -134,10 +134,10 @@ const initialTemplates: EmailTemplate[] = [
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #69ad4c; padding: 20px; text-align: center; }
+    .header { text-align: center; padding: 20px; }
     .header img { max-width: 150px; }
-    .header h1 { color: white; margin-top: 15px; margin-bottom: 5px; }
-    .header p { color: white; margin-top: 0; opacity: 0.9; }
+    .header h1 { color: #333; margin-top: 15px; margin-bottom: 5px; }
+    .header p { color: #666; margin-top: 0; }
     .content { padding: 20px; background-color: #f8f8f8; }
     .section { background-color: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .button { display: inline-block; background-color: #69ad4c; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 15px 0; }
@@ -151,7 +151,7 @@ const initialTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://replit.com/cdn-cgi/image/width=2048,quality=80/https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
+      <img src="https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
       <h1>Password Reset Request</h1>
       <p>Follow the instructions below to reset your password</p>
     </div>
