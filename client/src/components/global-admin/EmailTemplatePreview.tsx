@@ -30,7 +30,11 @@ const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({ subject, ht
         <div className="border rounded-md bg-white overflow-hidden">
           <ScrollArea className="h-[500px]">
             <div className="p-4">
-              <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              <iframe 
+                srcDoc={previewHtml}
+                style={{ width: '100%', height: '600px', border: 'none' }}
+                title="Email Template Preview"
+              />
             </div>
           </ScrollArea>
         </div>
