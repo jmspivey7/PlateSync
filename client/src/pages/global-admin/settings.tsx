@@ -194,7 +194,11 @@ export default function GlobalAdminSettings() {
         variant: "destructive",
       });
       setLocation("/global-admin/login");
+      return;
     }
+    
+    // If we have a token, don't redirect and continue loading the page
+    console.log("Global admin authenticated, loading settings page");
   }, [toast, setLocation]);
   
   // Handle template edit
