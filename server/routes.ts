@@ -348,12 +348,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           templateType: 'DONATION_CONFIRMATION',
           subject: 'Thank you for your donation to {{churchName}}',
           bodyHtml: `<p>Dear {{donorName}},</p>
-<p>Thank you for your donation of ${{amount}} on {{date}}.</p>
+<p>Thank you for your donation of ${{donationAmount}} on {{date}}.</p>
 <p>Your generosity helps support our ministry and community outreach.</p>
 <p>Sincerely,<br/>{{churchName}}</p>`,
           bodyText: `Dear {{donorName}},
 
-Thank you for your donation of ${{amount}} on {{date}}.
+Thank you for your donation of ${{donationAmount}} on {{date}}.
 
 Your generosity helps support our ministry and community outreach.
 
