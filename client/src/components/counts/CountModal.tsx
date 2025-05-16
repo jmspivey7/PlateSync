@@ -190,9 +190,10 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   // Set default service option when options are loaded
   useEffect(() => {
     // Only set default for new counts (not when editing)
-    if (!isEdit && defaultServiceOption && serviceOptions.length > 0) {
-      const defaultValue = defaultServiceOption.value;
-      if (defaultValue && !form.getValues('service')) {
+    if (!isEdit && defaultServiceOption) {
+      // Convert ID to string for select value
+      const defaultValue = String(defaultServiceOption.id);
+      if (!form.getValues('service')) {
         form.setValue('service', defaultValue);
       }
     }
