@@ -74,7 +74,7 @@ const initialTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
+      <img src="/images/platesync-logo.png" alt="PlateSync Logo">
       <h1>Welcome to PlateSync!</h1>
       <p>Your church donation management solution</p>
     </div>
@@ -151,7 +151,7 @@ const initialTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://storage.googleapis.com/replit/images/1747409627528_b3a96cd5dc9c6dd54efc39b9d70f5c28.png" alt="PlateSync Logo">
+      <img src="/images/platesync-logo.png" alt="PlateSync Logo">
       <h1>Password Reset Request</h1>
       <p>Follow the instructions below to reset your password</p>
     </div>
