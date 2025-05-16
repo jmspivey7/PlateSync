@@ -22,7 +22,9 @@ import {
   Building2, 
   Users, 
   FileText, 
-  LogOut
+  LogOut,
+  Settings,
+  Mail
 } from "lucide-react";
 
 interface GlobalAdminAccountDropdownProps {
@@ -101,6 +103,14 @@ const GlobalAdminAccountDropdown = ({
           >
             <FileText className="mr-2 h-4 w-4" />
             <span>Reports</span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onClick={() => setLocation("/global-admin/settings")}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         

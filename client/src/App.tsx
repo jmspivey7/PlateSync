@@ -37,6 +37,7 @@ import ChurchDetail from "@/pages/global-admin/church-detail";
 import GlobalAdminProfile from "@/pages/global-admin/profile";
 import GlobalAdminUsers from "@/pages/global-admin/users";
 import GlobalAdminReports from "@/pages/global-admin/reports";
+import GlobalAdminSettings from "@/pages/global-admin/settings";
 
 import { useAuth } from "@/hooks/useAuth";
 
@@ -167,6 +168,7 @@ function Router() {
       <Route path="/global-admin/profile" component={GlobalAdminProfile} />
       <Route path="/global-admin/users" component={GlobalAdminUsers} />
       <Route path="/global-admin/reports" component={GlobalAdminReports} />
+      <Route path="/global-admin/settings" component={GlobalAdminSettings} />
       
       <Route component={NotFound} />
     </Switch>
