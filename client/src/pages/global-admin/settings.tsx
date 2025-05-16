@@ -415,7 +415,10 @@ export default function GlobalAdminSettings() {
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium">HTML Preview</h4>
                       <div className="bg-white border rounded-md overflow-hidden">
-                        <EmailTemplatePreview html={activeTemplate?.body || ""} />
+                        <EmailTemplatePreview 
+                          subject={activeTemplate?.subject || ""} 
+                          htmlContent={activeTemplate?.body || ""}
+                        />
                       </div>
                     </div>
                   </div>
