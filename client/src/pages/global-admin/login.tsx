@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import plateSyncLogo from "@assets/PlateSync Logo.png";
+import plateSyncLogo from "../../assets/PlateSync Logo.png";
 import {
   Card,
   CardContent,

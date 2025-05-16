@@ -98,9 +98,12 @@ export function generateToken(payload: any, expiresIn: string = "7d"): string {
     throw new Error("SESSION_SECRET environment variable is required");
   }
   
-  // Convert string to Buffer for JWT sign function to avoid TypeScript errors
-  const secret = Buffer.from(process.env.SESSION_SECRET, 'utf8');
-  return jwt.sign(payload, secret, { expiresIn });
+  // Handle typings for jsonwebtoken without Buffer conversion
+  return jwt.sign(
+    payload, 
+    process.env.SESSION_SECRET as jwt.Secret, 
+    { expiresIn }
+  );
 }
 
 /**

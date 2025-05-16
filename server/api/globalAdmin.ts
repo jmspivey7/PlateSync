@@ -55,12 +55,12 @@ router.post("/login", validateSchema(loginSchema), async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
     
-    // Generate a JWT token for the global admin
+    // Generate a JWT token for the global admin with 7-day expiration
     const token = generateToken({
       id: user.id,
       email: user.email,
       role: "GLOBAL_ADMIN",
-    }, "24h");
+    }, "7d");
     
     res.status(200).json({
       message: "Login successful",
