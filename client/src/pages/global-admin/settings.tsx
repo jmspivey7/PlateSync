@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useGlobalAdminAuth } from "@/hooks/useGlobalAdminAuth";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import EmailTemplatePreview from "@/components/global-admin/EmailTemplatePreview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Settings as SettingsIcon, Save, Mail, RotateCw, Code, Eye } from "lucide-react";
+import { ArrowLeft, Settings as SettingsIcon, Save, Mail, RotateCw, Code, Eye, Loader2 } from "lucide-react";
 
 // Define the template types
 type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
@@ -178,6 +179,7 @@ const initialTemplates: EmailTemplate[] = [
 export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, isLoading, isAuthenticated } = useGlobalAdminAuth();
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
   const [activeTemplate, setActiveTemplate] = useState<EmailTemplate | null>(null);
   const [currentView, setCurrentView] = useState<"list" | "edit">("list");
@@ -186,8 +188,9 @@ export default function GlobalAdminSettings() {
   
   // Check if the global admin is authenticated
   useEffect(() => {
-    const token = localStorage.getItem("globalAdminToken");
-    if (!token) {
+    if (isLoading) return;
+    
+    if (!isAuthenticated) {
       toast({
         title: "Authentication required",
         description: "Please log in to access the global admin portal",
@@ -197,9 +200,9 @@ export default function GlobalAdminSettings() {
       return;
     }
     
-    // If we have a token, don't redirect and continue loading the page
+    // If authenticated, continue loading the page
     console.log("Global admin authenticated, loading settings page");
-  }, [toast, setLocation]);
+  }, [isLoading, isAuthenticated, toast, setLocation]);
   
   // Handle template edit
   const handleEditTemplate = (template: EmailTemplate) => {
@@ -254,6 +257,23 @@ export default function GlobalAdminSettings() {
     setActiveTemplate(null);
   };
   
+  // Show loading spinner while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-[#69ad4c]" />
+          <p className="text-gray-500">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If not authenticated, don't render anything (redirect happens in useEffect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <GlobalAdminHeader />
