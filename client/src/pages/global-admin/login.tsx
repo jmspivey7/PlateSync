@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import plateSyncLogo from "../../assets/platesync-logo.png";
 import {
   Card,
   CardContent,
@@ -97,11 +98,11 @@ export default function GlobalAdminLogin() {
       <div className="w-full max-w-md p-4">
         <Card className="border-gray-200 shadow-xl">
           <CardHeader className="space-y-1">
-            <div className="flex justify-center mb-4">
+            <div className="text-center mb-4">
               <img 
-                src="/platesync-logo-full.png" 
+                src={plateSyncLogo} 
                 alt="PlateSync Logo" 
-                className="w-64 object-contain"
+                className="mx-auto h-[5.25rem]"
               />
             </div>
             <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">Global Admin Portal</CardTitle>
