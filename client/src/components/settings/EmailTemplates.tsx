@@ -10,6 +10,12 @@ import { useLocation } from "wouter";
 // Define template types
 type TemplateType = 'WELCOME_EMAIL' | 'PASSWORD_RESET' | 'DONATION_CONFIRMATION' | 'COUNT_REPORT';
 
+// Define Account Owner template types separately (for better type safety)
+type AccountOwnerTemplateType = 'DONATION_CONFIRMATION' | 'COUNT_REPORT';
+
+// Define Global Admin template types separately
+type GlobalAdminTemplateType = 'WELCOME_EMAIL' | 'PASSWORD_RESET';
+
 interface EmailTemplate {
   id: number;
   templateType: TemplateType;
@@ -93,9 +99,18 @@ export default function EmailTemplates() {
     },
   });
 
-  // Initialize templates on component mount to ensure all four exist
+  // Initialize templates on component mount
   useEffect(() => {
-    if ((templates.length < 4) && !isLoading && !isError && !initialized) {
+    // As an Account Owner, we only expect 2 templates (DONATION_CONFIRMATION and COUNT_REPORT)
+    const requiredTemplateCount = 2;
+    // Check if we have the required templates for Account Owners
+    const accountOwnerTemplateTypes: AccountOwnerTemplateType[] = ['DONATION_CONFIRMATION', 'COUNT_REPORT'];
+    const existingTemplateTypes = templates.map(t => t.templateType);
+    const hasRequiredTemplates = accountOwnerTemplateTypes.every(type => 
+      existingTemplateTypes.includes(type)
+    );
+    
+    if (!hasRequiredTemplates && !isLoading && !isError && !initialized) {
       initializeTemplatesMutation.mutate();
     }
   }, [templates.length, isLoading, isError, initialized]);
@@ -157,17 +172,20 @@ export default function EmailTemplates() {
           <div className="border border-gray-400 rounded-md overflow-hidden">
             <div className="divide-y">
               {Array.isArray(templates) && templates.length > 0 ? [...templates]
+                // Filter to only show account owner templates (DONATION_CONFIRMATION and COUNT_REPORT)
+                .filter(template => 
+                  (template.templateType === 'DONATION_CONFIRMATION' || 
+                   template.templateType === 'COUNT_REPORT') as boolean
+                )
                 .sort((a, b) => {
-                  // Define the order of template types
-                  const templateOrder = {
-                    'WELCOME_EMAIL': 1,
-                    'PASSWORD_RESET': 2,
-                    'DONATION_CONFIRMATION': 3,
-                    'COUNT_REPORT': 4
+                  // Define the order of Account Owner template types
+                  const templateOrder: Record<string, number> = {
+                    'DONATION_CONFIRMATION': 1,
+                    'COUNT_REPORT': 2
                   };
                   
-                  // Sort based on the defined order
-                  return templateOrder[a.templateType as TemplateType] - templateOrder[b.templateType as TemplateType];
+                  // Sort based on the defined order (with fallback if template type not found)
+                  return (templateOrder[a.templateType] || 99) - (templateOrder[b.templateType] || 99);
                 })
                 .map((template) => (
                 <div 
