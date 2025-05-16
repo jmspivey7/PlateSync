@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import GlobalAdminAccountDropdown from "@/components/global-admin/GlobalAdminAccountDropdown";
-import plateSyncLogo from "../../assets/platesync-logo.png";
+import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 
 export default function GlobalAdminDashboard() {
   const { toast } = useToast();
@@ -24,20 +23,7 @@ export default function GlobalAdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-md border-b">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <img 
-            src={plateSyncLogo} 
-            alt="PlateSync Logo" 
-            className="h-10 object-contain" 
-          />
-          <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
-          <GlobalAdminAccountDropdown 
-            adminName="John Spivey" 
-            adminEmail="jspivey@spiveyco.com" 
-          />
-        </div>
-      </header>
+      <GlobalAdminHeader />
       
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
