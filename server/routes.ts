@@ -346,9 +346,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingTypes.includes('DONATION_CONFIRMATION')) {
         const donationTemplate = await storage.createEmailTemplate({
           templateType: 'DONATION_CONFIRMATION',
-          subject: 'Thank you for your donation',
-          bodyHtml: '<p>Dear donor,</p><p>Thank you for your donation.</p><p>Your generosity helps support our ministry.</p>',
-          bodyText: 'Dear donor,\n\nThank you for your donation.\n\nYour generosity helps support our ministry.',
+          subject: 'Thank you for your donation to {{churchName}}',
+          bodyHtml: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Donation Confirmation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .logo {
+      max-width: 150px;
+      max-height: 80px;
+      margin-bottom: 20px;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+    .footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+    .amount {
+      font-weight: bold;
+      color: #4caf50;
+    }
+    .donation-details {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    {{#if churchLogoUrl}}
+    <img src="{{churchLogoUrl}}" alt="{{churchName}} Logo" class="logo">
+    {{/if}}
+    <h2>{{churchName}}</h2>
+  </div>
+  
+  <p>Dear {{donorName}},</p>
+  
+  <p>Thank you for your generous donation to {{churchName}}. Your support helps us continue our mission and serve our community.</p>
+  
+  <div class="donation-details">
+    <p><strong>Donation Amount:</strong> <span class="amount">${{amount}}</span></p>
+    <p><strong>Date:</strong> {{date}}</p>
+    <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
+  </div>
+  
+  <p>Your contribution makes a difference in the lives of those we serve. We are grateful for your continued support of our ministry.</p>
+  
+  <p>Blessings,<br>
+  {{churchName}} Team</p>
+  
+  <div class="footer">
+    <p>This is an automated email. Please do not reply to this message.</p>
+    <p>&copy; {{currentYear}} {{churchName}}. All rights reserved.</p>
+  </div>
+</body>
+</html>`,
+          bodyText: `Thank you for your donation to {{churchName}}
+
+Dear {{donorName}},
+
+Thank you for your generous donation to {{churchName}}. Your support helps us continue our mission and serve our community.
+
+Donation Details:
+Amount: ${{amount}}
+Date: {{date}}
+Payment Method: {{paymentMethod}}
+
+Your contribution makes a difference in the lives of those we serve. We are grateful for your continued support of our ministry.
+
+Blessings,
+{{churchName}} Team
+
+---
+This is an automated email. Please do not reply to this message.
+© {{currentYear}} {{churchName}}. All rights reserved.`,
           churchId: churchId
         });
         
@@ -359,9 +451,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingTypes.includes('COUNT_REPORT')) {
         const countReportTemplate = await storage.createEmailTemplate({
           templateType: 'COUNT_REPORT',
-          subject: 'Donation Count Report',
-          bodyHtml: '<p>Hello,</p><p>Please find attached the donation count report.</p>',
-          bodyText: 'Hello,\n\nPlease find attached the donation count report.',
+          subject: '{{churchName}} Donation Count Report - {{date}}',
+          bodyHtml: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Donation Count Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .logo {
+      max-width: 150px;
+      max-height: 80px;
+      margin-bottom: 20px;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+    .footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+    .report-details {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .total {
+      font-weight: bold;
+      color: #4caf50;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    {{#if churchLogoUrl}}
+    <img src="{{churchLogoUrl}}" alt="{{churchName}} Logo" class="logo">
+    {{/if}}
+    <h2>{{churchName}} - Donation Count Report</h2>
+  </div>
+  
+  <p>Hello,</p>
+  
+  <p>Please find attached the donation count report for {{date}} at {{churchName}}.</p>
+  
+  <div class="report-details">
+    <p><strong>Service:</strong> {{serviceType}}</p>
+    <p><strong>Total Amount:</strong> <span class="total">${{totalAmount}}</span></p>
+    <p><strong>Total Donations:</strong> {{totalDonations}}</p>
+    <p><strong>Counters:</strong> {{counterNames}}</p>
+  </div>
+  
+  <p>This count has been finalized and recorded in the system. If you have any questions or notice any discrepancies, please contact your administrator.</p>
+  
+  <p>Thank you for your service to {{churchName}}.</p>
+  
+  <p>Blessings,<br>
+  {{churchName}} Team</p>
+  
+  <div class="footer">
+    <p>This is an automated email. Please do not reply to this message.</p>
+    <p>&copy; {{currentYear}} {{churchName}}. All rights reserved.</p>
+  </div>
+</body>
+</html>`,
+          bodyText: `{{churchName}} - Donation Count Report
+
+Hello,
+
+Please find attached the donation count report for {{date}} at {{churchName}}.
+
+Report Details:
+Service: {{serviceType}}
+Total Amount: ${{totalAmount}}
+Total Donations: {{totalDonations}}
+Counters: {{counterNames}}
+
+This count has been finalized and recorded in the system. If you have any questions or notice any discrepancies, please contact your administrator.
+
+Thank you for your service to {{churchName}}.
+
+Blessings,
+{{churchName}} Team
+
+---
+This is an automated email. Please do not reply to this message.
+© {{currentYear}} {{churchName}}. All rights reserved.`,
           churchId: churchId
         });
         
