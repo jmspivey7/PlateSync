@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import GlobalAdminAccountDropdown from "@/components/global-admin/GlobalAdminAccountDropdown";
+import plateSyncLogo from "../../assets/platesync-logo.png";
 
 export default function GlobalAdminDashboard() {
   const { toast } = useToast();
@@ -26,7 +27,7 @@ export default function GlobalAdminDashboard() {
       <header className="bg-white shadow-md border-b">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <img 
-            src="/logo-with-text.png" 
+            src={plateSyncLogo} 
             alt="PlateSync Logo" 
             className="h-10 object-contain" 
           />
