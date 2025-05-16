@@ -171,11 +171,11 @@ export default function EmailTemplates() {
           
           <div className="border border-gray-400 rounded-md overflow-hidden">
             <div className="divide-y">
-              {Array.isArray(templates) && templates.length > 0 ? [...templates]
+              {Array.isArray(templates) && templates.length > 0 ? templates
                 // Filter to only show account owner templates (DONATION_CONFIRMATION and COUNT_REPORT)
                 .filter(template => 
-                  (template.templateType === 'DONATION_CONFIRMATION' || 
-                   template.templateType === 'COUNT_REPORT') as boolean
+                  template.templateType === 'DONATION_CONFIRMATION' || 
+                  template.templateType === 'COUNT_REPORT'
                 )
                 .sort((a, b) => {
                   // Define the order of Account Owner template types
