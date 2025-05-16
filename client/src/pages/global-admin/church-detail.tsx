@@ -188,14 +188,22 @@ export default function ChurchDetail() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Status updated",
         description: "Church status has been updated successfully",
       });
       
-      // Refetch church details to show updated status
-      refetchChurch();
+      // If the church was deleted, redirect back to the churches list
+      if (data.status === "DELETED") {
+        // Add a small delay to ensure the toast is visible
+        setTimeout(() => {
+          setLocation("/global-admin/churches");
+        }, 1000);
+      } else {
+        // Otherwise just refetch the church details
+        refetchChurch();
+      }
     },
     onError: (error: Error) => {
       toast({
