@@ -77,9 +77,17 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   });
   
   // Find the default service option when service options are loaded
+  // Create a default option if no service options exist to prevent app crashes
   const defaultServiceOption = 
     serviceOptions.find(option => option.isDefault) ||
-    (serviceOptions.length > 0 ? serviceOptions[0] : null);
+    (serviceOptions.length > 0 ? serviceOptions[0] : {
+      id: -1,
+      name: "Default Service",
+      isDefault: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      churchId: ''
+    });
   
   // Initialize the form
   const form = useForm<FormValues>({
@@ -391,12 +399,13 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                                 return a.name.localeCompare(b.name);
                               })
                               .map((option) => (
-                                <SelectItem key={option.id} value={option.value}>
+                                <SelectItem key={option.id} value={String(option.id)}>
                                   {option.name}
                                 </SelectItem>
                               ))
                           ) : (
-                            <SelectItem value="none" disabled>No service options configured</SelectItem>
+                            // If no service options are defined, use the default one we created
+                            <SelectItem value="-1">Default Service</SelectItem>
                           )}
                         </SelectContent>
                       </Select>
