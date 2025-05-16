@@ -72,41 +72,7 @@ export default function GlobalAdminDashboard() {
   const [_, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Simulated data for the dashboard
-  const subscriptionData = [
-    { name: 'Jan', trial: 40, subscriber: 24 },
-    { name: 'Feb', trial: 45, subscriber: 28 },
-    { name: 'Mar', trial: 55, subscriber: 32 },
-    { name: 'Apr', trial: 65, subscriber: 37 },
-    { name: 'May', trial: 60, subscriber: 42 },
-    { name: 'Jun', trial: 80, subscriber: 45 },
-  ];
-
-  // Calculate subscription type data from church data values
-  const subscriptionTypeData = [
-    { name: 'Monthly', value: churchData.monthlySubscriptions },
-    { name: 'Annual', value: churchData.annualSubscriptions },
-  ];
-
-  const conversionRateData = [
-    { month: 'Jan', rate: 18 },
-    { month: 'Feb', rate: 22 },
-    { month: 'Mar', rate: 25 },
-    { month: 'Apr', rate: 30 },
-    { month: 'May', rate: 32 },
-    { month: 'Jun', rate: 35 },
-  ];
-
-  const churnRateData = [
-    { month: 'Jan', rate: 5.2 },
-    { month: 'Feb', rate: 4.8 },
-    { month: 'Mar', rate: 4.5 },
-    { month: 'Apr', rate: 3.9 },
-    { month: 'May', rate: 3.5 },
-    { month: 'Jun', rate: 3.2 },
-  ];
-  
-  // State for storing church data
+  // State for storing church data - define this first before using in any calculations
   const [churchData, setChurchData] = useState({
     totalChurches: 124,
     activeChurches: 108,
@@ -117,7 +83,7 @@ export default function GlobalAdminDashboard() {
     platesCount: 12548,
     donationsTotal: 1425392
   });
-
+  
   // Check if the global admin is authenticated
   useEffect(() => {
     const token = localStorage.getItem("globalAdminToken");
@@ -138,6 +104,39 @@ export default function GlobalAdminDashboard() {
     }, 800);
     
   }, [toast, setLocation]);
+
+  // Define chart data after the state is initialized
+  const subscriptionData = [
+    { name: 'Jan', trial: 40, subscriber: 24 },
+    { name: 'Feb', trial: 45, subscriber: 28 },
+    { name: 'Mar', trial: 55, subscriber: 32 },
+    { name: 'Apr', trial: 65, subscriber: 37 },
+    { name: 'May', trial: 60, subscriber: 42 },
+    { name: 'Jun', trial: 80, subscriber: 45 },
+  ];
+
+  const subscriptionTypeData = [
+    { name: 'Monthly', value: 19 },
+    { name: 'Annual', value: 11 },
+  ];
+
+  const conversionRateData = [
+    { month: 'Jan', rate: 18 },
+    { month: 'Feb', rate: 22 },
+    { month: 'Mar', rate: 25 },
+    { month: 'Apr', rate: 30 },
+    { month: 'May', rate: 32 },
+    { month: 'Jun', rate: 35 },
+  ];
+
+  const churnRateData = [
+    { month: 'Jan', rate: 5.2 },
+    { month: 'Feb', rate: 4.8 },
+    { month: 'Mar', rate: 4.5 },
+    { month: 'Apr', rate: 3.9 },
+    { month: 'May', rate: 3.5 },
+    { month: 'Jun', rate: 3.2 },
+  ];
 
   const COLORS = ["#69ad4c", "#132433", "#8884d8", "#82ca9d"];
   
@@ -257,8 +256,8 @@ export default function GlobalAdminDashboard() {
                     <LineChart data={conversionRateData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value) => `${value}%`} />
-                      <Tooltip formatter={(value) => [`${value}%`]} />
+                      <YAxis tickFormatter={(value: number) => `${value}%`} />
+                      <Tooltip formatter={(value: number) => [`${value}%`]} />
                       <Legend />
                       <Line 
                         type="monotone" 
@@ -294,8 +293,8 @@ export default function GlobalAdminDashboard() {
                     <LineChart data={churnRateData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value) => `${value}%`} />
-                      <Tooltip formatter={(value) => [`${value}%`]} />
+                      <YAxis tickFormatter={(value: number) => `${value}%`} />
+                      <Tooltip formatter={(value: number) => [`${value}%`]} />
                       <Legend />
                       <Line 
                         type="monotone" 
