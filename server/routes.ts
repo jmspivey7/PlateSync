@@ -336,15 +336,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Church not found' });
       }
       
-      // Create donation confirmation template
-      const donationTemplate = await storage.createEmailTemplate({
-        templateType: 'DONATION_CONFIRMATION',
-        subject: 'Thank you for your donation to {{churchName}}',
-        bodyHtml: `<p>Dear {{donorName}},</p>
+      // Check if templates already exist
+      const existingTemplates = await storage.getEmailTemplates(churchId);
+      const existingTypes = existingTemplates.map(t => t.templateType);
+      
+      const templates = [];
+      
+      // Create donation confirmation template if it doesn't exist
+      if (!existingTypes.includes('DONATION_CONFIRMATION')) {
+        const donationTemplate = await storage.createEmailTemplate({
+          templateType: 'DONATION_CONFIRMATION',
+          subject: 'Thank you for your donation to {{churchName}}',
+          bodyHtml: `<p>Dear {{donorName}},</p>
 <p>Thank you for your donation of ${{amount}} on {{date}}.</p>
 <p>Your generosity helps support our ministry and community outreach.</p>
 <p>Sincerely,<br/>{{churchName}}</p>`,
-        bodyText: `Dear {{donorName}},
+          bodyText: `Dear {{donorName}},
 
 Thank you for your donation of ${{amount}} on {{date}}.
 
@@ -352,21 +359,25 @@ Your generosity helps support our ministry and community outreach.
 
 Sincerely,
 {{churchName}}`,
-        churchId: churchId
-      });
+          churchId: churchId
+        });
+        
+        templates.push(donationTemplate);
+      }
       
-      // Create count report template
-      const countReportTemplate = await storage.createEmailTemplate({
-        templateType: 'COUNT_REPORT',
-        subject: '{{churchName}} Donation Count Report - {{date}}',
-        bodyHtml: `<p>Hello,</p>
+      // Create count report template if it doesn't exist
+      if (!existingTypes.includes('COUNT_REPORT')) {
+        const countReportTemplate = await storage.createEmailTemplate({
+          templateType: 'COUNT_REPORT',
+          subject: '{{churchName}} Donation Count Report - {{date}}',
+          bodyHtml: `<p>Hello,</p>
 <p>Please find attached the donation count report for {{date}} at {{churchName}}.</p>
 <p><strong>Service:</strong> {{serviceType}}<br/>
 <strong>Total Amount:</strong> ${{totalAmount}}<br/>
 <strong>Total Donations:</strong> {{totalDonations}}</p>
 <p>Counters: {{counterNames}}</p>
 <p>Sincerely,<br/>{{churchName}} Team</p>`,
-        bodyText: `Hello,
+          bodyText: `Hello,
 
 Please find attached the donation count report for {{date}} at {{churchName}}.
 
@@ -381,63 +392,15 @@ Sincerely,
         churchId: churchId
       });
       
-      // Get the system templates
-      const systemChurchId = 'SYSTEM_TEMPLATES';
-      let welcomeTemplate = await storage.getEmailTemplateByType('WELCOME_EMAIL', systemChurchId);
-      let passwordResetTemplate = await storage.getEmailTemplateByType('PASSWORD_RESET', systemChurchId);
+      templates.push(countReportTemplate);
+     }
       
-      // If system templates don't exist, create them
-      if (!welcomeTemplate) {
-        welcomeTemplate = await storage.createEmailTemplate({
-          templateType: 'WELCOME_EMAIL',
-          subject: 'Welcome to {{churchName}} - Your Account Has Been Created',
-          bodyHtml: `<p>Hello {{userName}},</p>
-<p>Welcome to {{churchName}}! Your account has been created successfully.</p>
-<p>You can now log in using your email address and the temporary password we provided.</p>
-<p>Please log in and change your password as soon as possible.</p>
-<p>Sincerely,<br/>{{churchName}} Team</p>`,
-          bodyText: `Hello {{userName}},
-
-Welcome to {{churchName}}! Your account has been created successfully.
-
-You can now log in using your email address and the temporary password we provided.
-
-Please log in and change your password as soon as possible.
-
-Sincerely,
-{{churchName}} Team`,
-          churchId: systemChurchId
-        });
-      }
-      
-      if (!passwordResetTemplate) {
-        passwordResetTemplate = await storage.createEmailTemplate({
-          templateType: 'PASSWORD_RESET',
-          subject: 'Password Reset Request for {{churchName}}',
-          bodyHtml: `<p>Hello {{userName}},</p>
-<p>We received a request to reset your password for your account at {{churchName}}.</p>
-<p>Please click the link below to reset your password. This link will expire in 24 hours.</p>
-<p><a href="{{resetLink}}">Reset your password</a></p>
-<p>If you did not request a password reset, please ignore this email or contact your administrator.</p>
-<p>Sincerely,<br/>{{churchName}} Team</p>`,
-          bodyText: `Hello {{userName}},
-
-We received a request to reset your password for your account at {{churchName}}.
-
-Please click the link below to reset your password. This link will expire in 24 hours.
-
-{{resetLink}}
-
-If you did not request a password reset, please ignore this email or contact your administrator.
-
-Sincerely,
-{{churchName}} Team`,
-          churchId: systemChurchId
-        });
-      }
-      
-      // Return the created templates - only account owner templates
-      res.status(201).json([donationTemplate, countReportTemplate]);
+      // Return the results with properly created templates
+      return res.json({ 
+        success: true, 
+        message: 'Email templates initialized successfully',
+        templates: templates
+      });
     } catch (error) {
       console.error('Error initializing email templates:', error);
       res.status(500).json({ message: 'Failed to initialize email templates' });

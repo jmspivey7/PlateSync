@@ -66,18 +66,38 @@ export default function EmailTemplates() {
   // Initialize templates if none exist
   const initializeTemplatesMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/email-templates/initialize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      try {
+        const response = await fetch('/api/email-templates/initialize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({}) // Send empty object to avoid parsing issues
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Template initialization error:', errorText);
+          throw new Error('Failed to initialize email templates');
         }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to initialize email templates');
+        
+        const text = await response.text();
+        
+        // If the response is empty or not valid JSON, return an empty object
+        if (!text || text.trim() === '') {
+          return {};
+        }
+        
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error('Failed to parse JSON response:', text);
+          return {};
+        }
+      } catch (error) {
+        console.error('Template initialization error:', error);
+        throw error;
       }
-      
-      return await response.json();
     },
     onSuccess: () => {
       toast({
