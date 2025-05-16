@@ -105,7 +105,17 @@ export default function GlobalAdminDashboard() {
     { month: 'Jun', rate: 3.2 },
   ];
   
-  // Check if the global admin is authenticated
+  // State for storing church data
+  const [churchData, setChurchData] = useState({
+    totalChurches: 0,
+    activeChurches: 0,
+    trialChurches: 0,
+    paidChurches: 0,
+    annualSubscriptions: 0,
+    monthlySubscriptions: 0
+  });
+
+  // Check if the global admin is authenticated and fetch church data
   useEffect(() => {
     const token = localStorage.getItem("globalAdminToken");
     if (!token) {
@@ -115,13 +125,52 @@ export default function GlobalAdminDashboard() {
         variant: "destructive",
       });
       setLocation("/global-admin/login");
-    } else {
-      // Simulate loading dashboard data
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 800);
+      return;
     }
+    
+    // Fetch data from API
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/global-admin/churches", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch churches");
+        }
+        
+        const data = await response.json();
+        console.log("Church data:", data);
+        
+        // Count churches with different statuses
+        const churches = data.churches || [];
+        const active = churches.filter((c: { status: string }) => c.status === "ACTIVE").length;
+        
+        // Set real data when available, or maintain demo data
+        setChurchData({
+          totalChurches: churches.length,
+          activeChurches: active,
+          trialChurches: Math.floor(active * 0.72), // Demo data - 72% of churches are on trial
+          paidChurches: Math.floor(active * 0.28),  // Demo data - 28% of churches are paid
+          annualSubscriptions: Math.floor(active * 0.28 * 0.35), // Demo data - 35% annual
+          monthlySubscriptions: Math.floor(active * 0.28 * 0.65)  // Demo data - 65% monthly
+        });
+      } catch (error) {
+        console.error("Error fetching church data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load church data. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
   }, [toast, setLocation]);
 
   const COLORS = ["#69ad4c", "#132433", "#8884d8", "#82ca9d"];
@@ -150,14 +199,14 @@ export default function GlobalAdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatsCard 
                 title="Trials vs. Subscribers" 
-                value="1,245 / 485"
+                value={`${churchData.trialChurches} / ${churchData.paidChurches}`}
                 description="Total active trials & subscribers" 
                 icon={<Users className="h-4 w-4" />}
                 trend={{ value: 12, isPositive: true }}
               />
               <StatsCard 
                 title="Annual vs. Monthly" 
-                value="35% / 65%"
+                value={`${Math.round(churchData.annualSubscriptions / (churchData.paidChurches || 1) * 100)}% / ${Math.round(churchData.monthlySubscriptions / (churchData.paidChurches || 1) * 100)}%`}
                 description="Subscription type distribution" 
                 icon={<TrendingUp className="h-4 w-4" />}
                 trend={{ value: 5, isPositive: true }}
