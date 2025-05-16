@@ -95,11 +95,11 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
     // Build query conditions
     let conditions: SQL[] = [];
     
-    // Always exclude churches with DELETED status unless specifically requested
+    // Filter by status if provided, otherwise default to ACTIVE
     if (status) {
       conditions.push(eq(churches.status, status));
     } else {
-      conditions.push(sql`status != 'DELETED'`);
+      conditions.push(eq(churches.status, 'ACTIVE'));
     }
     
     if (search) {
