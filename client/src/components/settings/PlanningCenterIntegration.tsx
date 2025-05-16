@@ -7,6 +7,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
+// Import the Planning Center logo directly
+import planningCenterLogo from "@assets/planning-center-full-color.png";
 
 // Planning Center brand color
 const PLANNING_CENTER_BLUE = "#2176FF";
@@ -281,7 +283,7 @@ const PlanningCenterIntegration = () => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <img 
-            src="/planning-center-logo.png" 
+            src={planningCenterLogo} 
             alt="Planning Center Logo" 
             className="h-8 mr-2" 
           />
