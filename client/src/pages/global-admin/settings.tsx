@@ -3,33 +3,13 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import EmailTemplatePreview from "@/components/global-admin/EmailTemplatePreview";
-import plateSyncLogo from "@/assets/platesync-logo.png";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  ArrowLeft, 
-  Settings as SettingsIcon,
-  Save,
-  Mail,
-  RotateCw,
-  Code,
-  Eye
-} from "lucide-react";
+import { ArrowLeft, Settings as SettingsIcon, Save, Mail, RotateCw, Code, Eye } from "lucide-react";
 
 // Define the template types
 type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
@@ -199,10 +179,10 @@ export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
-  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [activeTemplate, setActiveTemplate] = useState<EmailTemplate | null>(null);
+  const [currentView, setCurrentView] = useState<"list" | "edit">("list");
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("preview");
   const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   
   // Check if the global admin is authenticated
   useEffect(() => {
@@ -217,64 +197,19 @@ export default function GlobalAdminSettings() {
     }
   }, [toast, setLocation]);
   
-  // Initialize selected template on mount
-  useEffect(() => {
-    if (templates.length > 0 && !selectedTemplate) {
-      setSelectedTemplate(templates[0]);
-    }
-  }, [templates, selectedTemplate]);
-  
-  // Function to handle template selection
-  const handleSelectTemplate = (templateType: string) => {
-    const template = templates.find(t => 
-      templateType === "welcome" ? t.type === "WELCOME_EMAIL" : t.type === "PASSWORD_RESET"
-    );
-    
-    if (template) {
-      setSelectedTemplate(template);
-      setIsEditing(false);
-    }
+  // Handle template edit
+  const handleEditTemplate = (template: EmailTemplate) => {
+    setActiveTemplate({...template});
+    setCurrentView("edit");
   };
   
-  // Function to handle template edit
-  const handleEditTemplate = () => {
-    setIsEditing(true);
-    setViewMode("edit");
-  };
-  
-  // Function to handle template save
-  const handleSaveTemplate = () => {
-    if (!selectedTemplate) return;
-    
-    setIsSaving(true);
-    
-    // Simulate API call with a short delay
-    setTimeout(() => {
-      setTemplates(prevTemplates => 
-        prevTemplates.map(template => 
-          template.id === selectedTemplate.id 
-            ? {...selectedTemplate, lastUpdated: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})} 
-            : template
-        )
-      );
-      
-      setIsEditing(false);
-      setIsSaving(false);
-      
-      toast({
-        title: "Template updated",
-        description: `${selectedTemplate.type === 'WELCOME_EMAIL' ? 'Welcome Email' : 'Password Reset'} template has been updated successfully.`,
-      });
-    }, 800);
-  };
-  
-  // Function to handle template reset
+  // Handle template reset
   const handleResetTemplate = () => {
-    if (!selectedTemplate) return;
+    if (!activeTemplate) return;
     
-    const originalTemplate = initialTemplates.find(t => t.type === selectedTemplate.type);
+    const originalTemplate = initialTemplates.find(t => t.type === activeTemplate.type);
     if (originalTemplate) {
-      setSelectedTemplate({...originalTemplate});
+      setActiveTemplate({...originalTemplate});
       
       toast({
         title: "Template reset",
@@ -283,32 +218,37 @@ export default function GlobalAdminSettings() {
     }
   };
   
-  // Cancel editing
-  const handleCancelEdit = () => {
-    if (selectedTemplate) {
-      const originalTemplate = templates.find(t => t.id === selectedTemplate.id);
-      if (originalTemplate) {
-        setSelectedTemplate({...originalTemplate});
-      }
-    }
-    setIsEditing(false);
+  // Handle template save
+  const handleSaveTemplate = () => {
+    if (!activeTemplate) return;
+    
+    setIsSaving(true);
+    
+    // Simulate API call with a short delay
+    setTimeout(() => {
+      setTemplates(prevTemplates => 
+        prevTemplates.map(template => 
+          template.id === activeTemplate.id 
+            ? {...activeTemplate, lastUpdated: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})} 
+            : template
+        )
+      );
+      
+      setCurrentView("list");
+      setIsSaving(false);
+      
+      toast({
+        title: "Template updated",
+        description: `${activeTemplate.type === 'WELCOME_EMAIL' ? 'Welcome Email' : 'Password Reset'} template has been updated successfully.`,
+      });
+    }, 800);
   };
   
-  if (!selectedTemplate) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <GlobalAdminHeader />
-        <main className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold mb-2">Loading templates...</h2>
-              <p className="text-gray-500">Please wait while we fetch the email templates.</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setCurrentView("list");
+    setActiveTemplate(null);
+  };
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -330,178 +270,160 @@ export default function GlobalAdminSettings() {
           </Button>
         </div>
         
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Mail className="h-5 w-5 mr-2 text-[#69ad4c]" />
-              System Email Templates
-            </CardTitle>
-            <CardDescription>
-              Configure the email templates used system-wide for all churches
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <Tabs 
-              defaultValue="welcome" 
-              onValueChange={handleSelectTemplate}
-              value={selectedTemplate.type === "WELCOME_EMAIL" ? "welcome" : "password"}
-            >
-              <TabsList className="mb-6">
-                <TabsTrigger value="welcome">Welcome Email</TabsTrigger>
-                <TabsTrigger value="password">Password Reset</TabsTrigger>
-              </TabsList>
-              
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-medium">
-                      {selectedTemplate.type === "WELCOME_EMAIL" 
-                        ? "Welcome Email Template" 
-                        : "Password Reset Template"
-                      }
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedTemplate.type === "WELCOME_EMAIL"
-                        ? "Sent to new users when their account is created"
-                        : "Sent to users when they request a password reset"
-                      }
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    {!isEditing ? (
-                      <>
+        {currentView === "list" ? (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center">
+                <Mail className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                <CardTitle>System Email Templates</CardTitle>
+              </div>
+              <CardDescription>
+                Configure the email templates used system-wide for all churches
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {templates.map((template) => (
+                  <div key={template.id} className="border rounded-md overflow-hidden">
+                    <div className="p-4 border-b">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">
+                          {template.type === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
+                        </h3>
                         <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={handleResetTemplate}
-                        >
-                          <RotateCw className="h-4 w-4 mr-2" />
-                          Reset
-                        </Button>
-                        <Button 
-                          onClick={handleEditTemplate}
+                          onClick={() => handleEditTemplate(template)}
                           className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                          size="sm"
                         >
                           Edit Template
                         </Button>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Last Edited: {template.lastUpdated || "Never"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <Mail className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    {activeTemplate?.type === "WELCOME_EMAIL" 
+                      ? "Welcome Email Template" 
+                      : "Password Reset Template"
+                    }
+                  </CardTitle>
+                  <CardDescription>
+                    {activeTemplate?.type === "WELCOME_EMAIL"
+                      ? "Sent to new users when their account is created"
+                      : "Sent to users when they request a password reset"
+                    }
+                  </CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={handleResetTemplate}
+                  >
+                    <RotateCw className="h-4 w-4 mr-2" />
+                    Reset
+                  </Button>
+                  <Button 
+                    onClick={handleSaveTemplate}
+                    className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
                       </>
                     ) : (
                       <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={handleCancelEdit}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          onClick={handleSaveTemplate}
-                          className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                          size="sm"
-                          disabled={isSaving}
-                        >
-                          {isSaving ? (
-                            <>
-                              <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="h-4 w-4 mr-2" />
-                              Save Changes
-                            </>
-                          )}
-                        </Button>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Changes
                       </>
                     )}
-                  </div>
+                  </Button>
                 </div>
-                
-                <Tabs 
-                  value={viewMode} 
-                  onValueChange={(value) => setViewMode(value as "edit" | "preview")}
-                >
-                  <TabsList className="mb-4">
-                    <TabsTrigger 
-                      value="edit" 
-                      className="flex items-center"
-                      disabled={!isEditing}
-                    >
-                      <Code className="h-4 w-4 mr-2" />
-                      Edit HTML
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="preview" 
-                      className="flex items-center"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="edit" className="space-y-4">
-                    <div>
-                      <Label htmlFor="template-subject">Email Subject</Label>
-                      <Input 
-                        id="template-subject" 
-                        value={selectedTemplate.subject}
-                        onChange={(e) => setSelectedTemplate({
-                          ...selectedTemplate,
-                          subject: e.target.value
-                        })}
-                        disabled={!isEditing}
-                        className="font-mono"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="template-body">Email Body (HTML)</Label>
-                      <Textarea 
-                        id="template-body" 
-                        value={selectedTemplate.body}
-                        onChange={(e) => setSelectedTemplate({
-                          ...selectedTemplate,
-                          body: e.target.value
-                        })}
-                        disabled={!isEditing}
-                        className="min-h-[400px] font-mono text-sm"
-                      />
-                    </div>
-                    
-                    <div className="text-sm text-muted-foreground">
-                      <p>Last updated: {selectedTemplate.lastUpdated || "Never"}</p>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-md border">
-                      <h4 className="text-sm font-medium mb-2">Available Template Variables:</h4>
-                      <ul className="text-sm space-y-1 text-muted-foreground">
-                        <li><code>{"{{userName}}"}</code> - The user's name</li>
-                        <li><code>{"{{userEmail}}"}</code> - The user's email address</li>
-                        <li><code>{"{{churchName}}"}</code> - The church name</li>
-                        <li><code>{"{{churchLogoUrl}}"}</code> - URL to the church's logo</li>
-                        {selectedTemplate.type === "WELCOME_EMAIL" ? (
-                          <li><code>{"{{loginUrl}}"}</code> - URL for the user to log in</li>
-                        ) : (
-                          <li><code>{"{{resetUrl}}"}</code> - URL for the password reset link</li>
-                        )}
-                      </ul>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="preview">
-                    <EmailTemplatePreview 
-                      subject={selectedTemplate.subject}
-                      htmlContent={selectedTemplate.body}
-                    />
-                  </TabsContent>
-                </Tabs>
               </div>
-            </Tabs>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            
+            <CardContent>
+              <Tabs 
+                value={activeTab} 
+                onValueChange={(value) => setActiveTab(value as "edit" | "preview")}
+              >
+                <TabsList className="mb-4">
+                  <TabsTrigger value="edit" className="flex items-center">
+                    <Code className="h-4 w-4 mr-2" />
+                    Edit HTML
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="flex items-center">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="edit" className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Email Subject</Label>
+                    <Input 
+                      id="subject" 
+                      value={activeTemplate?.subject || ""} 
+                      onChange={(e) => activeTemplate && setActiveTemplate({
+                        ...activeTemplate, 
+                        subject: e.target.value
+                      })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="body">Email Body (HTML)</Label>
+                    <Textarea 
+                      id="body" 
+                      value={activeTemplate?.body || ""} 
+                      onChange={(e) => activeTemplate && setActiveTemplate({
+                        ...activeTemplate, 
+                        body: e.target.value
+                      })}
+                      className="font-mono text-sm h-[400px]"
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="preview">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Subject Preview</h4>
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        {activeTemplate?.subject}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">HTML Preview</h4>
+                      <div className="bg-white border rounded-md overflow-hidden">
+                        <EmailTemplatePreview html={activeTemplate?.body || ""} />
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
