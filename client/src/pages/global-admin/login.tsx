@@ -99,7 +99,7 @@ export default function GlobalAdminLogin() {
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <img 
-                src="/logo-with-text.png" 
+                src="/platesync-logo-full.png" 
                 alt="PlateSync Logo" 
                 className="w-64 object-contain"
               />
