@@ -346,19 +346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingTypes.includes('DONATION_CONFIRMATION')) {
         const donationTemplate = await storage.createEmailTemplate({
           templateType: 'DONATION_CONFIRMATION',
-          subject: 'Thank you for your donation to {{churchName}}',
-          bodyHtml: `<p>Dear {{donorName}},</p>
-<p>Thank you for your donation of ${{donationAmount}} on {{date}}.</p>
-<p>Your generosity helps support our ministry and community outreach.</p>
-<p>Sincerely,<br/>{{churchName}}</p>`,
-          bodyText: `Dear {{donorName}},
-
-Thank you for your donation of ${{donationAmount}} on {{date}}.
-
-Your generosity helps support our ministry and community outreach.
-
-Sincerely,
-{{churchName}}`,
+          subject: 'Thank you for your donation',
+          bodyHtml: '<p>Dear donor,</p><p>Thank you for your donation.</p><p>Your generosity helps support our ministry.</p>',
+          bodyText: 'Dear donor,\n\nThank you for your donation.\n\nYour generosity helps support our ministry.',
           churchId: churchId
         });
         
@@ -369,37 +359,20 @@ Sincerely,
       if (!existingTypes.includes('COUNT_REPORT')) {
         const countReportTemplate = await storage.createEmailTemplate({
           templateType: 'COUNT_REPORT',
-          subject: '{{churchName}} Donation Count Report - {{date}}',
-          bodyHtml: `<p>Hello,</p>
-<p>Please find attached the donation count report for {{date}} at {{churchName}}.</p>
-<p><strong>Service:</strong> {{serviceType}}<br/>
-<strong>Total Amount:</strong> ${{totalAmount}}<br/>
-<strong>Total Donations:</strong> {{totalDonations}}</p>
-<p>Counters: {{counterNames}}</p>
-<p>Sincerely,<br/>{{churchName}} Team</p>`,
-          bodyText: `Hello,
-
-Please find attached the donation count report for {{date}} at {{churchName}}.
-
-Service: {{serviceType}}
-Total Amount: ${{totalAmount}}
-Total Donations: {{totalDonations}}
-
-Counters: {{counterNames}}
-
-Sincerely,
-{{churchName}} Team`,
-        churchId: churchId
-      });
-      
-      templates.push(countReportTemplate);
-     }
+          subject: 'Donation Count Report',
+          bodyHtml: '<p>Hello,</p><p>Please find attached the donation count report.</p>',
+          bodyText: 'Hello,\n\nPlease find attached the donation count report.',
+          churchId: churchId
+        });
+        
+        templates.push(countReportTemplate);
+      }
       
       // Return the results with properly created templates
       return res.json({ 
         success: true, 
-        message: 'Email templates initialized successfully',
-        templates: templates
+        message: 'Email templates initialized successfully', 
+        templates: templates 
       });
     } catch (error) {
       console.error('Error initializing email templates:', error);
