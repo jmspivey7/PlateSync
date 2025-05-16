@@ -105,7 +105,7 @@ export default function EmailTemplates() {
     const requiredTemplateCount = 2;
     // Check if we have the required templates for Account Owners
     const accountOwnerTemplateTypes: AccountOwnerTemplateType[] = ['DONATION_CONFIRMATION', 'COUNT_REPORT'];
-    const existingTemplateTypes = templates.map(t => t.templateType);
+    const existingTemplateTypes = Array.isArray(templates) ? templates.map(t => t.templateType) : [];
     const hasRequiredTemplates = accountOwnerTemplateTypes.every(type => 
       existingTemplateTypes.includes(type)
     );
