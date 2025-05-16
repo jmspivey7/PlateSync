@@ -74,8 +74,10 @@ const initialTemplates: EmailTemplate[] = [
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <img src="https://platesync.replit.app/logo-with-text.png" alt="PlateSync Logo" style="max-width: 200px;">
+    <div class="header" style="text-align: center;">
+      <div style="background-color: #132433; padding: 10px; display: inline-block; border-radius: 5px; margin-bottom: 10px;">
+        <span style="color: white; font-size: 24px; font-weight: bold;">PlateSync</span>
+      </div>
       <h1>Welcome to PlateSync!</h1>
       <p>Your church donation management solution</p>
     </div>
@@ -151,8 +153,10 @@ const initialTemplates: EmailTemplate[] = [
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <img src="https://platesync.replit.app/logo-with-text.png" alt="PlateSync Logo" style="max-width: 200px;">
+    <div class="header" style="text-align: center;">
+      <div style="background-color: #132433; padding: 10px; display: inline-block; border-radius: 5px; margin-bottom: 10px;">
+        <span style="color: white; font-size: 24px; font-weight: bold;">PlateSync</span>
+      </div>
       <h1>Password Reset Request</h1>
       <p>Follow the instructions below to reset your password</p>
     </div>
