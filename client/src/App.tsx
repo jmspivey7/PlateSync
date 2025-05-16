@@ -4,7 +4,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { GlobalAdminAuthProvider } from "@/context/GlobalAdminAuthProvider";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Donations from "@/pages/donations";
@@ -162,44 +161,14 @@ function Router() {
       <Route path="/email-template/:id" component={EmailTemplateEditor} />
       
       {/* Global Admin Routes */}
-      <Route path="/global-admin/login">
-        <GlobalAdminLogin />
-      </Route>
-      <Route path="/global-admin/dashboard">
-        <GlobalAdminAuthProvider>
-          <GlobalAdminDashboard />
-        </GlobalAdminAuthProvider>
-      </Route>
-      <Route path="/global-admin/churches">
-        <GlobalAdminAuthProvider>
-          <GlobalAdminChurches />
-        </GlobalAdminAuthProvider>
-      </Route>
-      <Route path="/global-admin/church/:id">
-        <GlobalAdminAuthProvider>
-          <ChurchDetail />
-        </GlobalAdminAuthProvider>
-      </Route>
-      <Route path="/global-admin/profile">
-        <GlobalAdminAuthProvider>
-          <GlobalAdminProfile />
-        </GlobalAdminAuthProvider>
-      </Route>
-      <Route path="/global-admin/users">
-        <GlobalAdminAuthProvider>
-          <GlobalAdminUsers />
-        </GlobalAdminAuthProvider>
-      </Route>
-      <Route path="/global-admin/reports">
-        <GlobalAdminAuthProvider>
-          <GlobalAdminReports />
-        </GlobalAdminAuthProvider>
-      </Route>
-      <Route path="/global-admin/settings">
-        <GlobalAdminAuthProvider>
-          <GlobalAdminSettings />
-        </GlobalAdminAuthProvider>
-      </Route>
+      <Route path="/global-admin/login" component={GlobalAdminLogin} />
+      <Route path="/global-admin/dashboard" component={GlobalAdminDashboard} />
+      <Route path="/global-admin/churches" component={GlobalAdminChurches} />
+      <Route path="/global-admin/church/:id" component={ChurchDetail} />
+      <Route path="/global-admin/profile" component={GlobalAdminProfile} />
+      <Route path="/global-admin/users" component={GlobalAdminUsers} />
+      <Route path="/global-admin/reports" component={GlobalAdminReports} />
+      <Route path="/global-admin/settings" component={GlobalAdminSettings} />
       
       <Route component={NotFound} />
     </Switch>
