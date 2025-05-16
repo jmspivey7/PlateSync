@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { useGlobalAdminAuth } from "@/hooks/useGlobalAdminAuth";
+import { useGlobalAdminAuthContext } from "@/context/GlobalAdminAuthProvider";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import EmailTemplatePreview from "@/components/global-admin/EmailTemplatePreview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -179,7 +179,7 @@ const initialTemplates: EmailTemplate[] = [
 export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user, isLoading, isAuthenticated } = useGlobalAdminAuth();
+  const { user, isLoading, isAuthenticated } = useGlobalAdminAuthContext();
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
   const [activeTemplate, setActiveTemplate] = useState<EmailTemplate | null>(null);
   const [currentView, setCurrentView] = useState<"list" | "edit">("list");
