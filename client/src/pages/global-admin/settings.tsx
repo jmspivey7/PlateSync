@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import EmailTemplatePreview from "@/components/global-admin/EmailTemplatePreview";
+import plateSyncLogo from "@/assets/platesync-logo.png";
 import { 
   Tabs, 
   TabsContent, 
