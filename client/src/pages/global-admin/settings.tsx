@@ -552,7 +552,10 @@ export default function GlobalAdminSettings() {
                     <div>
                       <h3 className="text-sm font-medium mb-2">Email Preview:</h3>
                       <div className="border rounded-md overflow-hidden bg-white">
-                        <EmailTemplatePreview html={activeTemplate?.body || ""} />
+                        <EmailTemplatePreview 
+                          subject={activeTemplate?.subject || ""} 
+                          htmlContent={activeTemplate?.body || ""} 
+                        />
                       </div>
                     </div>
                   </div>
