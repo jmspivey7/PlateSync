@@ -168,10 +168,10 @@ export default function GlobalAdminReports() {
               Track subscription revenue from all paying subscribers
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[350px] flex items-center justify-center">
+          <CardContent className="h-[280px] flex items-center justify-center py-2">
             <div className="text-center text-gray-500 flex flex-col items-center w-full">
               <div className="w-full h-full flex items-center justify-center flex-col">
-                <div className="w-full max-w-4xl h-[220px] bg-gray-100 rounded-md p-4 pb-8 mb-6 flex items-end justify-between gap-2 relative">
+                <div className="w-full max-w-4xl h-[200px] bg-gray-100 rounded-md p-4 pb-6 mb-2 flex items-end justify-between gap-2 relative">
                   <div className="relative h-[70%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
                     <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$120</span>
                   </div>
