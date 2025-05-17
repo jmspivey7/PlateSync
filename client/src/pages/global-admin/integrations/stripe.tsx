@@ -143,23 +143,37 @@ export default function StripeIntegration() {
     try {
       setIsSaving(true);
       
-      // Send the configuration to the server
+      // Get the admin token from localStorage
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
+      
+      // Send the configuration to the server with authentication token
       // Only send non-masked secret keys
-      await apiRequest('/api/global-admin/integrations/stripe', 'POST', {
-        liveSecretKey: liveSecretKey.startsWith("••••") ? null : liveSecretKey,
-        livePublicKey,
-        testSecretKey: testSecretKey.startsWith("••••") ? null : testSecretKey,
-        testPublicKey,
-        monthlyPriceId,
-        annualPriceId,
-        monthlyPaymentLink,
-        annualPaymentLink,
-        isLiveMode
-      });
+      await apiRequest(
+        '/api/global-admin/integrations/stripe', 
+        'POST', 
+        {
+          liveSecretKey: liveSecretKey.startsWith("••••") ? null : liveSecretKey,
+          livePublicKey,
+          testSecretKey: testSecretKey.startsWith("••••") ? null : testSecretKey,
+          testPublicKey,
+          monthlyPriceId,
+          annualPriceId,
+          monthlyPaymentLink,
+          annualPaymentLink,
+          isLiveMode
+        },
+        {
+          Authorization: `Bearer ${token}`
+        }
+      );
       
       toast({
         title: "Configuration saved",
         description: "Stripe configuration has been successfully updated",
+        className: "bg-[#69ad4c] text-white",
       });
       
       // Mask the secret keys after saving
