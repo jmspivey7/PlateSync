@@ -244,7 +244,7 @@ export default function GlobalAdminSettings() {
         throw new Error("Authentication required");
       }
       
-      // Format data for the API
+      // Format data for the API - matching the server's expected field names
       const templateData = {
         id: activeTemplate.id,
         templateType: activeTemplate.type,

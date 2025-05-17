@@ -741,6 +741,70 @@ This is an automated email. Please do not reply to this message.
     }
   });
   
+  // Get specific system email template by ID
+  app.get('/api/email-templates/system/:id', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      const template = await storage.getEmailTemplateById(templateId, systemChurchId);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'Email template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching system email template:', error);
+      res.status(500).json({ message: 'Failed to fetch system email template' });
+    }
+  });
+  
+  // Update system email template
+  app.put('/api/email-templates/system/:id', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      const { subject, bodyHtml, bodyText, templateType } = req.body;
+      
+      if (!subject || !bodyHtml || !bodyText) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      // Check if template exists
+      const existingTemplate = await storage.getEmailTemplateById(templateId, systemChurchId);
+      
+      if (!existingTemplate) {
+        return res.status(404).json({ message: 'Email template not found' });
+      }
+      
+      // Update the template
+      const updatedTemplate = await storage.updateEmailTemplate(templateId, {
+        subject,
+        bodyHtml,
+        bodyText
+      }, systemChurchId);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: 'Failed to update email template' });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating system email template:', error);
+      res.status(500).json({ message: 'Failed to update system email template' });
+    }
+  });
+  
   // Initialize system email templates
   app.post('/api/email-templates/initialize-system', requireGlobalAdmin, async (req: any, res) => {
     try {

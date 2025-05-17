@@ -1944,12 +1944,20 @@ export class DatabaseStorage implements IStorage {
     return template;
   }
   
-  async getEmailTemplateById(id: number): Promise<EmailTemplate | undefined> {
-    const [template] = await db
+  async getEmailTemplateById(id: number, churchId?: string): Promise<EmailTemplate | undefined> {
+    // Create the base query
+    let query = db
       .select()
       .from(emailTemplates)
       .where(eq(emailTemplates.id, id));
     
+    // If churchId is provided, include it in the query
+    if (churchId) {
+      query = query.where(eq(emailTemplates.churchId, churchId));
+    }
+    
+    // Execute the query and return the first result
+    const [template] = await query;
     return template;
   }
   
