@@ -2324,6 +2324,72 @@ Sincerely,
     }
   });
 
+  // Global Admin: Planning Center Integration - GET endpoint
+  app.get('/api/global-admin/integrations/planning-center', requireGlobalAdmin, async (req, res) => {
+    try {
+      // Get Planning Center configuration from system settings
+      const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID');
+      const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET');
+      const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL');
+      
+      res.status(200).json({
+        clientId: clientId || '',
+        clientSecret: clientSecret ? 'present' : '',
+        callbackUrl: callbackUrl || `${req.protocol}://${req.get('host')}/api/planning-center/callback`,
+        isAuthenticated: Boolean(clientId && clientSecret)
+      });
+    } catch (error) {
+      console.error('Error fetching Planning Center config:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch Planning Center configuration',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Global Admin: Planning Center Integration - POST endpoint
+  app.post('/api/global-admin/integrations/planning-center', requireGlobalAdmin, async (req, res) => {
+    try {
+      const { clientId, clientSecret, callbackUrl } = req.body;
+      
+      // Validate inputs
+      if (!clientId) {
+        return res.status(400).json({ message: 'Client ID is required' });
+      }
+      
+      // Update system configuration
+      await storage.updateSystemConfig('PLANNING_CENTER_CLIENT_ID', clientId);
+      
+      // Only update client secret if it was provided (not masked)
+      if (clientSecret !== null) {
+        await storage.updateSystemConfig('PLANNING_CENTER_CLIENT_SECRET', clientSecret);
+      }
+      
+      if (callbackUrl) {
+        await storage.updateSystemConfig('PLANNING_CENTER_CALLBACK_URL', callbackUrl);
+      }
+      
+      // Set environment variables so they're available to the current process
+      process.env.PLANNING_CENTER_CLIENT_ID = clientId;
+      if (clientSecret !== null) {
+        process.env.PLANNING_CENTER_CLIENT_SECRET = clientSecret;
+      }
+      if (callbackUrl) {
+        process.env.PLANNING_CENTER_CALLBACK_URL = callbackUrl;
+      }
+      
+      res.status(200).json({ 
+        message: 'Planning Center configuration updated successfully' 
+      });
+    } catch (error) {
+      console.error('Error updating Planning Center config:', error);
+      res.status(500).json({ 
+        message: 'Failed to update Planning Center configuration',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
