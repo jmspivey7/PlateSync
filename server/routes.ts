@@ -2453,33 +2453,18 @@ Sincerely,
         configItems.push({ key: 'STRIPE_SECRET_KEY', value: liveSecretKey });
       }
       
-      if (livePublicKey !== undefined) {
-        configItems.push({ key: 'VITE_STRIPE_PUBLIC_KEY', value: livePublicKey });
-      }
+      // Always update all public keys and IDs, even with empty values
+      configItems.push({ key: 'VITE_STRIPE_PUBLIC_KEY', value: livePublicKey || '' });
       
       if (testSecretKey !== null) {
         configItems.push({ key: 'STRIPE_TEST_SECRET_KEY', value: testSecretKey });
       }
       
-      if (testPublicKey !== undefined) {
-        configItems.push({ key: 'STRIPE_TEST_PUBLIC_KEY', value: testPublicKey });
-      }
-      
-      if (monthlyPriceId !== undefined) {
-        configItems.push({ key: 'STRIPE_MONTHLY_PRICE_ID', value: monthlyPriceId });
-      }
-      
-      if (annualPriceId !== undefined) {
-        configItems.push({ key: 'STRIPE_ANNUAL_PRICE_ID', value: annualPriceId });
-      }
-      
-      if (monthlyPaymentLink !== undefined) {
-        configItems.push({ key: 'STRIPE_MONTHLY_PAYMENT_LINK', value: monthlyPaymentLink });
-      }
-      
-      if (annualPaymentLink !== undefined) {
-        configItems.push({ key: 'STRIPE_ANNUAL_PAYMENT_LINK', value: annualPaymentLink });
-      }
+      configItems.push({ key: 'STRIPE_TEST_PUBLIC_KEY', value: testPublicKey || '' });
+      configItems.push({ key: 'STRIPE_MONTHLY_PRICE_ID', value: monthlyPriceId || '' });
+      configItems.push({ key: 'STRIPE_ANNUAL_PRICE_ID', value: annualPriceId || '' });
+      configItems.push({ key: 'STRIPE_MONTHLY_PAYMENT_LINK', value: monthlyPaymentLink || '' });
+      configItems.push({ key: 'STRIPE_ANNUAL_PAYMENT_LINK', value: annualPaymentLink || '' });
       
       configItems.push({ key: 'STRIPE_LIVE_MODE', value: isLiveMode ? 'true' : 'false' });
       

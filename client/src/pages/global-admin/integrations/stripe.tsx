@@ -97,42 +97,12 @@ export default function StripeIntegration() {
             }
             
             // Set the values from the response
-            if (data.livePublicKey && typeof data.livePublicKey === 'string') {
-              setLivePublicKey(data.livePublicKey);
-            } else {
-              setLivePublicKey("");
-            }
-            
-            if (data.testPublicKey && typeof data.testPublicKey === 'string') {
-              setTestPublicKey(data.testPublicKey);
-            } else {
-              setTestPublicKey("");
-            }
-            
-            if (data.monthlyPriceId && typeof data.monthlyPriceId === 'string') {
-              setMonthlyPriceId(data.monthlyPriceId);
-            } else {
-              setMonthlyPriceId("");
-            }
-            
-            if (data.annualPriceId && typeof data.annualPriceId === 'string') {
-              setAnnualPriceId(data.annualPriceId);
-            } else {
-              setAnnualPriceId("");
-            }
-            
-            if (data.monthlyPaymentLink && typeof data.monthlyPaymentLink === 'string') {
-              setMonthlyPaymentLink(data.monthlyPaymentLink);
-            } else {
-              setMonthlyPaymentLink("");
-            }
-            
-            if (data.annualPaymentLink && typeof data.annualPaymentLink === 'string') {
-              setAnnualPaymentLink(data.annualPaymentLink);
-            } else {
-              setAnnualPaymentLink("");
-            }
-            
+            setLivePublicKey(data.livePublicKey || "");
+            setTestPublicKey(data.testPublicKey || "");
+            setMonthlyPriceId(data.monthlyPriceId || "");
+            setAnnualPriceId(data.annualPriceId || "");
+            setMonthlyPaymentLink(data.monthlyPaymentLink || "");
+            setAnnualPaymentLink(data.annualPaymentLink || "");
             setIsLiveMode(data.isLiveMode === true);
           } catch (error) {
             console.error("Error fetching Stripe config:", error);
