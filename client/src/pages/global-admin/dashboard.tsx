@@ -246,10 +246,20 @@ export default function GlobalAdminDashboard() {
 
             {/* Charts - Second Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Conversion Rate</CardTitle>
-                  <CardDescription>Monthly trial-to-paid conversion rate</CardDescription>
+              <Card className="lg:col-span-3">
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>Conversion Rate</CardTitle>
+                    <CardDescription>Monthly trial-to-paid conversion rate</CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-[#69ad4c]">35%</div>
+                    <div className="text-sm text-muted-foreground">Current trial-to-paid conversion</div>
+                    <div className="flex items-center justify-end mt-1 text-xs">
+                      <span className="text-green-600 mr-1">↑ 3%</span>
+                      <span className="text-muted-foreground">from last month</span>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -271,14 +281,6 @@ export default function GlobalAdminDashboard() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              
-              <StatsCard 
-                title="Conversion Rate" 
-                value="35%"
-                description="Current trial-to-paid conversion" 
-                icon={<Percent className="h-4 w-4" />}
-                trend={{ value: 3, isPositive: true }}
-              />
             </div>
 
             {/* Charts - Third Row */}

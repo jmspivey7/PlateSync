@@ -344,4 +344,263 @@ For a proper mobile authentication experience with Planning Center, the followin
    }
    ```
 
-*Last updated: May 10, 2025*
+## Profile Image Upload Implementation
+
+PlateSync implements a file-based profile image system using the following best practices:
+
+### Server-Side Implementation
+
+1. **Storage Configuration:**
+   - Store profile images in the `public/avatars` directory with public access
+   - Use timestamp-based unique filenames to prevent collisions
+   - Clean up old profile images when users upload new ones
+
+2. **Route Structure:**
+   - Dedicated routes for both regular and global admin profiles
+   - Proper middleware for file handling and validation
+   - Example implementation:
+
+   ```javascript
+   // Example file upload middleware configuration
+   const upload = multer({
+     storage: multer.diskStorage({
+       destination: (req, file, cb) => {
+         const avatarsDir = path.join(process.cwd(), 'public/avatars');
+         // Ensure directory exists
+         if (!fs.existsSync(avatarsDir)) {
+           fs.mkdirSync(avatarsDir, { recursive: true, mode: 0o777 });
+         }
+         cb(null, avatarsDir);
+       },
+       filename: (req, file, cb) => {
+         // Generate unique filename using timestamp and original extension
+         const timestamp = Date.now();
+         const fileExtension = file.originalname.split('.').pop();
+         const uniqueFilename = `avatar-${timestamp}-${Math.floor(Math.random() * 1000000000)}.${fileExtension}`;
+         cb(null, uniqueFilename);
+       }
+     }),
+     limits: {
+       fileSize: 5 * 1024 * 1024 // Limit to 5MB
+     },
+     fileFilter: (req, file, cb) => {
+       // Only allow images
+       if (!file.mimetype.startsWith('image/')) {
+         return cb(new Error('Only image files are allowed'));
+       }
+       cb(null, true);
+     }
+   });
+   ```
+
+3. **Image Processing:**
+   - Return relative URL paths to keep URLs consistent across environments
+   - Cleanup old images when users upload new ones
+   - Example code for returning profile image data:
+
+   ```javascript
+   // Example route handler for profile image upload
+   app.post('/api/profile/avatar', upload.single('avatar'), async (req, res) => {
+     try {
+       // Validation
+       if (!req.file) {
+         return res.status(400).json({ success: false, message: 'No file uploaded' });
+       }
+       
+       // Generate relative path to file
+       const relativeFilePath = `/avatars/${req.file.filename}`;
+       
+       // Generate full URL for client convenience
+       const fullUrl = `${req.protocol}://${req.get('host')}${relativeFilePath}`;
+       
+       // Save the profile image URL to user's profile in database
+       // ... Database code here ...
+       
+       // Get old profile image path to delete it
+       const oldImagePath = user.profileImageUrl;
+       if (oldImagePath) {
+         const oldImageFullPath = path.join(process.cwd(), 'public', oldImagePath);
+         // Delete old profile image if it exists
+         if (fs.existsSync(oldImageFullPath)) {
+           fs.unlinkSync(oldImageFullPath);
+           console.log('Deleted old profile image:', oldImageFullPath);
+         }
+       }
+       
+       // Return success with both relative and full URLs
+       return res.json({
+         success: true,
+         message: 'Profile picture updated successfully',
+         profileImageUrl: relativeFilePath,
+         fullImageUrl: fullUrl
+       });
+     } catch (error) {
+       console.error('Error uploading profile image:', error);
+       return res.status(500).json({
+         success: false,
+         message: 'Failed to update profile picture'
+       });
+     }
+   });
+   ```
+
+### Client-Side Implementation
+
+1. **Image Upload:**
+   - Use a file input with proper MIME type validation
+   - Implement size constraints (5MB limit)
+   - Hide the actual file input and use a button to trigger it
+   - Example:
+
+   ```tsx
+   // Create hidden file input with ref
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   
+   // Trigger file input click
+   const triggerFileInput = () => {
+     fileInputRef.current?.click();
+   };
+   
+   // Handle file selection and validation
+   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+     const file = event.target.files?.[0];
+     if (!file) return;
+     
+     // Validate file type
+     if (!file.type.startsWith('image/')) {
+       toast({
+         title: 'Error',
+         description: 'Please upload an image file',
+         variant: 'destructive',
+       });
+       return;
+     }
+     
+     // Validate file size
+     if (file.size > 5 * 1024 * 1024) {
+       toast({
+         title: 'Error',
+         description: 'Image file size must be less than 5MB',
+         variant: 'destructive',
+       });
+       return;
+     }
+     
+     // Upload the file
+     uploadAvatarMutation.mutate(file);
+     
+     // Reset input for reuse
+     event.target.value = '';
+   };
+   ```
+
+2. **Upload Handling with FormData:**
+   - Use FormData for multipart/form-data uploads
+   - Add proper authentication tokens if needed
+   - Example implementation with React Query:
+
+   ```tsx
+   // Upload avatar mutation
+   const uploadAvatarMutation = useMutation({
+     mutationFn: async (file: File) => {
+       setIsUploading(true);
+       
+       const formData = new FormData();
+       formData.append('avatar', file);
+       
+       // Get authentication token if needed
+       const token = localStorage.getItem("authToken");
+       
+       // Use fetch with proper headers
+       const response = await fetch('/api/profile/avatar', {
+         method: 'POST',
+         headers: {
+           'Authorization': token ? `Bearer ${token}` : '',
+           'Cache-Control': 'no-cache'
+         },
+         body: formData
+       });
+       
+       if (!response.ok) {
+         throw new Error("Failed to upload profile picture");
+       }
+       
+       return await response.json();
+     },
+     onSuccess: (data) => {
+       // Update profile data with new image URL
+       setProfileData(prev => ({
+         ...prev,
+         profileImageUrl: data.profileImageUrl
+       }));
+       
+       toast({
+         title: 'Success',
+         description: 'Profile picture updated successfully',
+       });
+     },
+     onError: (error) => {
+       toast({
+         title: 'Error',
+         description: error.message || 'Failed to update profile picture',
+         variant: 'destructive',
+       });
+     },
+     onSettled: () => {
+       setIsUploading(false);
+     }
+   });
+   ```
+
+3. **Image Display with Cache Busting:**
+   - Use cache-busting technique to prevent stale images
+   - Implement fallback for failed image loads
+   - Example:
+
+   ```tsx
+   <Avatar className="w-24 h-24">
+     {profileData.profileImageUrl ? (
+       <AvatarImage 
+         src={`${profileData.profileImageUrl}?t=${Date.now()}`} 
+         alt="Profile" 
+         onError={(e) => {
+           console.error("Image failed to load:", profileData.profileImageUrl);
+           // Force fallback if image fails to load
+           (e.target as HTMLImageElement).style.display = 'none';
+         }}
+       />
+     ) : (
+       <AvatarFallback className="bg-primary text-white text-xl">
+         {profileData.firstName && profileData.lastName 
+           ? `${profileData.firstName[0]}${profileData.lastName[0]}`
+           : "U"}
+       </AvatarFallback>
+     )}
+   </Avatar>
+   ```
+
+### Important Considerations
+
+1. **Folder Permissions:**
+   - The `public/avatars` directory must have write permissions for the server (777)
+   - Add this directory to version control but ignore its contents
+
+2. **Cache-Busting:**
+   - Always add a timestamp query parameter to image URLs
+   - Update image URLs in state with the timestamp to force re-render
+
+3. **Error Handling:**
+   - Provide fallback display when images fail to load
+   - Check for file existence before deletion to prevent errors
+
+4. **Static File Serving:**
+   - Ensure Express is configured to serve static files from the public directory:
+   ```javascript
+   app.use(express.static(path.join(__dirname, '..', 'public')));
+   ```
+
+5. **Storage Choice:**
+   - For production, consider using cloud storage (AWS S3, etc.)
+   - For development and smaller deployments, file-based storage is simpler
+
+*Last updated: May 17, 2025*
