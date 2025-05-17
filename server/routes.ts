@@ -879,6 +879,34 @@ The PlateSync Team
       
       // Get templates after initialization
       let templates = await storage.getEmailTemplates(systemChurchId);
+      console.log(`Found ${templates.length} system templates`);
+      
+      // If we still don't have templates, use fallback defaults for display
+      if (templates.length === 0) {
+        console.log('Using fallback template data for display');
+        templates = [
+          {
+            id: 1,
+            templateType: 'WELCOME_EMAIL',
+            subject: 'Welcome to PlateSync',
+            bodyHtml: 'Welcome to PlateSync!',
+            bodyText: 'Welcome to PlateSync!',
+            churchId: systemChurchId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 2,
+            templateType: 'PASSWORD_RESET',
+            subject: 'Password Reset Request',
+            bodyHtml: 'Reset your password',
+            bodyText: 'Reset your password',
+            churchId: systemChurchId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ];
+      }
       
       res.json(templates);
     } catch (error) {
