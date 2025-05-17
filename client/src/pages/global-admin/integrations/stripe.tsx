@@ -146,19 +146,38 @@ export default function StripeIntegration() {
       });
       
       // Call the API to test Stripe configuration
-      await apiRequest('/api/test-stripe');
+      const response = await apiRequest('/api/test-stripe');
+      const data = await response.json();
       
       // Show success toast
       toast({
         title: "Stripe is configured correctly",
-        description: "Your Stripe integration is working properly!",
+        description: `Your Stripe integration is working properly in ${data.mode} mode!`,
         className: "bg-[#69ad4c] text-white",
       });
     } catch (error) {
+      console.error("Stripe test error:", error);
+      
+      // Parse error message from the response if possible
+      let errorMessage = 'An unexpected error occurred';
+      
+      try {
+        if (error instanceof Error) {
+          // If it's a standard error object
+          errorMessage = error.message;
+        } else if (typeof error === 'object' && error !== null) {
+          // If it's a JSON response with error details
+          // @ts-ignore
+          errorMessage = error.message || errorMessage;
+        }
+      } catch (e) {
+        console.error("Error parsing error message:", e);
+      }
+      
       // Show error toast
       toast({
         title: "Stripe configuration issue",
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        description: errorMessage,
         variant: "destructive",
         className: "bg-white border-red-600",
       });

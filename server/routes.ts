@@ -2324,6 +2324,44 @@ Sincerely,
     }
   });
 
+  // Test Stripe Connection endpoint
+  app.get('/api/test-stripe', async (req, res) => {
+    try {
+      // Get Stripe configuration from database
+      const isLiveMode = (await storage.getSystemConfig('STRIPE_LIVE_MODE')) !== 'false';
+      
+      // Choose the appropriate key based on mode
+      const secretKey = isLiveMode 
+        ? await storage.getSystemConfig('STRIPE_SECRET_KEY')
+        : await storage.getSystemConfig('STRIPE_TEST_SECRET_KEY');
+      
+      if (!secretKey) {
+        return res.status(400).json({ 
+          message: `No Stripe ${isLiveMode ? 'live' : 'test'} secret key found. Please configure your API keys.` 
+        });
+      }
+      
+      // Initialize Stripe with the secret key
+      const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' });
+      
+      // Test the Stripe connection by making a simple API call
+      const balance = await stripe.balance.retrieve();
+      
+      // If we get here, the connection is valid
+      return res.status(200).json({ 
+        message: 'Stripe connection successful', 
+        mode: isLiveMode ? 'live' : 'test',
+        status: 'connected'
+      });
+    } catch (error) {
+      console.error('Stripe test connection error:', error);
+      return res.status(400).json({ 
+        message: 'Unexpected token "<"<!DOCTYPE html>' in JSON at position 0',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Global Admin: Planning Center Integration - GET endpoint
   app.get('/api/global-admin/integrations/planning-center', requireGlobalAdmin, async (req, res) => {
     try {
