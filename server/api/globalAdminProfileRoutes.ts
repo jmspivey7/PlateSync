@@ -7,10 +7,23 @@ import path from 'path';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 
-// Ensure avatars directory exists
+// Ensure avatars directory exists with proper permissions
 const avatarsDir = path.join(process.cwd(), 'public', 'avatars');
 if (!fs.existsSync(avatarsDir)) {
   fs.mkdirSync(avatarsDir, { recursive: true });
+  console.log(`Created avatars directory at: ${avatarsDir}`);
+}
+
+// Make sure the directory has the right permissions
+try {
+  fs.chmodSync(avatarsDir, 0o777); // Full permissions to ensure we can write files
+  console.log(`Set permissions on avatars directory: ${avatarsDir}`);
+  // Test that we can write files
+  const testPath = path.join(avatarsDir, 'test-write-permissions.txt');
+  fs.writeFileSync(testPath, 'Testing write permissions');
+  console.log(`Successfully wrote test file to: ${testPath}`);
+} catch (error) {
+  console.error(`ERROR: Could not set permissions on avatars directory: ${avatarsDir}`, error);
 }
 
 const router = express.Router();
