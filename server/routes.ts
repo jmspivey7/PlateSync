@@ -2472,28 +2472,22 @@ Sincerely,
       await storage.updateSystemConfig(configItems);
       
       // Update environment variables for the current process
-      if (liveSecretKey) {
+      // Always set all values (even empty ones) to ensure configuration consistency
+      process.env.VITE_STRIPE_PUBLIC_KEY = livePublicKey || '';
+      process.env.STRIPE_TEST_PUBLIC_KEY = testPublicKey || '';
+      process.env.STRIPE_MONTHLY_PRICE_ID = monthlyPriceId || '';
+      process.env.STRIPE_ANNUAL_PRICE_ID = annualPriceId || '';
+      process.env.STRIPE_MONTHLY_PAYMENT_LINK = monthlyPaymentLink || '';
+      process.env.STRIPE_ANNUAL_PAYMENT_LINK = annualPaymentLink || '';
+      process.env.STRIPE_LIVE_MODE = isLiveMode ? 'true' : 'false';
+      
+      // Only update secret keys if they're not masked (not null)
+      if (liveSecretKey !== null) {
         process.env.STRIPE_SECRET_KEY = liveSecretKey;
       }
       
-      if (livePublicKey) {
-        process.env.VITE_STRIPE_PUBLIC_KEY = livePublicKey;
-      }
-      
-      if (monthlyPriceId) {
-        process.env.STRIPE_MONTHLY_PRICE_ID = monthlyPriceId;
-      }
-      
-      if (annualPriceId) {
-        process.env.STRIPE_ANNUAL_PRICE_ID = annualPriceId;
-      }
-      
-      if (monthlyPaymentLink) {
-        process.env.STRIPE_MONTHLY_PAYMENT_LINK = monthlyPaymentLink;
-      }
-      
-      if (annualPaymentLink) {
-        process.env.STRIPE_ANNUAL_PAYMENT_LINK = annualPaymentLink;
+      if (testSecretKey !== null) {
+        process.env.STRIPE_TEST_SECRET_KEY = testSecretKey;
       }
       
       // Reinitialize Stripe if needed
