@@ -96,13 +96,24 @@ export default function StripeIntegration() {
               setTestSecretKey("");
             }
             
-            // Set the values from the response
-            setLivePublicKey(data.livePublicKey || "");
-            setTestPublicKey(data.testPublicKey || "");
-            setMonthlyPriceId(data.monthlyPriceId || "");
-            setAnnualPriceId(data.annualPriceId || "");
-            setMonthlyPaymentLink(data.monthlyPaymentLink || "");
-            setAnnualPaymentLink(data.annualPaymentLink || "");
+            // Debug the received data
+            console.log("Setting values from response:", {
+              livePublicKey: data.livePublicKey,
+              testPublicKey: data.testPublicKey,
+              monthlyPriceId: data.monthlyPriceId,
+              annualPriceId: data.annualPriceId,
+              monthlyPaymentLink: data.monthlyPaymentLink,
+              annualPaymentLink: data.annualPaymentLink,
+              isLiveMode: data.isLiveMode
+            });
+            
+            // Set the values with strict type checking to ensure we capture all values
+            setLivePublicKey(typeof data.livePublicKey === 'string' ? data.livePublicKey : "");
+            setTestPublicKey(typeof data.testPublicKey === 'string' ? data.testPublicKey : "");
+            setMonthlyPriceId(typeof data.monthlyPriceId === 'string' ? data.monthlyPriceId : "");
+            setAnnualPriceId(typeof data.annualPriceId === 'string' ? data.annualPriceId : "");
+            setMonthlyPaymentLink(typeof data.monthlyPaymentLink === 'string' ? data.monthlyPaymentLink : "");
+            setAnnualPaymentLink(typeof data.annualPaymentLink === 'string' ? data.annualPaymentLink : "");
             setIsLiveMode(data.isLiveMode === true);
           } catch (error) {
             console.error("Error fetching Stripe config:", error);

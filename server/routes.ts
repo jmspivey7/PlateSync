@@ -2423,6 +2423,17 @@ Sincerely,
         isLiveMode: isLiveModeConfig?.value === 'true',
       };
       
+      // Debug output to console for verification
+      console.log("Returning Stripe config:", {
+        livePublicKey: response.livePublicKey,
+        testPublicKey: response.testPublicKey,
+        monthlyPriceId: response.monthlyPriceId,
+        annualPriceId: response.annualPriceId,
+        monthlyPaymentLink: response.monthlyPaymentLink,
+        annualPaymentLink: response.annualPaymentLink,
+        isLiveMode: response.isLiveMode
+      });
+      
       res.json(response);
     } catch (error) {
       console.error('Error fetching Stripe configuration:', error);
