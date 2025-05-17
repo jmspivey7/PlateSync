@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { 
   Avatar, 
@@ -37,6 +37,32 @@ const GlobalAdminAccountDropdown = ({
   adminEmail = "jspivey@spiveyco.com" 
 }: GlobalAdminAccountDropdownProps) => {
   const [_, setLocation] = useLocation();
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Load profile data from local storage
+    const loadProfileImage = () => {
+      const savedProfileData = localStorage.getItem("globalAdminProfile");
+      if (savedProfileData) {
+        try {
+          const parsedData = JSON.parse(savedProfileData);
+          if (parsedData.profileImageUrl) {
+            setProfileImageUrl(parsedData.profileImageUrl);
+          }
+        } catch (error) {
+          console.error("Error parsing profile data:", error);
+        }
+      }
+    };
+    
+    // Load on mount
+    loadProfileImage();
+    
+    // Check for updates every second
+    const intervalId = setInterval(loadProfileImage, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
   
   const handleLogout = () => {
     localStorage.removeItem("globalAdminToken");
@@ -48,7 +74,11 @@ const GlobalAdminAccountDropdown = ({
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
           <Avatar className="h-9 w-9 bg-[#69ad4c]">
-            <AvatarFallback className="text-white">GA</AvatarFallback>
+            {profileImageUrl ? (
+              <AvatarImage src={profileImageUrl} alt={adminName} />
+            ) : (
+              <AvatarFallback className="text-white">GA</AvatarFallback>
+            )}
           </Avatar>
           <div className="flex flex-col items-start text-left">
             <span className="text-sm font-medium leading-none">{adminName}</span>

@@ -120,6 +120,13 @@ export default function GlobalAdminProfile() {
             // Save to localStorage for persistence
             localStorage.setItem("globalAdminProfile", JSON.stringify(updatedData));
             
+            // Dispatch custom event to notify other components of the update
+            try {
+              window.dispatchEvent(new Event("profileUpdated"));
+            } catch (error) {
+              console.error("Error dispatching profile update event:", error);
+            }
+            
             return updatedData;
           });
           
@@ -333,6 +340,13 @@ export default function GlobalAdminProfile() {
                 
                 // Save profile data to localStorage
                 localStorage.setItem("globalAdminProfile", JSON.stringify(profileData));
+                
+                // Dispatch custom event to notify other components of the update
+                try {
+                  window.dispatchEvent(new Event("profileUpdated"));
+                } catch (error) {
+                  console.error("Error dispatching profile update event:", error);
+                }
                 
                 // Simulate API call
                 setTimeout(() => {
