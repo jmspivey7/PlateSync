@@ -3,7 +3,7 @@ import { Router } from "express";
 import { db } from "../db";
 import { churches, users, members, donations } from "@shared/schema";
 import { validateSchema } from "../middleware/validationMiddleware";
-import { eq, desc, and, asc, SQL, ilike, sql } from "drizzle-orm";
+import { eq, desc, and, asc, SQL, ilike, sql, ne } from "drizzle-orm";
 import { z } from "zod";
 import { generateId, scryptHash, verifyPassword, generateToken } from "../util";
 import { requireGlobalAdmin } from "../middleware/globalAdminMiddleware";
@@ -132,13 +132,12 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
     // For each church, get additional statistics
     const churchesWithStats = await Promise.all(
       churchesList.map(async (church) => {
-        // Get user count for this church
-        const [{ userCount }] = await db
-          .select({
-            userCount: sql<number>`count(*)`
-          })
-          .from(users)
-          .where(eq(users.churchId, church.id));
+        // Get user count for this church (excluding GLOBAL_ADMIN users)
+        // Use direct SQL to ensure consistent counting with the detail page
+        const userResult = await db.execute(
+          `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${church.id}' AND role != 'GLOBAL_ADMIN'`
+        );
+        const userCount = parseInt(userResult.rows[0]?.userCount || '0');
         
         // Use SQL to get member count for this church safely
         const memberResult = await db.execute(
