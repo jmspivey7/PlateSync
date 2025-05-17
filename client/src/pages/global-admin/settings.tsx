@@ -9,7 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Settings as SettingsIcon, Save, Mail, RotateCw, Code, Eye, Loader2 } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Settings as SettingsIcon, 
+  Save, 
+  Mail, 
+  RotateCw, 
+  Code, 
+  Eye, 
+  Loader2,
+  Network
+} from "lucide-react";
 
 // Define the template types
 type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
@@ -325,41 +335,131 @@ export default function GlobalAdminSettings() {
         </div>
         
         {currentView === "list" ? (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center">
-                <Mail className="h-5 w-5 mr-2 text-[#69ad4c]" />
-                <CardTitle>System Email Templates</CardTitle>
-              </div>
-              <CardDescription>
-                Configure the email templates used system-wide for all churches
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {templates.map((template) => (
-                  <div key={template.id} className="border rounded-md overflow-hidden">
-                    <div className="p-4 border-b">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium">
-                          {template.type === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
-                        </h3>
-                        <Button 
-                          onClick={() => handleEditTemplate(template)}
-                          className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                        >
-                          Edit Template
-                        </Button>
+          // Settings list view with tabs
+          <Tabs defaultValue="email-templates" className="mb-6">
+            <TabsList className="mb-4">
+              <TabsTrigger value="email-templates" className="text-sm">Email Templates</TabsTrigger>
+              <TabsTrigger value="integrations" className="text-sm">Integrations</TabsTrigger>
+            </TabsList>
+            
+            {/* Email Templates Tab Content */}
+            <TabsContent value="email-templates">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <Mail className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    <CardTitle>System Email Templates</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Configure the email templates used system-wide for all churches
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {templates.map((template) => (
+                      <div key={template.id} className="border rounded-md overflow-hidden">
+                        <div className="p-4 border-b">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">
+                              {template.type === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
+                            </h3>
+                            <Button 
+                              onClick={() => handleEditTemplate(template)}
+                              className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                            >
+                              Edit Template
+                            </Button>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Last Edited: {template.lastUpdated || "Never"}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Last Edited: {template.lastUpdated || "Never"}
-                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+              
+            {/* Integrations Tab Content */}
+            <TabsContent value="integrations">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <SettingsIcon className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    <CardTitle>Third-Party Integrations</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Manage connections with external services used by PlateSync
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* SendGrid Integration */}
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="p-4 border-b">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-medium">SendGrid</h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Email notification service used for sending emails from PlateSync
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={() => setLocation("/global-admin/integrations/sendgrid")}
+                            className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                          >
+                            Manage
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Planning Center Integration */}
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="p-4 border-b">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-medium">Planning Center</h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Connect with Planning Center to sync member data
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={() => setLocation("/global-admin/integrations/planning-center")}
+                            className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                          >
+                            Manage
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Stripe Integration */}
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="p-4 border-b">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-medium">Stripe</h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Payment processing for subscriptions and billing
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={() => setLocation("/global-admin/integrations/stripe")}
+                            className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                          >
+                            Manage
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        ) : (
         ) : (
           <Card>
             <CardHeader>
