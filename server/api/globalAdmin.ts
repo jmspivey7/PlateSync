@@ -134,10 +134,10 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
       churchesList.map(async (church) => {
         // Get user count for this church (excluding GLOBAL_ADMIN users)
         // Use direct SQL to ensure consistent counting with the detail page
-        const userResult = await db.execute(
+        const userCountResult = await db.execute(
           `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${church.id}' AND role != 'GLOBAL_ADMIN'`
         );
-        const userCount = parseInt(userResult.rows[0]?.userCount || '0');
+        const userCount = parseInt(userCountResult.rows[0]?.userCount || '0');
         
         // Use SQL to get member count for this church safely
         const memberResult = await db.execute(
@@ -152,13 +152,13 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
         const donationSum = donationResult.rows?.[0]?.donationSum || '0.00';
           
         // Use SQL to get the most recent login date (using updatedAt as a proxy) from any user in this church
-        const userResult = await db.execute(
+        const userLoginResult = await db.execute(
           `SELECT updated_at FROM users WHERE church_id = '${church.id}' ORDER BY updated_at DESC LIMIT 1`
         );
         
         // If no users have logged in recently, fall back to the church's updated_at date
-        const lastLoginDate = userResult?.rows?.[0]?.updated_at 
-          ? new Date(userResult.rows[0].updated_at) 
+        const lastLoginDate = userLoginResult?.rows?.[0]?.updated_at 
+          ? new Date(userLoginResult.rows[0].updated_at) 
           : church.updatedAt;
         
         return {
