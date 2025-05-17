@@ -2408,11 +2408,13 @@ Sincerely,
       const annualPaymentLinkConfig = await storage.getSystemConfig('STRIPE_ANNUAL_PAYMENT_LINK');
       const isLiveModeConfig = await storage.getSystemConfig('STRIPE_LIVE_MODE');
       
-      // Prepare response - omit actual secret key values for security
+      // Prepare response - mask secret keys but return all other values
       const response = {
-        liveSecretKey: liveSecretKeyConfig ? true : false, // Only indicate if exists
+        // Mask secret keys for security, but indicate they exist
+        liveSecretKey: liveSecretKeyConfig ? true : false,
+        // Return actual values for all public keys and IDs
         livePublicKey: livePublicKeyConfig?.value || '',
-        testSecretKey: testSecretKeyConfig ? true : false, // Only indicate if exists
+        testSecretKey: testSecretKeyConfig ? true : false,
         testPublicKey: testPublicKeyConfig?.value || '',
         monthlyPriceId: monthlyPriceIdConfig?.value || '',
         annualPriceId: annualPriceIdConfig?.value || '',

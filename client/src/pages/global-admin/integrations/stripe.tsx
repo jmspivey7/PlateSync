@@ -86,18 +86,54 @@ export default function StripeIntegration() {
             // Mask the keys for security
             if (data.liveSecretKey) {
               setLiveSecretKey("••••••••••••••••••••••••••");
-            }
-            if (data.testSecretKey) {
-              setTestSecretKey("••••••••••••••••••••••••••");
+            } else {
+              setLiveSecretKey("");
             }
             
-            setLivePublicKey(data.livePublicKey || "");
-            setTestPublicKey(data.testPublicKey || "");
-            setMonthlyPriceId(data.monthlyPriceId || "");
-            setAnnualPriceId(data.annualPriceId || "");
-            setMonthlyPaymentLink(data.monthlyPaymentLink || "");
-            setAnnualPaymentLink(data.annualPaymentLink || "");
-            setIsLiveMode(data.isLiveMode !== undefined ? data.isLiveMode : true);
+            if (data.testSecretKey) {
+              setTestSecretKey("••••••••••••••••••••••••••");
+            } else {
+              setTestSecretKey("");
+            }
+            
+            // Set the values from the response
+            if (data.livePublicKey && typeof data.livePublicKey === 'string') {
+              setLivePublicKey(data.livePublicKey);
+            } else {
+              setLivePublicKey("");
+            }
+            
+            if (data.testPublicKey && typeof data.testPublicKey === 'string') {
+              setTestPublicKey(data.testPublicKey);
+            } else {
+              setTestPublicKey("");
+            }
+            
+            if (data.monthlyPriceId && typeof data.monthlyPriceId === 'string') {
+              setMonthlyPriceId(data.monthlyPriceId);
+            } else {
+              setMonthlyPriceId("");
+            }
+            
+            if (data.annualPriceId && typeof data.annualPriceId === 'string') {
+              setAnnualPriceId(data.annualPriceId);
+            } else {
+              setAnnualPriceId("");
+            }
+            
+            if (data.monthlyPaymentLink && typeof data.monthlyPaymentLink === 'string') {
+              setMonthlyPaymentLink(data.monthlyPaymentLink);
+            } else {
+              setMonthlyPaymentLink("");
+            }
+            
+            if (data.annualPaymentLink && typeof data.annualPaymentLink === 'string') {
+              setAnnualPaymentLink(data.annualPaymentLink);
+            } else {
+              setAnnualPaymentLink("");
+            }
+            
+            setIsLiveMode(data.isLiveMode === true);
           } catch (error) {
             console.error("Error fetching Stripe config:", error);
           }
@@ -165,12 +201,14 @@ export default function StripeIntegration() {
         throw new Error("Authentication token not found. Please log in again.");
       }
       
-      // Send the configuration to the server with authentication token
-      // Only send non-masked secret keys
-      await apiRequest(
-        '/api/global-admin/integrations/stripe', 
-        'POST', 
-        {
+      // Use direct fetch to avoid apiRequest type issues
+      const response = await fetch('/api/global-admin/integrations/stripe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
           liveSecretKey: liveSecretKey.startsWith("••••") ? null : liveSecretKey,
           livePublicKey,
           testSecretKey: testSecretKey.startsWith("••••") ? null : testSecretKey,
@@ -180,11 +218,13 @@ export default function StripeIntegration() {
           monthlyPaymentLink,
           annualPaymentLink,
           isLiveMode
-        },
-        {
-          Authorization: `Bearer ${token}`
-        }
-      );
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save configuration');
+      }
       
       toast({
         title: "Configuration saved",
