@@ -232,13 +232,42 @@ export default function GlobalAdminSettings() {
   };
   
   // Handle saving a template
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!activeTemplate) return;
     
     setIsSaving(true);
     
-    // Simulate API call with a timeout
-    setTimeout(() => {
+    try {
+      // Get token for authentication
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      // Format data for the API
+      const templateData = {
+        id: activeTemplate.id,
+        templateType: activeTemplate.type,
+        subject: activeTemplate.subject,
+        bodyHtml: activeTemplate.body,
+        bodyText: stripHtml(activeTemplate.body), // Simple function to strip HTML tags
+        churchId: "SYSTEM_TEMPLATES" // System templates identifier
+      };
+      
+      // Make API call to update the template in the database
+      const response = await fetch(`/api/email-templates/system/${activeTemplate.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(templateData)
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to save template");
+      }
+      
       // Update the templates array with the edited template
       setTemplates(prevTemplates => 
         prevTemplates.map(t => 
@@ -258,15 +287,30 @@ export default function GlobalAdminSettings() {
         )
       );
       
-      setIsSaving(false);
-      setCurrentView("list");
-      
       // Show success toast
       toast({
         title: "Template updated",
-        description: "Email template has been successfully updated",
+        description: "Email template has been successfully updated and saved to the database",
       });
-    }, 1000);
+      
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast({
+        title: "Failed to update template",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+      setCurrentView("list");
+    }
+  };
+  
+  // Helper function to strip HTML tags for plain text version
+  const stripHtml = (html: string): string => {
+    const tmp = document.createElement('DIV');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
   };
   
   // Handle resetting a template to its default
