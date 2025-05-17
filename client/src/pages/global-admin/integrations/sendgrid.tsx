@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, CheckCircle2, AlertCircle, RotateCw } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Mail, AlertCircle, RotateCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function SendGridIntegration() {
@@ -54,8 +53,7 @@ export default function SendGridIntegration() {
           // Token seems valid, fetch SendGrid configuration
           setIsLoading(false);
           
-          // In a real implementation, fetch the actual configuration from the API
-          // For now, we'll load placeholder values
+          // Fetch the actual configuration from the API
           try {
             const response = await apiRequest('/api/global-admin/integrations/sendgrid');
             const data = await response.json();
@@ -223,6 +221,23 @@ export default function SendGridIntegration() {
                 </p>
               </div>
               
+              <div className="flex justify-end">
+                <Button 
+                  onClick={saveConfiguration} 
+                  className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                  disabled={isSaving || !fromEmail}
+                >
+                  {isSaving ? (
+                    <>
+                      <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Configuration"
+                  )}
+                </Button>
+              </div>
+              
               <div className="pt-4 border-t mt-6">
                 <h3 className="text-lg font-medium mb-2">Test Email Delivery</h3>
                 <p className="text-sm text-gray-600 mb-4">
@@ -240,7 +255,7 @@ export default function SendGridIntegration() {
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-end">
                   <Button 
                     className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
                     onClick={testSendGridConfiguration}
@@ -255,22 +270,8 @@ export default function SendGridIntegration() {
                       "Send Test Email"
                     )}
                   </Button>
-                  
-                  <Button 
-                    onClick={saveConfiguration} 
-                    className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                    disabled={isSaving || !fromEmail}
-                  >
-                    {isSaving ? (
-                      <>
-                        <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Configuration"
-                    )}
-                  </Button>
                 </div>
+              </div>
             </div>
           </CardContent>
         </Card>
