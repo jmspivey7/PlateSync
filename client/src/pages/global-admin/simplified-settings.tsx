@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings as SettingsIcon, Mail, Network, Edit } from "lucide-react";
 
 // Import the integration logos
-import sendgridLogo from "../../assets/integrations/sendgrid-logo.svg";
-import stripeLogo from "../../assets/integrations/stripe-logo.svg";
-import planningCenterLogo from "../../assets/integrations/planning-center-logo.svg";
+import sendgridLogo from "../../assets/integrations/sendgrid-logo.png";
+import stripeLogo from "../../assets/integrations/stripe-logo.png";
+import planningCenterLogo from "../../assets/integrations/planning-center-logo.png";
 
 type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
 
@@ -111,9 +111,9 @@ export default function GlobalAdminSettings() {
           <TabsContent value="integrations">
             <Card>
               <CardHeader>
-                <div className="flex items-center">
-                  <Network className="h-5 w-5 mr-2 text-[#69ad4c]" />
-                  <CardTitle>Integrations</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Network className="text-[#69ad4c] h-5 w-5" />
+                  <CardTitle className="text-2xl font-bold">Integrations</CardTitle>
                 </div>
                 <CardDescription>
                   Configure system-wide integrations for all churches
@@ -122,65 +122,53 @@ export default function GlobalAdminSettings() {
               <CardContent>
                 <div className="space-y-4">
                   <div 
-                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
-                    onClick={() => setLocation("/global-admin/integrations/sendgrid")}
+                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    onClick={() => setLocation("/global-admin/integrations/stripe")}
                   >
-                    <div className="flex items-center">
-                      <div className="w-40 mr-3 flex items-center justify-center">
-                        <img 
-                          src={sendgridLogo} 
-                          alt="SendGrid" 
-                          className="h-10"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Configure email delivery settings</p>
-                      </div>
+                    <div className="flex items-center gap-6">
+                      <img 
+                        src={stripeLogo} 
+                        alt="Stripe" 
+                        className="h-14"
+                      />
+                      <p className="text-base text-gray-700">Configure subscription and payment settings</p>
                     </div>
                     <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-5 w-5" />
                     </Button>
                   </div>
                     
                   <div 
-                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
-                    onClick={() => setLocation("/global-admin/integrations/planning-center")}
+                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    onClick={() => setLocation("/global-admin/integrations/sendgrid")}
                   >
-                    <div className="flex items-center">
-                      <div className="w-40 mr-3 flex items-center justify-center">
-                        <img 
-                          src={planningCenterLogo} 
-                          alt="Planning Center" 
-                          className="h-10"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Configure member synchronization</p>
-                      </div>
+                    <div className="flex items-center gap-6">
+                      <img 
+                        src={sendgridLogo} 
+                        alt="SendGrid" 
+                        className="h-14"
+                      />
+                      <p className="text-base text-gray-700">Configure email delivery settings</p>
                     </div>
                     <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-5 w-5" />
                     </Button>
                   </div>
                   
                   <div 
-                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
-                    onClick={() => setLocation("/global-admin/integrations/stripe")}
+                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    onClick={() => setLocation("/global-admin/integrations/planning-center")}
                   >
-                    <div className="flex items-center">
-                      <div className="w-40 mr-3 flex items-center justify-center">
-                        <img 
-                          src={stripeLogo} 
-                          alt="Stripe" 
-                          className="h-10"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Configure subscription and payment settings</p>
-                      </div>
+                    <div className="flex items-center gap-6">
+                      <img 
+                        src={planningCenterLogo} 
+                        alt="Planning Center" 
+                        className="h-14"
+                      />
+                      <p className="text-base text-gray-700">Configure member synchronization</p>
                     </div>
                     <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
