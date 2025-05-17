@@ -141,6 +141,19 @@ export default function GlobalAdminSettings() {
                       <Edit className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  <div 
+                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
+                    onClick={() => setLocation("/global-admin/integrations/stripe")}
+                  >
+                    <div>
+                      <h3 className="font-medium">Stripe</h3>
+                      <p className="text-sm text-gray-500">Configure subscription and payment settings</p>
+                    </div>
+                    <Button variant="ghost" size="icon">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
