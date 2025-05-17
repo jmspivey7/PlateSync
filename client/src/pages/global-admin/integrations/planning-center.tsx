@@ -333,7 +333,7 @@ export default function PlanningCenterIntegration() {
                   variant={isAuthenticated ? "outline" : "default"}
                   className={isAuthenticated 
                     ? "border-red-500 text-red-500 hover:bg-red-50" 
-                    : "bg-[#69ad4c] hover:bg-[#5a9740]"}
+                    : "bg-[#69ad4c] hover:bg-[#5a9740] text-white"}
                   onClick={isAuthenticated 
                     ? () => console.log("Disconnect from Planning Center") 
                     : authenticateWithPlanningCenter}
