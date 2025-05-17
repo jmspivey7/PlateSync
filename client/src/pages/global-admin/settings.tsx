@@ -58,58 +58,46 @@ const initialTemplates: EmailTemplate[] = [
     .footer { margin-top: 30px; font-size: 12px; color: #777; text-align: center; padding: 20px; background-color: #f1f1f1; }
     .features { margin: 20px 0; }
     .features li { margin-bottom: 10px; }
-    h2 { color: #69ad4c; margin-top: 0; }
-    a { color: #69ad4c; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header" style="text-align: center; padding: 20px;">
+    <div class="header">
+      <img src="{{CHURCH_LOGO_URL}}" alt="Church Logo">
       <h1>Welcome to PlateSync!</h1>
-      <p>Your church donation management solution</p>
+      <p>Your donation management system</p>
     </div>
     
     <div class="content">
       <div class="section">
-        <h2>Hello {{userName}},</h2>
+        <h2>Hello {{USER_NAME}},</h2>
+        <p>Welcome to PlateSync! We're excited to have you join {{CHURCH_NAME}} as a {{USER_ROLE}}.</p>
+        <p>PlateSync is designed to make managing donations simple and efficient. Here's what you can do:</p>
         
-        <p>Welcome to PlateSync! Your account for <strong>{{churchName}}</strong> has been successfully created.</p>
+        <ul class="features">
+          <li><strong>Track Donations</strong> - Record and manage all donations in one place</li>
+          <li><strong>Generate Reports</strong> - Create detailed reports for your finance team</li>
+          <li><strong>Manage Members</strong> - Keep your member database up-to-date</li>
+        </ul>
         
-        <p>PlateSync is a comprehensive donation management system designed to help churches like yours streamline the process of tracking and managing donations.</p>
+        <p>Your account has been created with the following details:</p>
+        <p><strong>Email:</strong> {{USER_EMAIL}}</p>
+        <p>Click the button below to set your password and access your account:</p>
         
         <div style="text-align: center;">
-          <a href="{{loginUrl}}" class="button">Log In to PlateSync</a>
+          <a href="{{LOGIN_URL}}" class="button">Set Password & Login</a>
         </div>
-      </div>
-      
-      <div class="section">
-        <h2>What You Can Do With PlateSync</h2>
-        <ul class="features">
-          <li><strong>Record Donations:</strong> Easily track all your church donations in one place</li>
-          <li><strong>Manage Members:</strong> Keep your member database updated and organized</li>
-          <li><strong>Process Batches:</strong> Handle donation batches efficiently with our batch processing system</li>
-          <li><strong>Generate Reports:</strong> Create comprehensive reports for your church leadership</li>
-          <li><strong>Email Notifications:</strong> Automatically send donation receipts and other notifications</li>
-        </ul>
-      </div>
-      
-      <div class="section">
-        <h2>Need Help?</h2>
-        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-        <p>Thank you for choosing PlateSync!</p>
-        <p>Best regards,<br>The PlateSync Team</p>
       </div>
     </div>
     
     <div class="footer">
-      <p>© 2025 PlateSync. All rights reserved.</p>
-      <p>This email was sent to {{userEmail}} because you registered for a PlateSync account.</p>
+      <p>This email was sent to you by {{CHURCH_NAME}} via PlateSync.</p>
+      <p>If you have any questions, please contact your church administrator.</p>
     </div>
   </div>
 </body>
-</html>
-`,
-    lastUpdated: "May 10, 2025"
+</html>`,
+    lastUpdated: "May 10, 2025, 2:30 PM"
   },
   {
     id: "2",
@@ -132,56 +120,42 @@ const initialTemplates: EmailTemplate[] = [
     .section { background-color: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .button { display: inline-block; background-color: #69ad4c; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 15px 0; }
     .button:hover { background-color: #5a9440; }
-    .resetUrl { word-break: break-all; padding: 10px; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 3px; font-family: monospace; font-size: 14px; margin: 15px 0; }
     .footer { margin-top: 30px; font-size: 12px; color: #777; text-align: center; padding: 20px; background-color: #f1f1f1; }
-    h2 { color: #69ad4c; margin-top: 0; }
-    a { color: #69ad4c; }
+    .expiry { font-size: 12px; color: #666; margin-top: 10px; font-style: italic; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header" style="text-align: center; padding: 20px;">
+    <div class="header">
+      <img src="{{CHURCH_LOGO_URL}}" alt="Church Logo">
       <h1>Password Reset Request</h1>
-      <p>Follow the instructions below to reset your password</p>
+      <p>PlateSync Account Recovery</p>
     </div>
     
     <div class="content">
       <div class="section">
-        <h2>Hello {{userName}},</h2>
-        
-        <p>We received a request to reset your password for your PlateSync account at <strong>{{churchName}}</strong>.</p>
-        
-        <p>To reset your password, please click the button below:</p>
+        <h2>Hello {{USER_NAME}},</h2>
+        <p>We received a request to reset your password for your PlateSync account at {{CHURCH_NAME}}.</p>
+        <p>Click the button below to reset your password:</p>
         
         <div style="text-align: center;">
-          <a href="{{resetUrl}}" class="button">Reset Password</a>
+          <a href="{{RESET_URL}}" class="button">Reset Password</a>
         </div>
         
-        <p>If the button above doesn't work, you can copy and paste the following URL into your browser:</p>
-        <div class="resetUrl">{{resetUrl}}</div>
+        <p class="expiry">This link will expire in 24 hours.</p>
         
-        <p><strong>Important:</strong> This password reset link will expire in 24 hours.</p>
-        
-        <p>If you did not request a password reset, please ignore this email or contact support if you have concerns about your account security.</p>
-      </div>
-      
-      <div class="section">
-        <h2>Need Help?</h2>
-        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-        <p>Thank you for using PlateSync!</p>
-        <p>Best regards,<br>The PlateSync Team</p>
+        <p>If you didn't request a password reset, you can safely ignore this email. Your account is secure.</p>
       </div>
     </div>
     
     <div class="footer">
-      <p>© 2025 PlateSync. All rights reserved.</p>
-      <p>This email was sent to {{userEmail}} in response to a password reset request.</p>
+      <p>This email was sent to you by {{CHURCH_NAME}} via PlateSync.</p>
+      <p>If you have any questions, please contact your church administrator.</p>
     </div>
   </div>
 </body>
-</html>
-`,
-    lastUpdated: "May 12, 2025"
+</html>`,
+    lastUpdated: "May 12, 2025, 11:15 AM"
   }
 ];
 
@@ -240,63 +214,77 @@ export default function GlobalAdminSettings() {
           });
           setLocation("/global-admin/login");
         }
-      } catch (err) {
-        console.error('Auth check error:', err);
-        setIsLoading(false);
+      } catch (error) {
+        console.error('Authentication error:', error);
+        setLocation("/global-admin/login");
       }
     };
     
     checkAuth();
-  }, [toast, setLocation]);
+  }, [setLocation, toast]);
   
-  // Handle template edit
+  // Handle editing a template
   const handleEditTemplate = (template: EmailTemplate) => {
-    setActiveTemplate({...template});
+    setActiveTemplate(template);
     setCurrentView("edit");
+    setActiveTab("edit");
   };
   
-  // Handle template reset
-  const handleResetTemplate = () => {
-    if (!activeTemplate) return;
-    
-    const originalTemplate = initialTemplates.find(t => t.type === activeTemplate.type);
-    if (originalTemplate) {
-      setActiveTemplate({...originalTemplate});
-      
-      toast({
-        title: "Template reset",
-        description: "Template has been reset to its original version.",
-      });
-    }
-  };
-  
-  // Handle template save
+  // Handle saving a template
   const handleSaveTemplate = () => {
     if (!activeTemplate) return;
     
     setIsSaving(true);
     
-    // Simulate API call with a short delay
+    // Simulate API call with a timeout
     setTimeout(() => {
+      // Update the templates array with the edited template
       setTemplates(prevTemplates => 
-        prevTemplates.map(template => 
-          template.id === activeTemplate.id 
-            ? {...activeTemplate, lastUpdated: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})} 
-            : template
+        prevTemplates.map(t => 
+          t.id === activeTemplate.id 
+            ? { 
+                ...activeTemplate, 
+                lastUpdated: new Date().toLocaleString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric', 
+                  hour: 'numeric', 
+                  minute: 'numeric',
+                  hour12: true 
+                }) 
+              } 
+            : t
         )
       );
       
-      setCurrentView("list");
       setIsSaving(false);
+      setCurrentView("list");
       
+      // Show success toast
       toast({
         title: "Template updated",
-        description: `${activeTemplate.type === 'WELCOME_EMAIL' ? 'Welcome Email' : 'Password Reset'} template has been updated successfully.`,
+        description: "Email template has been successfully updated",
       });
-    }, 800);
+    }, 1000);
   };
   
-  // Handle cancel edit
+  // Handle resetting a template to its default
+  const handleResetTemplate = () => {
+    if (!activeTemplate) return;
+    
+    // Find the original template
+    const originalTemplate = initialTemplates.find(t => t.type === activeTemplate.type);
+    
+    if (originalTemplate) {
+      setActiveTemplate(originalTemplate);
+      toast({
+        title: "Template reset",
+        description: "Email template has been reset to its default content",
+      });
+    }
+  };
+  
+  // Handle canceling the edit
   const handleCancelEdit = () => {
     setCurrentView("list");
     setActiveTemplate(null);
@@ -335,14 +323,12 @@ export default function GlobalAdminSettings() {
         </div>
         
         {currentView === "list" ? (
-          // Settings list view with tabs
           <Tabs defaultValue="email-templates" className="mb-6">
             <TabsList className="mb-4">
               <TabsTrigger value="email-templates" className="text-sm">Email Templates</TabsTrigger>
               <TabsTrigger value="integrations" className="text-sm">Integrations</TabsTrigger>
             </TabsList>
             
-            {/* Email Templates Tab Content */}
             <TabsContent value="email-templates">
               <Card>
                 <CardHeader>
@@ -380,13 +366,12 @@ export default function GlobalAdminSettings() {
                 </CardContent>
               </Card>
             </TabsContent>
-              
-            {/* Integrations Tab Content */}
+            
             <TabsContent value="integrations">
               <Card>
                 <CardHeader>
                   <div className="flex items-center">
-                    <SettingsIcon className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    <Network className="h-5 w-5 mr-2 text-[#69ad4c]" />
                     <CardTitle>Third-Party Integrations</CardTitle>
                   </div>
                   <CardDescription>
@@ -460,7 +445,7 @@ export default function GlobalAdminSettings() {
             </TabsContent>
           </Tabs>
         ) : (
-        ) : (
+          // Edit template view
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -513,12 +498,8 @@ export default function GlobalAdminSettings() {
                 </div>
               </div>
             </CardHeader>
-            
             <CardContent>
-              <Tabs 
-                value={activeTab} 
-                onValueChange={(value) => setActiveTab(value as "edit" | "preview")}
-              >
+              <Tabs defaultValue="preview" onValueChange={(value) => setActiveTab(value as "edit" | "preview")}>
                 <TabsList className="mb-4">
                   <TabsTrigger value="edit" className="flex items-center">
                     <Code className="h-4 w-4 mr-2" />
@@ -530,49 +511,40 @@ export default function GlobalAdminSettings() {
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="edit" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">Email Subject</Label>
-                    <Input 
-                      id="subject" 
-                      value={activeTemplate?.subject || ""} 
-                      onChange={(e) => activeTemplate && setActiveTemplate({
-                        ...activeTemplate, 
-                        subject: e.target.value
-                      })}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="body">Email Body (HTML)</Label>
-                    <Textarea 
-                      id="body" 
-                      value={activeTemplate?.body || ""} 
-                      onChange={(e) => activeTemplate && setActiveTemplate({
-                        ...activeTemplate, 
-                        body: e.target.value
-                      })}
-                      className="font-mono text-sm h-[400px]"
-                    />
+                <TabsContent value="edit">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="subject">Email Subject</Label>
+                      <Input
+                        id="subject"
+                        value={activeTemplate?.subject || ""}
+                        onChange={(e) => setActiveTemplate(prev => prev ? { ...prev, subject: e.target.value } : null)}
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="bodyHtml">Email Body (HTML)</Label>
+                      <Textarea
+                        id="bodyHtml"
+                        value={activeTemplate?.body || ""}
+                        onChange={(e) => setActiveTemplate(prev => prev ? { ...prev, body: e.target.value } : null)}
+                        className="mt-1 font-mono text-sm h-[400px]"
+                      />
+                    </div>
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="preview">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Subject Preview</h4>
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        {activeTemplate?.subject}
-                      </div>
+                  <div className="border rounded-md p-4">
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium mb-1">Subject:</h3>
+                      <p className="text-gray-800 text-base">{activeTemplate?.subject}</p>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">HTML Preview</h4>
-                      <div className="bg-white border rounded-md overflow-hidden">
-                        <EmailTemplatePreview 
-                          subject={activeTemplate?.subject || ""} 
-                          htmlContent={activeTemplate?.body || ""}
-                        />
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Email Preview:</h3>
+                      <div className="border rounded-md overflow-hidden bg-white">
+                        <EmailTemplatePreview html={activeTemplate?.body || ""} />
                       </div>
                     </div>
                   </div>
