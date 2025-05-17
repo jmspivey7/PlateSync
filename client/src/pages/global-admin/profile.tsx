@@ -214,7 +214,15 @@ export default function GlobalAdminProfile() {
                 <div>
                   <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
                     {profileData.profileImageUrl ? (
-                      <AvatarImage src={profileData.profileImageUrl} alt="Profile" />
+                      <AvatarImage 
+                        src={`${profileData.profileImageUrl}?t=${Date.now()}`} 
+                        alt="Profile" 
+                        onError={(e) => {
+                          console.log("Image failed to load:", profileData.profileImageUrl);
+                          // Force a fallback display if image fails to load
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     ) : (
                       <AvatarFallback className="bg-[#69ad4c] text-white text-xl">
                         {profileData.firstName && profileData.lastName 
