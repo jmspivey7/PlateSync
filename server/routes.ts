@@ -332,7 +332,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Set up SendGrid with the configured API key
-      const sgMail = require('@sendgrid/mail');
+      // Import using ES modules syntax
+      const { MailService } = await import('@sendgrid/mail');
+      const sgMail = new MailService();
       sgMail.setApiKey(apiKey);
       
       // Send a test email
