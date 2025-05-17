@@ -6,6 +6,7 @@ import session from 'express-session';
 import passport from 'passport';
 import connectPg from 'connect-pg-simple';
 import globalAdminProfileRoutes from './api/globalAdminProfileRoutes';
+import profileRoutes from './api/profileRoutes';
 
 // Extend express-session with our user type
 declare global {
@@ -225,6 +226,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Global admin profile routes
   app.use('/api/global-admin', globalAdminProfileRoutes);
+  
+  // Regular user profile routes
+  app.use('/api/profile', isAuthenticated, profileRoutes);
   
   // SendGrid configuration endpoints for global admin
   app.get('/api/global-admin/integrations/sendgrid', requireGlobalAdmin, async (req, res) => {
