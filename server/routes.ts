@@ -2428,7 +2428,8 @@ Sincerely,
         annualPriceId: configMap['STRIPE_ANNUAL_PRICE_ID'] || '',
         monthlyPaymentLink: configMap['STRIPE_MONTHLY_PAYMENT_LINK'] || '',
         annualPaymentLink: configMap['STRIPE_ANNUAL_PAYMENT_LINK'] || '',
-        isLiveMode: configMap['STRIPE_LIVE_MODE'] === 'true',
+        // Default to true (LIVE mode) if not explicitly set to 'false'
+        isLiveMode: configMap['STRIPE_LIVE_MODE'] !== 'false',
       };
       
       console.log('Returning Stripe config to client:', response);

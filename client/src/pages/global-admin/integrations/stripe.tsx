@@ -22,7 +22,7 @@ export default function StripeIntegration() {
   const [annualPriceId, setAnnualPriceId] = useState("");
   const [monthlyPaymentLink, setMonthlyPaymentLink] = useState("");
   const [annualPaymentLink, setAnnualPaymentLink] = useState("");
-  const [isLiveMode, setIsLiveMode] = useState(true);
+  const [isLiveMode, setIsLiveMode] = useState(true); // Default to LIVE mode
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   
