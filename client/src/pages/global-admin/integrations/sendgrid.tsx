@@ -57,7 +57,7 @@ export default function SendGridIntegration() {
           // In a real implementation, fetch the actual configuration from the API
           // For now, we'll load placeholder values
           try {
-            const response = await apiRequest('GET', '/api/global-admin/integrations/sendgrid');
+            const response = await apiRequest('/api/global-admin/integrations/sendgrid', 'GET');
             const data = await response.json();
             
             // Mask the API key for security
@@ -102,7 +102,7 @@ export default function SendGridIntegration() {
       });
       
       // Call the API to test SendGrid configuration
-      await apiRequest('GET', '/api/test-sendgrid');
+      await apiRequest('/api/test-sendgrid', 'GET');
       
       // Show success toast
       toast({
@@ -129,7 +129,7 @@ export default function SendGridIntegration() {
       setIsSaving(true);
       
       // Send the API key and from email to the server
-      await apiRequest('POST', '/api/global-admin/integrations/sendgrid', {
+      await apiRequest('/api/global-admin/integrations/sendgrid', 'POST', {
         apiKey: apiKey.startsWith("••••") ? null : apiKey, // Only send if it was changed
         fromEmail
       });

@@ -39,6 +39,11 @@ import GlobalAdminUsers from "@/pages/global-admin/users";
 import GlobalAdminReports from "@/pages/global-admin/reports";
 import GlobalAdminSettings from "@/pages/global-admin/settings";
 
+// Global Admin Integration Pages
+import SendGridIntegration from "@/pages/global-admin/integrations/sendgrid";
+import PlanningCenterIntegration from "@/pages/global-admin/integrations/planning-center";
+import StripeIntegration from "@/pages/global-admin/integrations/stripe";
+
 import { useAuth } from "@/hooks/useAuth";
 
 // Public paths that don't require authentication
@@ -169,6 +174,11 @@ function Router() {
       <Route path="/global-admin/users" component={GlobalAdminUsers} />
       <Route path="/global-admin/reports" component={GlobalAdminReports} />
       <Route path="/global-admin/settings" component={GlobalAdminSettings} />
+      
+      {/* Global Admin Integration Routes */}
+      <Route path="/global-admin/integrations/sendgrid" component={SendGridIntegration} />
+      <Route path="/global-admin/integrations/planning-center" component={PlanningCenterIntegration} />
+      <Route path="/global-admin/integrations/stripe" component={StripeIntegration} />
       
       <Route component={NotFound} />
     </Switch>
