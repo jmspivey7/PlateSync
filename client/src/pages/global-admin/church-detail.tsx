@@ -396,8 +396,7 @@ export default function ChurchDetail() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center mb-4">
-                <Mail className="h-5 w-5 mr-2 text-muted-foreground" />
+              <div className="mb-4">
                 <span className="text-base">
                   {isLoadingChurch ? <Skeleton className="h-5 w-48 inline-block" /> : church?.contactEmail}
                 </span>
