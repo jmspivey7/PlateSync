@@ -1979,18 +1979,25 @@ export class DatabaseStorage implements IStorage {
     return newTemplate;
   }
   
-  async updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId: string): Promise<EmailTemplate | undefined> {
-    const [updatedTemplate] = await db
+  async updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId?: string): Promise<EmailTemplate | undefined> {
+    // Create base query
+    let query = db
       .update(emailTemplates)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(emailTemplates.id, id),
-        eq(emailTemplates.churchId, churchId)
-      ))
-      .returning();
+      .where(eq(emailTemplates.id, id));
+    
+    // Add churchId to query if provided
+    if (churchId) {
+      query = query.where(eq(emailTemplates.churchId, churchId));
+    }
+    
+    // Execute the query and get the first result
+    const [updatedTemplate] = await query.returning();
+    
+    console.log(`Updated template ID ${id} with churchId ${churchId || 'not specified'}`);
     
     return updatedTemplate;
   }

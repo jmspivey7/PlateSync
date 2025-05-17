@@ -170,6 +170,68 @@ export default function GlobalAdminSettings() {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("preview");
   const [isSaving, setIsSaving] = useState(false);
   
+  // Load templates from the server
+  const loadTemplates = async () => {
+    try {
+      const token = localStorage.getItem("globalAdminToken");
+      
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      // First, ensure system templates are initialized
+      await fetch('/api/email-templates/initialize-system', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // Then fetch the templates
+      const response = await fetch('/api/email-templates/system', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to load templates");
+      }
+      
+      const data = await response.json();
+      console.log("Loaded templates:", data);
+      
+      // Map the API response to our EmailTemplate format
+      const formattedTemplates = data.map((template: any) => ({
+        id: template.id,
+        type: template.templateType,
+        subject: template.subject,
+        body: template.bodyHtml,
+        lastUpdated: template.updatedAt 
+          ? new Date(template.updatedAt).toLocaleString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric', 
+              hour: 'numeric', 
+              minute: 'numeric',
+              hour12: true 
+            })
+          : undefined
+      }));
+      
+      setTemplates(formattedTemplates);
+    } catch (error) {
+      console.error("Error loading templates:", error);
+      toast({
+        title: "Failed to load templates",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   // Check if the global admin is authenticated
   useEffect(() => {
     const checkAuth = async () => {
@@ -204,7 +266,8 @@ export default function GlobalAdminSettings() {
           
           // Token seems valid, proceed with loading the page
           console.log("Global admin authenticated, loading settings page");
-          setIsLoading(false);
+          // Load email templates after successful authentication
+          loadTemplates();
         } catch (err) {
           console.error('Token validation error:', err);
           localStorage.removeItem("globalAdminToken");
