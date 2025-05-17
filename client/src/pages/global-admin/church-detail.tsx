@@ -328,11 +328,72 @@ export default function ChurchDetail() {
         <div className="space-y-6">
           {/* Church Overview Card */}
           <Card>
-            <CardHeader>
-              <CardTitle>Church Overview</CardTitle>
-              <CardDescription>
-                A summary of the church's activity and key metrics
-              </CardDescription>
+            <CardHeader className="flex flex-row justify-between items-start">
+              <div>
+                <CardTitle>Church Overview</CardTitle>
+                <CardDescription>
+                  A summary of the church's activity and key metrics
+                </CardDescription>
+              </div>
+              <div className="flex space-x-2">
+                {isLoadingChurch ? (
+                  <Skeleton className="h-10 w-32" />
+                ) : church?.status === "ACTIVE" ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="border-amber-500 text-amber-500">Suspend Church</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Suspend Church</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to suspend {church?.name}? This will prevent all users from accessing the church account until you reactivate it.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          className="bg-amber-600 hover:bg-amber-700"
+                          onClick={() => handleStatusChange("SUSPENDED")}
+                        >
+                          Suspend
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : church?.status === "SUSPENDED" ? (
+                  <Button
+                    variant="outline"
+                    className="border-green-500 text-green-500 hover:bg-green-500/10"
+                    onClick={() => handleStatusChange("ACTIVE")}
+                  >
+                    Reactivate Church
+                  </Button>
+                ) : null}
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button className="bg-red-600 hover:bg-red-700 text-white">Delete Church</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Church</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {church?.name}? This action cannot be undone and all data will be permanently removed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => handleStatusChange("DELETED")}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center mb-4">
@@ -378,81 +439,62 @@ export default function ChurchDetail() {
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-6 mb-6 text-sm">
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  <div>
-                    <span className="text-muted-foreground">Created:</span><br />
-                    <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.createdAt || "")}</span>
+              <div className="flex flex-col space-y-4 mb-6">
+                <h3 className="text-base font-semibold">Account Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    <div>
+                      <span className="text-muted-foreground">Created:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.createdAt || "")}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2" />
+                    <div>
+                      <span className="text-muted-foreground">Last Updated:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.updatedAt || "")}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2" />
-                  <div>
-                    <span className="text-muted-foreground">Last Updated:</span><br />
-                    <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.updatedAt || "")}</span>
+
+                <h3 className="text-base font-semibold mt-2">Subscription Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2 text-amber-500" />
+                    <div>
+                      <span className="text-muted-foreground">Trial Start Date:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "05/01/2025"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2 text-green-500" />
+                    <div>
+                      <span className="text-muted-foreground">Subscription Start Date:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "05/15/2025"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-blue-500" />
+                    <div>
+                      <span className="text-muted-foreground">Last Payment Date:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "05/15/2025"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="h-5 w-5 mr-2 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    <div>
+                      <span className="text-muted-foreground">Last Payment Made:</span><br />
+                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "$25.00"}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="border-t pt-4 flex justify-end space-x-2">
-              {isLoadingChurch ? (
-                <Skeleton className="h-10 w-32" />
-              ) : church?.status === "ACTIVE" ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="border-amber-500 text-amber-500">Suspend Church</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Suspend Church</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to suspend {church?.name}? This will prevent all users from accessing the church account until you reactivate it.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        className="bg-amber-600 hover:bg-amber-700"
-                        onClick={() => handleStatusChange("SUSPENDED")}
-                      >
-                        Suspend
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : church?.status === "SUSPENDED" ? (
-                <Button
-                  variant="outline"
-                  className="border-green-500 text-green-500 hover:bg-green-500/10"
-                  onClick={() => handleStatusChange("ACTIVE")}
-                >
-                  Reactivate Church
-                </Button>
-              ) : null}
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive">Delete Church</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Church</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete {church?.name}? This action cannot be undone and all data will be permanently removed.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={() => handleStatusChange("DELETED")}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+            <CardFooter className="border-t pt-4">
+              {/* Empty footer since we moved the buttons to the header */}
             </CardFooter>
           </Card>
           
