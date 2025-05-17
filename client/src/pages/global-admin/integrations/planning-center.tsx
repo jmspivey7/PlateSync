@@ -57,7 +57,7 @@ export default function PlanningCenterIntegration() {
           // In a real implementation, fetch the actual configuration from the API
           // For now, we'll load placeholder values
           try {
-            const response = await apiRequest('GET', '/api/global-admin/integrations/planning-center');
+            const response = await apiRequest('/api/global-admin/integrations/planning-center');
             const data = await response.json();
             
             // Mask the client secret for security
@@ -103,7 +103,7 @@ export default function PlanningCenterIntegration() {
       setIsSaving(true);
       
       // Send the client ID and client secret to the server
-      await apiRequest('POST', '/api/global-admin/integrations/planning-center', {
+      await apiRequest('/api/global-admin/integrations/planning-center', 'POST', {
         clientId,
         clientSecret: clientSecret.startsWith("••••") ? null : clientSecret, // Only send if it was changed
         callbackUrl

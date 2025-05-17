@@ -57,7 +57,7 @@ export default function SendGridIntegration() {
           // In a real implementation, fetch the actual configuration from the API
           // For now, we'll load placeholder values
           try {
-            const response = await apiRequest('/api/global-admin/integrations/sendgrid', 'GET');
+            const response = await apiRequest('/api/global-admin/integrations/sendgrid');
             const data = await response.json();
             
             // Mask the API key for security
@@ -102,7 +102,7 @@ export default function SendGridIntegration() {
       });
       
       // Call the API to test SendGrid configuration
-      await apiRequest('/api/test-sendgrid', 'GET');
+      await apiRequest('/api/test-sendgrid');
       
       // Show success toast
       toast({
