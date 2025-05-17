@@ -97,6 +97,13 @@ export default function StripeIntegration() {
             }
             
             // Set the rest of the values directly from the API response
+            // Add debugging to see what's happening with each field
+            console.log("Setting monthlyPriceId to:", data.monthlyPriceId);
+            console.log("Setting annualPriceId to:", data.annualPriceId);
+            console.log("Setting monthlyPaymentLink to:", data.monthlyPaymentLink);
+            console.log("Setting annualPaymentLink to:", data.annualPaymentLink);
+            
+            // Explicitly use values from data object
             setLivePublicKey(data.livePublicKey || "");
             setTestPublicKey(data.testPublicKey || "");
             setMonthlyPriceId(data.monthlyPriceId || "");
