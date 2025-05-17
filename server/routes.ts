@@ -222,6 +222,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up global admin routes
   app.use('/api/global-admin', globalAdminRoutes);
   
+  // SendGrid configuration endpoints for global admin
+  app.get('/api/global-admin/integrations/sendgrid', requireGlobalAdmin, async (req, res) => {
+    try {
+      const apiKey = await storage.getSystemConfig('SENDGRID_API_KEY');
+      const fromEmail = await storage.getSystemConfig('SENDGRID_FROM_EMAIL');
+      
+      res.json({
+        apiKey: apiKey ? '************' : '', // Mask the API key for security
+        fromEmail: fromEmail || ''
+      });
+    } catch (error) {
+      console.error('Error fetching SendGrid config:', error);
+      res.status(500).json({ message: 'Failed to fetch SendGrid configuration' });
+    }
+  });
+  
+  app.post('/api/global-admin/integrations/sendgrid', requireGlobalAdmin, async (req, res) => {
+    try {
+      const { apiKey, fromEmail } = req.body;
+      
+      if (!apiKey || !fromEmail) {
+        return res.status(400).json({ message: 'API key and From Email are required' });
+      }
+      
+      // Store the SendGrid configuration
+      await storage.setSystemConfig('SENDGRID_API_KEY', apiKey);
+      await storage.setSystemConfig('SENDGRID_FROM_EMAIL', fromEmail);
+      
+      // Update environment variables for the current session
+      process.env.SENDGRID_API_KEY = apiKey;
+      process.env.SENDGRID_FROM_EMAIL = fromEmail;
+      
+      res.json({ success: true, message: 'SendGrid configuration saved successfully' });
+    } catch (error) {
+      console.error('Error saving SendGrid config:', error);
+      res.status(500).json({ message: 'Failed to save SendGrid configuration' });
+    }
+  });
+  
+  app.post('/api/global-admin/integrations/sendgrid/test', requireGlobalAdmin, async (req, res) => {
+    try {
+      const { emailTo } = req.body;
+      
+      if (!emailTo) {
+        return res.status(400).json({ message: 'Test recipient email is required' });
+      }
+      
+      const apiKey = await storage.getSystemConfig('SENDGRID_API_KEY');
+      const fromEmail = await storage.getSystemConfig('SENDGRID_FROM_EMAIL');
+      
+      if (!apiKey || !fromEmail) {
+        return res.status(400).json({ message: 'SendGrid is not configured yet' });
+      }
+      
+      // Set up SendGrid with the configured API key
+      const sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(apiKey);
+      
+      // Send a test email
+      const msg = {
+        to: emailTo,
+        from: fromEmail,
+        subject: 'PlateSync SendGrid Integration Test',
+        text: 'This is a test email from PlateSync to verify your SendGrid integration is working correctly.',
+        html: '<strong>This is a test email from PlateSync to verify your SendGrid integration is working correctly.</strong>',
+      };
+      
+      await sgMail.send(msg);
+      
+      res.json({ success: true, message: 'Test email sent successfully' });
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      let errorMessage = 'Failed to send test email';
+      
+      // Extract SendGrid specific error message if available
+      if (error.response && error.response.body && error.response.body.errors) {
+        errorMessage = error.response.body.errors.map(e => e.message).join(', ');
+      }
+      
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+  
   // Set up Planning Center routes
   setupPlanningCenterRoutes(app);
   

@@ -3033,8 +3033,33 @@ PlateSync Reporting System
       return undefined;
     }
   }
-}
+  // System configuration methods
+  async getSystemConfig(key: string): Promise<string | null> {
+    try {
+      const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, key));
+      return config?.value || null;
+    } catch (error) {
+      console.error(`Error getting system config for key ${key}:`, error);
+      return null;
+    }
+  }
 
+  async setSystemConfig(key: string, value: string): Promise<void> {
+    try {
+      await db.insert(systemConfig)
+        .values({ key, value })
+        .onConflictDoUpdate({
+          target: systemConfig.key,
+          set: { 
+            value,
+            updatedAt: new Date()
+          }
+        });
+    } catch (error) {
+      console.error(`Error setting system config for key ${key}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
