@@ -438,7 +438,7 @@ export default function ChurchDetail() {
                 </div>
               </div>
               
-              <div className="flex flex-col space-y-4 mb-6">
+              <div className="flex flex-col space-y-4 mb-2">
                 <h3 className="text-base font-semibold">Subscription Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center">
