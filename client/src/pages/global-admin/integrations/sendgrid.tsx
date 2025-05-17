@@ -274,7 +274,7 @@ export default function SendGridIntegration() {
               <div className="flex justify-end">
                 <Button 
                   onClick={saveConfiguration} 
-                  className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                  className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
                   disabled={isSaving || !fromEmail}
                 >
                   {isSaving ? (
