@@ -417,7 +417,7 @@ export default function StripeIntegration() {
                 
                 <Button 
                   onClick={saveConfiguration} 
-                  className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                  className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
                   disabled={isSaving}
                 >
                   {isSaving ? (
