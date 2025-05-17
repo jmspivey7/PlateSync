@@ -285,10 +285,20 @@ export default function GlobalAdminDashboard() {
 
             {/* Charts - Third Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Churn Rate</CardTitle>
-                  <CardDescription>Monthly subscription churn rate</CardDescription>
+              <Card className="lg:col-span-3">
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>Churn Rate</CardTitle>
+                    <CardDescription>Monthly subscription churn rate</CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-[#ff6b6b]">3.2%</div>
+                    <div className="text-sm text-muted-foreground">Current monthly subscriber churn</div>
+                    <div className="flex items-center justify-end mt-1 text-xs">
+                      <span className="text-green-600 mr-1">↓ 0.3%</span>
+                      <span className="text-muted-foreground">from last month</span>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -310,14 +320,6 @@ export default function GlobalAdminDashboard() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              
-              <StatsCard 
-                title="Churn Rate" 
-                value="3.2%"
-                description="Current monthly subscriber churn" 
-                icon={<ClipboardCheck className="h-4 w-4" />}
-                trend={{ value: 0.3, isPositive: true }}
-              />
             </div>
           </>
         )}
