@@ -59,59 +59,89 @@ export default function GlobalAdminProfile() {
     fileInputRef.current?.click();
   };
   
-  // Upload avatar mutation - simplified approach to avoid server issues
+  // Upload avatar mutation - proper server-side storage implementation
   const uploadAvatarMutation = useMutation({
     mutationFn: async (file: File) => {
       setIsUploading(true);
       
-      // Instead of dealing with server-side uploads that are failing,
-      // we'll use the FileReader API to get a base64 string of the image
-      // and store it directly in localStorage
+      const formData = new FormData();
+      formData.append('avatar', file);
       
-      return new Promise<void>((resolve, reject) => {
-        const reader = new FileReader();
+      try {
+        const token = localStorage.getItem("globalAdminToken");
+        if (!token) {
+          throw new Error("Authentication required");
+        }
         
-        reader.onload = (event) => {
-          try {
-            if (!event.target || typeof event.target.result !== 'string') {
-              throw new Error("Failed to read image file");
+        console.log("Starting avatar upload to server...");
+        
+        const response = await fetch('/api/global-admin/profile/avatar', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        console.log("Upload response status:", response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Upload error:", errorText);
+          throw new Error("Failed to upload avatar");
+        }
+        
+        // Get the response text
+        const responseText = await response.text();
+        console.log("Raw response:", responseText);
+        
+        // Parse the JSON
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (error) {
+          console.error("Error parsing JSON:", error);
+          throw new Error("Invalid server response format");
+        }
+        
+        console.log("Parsed response:", result);
+        
+        if (result.success) {
+          // Update the profile data with the new avatar URL
+          setProfileData(prevData => {
+            const baseUrl = window.location.origin;
+            const fullProfileImageUrl = result.profileImageUrl.startsWith('http') 
+              ? result.profileImageUrl 
+              : `${baseUrl}${result.profileImageUrl}`;
+            
+            console.log("Setting new profile image URL:", fullProfileImageUrl);
+            
+            const updatedData = {
+              ...prevData,
+              profileImageUrl: fullProfileImageUrl
+            };
+            
+            // Save to localStorage for session persistence
+            localStorage.setItem("globalAdminProfile", JSON.stringify(updatedData));
+            
+            // Dispatch custom event to notify other components of the update
+            try {
+              window.dispatchEvent(new Event("profileUpdated"));
+            } catch (error) {
+              console.error("Error dispatching profile update event:", error);
             }
             
-            const base64Image = event.target.result;
-            
-            // Update profile data with the base64 image
-            setProfileData(prevData => {
-              const updatedData = {
-                ...prevData,
-                profileImageUrl: base64Image
-              };
-              
-              // Save to localStorage for persistence
-              localStorage.setItem("globalAdminProfile", JSON.stringify(updatedData));
-              
-              // Dispatch custom event to notify other components of the update
-              try {
-                window.dispatchEvent(new Event("profileUpdated"));
-              } catch (error) {
-                console.error("Error dispatching profile update event:", error);
-              }
-              
-              return updatedData;
-            });
-            
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        };
-        
-        reader.onerror = () => {
-          reject(new Error("Error reading file"));
-        };
-        
-        // Read the image file as a data URL (base64)
-        reader.readAsDataURL(file);
-      });
+            return updatedData;
+          });
+          
+          return result;
+        } else {
+          throw new Error(result.message || "Upload failed");
+        }
+      } catch (error) {
+        console.error("Error in upload process:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -122,7 +152,7 @@ export default function GlobalAdminProfile() {
     onError: (error) => {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to process profile picture',
+        description: error instanceof Error ? error.message : 'Failed to upload profile picture',
         variant: 'destructive',
       });
     },

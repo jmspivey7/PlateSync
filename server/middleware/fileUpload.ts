@@ -2,27 +2,34 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// Ensure avatars directory exists
-const avatarsDir = path.join(process.cwd(), 'public', 'avatars');
+// Define the absolute path to the avatars directory
+const avatarsDir = path.resolve(process.cwd(), 'public', 'avatars');
+
+// Create the avatars directory if it doesn't exist
 if (!fs.existsSync(avatarsDir)) {
   fs.mkdirSync(avatarsDir, { recursive: true });
   console.log(`Created avatars directory at: ${avatarsDir}`);
 }
 
+// Check write permissions
+try {
+  const testFile = path.join(avatarsDir, '.write-test');
+  fs.writeFileSync(testFile, 'test');
+  fs.unlinkSync(testFile);
+  console.log(`Write permissions confirmed for: ${avatarsDir}`);
+} catch (error) {
+  console.error(`ERROR: No write permissions for ${avatarsDir}`, error);
+}
+
 // Configure storage for avatar uploads
 const avatarStorage = multer.diskStorage({
   destination: function(req, file, cb) {
-    // Double-check directory exists before saving
-    if (!fs.existsSync(avatarsDir)) {
-      fs.mkdirSync(avatarsDir, { recursive: true });
-      console.log(`Created avatars directory at: ${avatarsDir}`);
-    }
     console.log(`Saving avatar to: ${avatarsDir}`);
     cb(null, avatarsDir);
   },
   filename: function(req, file, cb) {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    // Get file extension and ensure it's lowercase
+    // Generate a unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const extension = path.extname(file.originalname).toLowerCase();
     const filename = `avatar-${uniqueSuffix}${extension}`;
     console.log(`Generated filename: ${filename}`);

@@ -68,122 +68,114 @@ router.get('/profile', async (req, res) => {
 
 // Upload avatar
 router.post('/profile/avatar', (req, res) => {
-  try {
-    console.log("Avatar upload route called");
-    
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    const userId = verifyToken(token);
-    
-    if (!userId) {
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-    
-    // Process the file upload
-    const upload = avatarUpload.single('avatar');
-    
-    upload(req, res, async (err) => {
-      if (err) {
-        console.error('Multer error:', err);
-        return res.status(400).json({ 
-          success: false, 
-          message: err.message || 'Error uploading file' 
-        });
-      }
-      
-      console.log("File upload processed by multer");
-      
-      // Check if file was uploaded
-      if (!req.file) {
-        console.error('No file in request');
-        return res.status(400).json({ 
-          success: false, 
-          message: 'No file uploaded' 
-        });
-      }
-      
-      try {
-        console.log(`File saved: ${req.file.path}`);
-        
-        // Get user from database
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, userId));
-        
-        if (!user) {
-          return res.status(404).json({ 
-            success: false, 
-            message: 'User not found' 
-          });
-        }
-        
-        // Get old profile image to delete later
-        const oldProfileImageUrl = user.profileImageUrl;
-        
-        // Get the file path relative to the public directory
-        const relativePath = `/avatars/${req.file.filename}`;
-        
-        console.log(`Relative path for file: ${relativePath}`);
-        
-        // Update user profile with new avatar URL
-        await db
-          .update(users)
-          .set({ 
-            profileImageUrl: relativePath, // Store the relative path
-            updatedAt: new Date()
-          })
-          .where(eq(users.id, userId));
-        
-        console.log(`Updated user profile with new avatar URL: ${relativePath}`);
-        
-        // Delete old profile image if exists
-        if (oldProfileImageUrl) {
-          try {
-            const oldFilePath = path.join(process.cwd(), 'public', oldProfileImageUrl);
-            console.log(`Checking for old profile image: ${oldFilePath}`);
-            
-            if (fs.existsSync(oldFilePath)) {
-              fs.unlinkSync(oldFilePath);
-              console.log(`Deleted old profile image: ${oldFilePath}`);
-            }
-          } catch (error) {
-            console.error('Error deleting old profile image:', error);
-            // Continue even if deletion fails
-          }
-        }
-        
-        // Set proper headers and return JSON response
-        res.setHeader('Content-Type', 'application/json');
-        
-        const response = {
-          success: true,
-          message: 'Profile picture updated successfully',
-          profileImageUrl: relativePath
-        };
-        
-        console.log('Sending successful response:', response);
-        res.status(200).json(response);
-      } catch (error) {
-        console.error('Error in database operations:', error);
-        res.status(500).json({ 
-          success: false, 
-          message: 'Server error processing upload' 
-        });
-      }
-    });
-  } catch (error) {
-    console.error('Error uploading avatar:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to upload avatar' 
-    });
+  // Get token from Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
   }
+  
+  const token = authHeader.split(' ')[1];
+  const userId = verifyToken(token);
+  
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+  
+  // Use multer to handle the file upload
+  const upload = avatarUpload.single('avatar');
+  
+  upload(req, res, async (err) => {
+    // Handle multer errors
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ 
+        success: false, 
+        message: err.message || 'Error uploading file' 
+      });
+    }
+    
+    // Check if file was uploaded
+    if (!req.file) {
+      console.error('No file in request');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No file uploaded' 
+      });
+    }
+    
+    try {
+      console.log(`File saved at: ${req.file.path}`);
+      console.log(`File details: ${JSON.stringify(req.file)}`);
+      
+      // Get user from database
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+      
+      // Get old profile image to delete later if it exists
+      const oldProfileImageUrl = user.profileImageUrl;
+      
+      // Get the file path relative to the public directory
+      const relativePath = `/avatars/${req.file.filename}`;
+      
+      console.log(`Relative path for file: ${relativePath}`);
+      
+      // Update user profile with new avatar URL
+      await db
+        .update(users)
+        .set({ 
+          profileImageUrl: relativePath,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      
+      console.log(`Updated user profile with new avatar URL: ${relativePath}`);
+      
+      // Delete old profile image if it exists and is not the same as the new one
+      if (oldProfileImageUrl && oldProfileImageUrl !== relativePath) {
+        try {
+          const oldFilePath = path.join(process.cwd(), 'public', oldProfileImageUrl);
+          console.log(`Checking for old profile image: ${oldFilePath}`);
+          
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
+            console.log(`Deleted old profile image: ${oldFilePath}`);
+          }
+        } catch (error) {
+          console.error('Error deleting old profile image:', error);
+          // Continue even if deletion fails
+        }
+      }
+      
+      // Construct the full URL for the image
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const fullImageUrl = `${baseUrl}${relativePath}`;
+      
+      // Send a proper JSON response
+      res.contentType('application/json');
+      res.send(JSON.stringify({
+        success: true,
+        message: 'Profile picture updated successfully',
+        profileImageUrl: relativePath,
+        fullImageUrl: fullImageUrl
+      }));
+      
+    } catch (error) {
+      console.error('Error in database operations:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Server error processing upload' 
+      });
+    }
+  });
 });
 
 export default router;
