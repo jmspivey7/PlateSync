@@ -64,7 +64,7 @@ const initialTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="{{CHURCH_LOGO_URL}}" alt="Church Logo">
+      <img src="https://platesync.replit.app/platesync-logo.png" alt="PlateSync Logo" style="max-width: 250px; height: auto;">
       <h1>Welcome to PlateSync!</h1>
       <p>Your donation management system</p>
     </div>
@@ -92,8 +92,8 @@ const initialTemplates: EmailTemplate[] = [
     </div>
     
     <div class="footer">
-      <p>This email was sent to you by {{CHURCH_NAME}} via PlateSync.</p>
-      <p>If you have any questions, please contact your church administrator.</p>
+      <p>This email was sent to you via PlateSync.</p>
+      <p>If you have any questions, please contact your account administrator.</p>
     </div>
   </div>
 </body>
@@ -128,7 +128,7 @@ const initialTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="{{CHURCH_LOGO_URL}}" alt="Church Logo">
+      <img src="https://platesync.replit.app/platesync-logo.png" alt="PlateSync Logo" style="max-width: 250px; height: auto;">
       <h1>Password Reset Request</h1>
       <p>PlateSync Account Recovery</p>
     </div>
@@ -150,8 +150,8 @@ const initialTemplates: EmailTemplate[] = [
     </div>
     
     <div class="footer">
-      <p>This email was sent to you by {{CHURCH_NAME}} via PlateSync.</p>
-      <p>If you have any questions, please contact your church administrator.</p>
+      <p>This email was sent to you via PlateSync.</p>
+      <p>If you have any questions, please contact your account administrator.</p>
     </div>
   </div>
 </body>
