@@ -2357,17 +2357,21 @@ Sincerely,
         return res.status(400).json({ message: 'Client ID is required' });
       }
       
-      // Update system configuration
-      await storage.updateSystemConfig('PLANNING_CENTER_CLIENT_ID', clientId);
+      // Update system configuration using the proper format
+      const configItems = [
+        { key: 'PLANNING_CENTER_CLIENT_ID', value: clientId }
+      ];
       
       // Only update client secret if it was provided (not masked)
       if (clientSecret !== null) {
-        await storage.updateSystemConfig('PLANNING_CENTER_CLIENT_SECRET', clientSecret);
+        configItems.push({ key: 'PLANNING_CENTER_CLIENT_SECRET', value: clientSecret });
       }
       
       if (callbackUrl) {
-        await storage.updateSystemConfig('PLANNING_CENTER_CALLBACK_URL', callbackUrl);
+        configItems.push({ key: 'PLANNING_CENTER_CALLBACK_URL', value: callbackUrl });
       }
+      
+      await storage.updateSystemConfig(configItems);
       
       // Set environment variables so they're available to the current process
       process.env.PLANNING_CENTER_CLIENT_ID = clientId;
