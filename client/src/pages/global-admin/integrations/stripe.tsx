@@ -171,6 +171,20 @@ export default function StripeIntegration() {
         throw new Error("Authentication token not found. Please log in again.");
       }
       
+      const payload = {
+        liveSecretKey: liveSecretKey.startsWith("••••") ? null : liveSecretKey,
+        livePublicKey,
+        testSecretKey: testSecretKey.startsWith("••••") ? null : testSecretKey,
+        testPublicKey,
+        monthlyPriceId,
+        annualPriceId,
+        monthlyPaymentLink,
+        annualPaymentLink,
+        isLiveMode
+      };
+      
+      console.log("Saving Stripe configuration:", payload);
+      
       // Use direct fetch to avoid apiRequest type issues
       const response = await fetch('/api/global-admin/integrations/stripe', {
         method: 'POST',
@@ -178,17 +192,7 @@ export default function StripeIntegration() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          liveSecretKey: liveSecretKey.startsWith("••••") ? null : liveSecretKey,
-          livePublicKey,
-          testSecretKey: testSecretKey.startsWith("••••") ? null : testSecretKey,
-          testPublicKey,
-          monthlyPriceId,
-          annualPriceId,
-          monthlyPaymentLink,
-          annualPaymentLink,
-          isLiveMode
-        })
+        body: JSON.stringify(payload)
       });
       
       if (!response.ok) {
@@ -196,19 +200,39 @@ export default function StripeIntegration() {
         throw new Error(errorData.message || 'Failed to save configuration');
       }
       
+      // Fetch the latest configuration to ensure UI is in sync with database
+      const refreshResponse = await fetch('/api/global-admin/integrations/stripe', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        console.log("Refreshed config after save:", data);
+        
+        // Update the state with fresh data
+        if (data.liveSecretKey) {
+          setLiveSecretKey("••••••••••••••••••••••••••");
+        }
+        if (data.testSecretKey) {
+          setTestSecretKey("••••••••••••••••••••••••••");
+        }
+        
+        setLivePublicKey(data.livePublicKey || "");
+        setTestPublicKey(data.testPublicKey || "");
+        setMonthlyPriceId(data.monthlyPriceId || "");
+        setAnnualPriceId(data.annualPriceId || "");
+        setMonthlyPaymentLink(data.monthlyPaymentLink || "");
+        setAnnualPaymentLink(data.annualPaymentLink || "");
+        setIsLiveMode(Boolean(data.isLiveMode));
+      }
+      
       toast({
         title: "Configuration saved",
         description: "Stripe configuration has been successfully updated",
         className: "bg-[#69ad4c] text-white",
       });
-      
-      // Mask the secret keys after saving
-      if (!liveSecretKey.startsWith("••••") && liveSecretKey) {
-        setLiveSecretKey("••••••••••••••••••••••••••");
-      }
-      if (!testSecretKey.startsWith("••••") && testSecretKey) {
-        setTestSecretKey("••••••••••••••••••••••••••");
-      }
     } catch (error) {
       toast({
         title: "Error saving configuration",
