@@ -64,7 +64,7 @@ export default function StripeIntegration() {
           // In a real implementation, fetch the actual configuration from the API
           // For now, we'll try to get the actual values
           try {
-            const response = await apiRequest('GET', '/api/global-admin/integrations/stripe');
+            const response = await apiRequest('/api/global-admin/integrations/stripe');
             const data = await response.json();
             
             // Mask the keys for security
@@ -117,7 +117,7 @@ export default function StripeIntegration() {
       });
       
       // Call the API to test Stripe configuration
-      await apiRequest('GET', '/api/test-stripe');
+      await apiRequest('/api/test-stripe');
       
       // Show success toast
       toast({
@@ -145,7 +145,7 @@ export default function StripeIntegration() {
       
       // Send the configuration to the server
       // Only send non-masked secret keys
-      await apiRequest('POST', '/api/global-admin/integrations/stripe', {
+      await apiRequest('/api/global-admin/integrations/stripe', 'POST', {
         liveSecretKey: liveSecretKey.startsWith("••••") ? null : liveSecretKey,
         livePublicKey,
         testSecretKey: testSecretKey.startsWith("••••") ? null : testSecretKey,
