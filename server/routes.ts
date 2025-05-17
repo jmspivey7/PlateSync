@@ -242,17 +242,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { apiKey, fromEmail } = req.body;
       
-      if (!apiKey || !fromEmail) {
-        return res.status(400).json({ message: 'API key and From Email are required' });
+      if (!fromEmail) {
+        return res.status(400).json({ message: 'From Email is required' });
       }
       
       // Store the SendGrid configuration
-      await storage.setSystemConfig('SENDGRID_API_KEY', apiKey);
       await storage.setSystemConfig('SENDGRID_FROM_EMAIL', fromEmail);
       
-      // Update environment variables for the current session
-      process.env.SENDGRID_API_KEY = apiKey;
+      // Only update API key if it was provided (not masked)
+      if (apiKey) {
+        await storage.setSystemConfig('SENDGRID_API_KEY', apiKey);
+        // Update environment variable for the current session
+        process.env.SENDGRID_API_KEY = apiKey;
+      }
+      
+      // Update environment variable for the current session
       process.env.SENDGRID_FROM_EMAIL = fromEmail;
+      
+      // Log success for debugging
+      console.log('SendGrid configuration updated successfully');
+      console.log('- From Email:', fromEmail);
+      console.log('- API Key set:', !!apiKey);
       
       res.json({ success: true, message: 'SendGrid configuration saved successfully' });
     } catch (error) {

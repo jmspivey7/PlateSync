@@ -168,6 +168,16 @@ export default function SendGridIntegration() {
         throw new Error("Authentication required. Please log in again.");
       }
       
+      // Prepare the data
+      const data: Record<string, string> = { fromEmail };
+      
+      // Only include the API key if it's a new value (not masked)
+      if (!apiKey.startsWith("••••")) {
+        data.apiKey = apiKey;
+      } else if (apiKey === "" && fromEmail === "") {
+        throw new Error("API key and From Email are required");
+      }
+      
       // Send the API key and from email to the server with proper headers
       const response = await fetch('/api/global-admin/integrations/sendgrid', {
         method: 'POST',
@@ -175,10 +185,7 @@ export default function SendGridIntegration() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          apiKey: apiKey.startsWith("••••") ? undefined : apiKey, // Only send if it was changed
-          fromEmail
-        })
+        body: JSON.stringify(data)
       });
       
       if (!response.ok) {

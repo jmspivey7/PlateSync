@@ -3036,8 +3036,16 @@ PlateSync Reporting System
   // System configuration methods
   async getSystemConfig(key: string): Promise<string | null> {
     try {
-      const [config] = await db.select().from(systemConfig).where(eq(systemConfig.key, key));
-      return config?.value || null;
+      console.log(`Fetching system config for key: ${key}`);
+      const configs = await db.select().from(systemConfig).where(eq(systemConfig.key, key));
+      
+      if (configs && configs.length > 0) {
+        console.log(`Found system config for key ${key}`);
+        return configs[0]?.value || null;
+      } else {
+        console.log(`No system config found for key ${key}`);
+        return null;
+      }
     } catch (error) {
       console.error(`Error getting system config for key ${key}:`, error);
       return null;
@@ -3046,15 +3054,30 @@ PlateSync Reporting System
 
   async setSystemConfig(key: string, value: string): Promise<void> {
     try {
-      await db.insert(systemConfig)
-        .values({ key, value })
-        .onConflictDoUpdate({
-          target: systemConfig.key,
-          set: { 
+      console.log(`Setting system config: key=${key}, value=${value.substring(0, 5)}...`);
+      
+      // First check if the config exists
+      const existing = await db.select().from(systemConfig).where(eq(systemConfig.key, key));
+      
+      if (existing && existing.length > 0) {
+        console.log(`Config exists for key ${key}, updating...`);
+        await db.update(systemConfig)
+          .set({ 
             value,
             updatedAt: new Date()
-          }
-        });
+          })
+          .where(eq(systemConfig.key, key));
+      } else {
+        console.log(`Config does not exist for key ${key}, inserting new record...`);
+        await db.insert(systemConfig)
+          .values({ 
+            key, 
+            value,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+      }
+      console.log(`Successfully saved config for key ${key}`);
     } catch (error) {
       console.error(`Error setting system config for key ${key}:`, error);
       throw error;
