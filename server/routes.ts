@@ -262,15 +262,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Save From Email
         const checkFromEmail = `SELECT * FROM system_config WHERE key = 'SENDGRID_FROM_EMAIL'`;
-        const fromEmailResult = await db.client.query(checkFromEmail);
+        const fromEmailResult = await db.$client.query(checkFromEmail);
         
         if (fromEmailResult.rows.length > 0) {
-          await db.client.query(
+          await db.$client.query(
             `UPDATE system_config SET value = $1, updated_at = NOW() WHERE key = 'SENDGRID_FROM_EMAIL'`,
             [fromEmail]
           );
         } else {
-          await db.client.query(
+          await db.$client.query(
             `INSERT INTO system_config (key, value) VALUES ('SENDGRID_FROM_EMAIL', $1)`,
             [fromEmail]
           );
@@ -279,15 +279,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only update API key if it was provided (not masked)
         if (apiKey && !apiKey.includes('*')) {
           const checkApiKey = `SELECT * FROM system_config WHERE key = 'SENDGRID_API_KEY'`;
-          const apiKeyResult = await db.client.query(checkApiKey);
+          const apiKeyResult = await db.$client.query(checkApiKey);
           
           if (apiKeyResult.rows.length > 0) {
-            await db.client.query(
+            await db.$client.query(
               `UPDATE system_config SET value = $1, updated_at = NOW() WHERE key = 'SENDGRID_API_KEY'`,
               [apiKey]
             );
           } else {
-            await db.client.query(
+            await db.$client.query(
               `INSERT INTO system_config (key, value) VALUES ('SENDGRID_API_KEY', $1)`,
               [apiKey]
             );
