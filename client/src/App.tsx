@@ -44,6 +44,7 @@ import EditEmailTemplate from "@/pages/global-admin/edit-email-template";
 import SendGridIntegration from "@/pages/global-admin/integrations/sendgrid";
 import PlanningCenterIntegration from "@/pages/global-admin/integrations/planning-center";
 import StripeIntegration from "@/pages/global-admin/integrations/stripe";
+import StripeTestPage from "@/pages/global-admin/integrations/stripe-test";
 
 import { useAuth } from "@/hooks/useAuth";
 
@@ -183,6 +184,7 @@ function Router() {
       <Route path="/global-admin/integrations/sendgrid" component={SendGridIntegration} />
       <Route path="/global-admin/integrations/planning-center" component={PlanningCenterIntegration} />
       <Route path="/global-admin/integrations/stripe" component={StripeIntegration} />
+      <Route path="/global-admin/integrations/stripe-test" component={StripeTestPage} />
       
       <Route component={NotFound} />
     </Switch>
