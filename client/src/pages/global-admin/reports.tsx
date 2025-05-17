@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   FileText, 
@@ -25,8 +24,8 @@ import {
   BarChart3,
   Users,
   Building2,
-  Calendar,
-  LineChart
+  DollarSign,
+  TrendingUp
 } from "lucide-react";
 
 export default function GlobalAdminReports() {
@@ -63,7 +62,7 @@ export default function GlobalAdminReports() {
           </Button>
         </div>
         
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-start items-center mb-6">
           <div className="flex items-center space-x-4">
             <span className="text-sm font-medium">Time Period:</span>
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -80,212 +79,126 @@ export default function GlobalAdminReports() {
               </SelectContent>
             </Select>
           </div>
-          
-          <Button variant="outline" className="space-x-2">
-            <Download className="h-4 w-4" />
-            <span>Export All Reports</span>
-          </Button>
         </div>
         
-        <Tabs defaultValue="overview">
-          <TabsList className="mb-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="churches">Churches</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="donations">Donations</TabsTrigger>
-            <TabsTrigger value="system">System</TabsTrigger>
-          </TabsList>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold">Overview</h2>
+        </div>
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex justify-between items-center text-lg">
+                <span>Total Churches</span>
+                <Building2 className="h-5 w-5 text-[#69ad4c]" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">127</div>
+              <p className="text-sm text-green-600 flex items-center mt-1">
+                +12 from previous period
+              </p>
+            </CardContent>
+            <CardFooter className="pt-0 pb-3">
+              <Button variant="outline" size="sm" className="w-full">
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Download Report
+              </Button>
+            </CardFooter>
+          </Card>
           
-          <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex justify-between items-center text-lg">
-                    <span>Total Churches</span>
-                    <Building2 className="h-5 w-5 text-[#69ad4c]" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">127</div>
-                  <p className="text-sm text-green-600 flex items-center mt-1">
-                    +12 from previous period
-                  </p>
-                </CardContent>
-                <CardFooter className="pt-0 pb-3">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Download className="h-3.5 w-3.5 mr-2" />
-                    Download Report
-                  </Button>
-                </CardFooter>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex justify-between items-center text-lg">
-                    <span>Total Users</span>
-                    <Users className="h-5 w-5 text-[#69ad4c]" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">1,452</div>
-                  <p className="text-sm text-green-600 flex items-center mt-1">
-                    +87 from previous period
-                  </p>
-                </CardContent>
-                <CardFooter className="pt-0 pb-3">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Download className="h-3.5 w-3.5 mr-2" />
-                    Download Report
-                  </Button>
-                </CardFooter>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex justify-between items-center text-lg">
-                    <span>Total Donations</span>
-                    <BarChart3 className="h-5 w-5 text-[#69ad4c]" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">$2.4M</div>
-                  <p className="text-sm text-green-600 flex items-center mt-1">
-                    +14% from previous period
-                  </p>
-                </CardContent>
-                <CardFooter className="pt-0 pb-3">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Download className="h-3.5 w-3.5 mr-2" />
-                    Download Report
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Church Growth</CardTitle>
-                  <CardDescription>New church registrations over time</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center">
-                  <div className="text-center text-gray-500 flex flex-col items-center">
-                    <LineChart className="h-10 w-10 mb-3 text-[#69ad4c] opacity-50" />
-                    <p>Chart visualization would appear here</p>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex justify-between items-center text-lg">
+                <span>Total Users</span>
+                <Users className="h-5 w-5 text-[#69ad4c]" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">1,452</div>
+              <p className="text-sm text-green-600 flex items-center mt-1">
+                +87 from previous period
+              </p>
+            </CardContent>
+            <CardFooter className="pt-0 pb-3">
+              <Button variant="outline" size="sm" className="w-full">
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Download Report
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex justify-between items-center text-lg">
+                <span>Total Donations</span>
+                <BarChart3 className="h-5 w-5 text-[#69ad4c]" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">$2.4M</div>
+              <p className="text-sm text-green-600 flex items-center mt-1">
+                +14% from previous period
+              </p>
+            </CardContent>
+            <CardFooter className="pt-0 pb-3">
+              <Button variant="outline" size="sm" className="w-full">
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Download Report
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+        
+        {/* Revenue Tracking Chart */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-[#69ad4c]" />
+              Revenue Tracking
+            </CardTitle>
+            <CardDescription>
+              Track subscription revenue from all paying subscribers
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[350px] flex items-center justify-center">
+            <div className="text-center text-gray-500 flex flex-col items-center w-full">
+              <div className="w-full h-full flex items-center justify-center flex-col">
+                <TrendingUp className="h-12 w-12 mb-3 text-[#69ad4c] opacity-50" />
+                <p className="mb-4">Monthly Revenue from Stripe Subscriptions</p>
+                <div className="w-full max-w-4xl h-[220px] bg-gray-100 rounded-md p-4 flex items-end justify-between gap-2">
+                  <div className="relative h-[70%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Jan</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$120</span>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Activity</CardTitle>
-                  <CardDescription>Daily active churches and users</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center">
-                  <div className="text-center text-gray-500 flex flex-col items-center">
-                    <BarChart3 className="h-10 w-10 mb-3 text-[#69ad4c] opacity-50" />
-                    <p>Chart visualization would appear here</p>
+                  <div className="relative h-[80%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Feb</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$175</span>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="relative h-[65%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Mar</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$140</span>
+                  </div>
+                  <div className="relative h-[90%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Apr</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$210</span>
+                  </div>
+                  <div className="relative h-[100%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">May</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$250</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="churches">
-            <Card>
-              <CardHeader>
-                <CardTitle>Church Reports</CardTitle>
-                <CardDescription>Detailed reports on church organizations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 text-[#69ad4c] opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">Church Reports</h3>
-                  <p className="max-w-md mx-auto">
-                    Select a specific report type and time period to generate detailed reports on church growth, 
-                    activity, and donations.
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-center pb-6">
-                <Button className="bg-[#69ad4c] hover:bg-[#5a9740]">
-                  Generate Report
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Reports</CardTitle>
-                <CardDescription>Detailed reports on system users</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-[#69ad4c] opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">User Reports</h3>
-                  <p className="max-w-md mx-auto">
-                    Generate reports on user activity, role distribution, and registration trends across the system.
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-center pb-6">
-                <Button className="bg-[#69ad4c] hover:bg-[#5a9740]">
-                  Generate Report
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="donations">
-            <Card>
-              <CardHeader>
-                <CardTitle>Donation Reports</CardTitle>
-                <CardDescription>System-wide donation statistics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-[#69ad4c] opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">Donation Reports</h3>
-                  <p className="max-w-md mx-auto">
-                    View aggregated donation statistics across all churches in the system.
-                    Individual donor information is not available to protect privacy.
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-center pb-6">
-                <Button className="bg-[#69ad4c] hover:bg-[#5a9740]">
-                  Generate Report
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="system">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Reports</CardTitle>
-                <CardDescription>Technical performance and usage statistics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  <FileText className="h-12 w-12 mx-auto mb-4 text-[#69ad4c] opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">System Reports</h3>
-                  <p className="max-w-md mx-auto">
-                    Generate technical reports on system performance, API usage, and error statistics
-                    to help maintain optimal service levels.
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-center pb-6">
-                <Button className="bg-[#69ad4c] hover:bg-[#5a9740]">
-                  Generate Report
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+          <CardFooter className="flex justify-center pb-4">
+            <Button className="bg-[#69ad4c] hover:bg-[#5a9740]">
+              <Download className="h-4 w-4 mr-2" />
+              Download Revenue Report
+            </Button>
+          </CardFooter>
+        </Card>
       </main>
     </div>
   );
