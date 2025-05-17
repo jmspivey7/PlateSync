@@ -154,9 +154,15 @@ export default function GlobalAdminReports() {
         {/* Revenue Tracking Chart */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-[#69ad4c]" />
-              Revenue Tracking
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-[#69ad4c]" />
+                Revenue Tracking
+              </div>
+              <div className="flex items-center gap-1 text-sm font-medium text-green-600">
+                <span>+16.7%</span>
+                <TrendingUp className="h-4 w-4" />
+              </div>
             </CardTitle>
             <CardDescription>
               Track subscription revenue from all paying subscribers
@@ -165,8 +171,6 @@ export default function GlobalAdminReports() {
           <CardContent className="h-[350px] flex items-center justify-center">
             <div className="text-center text-gray-500 flex flex-col items-center w-full">
               <div className="w-full h-full flex items-center justify-center flex-col">
-                <TrendingUp className="h-12 w-12 mb-3 text-[#69ad4c] opacity-50" />
-                <p className="mb-4">Monthly Revenue from Stripe Subscriptions</p>
                 <div className="w-full max-w-4xl h-[220px] bg-gray-100 rounded-md p-4 flex items-end justify-between gap-2">
                   <div className="relative h-[70%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
                     <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$120</span>
