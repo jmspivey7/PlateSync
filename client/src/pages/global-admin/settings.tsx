@@ -343,22 +343,26 @@ export default function GlobalAdminSettings() {
                 <CardContent>
                   <div className="space-y-4">
                     {templates.map((template) => (
-                      <div key={template.id} className="border rounded-md overflow-hidden">
-                        <div className="p-4 border-b">
+                      <div 
+                        key={template.id} 
+                        className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group"
+                        onClick={() => handleEditTemplate(template)}
+                      >
+                        <div className="p-4">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-medium">
-                              {template.type === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
-                            </h3>
-                            <Button 
-                              onClick={() => handleEditTemplate(template)}
-                              className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                            >
+                            <div>
+                              <h3 className="font-medium">
+                                {template.type === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
+                              </h3>
+                              <p className="text-sm text-gray-500 mt-1">
+                                Last Edited: {template.lastUpdated || "Never"}
+                              </p>
+                            </div>
+                            <span className="text-[#69ad4c] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center text-sm">
+                              <Edit className="h-4 w-4 mr-1" />
                               Edit Template
-                            </Button>
+                            </span>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Last Edited: {template.lastUpdated || "Never"}
-                          </p>
                         </div>
                       </div>
                     ))}
