@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import GlobalAdminAccountDropdown from "@/components/global-admin/GlobalAdminAccountDropdown";
 import {
@@ -74,6 +74,7 @@ export default function ChurchDetail() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   
   // Function to fetch church details
   const fetchChurchDetails = async (): Promise<Church> => {
@@ -180,17 +181,23 @@ export default function ChurchDetail() {
       return response.json();
     },
     onSuccess: (data) => {
+      const statusText = data.status === "ACTIVE" ? "activated" : 
+                        data.status === "SUSPENDED" ? "suspended" : "deleted";
+      
       toast({
-        title: "Status updated",
-        description: "Church status has been updated successfully",
+        title: `Church ${statusText}`,
+        description: `${church?.name} has been ${statusText} successfully`,
       });
       
-      // If the church was deleted, redirect back to the churches list
-      if (data.status === "DELETED") {
+      // Invalidate both queries to ensure the churches list is refreshed
+      queryClient.invalidateQueries({ queryKey: ["churches"] });
+      
+      // If the church was deleted or suspended, redirect back to the churches list
+      if (data.status === "DELETED" || data.status === "SUSPENDED") {
         // Add a small delay to ensure the toast is visible
         setTimeout(() => {
           setLocation("/global-admin/churches");
-        }, 1000);
+        }, 1500);
       } else {
         // Otherwise just refetch the church details
         refetchChurch();
