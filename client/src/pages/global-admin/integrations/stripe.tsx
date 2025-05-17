@@ -316,7 +316,7 @@ export default function StripeIntegration() {
                 <span className="font-medium">{isLiveMode ? 'Live Mode' : 'Test Mode'}</span>
               </div>
               <div className="flex items-center">
-                <Label htmlFor="mode-toggle" className="mr-2 text-sm">Test</Label>
+                <Label htmlFor="mode-toggle" className={`mr-2 text-sm ${!isLiveMode ? 'font-bold' : ''}`}>Test</Label>
                 <div
                   onClick={() => setIsLiveMode(!isLiveMode)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer ${isLiveMode ? 'bg-[#69ad4c]' : 'bg-gray-300'}`}
@@ -325,7 +325,7 @@ export default function StripeIntegration() {
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isLiveMode ? 'translate-x-6' : 'translate-x-1'}`}
                   />
                 </div>
-                <Label htmlFor="mode-toggle" className="ml-2 text-sm">Live</Label>
+                <Label htmlFor="mode-toggle" className={`ml-2 text-sm ${isLiveMode ? 'font-bold' : ''}`}>Live</Label>
               </div>
             </div>
             
