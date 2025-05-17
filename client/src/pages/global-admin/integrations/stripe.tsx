@@ -416,7 +416,7 @@ export default function StripeIntegration() {
           <CardContent>
             <div className="space-y-6">
               <div className="space-y-4">
-                <h3 className="font-medium">Monthly Subscription ($2.99/month)</h3>
+                <h3 className="font-medium">Monthly Subscription</h3>
                 <div className="space-y-2">
                   <Label htmlFor="monthlyPriceId">Monthly Price ID</Label>
                   <Input
@@ -447,7 +447,7 @@ export default function StripeIntegration() {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="font-medium">Annual Subscription ($25.00/year)</h3>
+                <h3 className="font-medium">Annual Subscription</h3>
                 <div className="space-y-2">
                   <Label htmlFor="annualPriceId">Annual Price ID</Label>
                   <Input
