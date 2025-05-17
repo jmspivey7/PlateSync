@@ -55,7 +55,16 @@ export default function SendGridIntegration() {
           
           // Fetch the actual configuration from the API
           try {
-            const response = await apiRequest('/api/global-admin/integrations/sendgrid');
+            const response = await fetch('/api/global-admin/integrations/sendgrid', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error('Failed to fetch SendGrid configuration');
+            }
+            
             const data = await response.json();
             
             // Mask the API key for security
@@ -106,12 +115,15 @@ export default function SendGridIntegration() {
       }
       
       // Call the API to test SendGrid configuration with proper headers
-      const response = await fetch('/api/test-sendgrid', {
+      const response = await fetch('/api/global-admin/integrations/sendgrid/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({
+          emailTo: fromEmail // Use the from email as the test recipient
+        })
       });
       
       if (!response.ok) {
@@ -164,7 +176,7 @@ export default function SendGridIntegration() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          apiKey: apiKey.startsWith("••••") ? null : apiKey, // Only send if it was changed
+          apiKey: apiKey.startsWith("••••") ? undefined : apiKey, // Only send if it was changed
           fromEmail
         })
       });
