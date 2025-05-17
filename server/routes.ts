@@ -225,12 +225,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SendGrid configuration endpoints for global admin
   app.get('/api/global-admin/integrations/sendgrid', requireGlobalAdmin, async (req, res) => {
     try {
-      const apiKey = await storage.getSystemConfig('SENDGRID_API_KEY');
-      const fromEmail = await storage.getSystemConfig('SENDGRID_FROM_EMAIL');
+      console.log('Fetching SendGrid configuration...');
+      
+      // Direct SQL query to bypass any potential ORM issues
+      const query = `SELECT * FROM system_config WHERE key IN ('SENDGRID_API_KEY', 'SENDGRID_FROM_EMAIL')`;
+      const { rows } = await db.$client.query(query);
+      
+      // Convert rows to a map for easier access
+      const configMap = {};
+      rows.forEach(row => {
+        configMap[row.key] = row.value;
+      });
+      
+      console.log('Found configuration entries:', rows.length);
       
       res.json({
-        apiKey: apiKey ? '************' : '', // Mask the API key for security
-        fromEmail: fromEmail || ''
+        apiKey: configMap['SENDGRID_API_KEY'] ? '************' : '', // Mask the API key for security
+        fromEmail: configMap['SENDGRID_FROM_EMAIL'] || ''
       });
     } catch (error) {
       console.error('Error fetching SendGrid config:', error);
@@ -240,31 +251,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/global-admin/integrations/sendgrid', requireGlobalAdmin, async (req, res) => {
     try {
+      console.log('Saving SendGrid configuration...');
       const { apiKey, fromEmail } = req.body;
       
       if (!fromEmail) {
         return res.status(400).json({ message: 'From Email is required' });
       }
       
-      // Store the SendGrid configuration
-      await storage.setSystemConfig('SENDGRID_FROM_EMAIL', fromEmail);
-      
-      // Only update API key if it was provided (not masked)
-      if (apiKey) {
-        await storage.setSystemConfig('SENDGRID_API_KEY', apiKey);
+      // Direct SQL queries to bypass ORM issues
+      try {
+        // Save From Email
+        const checkFromEmail = `SELECT * FROM system_config WHERE key = 'SENDGRID_FROM_EMAIL'`;
+        const fromEmailResult = await db.client.query(checkFromEmail);
+        
+        if (fromEmailResult.rows.length > 0) {
+          await db.client.query(
+            `UPDATE system_config SET value = $1, updated_at = NOW() WHERE key = 'SENDGRID_FROM_EMAIL'`,
+            [fromEmail]
+          );
+        } else {
+          await db.client.query(
+            `INSERT INTO system_config (key, value) VALUES ('SENDGRID_FROM_EMAIL', $1)`,
+            [fromEmail]
+          );
+        }
+        
+        // Only update API key if it was provided (not masked)
+        if (apiKey && !apiKey.includes('*')) {
+          const checkApiKey = `SELECT * FROM system_config WHERE key = 'SENDGRID_API_KEY'`;
+          const apiKeyResult = await db.client.query(checkApiKey);
+          
+          if (apiKeyResult.rows.length > 0) {
+            await db.client.query(
+              `UPDATE system_config SET value = $1, updated_at = NOW() WHERE key = 'SENDGRID_API_KEY'`,
+              [apiKey]
+            );
+          } else {
+            await db.client.query(
+              `INSERT INTO system_config (key, value) VALUES ('SENDGRID_API_KEY', $1)`,
+              [apiKey]
+            );
+          }
+          
+          // Update environment variable for the current session
+          process.env.SENDGRID_API_KEY = apiKey;
+        }
+        
         // Update environment variable for the current session
-        process.env.SENDGRID_API_KEY = apiKey;
+        process.env.SENDGRID_FROM_EMAIL = fromEmail;
+        
+        // Log success for debugging
+        console.log('SendGrid configuration updated successfully');
+        console.log('- From Email:', fromEmail);
+        console.log('- API Key set:', !!apiKey);
+        
+        res.json({ success: true, message: 'SendGrid configuration saved successfully' });
+      } catch (dbError) {
+        console.error('Database error saving SendGrid config:', dbError);
+        res.status(500).json({ message: 'Database error: Failed to save SendGrid configuration' });
       }
-      
-      // Update environment variable for the current session
-      process.env.SENDGRID_FROM_EMAIL = fromEmail;
-      
-      // Log success for debugging
-      console.log('SendGrid configuration updated successfully');
-      console.log('- From Email:', fromEmail);
-      console.log('- API Key set:', !!apiKey);
-      
-      res.json({ success: true, message: 'SendGrid configuration saved successfully' });
     } catch (error) {
       console.error('Error saving SendGrid config:', error);
       res.status(500).json({ message: 'Failed to save SendGrid configuration' });
