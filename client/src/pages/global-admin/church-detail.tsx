@@ -498,11 +498,11 @@ export default function ChurchDetail() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Last Login</TableHead>
+                      <TableRow className="font-bold">
+                        <TableHead className="font-bold">User</TableHead>
+                        <TableHead className="font-bold">Role</TableHead>
+                        <TableHead className="font-bold">Created</TableHead>
+                        <TableHead className="font-bold">Last Login</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
