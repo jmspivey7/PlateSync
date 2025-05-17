@@ -1958,6 +1958,13 @@ export class DatabaseStorage implements IStorage {
     
     // Execute the query and return the first result
     const [template] = await query;
+    
+    if (template) {
+      console.log(`Found template ID ${id}, type: ${template.templateType}, churchId: ${template.churchId}`);
+    } else {
+      console.log(`No template found with ID ${id}${churchId ? ` and churchId ${churchId}` : ''}`);
+    }
+    
     return template;
   }
   
