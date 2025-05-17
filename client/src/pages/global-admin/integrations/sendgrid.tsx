@@ -223,87 +223,54 @@ export default function SendGridIntegration() {
                 </p>
               </div>
               
-              <div className="flex justify-between items-center">
-                <Button 
-                  variant="outline" 
-                  onClick={testSendGridConfiguration} 
-                  disabled={isTesting || !fromEmail}
-                  className="mr-2"
-                >
-                  {isTesting ? (
-                    <>
-                      <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                      Testing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Test Configuration
-                    </>
-                  )}
-                </Button>
+              <div className="pt-4 border-t mt-6">
+                <h3 className="text-lg font-medium mb-2">Test Email Delivery</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Send a test email to verify your SendGrid configuration is working correctly
+                </p>
                 
-                <Button 
-                  onClick={saveConfiguration} 
-                  className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                  disabled={isSaving || !fromEmail}
-                >
-                  {isSaving ? (
-                    <>
-                      <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Configuration"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Email Delivery</CardTitle>
-            <CardDescription>
-              Send a test email to verify your SendGrid configuration is working correctly
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm">
-                Testing your email delivery ensures that your SendGrid integration is properly configured. 
-                This will send a test email using your current configuration.
-              </p>
-              
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-4 flex items-start">
-                <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-medium text-amber-800">Important Note</h4>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Before testing, make sure you have saved your configuration with a valid API key and 
-                    from email address. The test will use the values currently saved in the system.
-                  </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-4 flex items-start mb-4">
+                  <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-amber-800">Important Note</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Before testing, make sure you have saved your configuration with a valid API key and 
+                      from email address. The test will use the values currently saved in the system.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex justify-end">
-                <Button 
-                  variant="outline" 
-                  className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
-                  onClick={testSendGridConfiguration}
-                  disabled={isTesting || !fromEmail}
-                >
-                  {isTesting ? (
-                    <>
-                      <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                      Sending Test Email...
-                    </>
-                  ) : (
-                    "Send Test Email"
-                  )}
-                </Button>
-              </div>
+                
+                <div className="flex justify-between items-center">
+                  <Button 
+                    className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+                    onClick={testSendGridConfiguration}
+                    disabled={isTesting || !fromEmail}
+                  >
+                    {isTesting ? (
+                      <>
+                        <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                        Sending Test Email...
+                      </>
+                    ) : (
+                      "Send Test Email"
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    onClick={saveConfiguration} 
+                    className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                    disabled={isSaving || !fromEmail}
+                  >
+                    {isSaving ? (
+                      <>
+                        <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Configuration"
+                    )}
+                  </Button>
+                </div>
             </div>
           </CardContent>
         </Card>
