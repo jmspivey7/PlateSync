@@ -2324,23 +2324,45 @@ Sincerely,
     }
   });
 
-  // Test Stripe Connection endpoint
+  // Simple diagnostic endpoint - just returns JSON with no dependencies
+  app.get('/api/stripe-diagnostic', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).json({ 
+      message: 'This is a diagnostic endpoint', 
+      timestamp: new Date().toISOString() 
+    });
+  });
+
+  // Test Stripe Connection endpoint - completely rewritten
   app.get('/api/test-stripe', async (req, res) => {
+    // Force content type to be application/json
+    res.set('Content-Type', 'application/json');
+    
     try {
-      // Set response content type explicitly
-      res.setHeader('Content-Type', 'application/json');
+      // Get Stripe configuration from database - use direct SQL to avoid any issues
+      let isLiveMode = true;
+      let secretKey = '';
       
-      // Get Stripe configuration from database
-      const isLiveMode = (await storage.getSystemConfig('STRIPE_LIVE_MODE')) !== 'false';
-      
-      // Choose the appropriate key based on mode
-      const secretKey = isLiveMode 
-        ? await storage.getSystemConfig('STRIPE_SECRET_KEY')
-        : await storage.getSystemConfig('STRIPE_TEST_SECRET_KEY');
+      try {
+        const modeResult = await db.$client.query('SELECT value FROM system_config WHERE key = $1', ['STRIPE_LIVE_MODE']);
+        isLiveMode = modeResult.rows[0]?.value !== 'false';
+        
+        const keyName = isLiveMode ? 'STRIPE_SECRET_KEY' : 'STRIPE_TEST_SECRET_KEY';
+        const keyResult = await db.$client.query('SELECT value FROM system_config WHERE key = $1', [keyName]);
+        secretKey = keyResult.rows[0]?.value || '';
+      } catch (dbError) {
+        console.error('Database error fetching Stripe config:', dbError);
+        return res.status(200).json({ 
+          success: false,
+          message: 'Could not retrieve Stripe configuration from database',
+          error: dbError instanceof Error ? dbError.message : String(dbError)
+        });
+      }
       
       if (!secretKey) {
-        return res.status(400).json({ 
-          message: `No Stripe ${isLiveMode ? 'live' : 'test'} secret key found. Please configure your API keys.` 
+        return res.status(200).json({ 
+          success: false,
+          message: `No Stripe ${isLiveMode ? 'live' : 'test'} secret key found. Please configure your API keys.`
         });
       }
       
@@ -2353,24 +2375,24 @@ Sincerely,
         
         // If we get here, the connection is valid
         return res.status(200).json({ 
+          success: true,
           message: 'Stripe connection successful', 
-          mode: isLiveMode ? 'live' : 'test',
-          status: 'connected'
+          mode: isLiveMode ? 'live' : 'test'
         });
       } catch (stripeError) {
         console.error('Stripe API error:', stripeError);
-        return res.status(400).json({
+        return res.status(200).json({
+          success: false,
           message: stripeError instanceof Error ? stripeError.message : 'Invalid Stripe API key or configuration',
-          mode: isLiveMode ? 'live' : 'test',
-          status: 'error'
+          mode: isLiveMode ? 'live' : 'test'
         });
       }
     } catch (error) {
       console.error('Stripe test connection error:', error);
-      // Ensure we're returning a proper JSON response even in error cases
-      return res.status(400).json({ 
-        message: error instanceof Error ? error.message : 'Error testing Stripe connection',
-        status: 'error'
+      // Always return a 200 status with success flag instead of error status
+      return res.status(200).json({ 
+        success: false,
+        message: error instanceof Error ? error.message : 'Error testing Stripe connection'
       });
     }
   });
