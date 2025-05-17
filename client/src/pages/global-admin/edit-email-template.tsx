@@ -365,7 +365,7 @@ export default function EditEmailTemplate() {
                       })}
                     />
                     <p className="text-xs text-gray-500">
-                      Use HTML to format your email. Available variables: {{'{{'}}USER_NAME{{'}}'}} {{'{{'}}CHURCH_NAME{{'}}'}} {{'{{'}}USER_ROLE{{'}}'}} {{'{{'}}USER_EMAIL{{'}}'}} {{'{{'}}LOGIN_URL{{'}}'}} {{'{{'}}RESET_URL{{'}}'}}
+                      Use HTML to format your email. Available variables: {`{{USER_NAME}}`}, {`{{CHURCH_NAME}}`}, {`{{USER_ROLE}}`}, {`{{USER_EMAIL}}`}, {`{{LOGIN_URL}}`}, {`{{RESET_URL}}`}
                     </p>
                   </div>
                   
