@@ -244,14 +244,11 @@ export default function GlobalAdminSettings() {
         throw new Error("Authentication required");
       }
       
-      // Format data for the API - matching the server's expected field names
+      // Format data for the API - matching the server's expected field names exactly
       const templateData = {
-        id: activeTemplate.id,
-        templateType: activeTemplate.type,
         subject: activeTemplate.subject,
         bodyHtml: activeTemplate.body,
-        bodyText: stripHtml(activeTemplate.body), // Simple function to strip HTML tags
-        churchId: "SYSTEM_TEMPLATES" // System templates identifier
+        bodyText: stripHtml(activeTemplate.body) // Simple function to strip HTML tags
       };
       
       // Make API call to update the template in the database
