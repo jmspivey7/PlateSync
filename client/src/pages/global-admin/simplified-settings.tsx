@@ -129,7 +129,7 @@ export default function GlobalAdminSettings() {
                       <img 
                         src={stripeLogo} 
                         alt="Stripe" 
-                        className="h-14"
+                        className="h-10"
                       />
                       <p className="text-base text-gray-700">Configure subscription and payment settings</p>
                     </div>
@@ -146,7 +146,7 @@ export default function GlobalAdminSettings() {
                       <img 
                         src={sendgridLogo} 
                         alt="SendGrid" 
-                        className="h-14"
+                        className="h-10"
                       />
                       <p className="text-base text-gray-700">Configure email delivery settings</p>
                     </div>
@@ -163,7 +163,7 @@ export default function GlobalAdminSettings() {
                       <img 
                         src={planningCenterLogo} 
                         alt="Planning Center" 
-                        className="h-14"
+                        className="h-10"
                       />
                       <p className="text-base text-gray-700">Configure member synchronization</p>
                     </div>
