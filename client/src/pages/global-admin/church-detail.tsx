@@ -501,7 +501,6 @@ export default function ChurchDetail() {
                       <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead>Last Login</TableHead>
                       </TableRow>
@@ -523,16 +522,8 @@ export default function ChurchDetail() {
                           <TableCell>
                             <div className="flex items-center">
                               <Shield className="h-4 w-4 mr-1 text-blue-600" />
-                              <span>{user.role}</span>
-                              {user.isAccountOwner && (
-                                <Badge className="ml-2 text-xs">Owner</Badge>
-                              )}
+                              <span>{user.isAccountOwner ? "Account Owner" : "Standard User"}</span>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.isActive ? "success" : "secondary"}>
-                              {user.isActive ? "Active" : "Inactive"}
-                            </Badge>
                           </TableCell>
                           <TableCell>{formatDate(user.createdAt)}</TableCell>
                           <TableCell>{user.lastLoginAt ? formatDate(user.lastLoginAt) : "Never"}</TableCell>
