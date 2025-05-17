@@ -37,7 +37,7 @@ import ChurchDetail from "@/pages/global-admin/church-detail";
 import GlobalAdminProfile from "@/pages/global-admin/profile";
 import GlobalAdminUsers from "@/pages/global-admin/users";
 import GlobalAdminReports from "@/pages/global-admin/reports";
-import GlobalAdminSettings from "@/pages/global-admin/settings";
+import GlobalAdminSettings from "@/pages/global-admin/simplified-settings";
 
 // Global Admin Integration Pages
 import SendGridIntegration from "@/pages/global-admin/integrations/sendgrid";
