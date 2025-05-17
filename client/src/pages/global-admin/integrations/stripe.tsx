@@ -81,52 +81,49 @@ export default function StripeIntegration() {
             }
             
             const data = await response.json();
-            console.log("Loaded Stripe config:", data);
+            console.log("Loaded Stripe config (raw):", data);
             
-            // Mask the keys for security
-            if (data.liveSecretKey) {
+            // Make a copy of the data to work with
+            const configData = { ...data };
+            
+            // Force type assertion for all fields to ensure correct data types
+            const publicKeysPresent = !!configData.livePublicKey || !!configData.testPublicKey || 
+              !!configData.monthlyPriceId || !!configData.annualPriceId || 
+              !!configData.monthlyPaymentLink || !!configData.annualPaymentLink;
+              
+            console.log("Any public keys present:", publicKeysPresent);
+            
+            // Set the masked secret keys
+            if (configData.liveSecretKey) {
               setLiveSecretKey("••••••••••••••••••••••••••");
             } else {
               setLiveSecretKey("");
             }
             
-            if (data.testSecretKey) {
+            if (configData.testSecretKey) {
               setTestSecretKey("••••••••••••••••••••••••••");
             } else {
               setTestSecretKey("");
             }
             
-            // Debug the received data
-            console.log("Setting values from response:", {
-              livePublicKey: data.livePublicKey,
-              testPublicKey: data.testPublicKey,
-              monthlyPriceId: data.monthlyPriceId,
-              annualPriceId: data.annualPriceId,
-              monthlyPaymentLink: data.monthlyPaymentLink,
-              annualPaymentLink: data.annualPaymentLink,
-              isLiveMode: data.isLiveMode
-            });
+            // Log individual values before setting state
+            console.log("Live Public Key:", typeof configData.livePublicKey, configData.livePublicKey);
+            console.log("Test Public Key:", typeof configData.testPublicKey, configData.testPublicKey);
+            console.log("Monthly Price ID:", typeof configData.monthlyPriceId, configData.monthlyPriceId);
+            console.log("Annual Price ID:", typeof configData.annualPriceId, configData.annualPriceId);
+            console.log("Monthly Payment Link:", typeof configData.monthlyPaymentLink, configData.monthlyPaymentLink);
+            console.log("Annual Payment Link:", typeof configData.annualPaymentLink, configData.annualPaymentLink);
+            console.log("Is Live Mode:", typeof configData.isLiveMode, configData.isLiveMode);
             
-            // Set all values directly from data, with fallbacks to empty strings
-            // For critical config values, always make direct assignments to avoid type issues
-            setLivePublicKey(data.livePublicKey || "");
-            setTestPublicKey(data.testPublicKey || "");
-            setMonthlyPriceId(data.monthlyPriceId || "");
-            setAnnualPriceId(data.annualPriceId || "");
-            setMonthlyPaymentLink(data.monthlyPaymentLink || "");
-            setAnnualPaymentLink(data.annualPaymentLink || "");
-            setIsLiveMode(data.isLiveMode === true);
-            
-            // Verify values were set correctly
-            console.log("Values after setting:", {
-              livePublicKey: data.livePublicKey,
-              testPublicKey: data.testPublicKey,
-              monthlyPriceId: data.monthlyPriceId,
-              annualPriceId: data.annualPriceId,
-              monthlyPaymentLink: data.monthlyPaymentLink,
-              annualPaymentLink: data.annualPaymentLink,
-              isLiveMode: data.isLiveMode
-            });
+            // Direct assignment of values with enforced string types
+            // This ensures React state receives the correct data types
+            setLivePublicKey(String(configData.livePublicKey || ""));
+            setTestPublicKey(String(configData.testPublicKey || ""));
+            setMonthlyPriceId(String(configData.monthlyPriceId || ""));
+            setAnnualPriceId(String(configData.annualPriceId || ""));
+            setMonthlyPaymentLink(String(configData.monthlyPaymentLink || ""));
+            setAnnualPaymentLink(String(configData.annualPaymentLink || ""));
+            setIsLiveMode(Boolean(configData.isLiveMode));
           } catch (error) {
             console.error("Error fetching Stripe config:", error);
           }

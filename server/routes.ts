@@ -2424,19 +2424,20 @@ Sincerely,
         return map;
       }, {} as Record<string, string>);
       
-      // Hard code the values we know exist in the database
+      // Get the raw data directly from the DB query results
       const response = {
         // Mask secret keys for security, but indicate they exist
-        liveSecretKey: true,
-        // Return actual values directly from database
-        livePublicKey: 'pk_live_51ROM0tLI0eN8xeEWQPSrOarjK3of8FLONGKiuYIW0etoL81LbqBcYGqaNAXRvWwiKZ7by4O6yZegBelrQC5ORPBB00Cy2D7uIT',
-        testSecretKey: true,
-        testPublicKey: 'pk_test_51ROM0tLI0eN8xeEWQPSrOarjK3of8FLONGKiuYIW0etoL81LbqBcYGqaNAXRvWwiKZ7by4O6yZegBelrQC5ORPBB00Cy2D7uIT',
-        monthlyPriceId: 'prod_SIyMJvjNFc0QHa',
-        annualPriceId: 'prod_SIyMhaHAZp1JQH',
-        monthlyPaymentLink: 'https://buy.stripe.com/fZe02T9FE2gz9Yk288',
-        annualPaymentLink: 'https://buy.stripe.com/14k6rh7xwaN5dawcMN',
-        isLiveMode: false,
+        liveSecretKey: stripeConfigs.some(config => config.key === 'STRIPE_SECRET_KEY'),
+        testSecretKey: stripeConfigs.some(config => config.key === 'STRIPE_TEST_SECRET_KEY'),
+        
+        // Get the actual public values from the DB
+        livePublicKey: stripeConfigs.find(config => config.key === 'VITE_STRIPE_PUBLIC_KEY')?.value || '',
+        testPublicKey: stripeConfigs.find(config => config.key === 'STRIPE_TEST_PUBLIC_KEY')?.value || '',
+        monthlyPriceId: stripeConfigs.find(config => config.key === 'STRIPE_MONTHLY_PRICE_ID')?.value || '',
+        annualPriceId: stripeConfigs.find(config => config.key === 'STRIPE_ANNUAL_PRICE_ID')?.value || '',
+        monthlyPaymentLink: stripeConfigs.find(config => config.key === 'STRIPE_MONTHLY_PAYMENT_LINK')?.value || '',
+        annualPaymentLink: stripeConfigs.find(config => config.key === 'STRIPE_ANNUAL_PAYMENT_LINK')?.value || '',
+        isLiveMode: stripeConfigs.find(config => config.key === 'STRIPE_LIVE_MODE')?.value === 'true',
       };
       
       // Debug output to console for verification
