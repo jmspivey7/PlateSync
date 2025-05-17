@@ -283,25 +283,6 @@ export default function StripeIntegration() {
           </Button>
         </div>
         
-        <div className="bg-blue-50 border border-blue-100 rounded-md p-4 flex items-start mb-6">
-          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-          <div>
-            <h4 className="text-sm font-medium text-blue-800">Stripe Configuration</h4>
-            <p className="text-sm text-blue-700 mt-1">
-              You need a Stripe account to process subscription payments. 
-              <a 
-                href="https://dashboard.stripe.com/apikeys" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 underline ml-1 inline-flex items-center"
-              >
-                Get your API keys from the Stripe Dashboard
-                <ExternalLink className="h-3 w-3 ml-1" />
-              </a>
-            </p>
-          </div>
-        </div>
-        
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>API Keys</CardTitle>
