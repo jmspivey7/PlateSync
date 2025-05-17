@@ -504,8 +504,8 @@ export default function ChurchDetail() {
                         <TableHead className="font-bold">User Name</TableHead>
                         <TableHead className="font-bold">Email</TableHead>
                         <TableHead className="font-bold">Role</TableHead>
-                        <TableHead className="font-bold">Created</TableHead>
-                        <TableHead className="font-bold">Last Login</TableHead>
+                        <TableHead className="font-bold text-right">Created</TableHead>
+                        <TableHead className="font-bold text-right">Last Login</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -525,8 +525,8 @@ export default function ChurchDetail() {
                               <span>{user.isAccountOwner ? "Account Owner" : "Standard User"}</span>
                             </div>
                           </TableCell>
-                          <TableCell>{formatDate(user.createdAt, false)}</TableCell>
-                          <TableCell>{user.lastLoginAt ? formatDate(user.lastLoginAt, true) : "Never"}</TableCell>
+                          <TableCell className="text-right">{formatDate(user.createdAt, false)}</TableCell>
+                          <TableCell className="text-right">{user.lastLoginAt ? formatDate(user.lastLoginAt, true) : "Never"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
