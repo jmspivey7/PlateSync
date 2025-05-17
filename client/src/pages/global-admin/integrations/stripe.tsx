@@ -107,14 +107,14 @@ export default function StripeIntegration() {
               isLiveMode: data.isLiveMode
             });
             
-            // Set the values with strict type checking to ensure we capture all values
-            setLivePublicKey(typeof data.livePublicKey === 'string' ? data.livePublicKey : "");
-            setTestPublicKey(typeof data.testPublicKey === 'string' ? data.testPublicKey : "");
-            setMonthlyPriceId(typeof data.monthlyPriceId === 'string' ? data.monthlyPriceId : "");
-            setAnnualPriceId(typeof data.annualPriceId === 'string' ? data.annualPriceId : "");
-            setMonthlyPaymentLink(typeof data.monthlyPaymentLink === 'string' ? data.monthlyPaymentLink : "");
-            setAnnualPaymentLink(typeof data.annualPaymentLink === 'string' ? data.annualPaymentLink : "");
-            setIsLiveMode(data.isLiveMode === true);
+            // Set the values with proper type checking and handling
+            setLivePublicKey(data.livePublicKey || "");
+            setTestPublicKey(data.testPublicKey || "");
+            setMonthlyPriceId(data.monthlyPriceId || "");
+            setAnnualPriceId(data.annualPriceId || "");
+            setMonthlyPaymentLink(data.monthlyPaymentLink || "");
+            setAnnualPaymentLink(data.annualPaymentLink || "");
+            setIsLiveMode(Boolean(data.isLiveMode));
           } catch (error) {
             console.error("Error fetching Stripe config:", error);
           }

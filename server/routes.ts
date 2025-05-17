@@ -2397,30 +2397,54 @@ Sincerely,
   // Global Admin: Stripe Integration - GET endpoint
   app.get('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
     try {
-      // Fetch Stripe configuration values from storage
-      const liveSecretKeyConfig = await storage.getSystemConfig('STRIPE_SECRET_KEY');
-      const livePublicKeyConfig = await storage.getSystemConfig('VITE_STRIPE_PUBLIC_KEY');
-      const testSecretKeyConfig = await storage.getSystemConfig('STRIPE_TEST_SECRET_KEY');
-      const testPublicKeyConfig = await storage.getSystemConfig('STRIPE_TEST_PUBLIC_KEY');
-      const monthlyPriceIdConfig = await storage.getSystemConfig('STRIPE_MONTHLY_PRICE_ID');
-      const annualPriceIdConfig = await storage.getSystemConfig('STRIPE_ANNUAL_PRICE_ID');
-      const monthlyPaymentLinkConfig = await storage.getSystemConfig('STRIPE_MONTHLY_PAYMENT_LINK');
-      const annualPaymentLinkConfig = await storage.getSystemConfig('STRIPE_ANNUAL_PAYMENT_LINK');
-      const isLiveModeConfig = await storage.getSystemConfig('STRIPE_LIVE_MODE');
+      // Directly get values from the database for more reliable results
+      const stripeConfigs = await db
+        .select()
+        .from(systemConfig)
+        .where(
+          or(
+            eq(systemConfig.key, 'STRIPE_SECRET_KEY'),
+            eq(systemConfig.key, 'VITE_STRIPE_PUBLIC_KEY'),
+            eq(systemConfig.key, 'STRIPE_TEST_SECRET_KEY'),
+            eq(systemConfig.key, 'STRIPE_TEST_PUBLIC_KEY'),
+            eq(systemConfig.key, 'STRIPE_MONTHLY_PRICE_ID'),
+            eq(systemConfig.key, 'STRIPE_ANNUAL_PRICE_ID'),
+            eq(systemConfig.key, 'STRIPE_MONTHLY_PAYMENT_LINK'),
+            eq(systemConfig.key, 'STRIPE_ANNUAL_PAYMENT_LINK'),
+            eq(systemConfig.key, 'STRIPE_LIVE_MODE')
+          )
+        );
+      
+      // Create a map of keys to values
+      const configMap = stripeConfigs.reduce((map, config) => {
+        map[config.key] = config.value;
+        return map;
+      }, {} as Record<string, string>);
+      
+      // Use the map to get values
+      const liveSecretKeyConfig = configMap['STRIPE_SECRET_KEY'];
+      const livePublicKeyConfig = configMap['VITE_STRIPE_PUBLIC_KEY'];
+      const testSecretKeyConfig = configMap['STRIPE_TEST_SECRET_KEY'];
+      const testPublicKeyConfig = configMap['STRIPE_TEST_PUBLIC_KEY'];
+      const monthlyPriceIdConfig = configMap['STRIPE_MONTHLY_PRICE_ID'];
+      const annualPriceIdConfig = configMap['STRIPE_ANNUAL_PRICE_ID'];
+      const monthlyPaymentLinkConfig = configMap['STRIPE_MONTHLY_PAYMENT_LINK'];
+      const annualPaymentLinkConfig = configMap['STRIPE_ANNUAL_PAYMENT_LINK'];
+      const isLiveModeConfig = configMap['STRIPE_LIVE_MODE'];
       
       // Prepare response - mask secret keys but return all other values
       const response = {
         // Mask secret keys for security, but indicate they exist
         liveSecretKey: liveSecretKeyConfig ? true : false,
         // Return actual values for all public keys and IDs
-        livePublicKey: livePublicKeyConfig?.value || '',
+        livePublicKey: livePublicKeyConfig || '',
         testSecretKey: testSecretKeyConfig ? true : false,
-        testPublicKey: testPublicKeyConfig?.value || '',
-        monthlyPriceId: monthlyPriceIdConfig?.value || '',
-        annualPriceId: annualPriceIdConfig?.value || '',
-        monthlyPaymentLink: monthlyPaymentLinkConfig?.value || '',
-        annualPaymentLink: annualPaymentLinkConfig?.value || '',
-        isLiveMode: isLiveModeConfig?.value === 'true',
+        testPublicKey: testPublicKeyConfig || '',
+        monthlyPriceId: monthlyPriceIdConfig || '',
+        annualPriceId: annualPriceIdConfig || '',
+        monthlyPaymentLink: monthlyPaymentLinkConfig || '',
+        annualPaymentLink: annualPaymentLinkConfig || '',
+        isLiveMode: isLiveModeConfig === 'true',
       };
       
       // Debug output to console for verification
