@@ -120,9 +120,17 @@ export default function GlobalAdminSettings() {
                     className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
                     onClick={() => setLocation("/global-admin/integrations/sendgrid")}
                   >
-                    <div>
-                      <h3 className="font-medium">SendGrid</h3>
-                      <p className="text-sm text-gray-500">Configure email delivery settings</p>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 mr-3 flex items-center justify-center">
+                        {/* SendGrid logo will go here */}
+                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                          <Mail className="h-4 w-4 text-blue-500" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">SendGrid</h3>
+                        <p className="text-sm text-gray-500">Configure email delivery settings</p>
+                      </div>
                     </div>
                     <Button variant="ghost" size="icon">
                       <Edit className="h-4 w-4" />
@@ -133,9 +141,20 @@ export default function GlobalAdminSettings() {
                     className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
                     onClick={() => setLocation("/global-admin/integrations/planning-center")}
                   >
-                    <div>
-                      <h3 className="font-medium">Planning Center</h3>
-                      <p className="text-sm text-gray-500">Configure Planning Center integration</p>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 mr-3 flex items-center justify-center">
+                        {/* Planning Center logo will go here */}
+                        <div className="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#4F46E5" />
+                            <path d="M2 17L12 22L22 17V7L12 12L2 7V17Z" fill="#4F46E5" opacity="0.7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Planning Center</h3>
+                        <p className="text-sm text-gray-500">Configure Planning Center integration</p>
+                      </div>
                     </div>
                     <Button variant="ghost" size="icon">
                       <Edit className="h-4 w-4" />
@@ -146,9 +165,19 @@ export default function GlobalAdminSettings() {
                     className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
                     onClick={() => setLocation("/global-admin/integrations/stripe")}
                   >
-                    <div>
-                      <h3 className="font-medium">Stripe</h3>
-                      <p className="text-sm text-gray-500">Configure subscription and payment settings</p>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 mr-3 flex items-center justify-center">
+                        {/* Stripe logo will go here */}
+                        <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Stripe</h3>
+                        <p className="text-sm text-gray-500">Configure subscription and payment settings</p>
+                      </div>
                     </div>
                     <Button variant="ghost" size="icon">
                       <Edit className="h-4 w-4" />
