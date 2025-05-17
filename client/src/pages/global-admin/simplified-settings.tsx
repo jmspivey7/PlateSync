@@ -7,6 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings as SettingsIcon, Mail, Network, Edit } from "lucide-react";
 
+// Import the integration logos
+import sendgridLogo from "../../assets/integrations/sendgrid-logo.svg";
+import stripeLogo from "../../assets/integrations/stripe-logo.svg";
+import planningCenterLogo from "../../assets/integrations/planning-center-logo.svg";
+
 type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
 
 interface EmailTemplate {
@@ -121,14 +126,14 @@ export default function GlobalAdminSettings() {
                     onClick={() => setLocation("/global-admin/integrations/sendgrid")}
                   >
                     <div className="flex items-center">
-                      <div className="w-10 h-10 mr-3 flex items-center justify-center">
-                        {/* SendGrid logo will go here */}
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <Mail className="h-4 w-4 text-blue-500" />
-                        </div>
+                      <div className="w-40 mr-3 flex items-center justify-center">
+                        <img 
+                          src={sendgridLogo} 
+                          alt="SendGrid" 
+                          className="h-10"
+                        />
                       </div>
                       <div>
-                        <h3 className="font-medium">SendGrid</h3>
                         <p className="text-sm text-gray-500">Configure email delivery settings</p>
                       </div>
                     </div>
@@ -142,18 +147,15 @@ export default function GlobalAdminSettings() {
                     onClick={() => setLocation("/global-admin/integrations/planning-center")}
                   >
                     <div className="flex items-center">
-                      <div className="w-10 h-10 mr-3 flex items-center justify-center">
-                        {/* Planning Center logo will go here */}
-                        <div className="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#4F46E5" />
-                            <path d="M2 17L12 22L22 17V7L12 12L2 7V17Z" fill="#4F46E5" opacity="0.7" />
-                          </svg>
-                        </div>
+                      <div className="w-40 mr-3 flex items-center justify-center">
+                        <img 
+                          src={planningCenterLogo} 
+                          alt="Planning Center" 
+                          className="h-10"
+                        />
                       </div>
                       <div>
-                        <h3 className="font-medium">Planning Center</h3>
-                        <p className="text-sm text-gray-500">Configure Planning Center integration</p>
+                        <p className="text-sm text-gray-500">Configure member synchronization</p>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon">
@@ -166,16 +168,14 @@ export default function GlobalAdminSettings() {
                     onClick={() => setLocation("/global-admin/integrations/stripe")}
                   >
                     <div className="flex items-center">
-                      <div className="w-10 h-10 mr-3 flex items-center justify-center">
-                        {/* Stripe logo will go here */}
-                        <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </div>
+                      <div className="w-40 mr-3 flex items-center justify-center">
+                        <img 
+                          src={stripeLogo} 
+                          alt="Stripe" 
+                          className="h-10"
+                        />
                       </div>
                       <div>
-                        <h3 className="font-medium">Stripe</h3>
                         <p className="text-sm text-gray-500">Configure subscription and payment settings</p>
                       </div>
                     </div>
