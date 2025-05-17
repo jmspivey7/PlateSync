@@ -2397,52 +2397,40 @@ Sincerely,
   // Global Admin: Stripe Integration - GET endpoint
   app.get('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
     try {
-      // Directly get values from the database for more reliable results
-      const stripeConfigs = await db
-        .select()
-        .from(systemConfig)
-        .where(
-          or(
-            eq(systemConfig.key, 'STRIPE_SECRET_KEY'),
-            eq(systemConfig.key, 'VITE_STRIPE_PUBLIC_KEY'),
-            eq(systemConfig.key, 'STRIPE_TEST_SECRET_KEY'),
-            eq(systemConfig.key, 'STRIPE_TEST_PUBLIC_KEY'),
-            eq(systemConfig.key, 'STRIPE_MONTHLY_PRICE_ID'),
-            eq(systemConfig.key, 'STRIPE_ANNUAL_PRICE_ID'),
-            eq(systemConfig.key, 'STRIPE_MONTHLY_PAYMENT_LINK'),
-            eq(systemConfig.key, 'STRIPE_ANNUAL_PAYMENT_LINK'),
-            eq(systemConfig.key, 'STRIPE_LIVE_MODE')
-          )
-        );
+      console.log('Fetching Stripe configuration using direct SQL...');
       
-      // Debug DB query results for verification
-      console.log("Raw Stripe config data from DB:", stripeConfigs);
+      // Direct SQL query to bypass any potential ORM issues
+      const query = `SELECT * FROM system_config WHERE key IN ('STRIPE_SECRET_KEY', 'VITE_STRIPE_PUBLIC_KEY', 'STRIPE_TEST_SECRET_KEY', 'STRIPE_TEST_PUBLIC_KEY', 'STRIPE_MONTHLY_PRICE_ID', 'STRIPE_ANNUAL_PRICE_ID', 'STRIPE_MONTHLY_PAYMENT_LINK', 'STRIPE_ANNUAL_PAYMENT_LINK', 'STRIPE_LIVE_MODE')`;
+      const { rows } = await db.$client.query(query);
       
-      // Create a map of keys to values
-      const configMap = stripeConfigs.reduce((map, config) => {
-        map[config.key] = config.value;
-        return map;
-      }, {} as Record<string, string>);
+      console.log('Found Stripe configuration entries:', rows.length);
       
-      // Get the raw data directly from the DB query results
+      // Convert rows to a map for easier access
+      const configMap = {};
+      rows.forEach(row => {
+        configMap[row.key] = row.value;
+      });
+      
+      // Debug to see what we found
+      console.log('Stripe config map:', configMap);
+      
+      // Create the response object with proper values and masking
       const response = {
         // Mask secret keys for security, but indicate they exist
-        liveSecretKey: stripeConfigs.some(config => config.key === 'STRIPE_SECRET_KEY'),
-        testSecretKey: stripeConfigs.some(config => config.key === 'STRIPE_TEST_SECRET_KEY'),
+        liveSecretKey: !!configMap['STRIPE_SECRET_KEY'],
+        testSecretKey: !!configMap['STRIPE_TEST_SECRET_KEY'],
         
-        // Get the actual public values from the DB
-        livePublicKey: stripeConfigs.find(config => config.key === 'VITE_STRIPE_PUBLIC_KEY')?.value || '',
-        testPublicKey: stripeConfigs.find(config => config.key === 'STRIPE_TEST_PUBLIC_KEY')?.value || '',
-        monthlyPriceId: stripeConfigs.find(config => config.key === 'STRIPE_MONTHLY_PRICE_ID')?.value || '',
-        annualPriceId: stripeConfigs.find(config => config.key === 'STRIPE_ANNUAL_PRICE_ID')?.value || '',
-        monthlyPaymentLink: stripeConfigs.find(config => config.key === 'STRIPE_MONTHLY_PAYMENT_LINK')?.value || '',
-        annualPaymentLink: stripeConfigs.find(config => config.key === 'STRIPE_ANNUAL_PAYMENT_LINK')?.value || '',
-        isLiveMode: stripeConfigs.find(config => config.key === 'STRIPE_LIVE_MODE')?.value === 'true',
+        // Get the actual public values from configMap
+        livePublicKey: configMap['VITE_STRIPE_PUBLIC_KEY'] || '',
+        testPublicKey: configMap['STRIPE_TEST_PUBLIC_KEY'] || '',
+        monthlyPriceId: configMap['STRIPE_MONTHLY_PRICE_ID'] || '',
+        annualPriceId: configMap['STRIPE_ANNUAL_PRICE_ID'] || '',
+        monthlyPaymentLink: configMap['STRIPE_MONTHLY_PAYMENT_LINK'] || '',
+        annualPaymentLink: configMap['STRIPE_ANNUAL_PAYMENT_LINK'] || '',
+        isLiveMode: configMap['STRIPE_LIVE_MODE'] === 'true',
       };
       
-      // Debug output to console for verification
-      console.log("Returning Stripe config to client:", response);
-      
+      console.log('Returning Stripe config to client:', response);
       res.json(response);
     } catch (error) {
       console.error('Error fetching Stripe configuration:', error);
@@ -2453,6 +2441,7 @@ Sincerely,
   // Global Admin: Stripe Integration - POST endpoint
   app.post('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
     try {
+      console.log('Saving Stripe configuration using direct SQL...');
       const { 
         liveSecretKey, 
         livePublicKey, 
@@ -2465,60 +2454,68 @@ Sincerely,
         isLiveMode
       } = req.body;
       
-      // Prepare config items array for batch update
-      const configItems = [];
-      
-      // Only update secret keys if provided (not null, which means masked in UI)
-      if (liveSecretKey !== null) {
-        configItems.push({ key: 'STRIPE_SECRET_KEY', value: liveSecretKey });
-      }
-      
-      // Always update all public keys and IDs, even with empty values
-      configItems.push({ key: 'VITE_STRIPE_PUBLIC_KEY', value: livePublicKey || '' });
-      
-      if (testSecretKey !== null) {
-        configItems.push({ key: 'STRIPE_TEST_SECRET_KEY', value: testSecretKey });
-      }
-      
-      configItems.push({ key: 'STRIPE_TEST_PUBLIC_KEY', value: testPublicKey || '' });
-      configItems.push({ key: 'STRIPE_MONTHLY_PRICE_ID', value: monthlyPriceId || '' });
-      configItems.push({ key: 'STRIPE_ANNUAL_PRICE_ID', value: annualPriceId || '' });
-      configItems.push({ key: 'STRIPE_MONTHLY_PAYMENT_LINK', value: monthlyPaymentLink || '' });
-      configItems.push({ key: 'STRIPE_ANNUAL_PAYMENT_LINK', value: annualPaymentLink || '' });
-      
-      configItems.push({ key: 'STRIPE_LIVE_MODE', value: isLiveMode ? 'true' : 'false' });
-      
-      // Update the system configuration with all values
-      await storage.updateSystemConfig(configItems);
-      
-      // Update environment variables for the current process
-      // Always set all values (even empty ones) to ensure configuration consistency
-      process.env.VITE_STRIPE_PUBLIC_KEY = livePublicKey || '';
-      process.env.STRIPE_TEST_PUBLIC_KEY = testPublicKey || '';
-      process.env.STRIPE_MONTHLY_PRICE_ID = monthlyPriceId || '';
-      process.env.STRIPE_ANNUAL_PRICE_ID = annualPriceId || '';
-      process.env.STRIPE_MONTHLY_PAYMENT_LINK = monthlyPaymentLink || '';
-      process.env.STRIPE_ANNUAL_PAYMENT_LINK = annualPaymentLink || '';
-      process.env.STRIPE_LIVE_MODE = isLiveMode ? 'true' : 'false';
-      
-      // Only update secret keys if they're not masked (not null)
-      if (liveSecretKey !== null) {
-        process.env.STRIPE_SECRET_KEY = liveSecretKey;
-      }
-      
-      if (testSecretKey !== null) {
-        process.env.STRIPE_TEST_SECRET_KEY = testSecretKey;
-      }
-      
-      // Reinitialize Stripe if needed
-      if ((isLiveMode && liveSecretKey) || (!isLiveMode && testSecretKey)) {
-        const keyToUse = isLiveMode ? liveSecretKey : testSecretKey;
-        if (keyToUse) {
-          console.log(`Stripe client reinitialized with ${isLiveMode ? 'live' : 'test'} mode`);
+      // Using direct SQL queries for more reliable updates like the SendGrid integration
+      const updateOrInsert = async (key, value) => {
+        const checkQuery = `SELECT * FROM system_config WHERE key = $1`;
+        const result = await db.$client.query(checkQuery, [key]);
+        
+        if (result.rows.length > 0) {
+          await db.$client.query(
+            `UPDATE system_config SET value = $1 WHERE key = $2`,
+            [value, key]
+          );
+        } else {
+          await db.$client.query(
+            `INSERT INTO system_config (key, value) VALUES ($1, $2)`,
+            [key, value]
+          );
         }
-      }
+      };
       
-      res.status(200).json({ message: 'Stripe configuration updated successfully' });
+      try {
+        // Only update secret keys if they're not masked (not null)
+        if (liveSecretKey !== null) {
+          await updateOrInsert('STRIPE_SECRET_KEY', liveSecretKey);
+          process.env.STRIPE_SECRET_KEY = liveSecretKey;
+        }
+        
+        if (testSecretKey !== null) {
+          await updateOrInsert('STRIPE_TEST_SECRET_KEY', testSecretKey);
+          process.env.STRIPE_TEST_SECRET_KEY = testSecretKey;
+        }
+        
+        // Always update all public keys and IDs, even with empty values
+        await updateOrInsert('VITE_STRIPE_PUBLIC_KEY', livePublicKey || '');
+        await updateOrInsert('STRIPE_TEST_PUBLIC_KEY', testPublicKey || '');
+        await updateOrInsert('STRIPE_MONTHLY_PRICE_ID', monthlyPriceId || '');
+        await updateOrInsert('STRIPE_ANNUAL_PRICE_ID', annualPriceId || '');
+        await updateOrInsert('STRIPE_MONTHLY_PAYMENT_LINK', monthlyPaymentLink || '');
+        await updateOrInsert('STRIPE_ANNUAL_PAYMENT_LINK', annualPaymentLink || '');
+        await updateOrInsert('STRIPE_LIVE_MODE', isLiveMode ? 'true' : 'false');
+        
+        // Update environment variables for the current process
+        process.env.VITE_STRIPE_PUBLIC_KEY = livePublicKey || '';
+        process.env.STRIPE_TEST_PUBLIC_KEY = testPublicKey || '';
+        process.env.STRIPE_MONTHLY_PRICE_ID = monthlyPriceId || '';
+        process.env.STRIPE_ANNUAL_PRICE_ID = annualPriceId || '';
+        process.env.STRIPE_MONTHLY_PAYMENT_LINK = monthlyPaymentLink || '';
+        process.env.STRIPE_ANNUAL_PAYMENT_LINK = annualPaymentLink || '';
+        process.env.STRIPE_LIVE_MODE = isLiveMode ? 'true' : 'false';
+        
+        // Reinitialize Stripe if needed
+        if ((isLiveMode && liveSecretKey) || (!isLiveMode && testSecretKey)) {
+          const keyToUse = isLiveMode ? liveSecretKey : testSecretKey;
+          if (keyToUse) {
+            console.log(`Stripe client reinitialized with ${isLiveMode ? 'live' : 'test'} mode`);
+          }
+        }
+        
+        console.log('Stripe configuration updated successfully with SQL');
+        res.status(200).json({ message: 'Stripe configuration updated successfully' });
+      } catch (dbError) {
+        console.error('Database error saving Stripe config:', dbError);
+        res.status(500).json({ message: 'Database error: Failed to save Stripe configuration' });
+      }
     } catch (error) {
       console.error('Error updating Stripe configuration:', error);
       res.status(500).json({ 
