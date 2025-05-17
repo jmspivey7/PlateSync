@@ -57,7 +57,19 @@ export default function PlanningCenterIntegration() {
           // In a real implementation, fetch the actual configuration from the API
           // For now, we'll load placeholder values
           try {
-            const response = await apiRequest('/api/global-admin/integrations/planning-center');
+            // Send token in the Authorization header
+            const token = localStorage.getItem("globalAdminToken");
+            const response = await fetch('/api/global-admin/integrations/planning-center', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Failed to fetch config: ${response.status}`);
+            }
+            
             const data = await response.json();
             
             // Mask the client secret for security
@@ -102,12 +114,30 @@ export default function PlanningCenterIntegration() {
     try {
       setIsSaving(true);
       
+      // Get the global admin token
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+      
       // Send the client ID and client secret to the server
-      await apiRequest('/api/global-admin/integrations/planning-center', 'POST', {
-        clientId,
-        clientSecret: clientSecret.startsWith("••••") ? null : clientSecret, // Only send if it was changed
-        callbackUrl
+      const response = await fetch('/api/global-admin/integrations/planning-center', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          clientId,
+          clientSecret: clientSecret.startsWith("••••") ? null : clientSecret, // Only send if it was changed
+          callbackUrl
+        })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save configuration: ${response.status} ${errorText}`);
+      }
       
       toast({
         title: "Configuration saved",
