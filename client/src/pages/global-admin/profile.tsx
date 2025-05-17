@@ -162,8 +162,21 @@ export default function GlobalAdminProfile() {
       return;
     }
     
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'Image file size must be less than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     // Upload the file
     uploadAvatarMutation.mutate(file);
+    
+    // Reset the file input so the same file can be selected again if needed
+    event.target.value = '';
   };
 
   return (
