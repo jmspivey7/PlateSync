@@ -18,7 +18,8 @@ import {
   Code, 
   Eye, 
   Loader2,
-  Network
+  Network,
+  Edit
 } from "lucide-react";
 
 // Define the template types
@@ -385,8 +386,11 @@ export default function GlobalAdminSettings() {
                 <CardContent>
                   <div className="space-y-4">
                     {/* SendGrid Integration */}
-                    <div className="border rounded-md overflow-hidden">
-                      <div className="p-4 border-b">
+                    <div 
+                      className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group"
+                      onClick={() => setLocation("/global-admin/integrations/sendgrid")}
+                    >
+                      <div className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="font-medium">SendGrid</h3>
@@ -394,19 +398,20 @@ export default function GlobalAdminSettings() {
                               Email notification service used for sending emails from PlateSync
                             </p>
                           </div>
-                          <Button 
-                            onClick={() => setLocation("/global-admin/integrations/sendgrid")}
-                            className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                          >
+                          <span className="text-[#69ad4c] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center text-sm">
+                            <Edit className="h-4 w-4 mr-1" />
                             Manage
-                          </Button>
+                          </span>
                         </div>
                       </div>
                     </div>
                     
                     {/* Planning Center Integration */}
-                    <div className="border rounded-md overflow-hidden">
-                      <div className="p-4 border-b">
+                    <div 
+                      className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group"
+                      onClick={() => setLocation("/global-admin/integrations/planning-center")}
+                    >
+                      <div className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="font-medium">Planning Center</h3>
@@ -414,19 +419,20 @@ export default function GlobalAdminSettings() {
                               Connect with Planning Center to sync member data
                             </p>
                           </div>
-                          <Button 
-                            onClick={() => setLocation("/global-admin/integrations/planning-center")}
-                            className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                          >
+                          <span className="text-[#69ad4c] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center text-sm">
+                            <Edit className="h-4 w-4 mr-1" />
                             Manage
-                          </Button>
+                          </span>
                         </div>
                       </div>
                     </div>
                     
                     {/* Stripe Integration */}
-                    <div className="border rounded-md overflow-hidden">
-                      <div className="p-4 border-b">
+                    <div 
+                      className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group"
+                      onClick={() => setLocation("/global-admin/integrations/stripe")}
+                    >
+                      <div className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="font-medium">Stripe</h3>
@@ -434,12 +440,10 @@ export default function GlobalAdminSettings() {
                               Payment processing for subscriptions and billing
                             </p>
                           </div>
-                          <Button 
-                            onClick={() => setLocation("/global-admin/integrations/stripe")}
-                            className="bg-[#69ad4c] hover:bg-[#5a9740]"
-                          >
+                          <span className="text-[#69ad4c] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center text-sm">
+                            <Edit className="h-4 w-4 mr-1" />
                             Manage
-                          </Button>
+                          </span>
                         </div>
                       </div>
                     </div>
