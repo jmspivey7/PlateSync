@@ -99,8 +99,32 @@ export default function SendGridIntegration() {
         description: "Please wait while we verify your SendGrid configuration.",
       });
       
-      // Call the API to test SendGrid configuration
-      await apiRequest('/api/test-sendgrid');
+      // Get the token to include in headers
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+      
+      // Call the API to test SendGrid configuration with proper headers
+      const response = await fetch('/api/test-sendgrid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          // Try to parse as JSON for structured error
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.message || "Failed to test SendGrid configuration");
+        } catch (e) {
+          // If not JSON, use text or status
+          throw new Error(errorText || `Server error: ${response.status}`);
+        }
+      }
       
       // Show success toast
       toast({
@@ -109,12 +133,12 @@ export default function SendGridIntegration() {
         className: "bg-[#69ad4c] text-white",
       });
     } catch (error) {
+      console.error("Error testing SendGrid:", error);
       // Show error toast
       toast({
         title: "SendGrid configuration issue",
         description: error instanceof Error ? error.message : 'An unexpected error occurred',
         variant: "destructive",
-        className: "bg-white border-red-600",
       });
     } finally {
       setIsTesting(false);
@@ -126,11 +150,36 @@ export default function SendGridIntegration() {
     try {
       setIsSaving(true);
       
-      // Send the API key and from email to the server
-      await apiRequest('/api/global-admin/integrations/sendgrid', 'POST', {
-        apiKey: apiKey.startsWith("••••") ? null : apiKey, // Only send if it was changed
-        fromEmail
+      // Get the token to include in headers
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+      
+      // Send the API key and from email to the server with proper headers
+      const response = await fetch('/api/global-admin/integrations/sendgrid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          apiKey: apiKey.startsWith("••••") ? null : apiKey, // Only send if it was changed
+          fromEmail
+        })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          // Try to parse as JSON for structured error
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.message || "Failed to save configuration");
+        } catch (e) {
+          // If not JSON, use text or status
+          throw new Error(errorText || `Server error: ${response.status}`);
+        }
+      }
       
       toast({
         title: "Configuration saved",
@@ -142,6 +191,7 @@ export default function SendGridIntegration() {
         setApiKey("••••••••••••••••••••••••••");
       }
     } catch (error) {
+      console.error("Error saving SendGrid config:", error);
       toast({
         title: "Error saving configuration",
         description: error instanceof Error ? error.message : 'An unexpected error occurred',
