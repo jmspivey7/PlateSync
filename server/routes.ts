@@ -2404,6 +2404,7 @@ Sincerely,
       const { rows } = await db.$client.query(query);
       
       console.log('Found Stripe configuration entries:', rows.length);
+      console.log('Raw DB rows:', rows);
       
       // Convert rows to a map for easier access
       const configMap = {};
@@ -2435,6 +2436,36 @@ Sincerely,
     } catch (error) {
       console.error('Error fetching Stripe configuration:', error);
       res.status(500).json({ message: 'Error fetching Stripe configuration' });
+    }
+  });
+  
+  // Special debug endpoint to test direct database access for Stripe config
+  app.get('/api/global-admin/dev/stripe-test', requireGlobalAdmin, async (req, res) => {
+    try {
+      console.log('Debugging Stripe configuration with direct SQL...');
+      
+      // Direct SQL query to access exactly one field
+      const priceIdQuery = `SELECT value FROM system_config WHERE key = 'STRIPE_MONTHLY_PRICE_ID'`;
+      const priceIdResult = await db.$client.query(priceIdQuery);
+      
+      // Get the raw rows from the database
+      const allStripeQuery = `SELECT * FROM system_config WHERE key LIKE 'STRIPE_%' OR key LIKE 'VITE_STRIPE_%'`;
+      const allStripeResult = await db.$client.query(allStripeQuery);
+      
+      // Format the response with just what we want to see
+      const response = {
+        monthlyPriceId: priceIdResult.rows.length > 0 ? priceIdResult.rows[0].value : 'not found',
+        rawData: allStripeResult.rows
+      };
+      
+      console.log('Debug response:', response);
+      res.json(response);
+    } catch (error) {
+      console.error('Error in Stripe debug endpoint:', error);
+      res.status(500).json({ 
+        message: 'Error in debug endpoint',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
   
