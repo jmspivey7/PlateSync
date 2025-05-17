@@ -8,11 +8,15 @@ interface EmailTemplatePreviewProps {
 }
 
 const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({ subject, htmlContent }) => {
+  // Convert logo to base64 for inline embedding in email template preview
+  const logoSrc = plateSyncLogo;
+  
   const previewHtml = htmlContent
     .replace(/{{userName}}/g, "John Smith")
     .replace(/{{userEmail}}/g, "john.smith@example.com") 
     .replace(/{{churchName}}/g, "First Church") 
-    .replace(/{{churchLogoUrl}}/g, "https://platesync.replit.app/logo-with-text.png")
+    .replace(/{{CHURCH_LOGO_URL}}/g, logoSrc)
+    .replace(/{{churchLogoUrl}}/g, logoSrc)
     .replace(/{{loginUrl}}/g, "https://platesync.app/login")
     .replace(/{{resetUrl}}/g, "https://platesync.app/reset-password?token=example-token-123456")
     .replace(/{{verificationUrl}}/g, "https://platesync.app/verify?token=example-token-123456");
