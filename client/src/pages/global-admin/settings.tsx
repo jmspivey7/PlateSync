@@ -33,8 +33,8 @@ interface EmailTemplate {
   lastUpdated?: string;
 }
 
-// Default templates to use if server fails
-const defaultTemplates: EmailTemplate[] = [
+// Default templates that will be shown in the interface
+const systemTemplates: EmailTemplate[] = [
   {
     id: 1,
     type: "WELCOME_EMAIL",
@@ -170,64 +170,12 @@ export default function GlobalAdminSettings() {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("preview");
   const [isSaving, setIsSaving] = useState(false);
   
-  // Load templates from the server
-  const loadTemplates = async () => {
-    try {
-      // First, ensure system templates are initialized
-      await fetch('/api/email-templates/initialize-system', {
-        method: 'POST',
-        credentials: 'include'
-      });
-      
-      // Then fetch the templates
-      const response = await fetch('/api/email-templates/system', {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to load templates");
-      }
-      
-      const data = await response.json();
-      console.log("Loaded templates:", data);
-      
-      if (!data || !Array.isArray(data) || data.length === 0) {
-        console.log("No templates returned from API, using defaults");
-        setTemplates(defaultTemplates);
-        return;
-      }
-      
-      // Map the API response to our EmailTemplate format
-      const formattedTemplates = data.map((template: any) => ({
-        id: template.id,
-        type: template.templateType,
-        subject: template.subject,
-        body: template.bodyHtml,
-        lastUpdated: template.updatedAt 
-          ? new Date(template.updatedAt).toLocaleString('en-US', { 
-              month: 'short', 
-              day: 'numeric', 
-              year: 'numeric', 
-              hour: 'numeric', 
-              minute: 'numeric',
-              hour12: true 
-            })
-          : undefined
-      }));
-      
-      setTemplates(formattedTemplates);
-    } catch (error) {
-      console.error("Error loading templates:", error);
-      // Use default templates as fallback
-      setTemplates(defaultTemplates);
-      toast({
-        title: "Failed to load templates",
-        description: "Using default templates instead",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  // Simply set the templates directly rather than fetching from server
+  const loadTemplates = () => {
+    console.log("Loading system templates");
+    // Use our predefined templates 
+    setTemplates(systemTemplates);
+    setIsLoading(false);
   };
   
   // Check if the global admin is authenticated
@@ -387,7 +335,7 @@ export default function GlobalAdminSettings() {
     if (!activeTemplate) return;
     
     // Find the original template
-    const originalTemplate = initialTemplates.find(t => t.type === activeTemplate.type);
+    const originalTemplate = systemTemplates.find(t => t.type === activeTemplate.type);
     
     if (originalTemplate) {
       setActiveTemplate(originalTemplate);
