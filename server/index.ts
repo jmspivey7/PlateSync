@@ -11,6 +11,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/logos', express.static(path.join(process.cwd(), 'public/logos')));
 console.log(`Serving logos from: ${path.join(process.cwd(), 'public/logos')}`);
 
+// Serve the avatars directory for profile pictures
+app.use('/avatars', express.static(path.join(process.cwd(), 'public/avatars')));
+console.log(`Serving avatars from: ${path.join(process.cwd(), 'public/avatars')}`);
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

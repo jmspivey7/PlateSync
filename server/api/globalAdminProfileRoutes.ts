@@ -159,9 +159,9 @@ router.post('/profile/avatar', (req, res) => {
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       const fullImageUrl = `${baseUrl}${relativePath}`;
       
-      // Send a proper JSON response
-      res.contentType('application/json');
-      res.send(JSON.stringify({
+      // Send a proper JSON response with explicit headers
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({
         success: true,
         message: 'Profile picture updated successfully',
         profileImageUrl: relativePath,
