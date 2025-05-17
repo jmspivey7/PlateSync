@@ -26,17 +26,17 @@ import {
 type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
 
 interface EmailTemplate {
-  id: string;
+  id: number;
   type: TemplateType;
   subject: string;
   body: string;
   lastUpdated?: string;
 }
 
-// Sample template data with proper HTML templates
-const initialTemplates: EmailTemplate[] = [
+// Default templates to use if server fails
+const defaultTemplates: EmailTemplate[] = [
   {
-    id: "1",
+    id: 1,
     type: "WELCOME_EMAIL",
     subject: "Welcome to PlateSync",
     body: `
@@ -173,25 +173,15 @@ export default function GlobalAdminSettings() {
   // Load templates from the server
   const loadTemplates = async () => {
     try {
-      const token = localStorage.getItem("globalAdminToken");
-      
-      if (!token) {
-        throw new Error("Authentication required");
-      }
-      
       // First, ensure system templates are initialized
       await fetch('/api/email-templates/initialize-system', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
       
       // Then fetch the templates
       const response = await fetch('/api/email-templates/system', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -200,6 +190,12 @@ export default function GlobalAdminSettings() {
       
       const data = await response.json();
       console.log("Loaded templates:", data);
+      
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.log("No templates returned from API, using defaults");
+        setTemplates(defaultTemplates);
+        return;
+      }
       
       // Map the API response to our EmailTemplate format
       const formattedTemplates = data.map((template: any) => ({
@@ -222,9 +218,11 @@ export default function GlobalAdminSettings() {
       setTemplates(formattedTemplates);
     } catch (error) {
       console.error("Error loading templates:", error);
+      // Use default templates as fallback
+      setTemplates(defaultTemplates);
       toast({
         title: "Failed to load templates",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description: "Using default templates instead",
         variant: "destructive",
       });
     } finally {
