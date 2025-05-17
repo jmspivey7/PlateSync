@@ -46,6 +46,7 @@ export interface IStorage {
   // System Configuration operations
   getSystemConfig(key: string): Promise<string | null>;
   setSystemConfig(key: string, value: string): Promise<void>;
+  updateSystemConfig(configData: { key: string; value: string }[]): Promise<void>;
   
   // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
@@ -3102,6 +3103,44 @@ PlateSync Reporting System
       console.log(`Successfully saved config for key ${key}`);
     } catch (error) {
       console.error(`Error setting system config for key ${key}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateSystemConfig(configData: { key: string; value: string }[]): Promise<void> {
+    try {
+      console.log(`Updating multiple system config values (${configData.length} items)`);
+      
+      // Process each config item in sequence
+      for (const item of configData) {
+        const { key, value } = item;
+        
+        // Only process if key is provided
+        if (!key) {
+          console.warn('Skipping config item with missing key');
+          continue;
+        }
+        
+        // For security, don't log the full value
+        const logValue = value ? 
+          (value.length > 10 ? `${value.substring(0, 5)}...` : '[empty]') : 
+          '[null]';
+        
+        console.log(`Processing config: key=${key}, value=${logValue}`);
+        
+        // If value is null, skip updating this key
+        if (value === null) {
+          console.log(`Skipping update for key ${key} as value is null`);
+          continue;
+        }
+        
+        // Use the existing setSystemConfig method to handle each item
+        await this.setSystemConfig(key, value);
+      }
+      
+      console.log(`Successfully updated all system config values`);
+    } catch (error) {
+      console.error(`Error updating system config:`, error);
       throw error;
     }
   }
