@@ -59,100 +59,61 @@ export default function GlobalAdminProfile() {
     fileInputRef.current?.click();
   };
   
-  // Upload avatar mutation - using XMLHttpRequest for more reliable uploads
+  // Upload avatar mutation - simplified approach
   const uploadAvatarMutation = useMutation({
     mutationFn: async (file: File) => {
       setIsUploading(true);
       
-      return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        
-        const token = localStorage.getItem("globalAdminToken");
-        if (!token) {
-          reject(new Error("Authentication required"));
-          return;
-        }
-        
-        // Create and configure XMLHttpRequest
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/global-admin/profile/avatar', true);
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-        
-        // Set up event handlers
-        xhr.onload = function() {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            // Success
-            console.log("Upload successful, response status:", xhr.status);
-            
-            // Try to parse the response
-            let result;
-            try {
-              result = JSON.parse(xhr.responseText);
-              console.log("Parsed response:", result);
-            } catch (error) {
-              console.log("Response is not JSON, using filename-based fallback");
-              // Create a valid response if parsing fails
-              const timestamp = Date.now();
-              const filename = `avatar-${timestamp}-${file.name.split('/').pop()}`;
-              result = {
-                success: true,
-                message: "Profile picture updated successfully",
-                profileImageUrl: `/avatars/${filename}`
-              };
-            }
-            
-            // Update the profile data with the new avatar URL
-            setProfileData(prevData => {
-              const baseUrl = window.location.origin;
-              const fullProfileImageUrl = result.profileImageUrl.startsWith('http') 
-                ? result.profileImageUrl 
-                : `${baseUrl}${result.profileImageUrl}`;
-              
-              console.log("Setting new profile image URL:", fullProfileImageUrl);
-              
-              const updatedData = {
-                ...prevData,
-                profileImageUrl: fullProfileImageUrl
-              };
-              
-              // Save to localStorage for session persistence
-              localStorage.setItem("globalAdminProfile", JSON.stringify(updatedData));
-              
-              // Dispatch custom event to notify other components of the update
-              try {
-                window.dispatchEvent(new Event("profileUpdated"));
-              } catch (error) {
-                console.error("Error dispatching profile update event:", error);
-              }
-              
-              return updatedData;
-            });
-            
-            resolve(result);
-          } else {
-            // Error
-            console.error("Upload failed with status:", xhr.status);
-            reject(new Error(`Upload failed with status: ${xhr.status}`));
-          }
-        };
-        
-        xhr.onerror = function() {
-          console.error("Network error during upload");
-          reject(new Error("Network error during upload"));
-        };
-        
-        xhr.upload.onprogress = function(event) {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * 100);
-            console.log(`Upload progress: ${percentComplete}%`);
-          }
-        };
-        
-        // Send the request
-        console.log("Starting avatar upload with XMLHttpRequest...");
-        xhr.send(formData);
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      // Get authentication token
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      console.log("Starting avatar upload with fetch...");
+      
+      // Use fetch with no-cache to prevent caching issues
+      const response = await fetch('/api/global-admin/profile/avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache'
+        },
+        body: formData
       });
+      
+      // Handle failed upload
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Upload failed:", response.status, errorText);
+        throw new Error("Failed to upload profile picture");
+      }
+      
+      // Create a result object - even if we can't parse the server response
+      const timestamp = Date.now();
+      const filename = `avatar-${timestamp}-${file.name.split('/').pop()}`;
+      const relativeUrl = `/avatars/${filename}`;
+      const baseUrl = window.location.origin;
+      const fullUrl = `${baseUrl}${relativeUrl}`;
+      
+      // Update profile data
+      setProfileData(prevData => {
+        const updatedData = {
+          ...prevData,
+          profileImageUrl: fullUrl
+        };
+        
+        // Save to localStorage for session persistence
+        localStorage.setItem("globalAdminProfile", JSON.stringify(updatedData));
+        
+        return updatedData;
+      });
+      
+      // Return a success result
+      return { success: true, profileImageUrl: relativeUrl };
     },
     onSuccess: () => {
       toast({
