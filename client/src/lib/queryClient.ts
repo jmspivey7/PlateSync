@@ -44,7 +44,8 @@ export async function apiRequest<T = any>(url: string, method: "GET" | "POST" | 
 export async function apiRequest<T = any>(
   url: string,
   methodOrConfig?: string | RequestConfig,
-  bodyParam?: any
+  bodyParam?: any,
+  customHeaders?: Record<string, string>
 ): Promise<T> {
   let method = "GET";
   let body = undefined;
@@ -63,12 +64,18 @@ export async function apiRequest<T = any>(
   // For development mode, include a special header for authentication bypass
   const isDevelopment = import.meta.env.MODE === 'development';
   
+  // Add global admin token for global admin routes
+  const globalAdminToken = localStorage.getItem("globalAdminToken");
+  const isGlobalAdminRoute = url.includes('/api/global-admin');
+  
   const res = await fetch(url, {
     method,
     // Don't set Content-Type when using FormData - the browser will set it automatically with the correct boundary
     headers: {
       ...(body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(isDevelopment ? { "X-Development-Auth": "true" } : {}),
+      ...(isGlobalAdminRoute && globalAdminToken ? { "Authorization": `Bearer ${globalAdminToken}` } : {}),
+      ...(customHeaders || {})
     },
     // Don't stringify FormData objects
     body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
@@ -94,10 +101,15 @@ export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401
       // For development mode, include a special header for authentication bypass
       const isDevelopment = import.meta.env.MODE === 'development';
       
+      // Add global admin token for global admin routes
+      const globalAdminToken = localStorage.getItem("globalAdminToken");
+      const isGlobalAdminRoute = (queryKey[0] as string).includes('/api/global-admin');
+      
       const res = await fetch(queryKey[0] as string, {
         credentials: "include",
         headers: {
           ...(isDevelopment ? { "X-Development-Auth": "true" } : {}),
+          ...(isGlobalAdminRoute && globalAdminToken ? { "Authorization": `Bearer ${globalAdminToken}` } : {}),
         },
       });
 
