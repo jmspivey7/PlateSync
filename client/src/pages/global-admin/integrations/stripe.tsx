@@ -61,11 +61,27 @@ export default function StripeIntegration() {
           // Token seems valid, fetch Stripe configuration
           setIsLoading(false);
           
-          // In a real implementation, fetch the actual configuration from the API
-          // For now, we'll try to get the actual values
+          // Fetch the actual configuration from the API
           try {
-            const response = await apiRequest('/api/global-admin/integrations/stripe');
+            // Get the admin token from localStorage
+            const token = localStorage.getItem("globalAdminToken");
+            if (!token) {
+              throw new Error("Authentication token not found");
+            }
+            
+            // Make API request with token in Authorization header
+            const response = await fetch('/api/global-admin/integrations/stripe', {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`API error: ${response.status} ${response.statusText}`);
+            }
+            
             const data = await response.json();
+            console.log("Loaded Stripe config:", data);
             
             // Mask the keys for security
             if (data.liveSecretKey) {
