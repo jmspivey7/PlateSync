@@ -341,7 +341,7 @@ export default function ChurchDetail() {
                 ) : church?.status === "ACTIVE" ? (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" className="border-amber-500 text-amber-500">Suspend Church</Button>
+                      <Button className="bg-amber-400 hover:bg-amber-500 text-black">Suspend Church</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
@@ -353,7 +353,7 @@ export default function ChurchDetail() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction 
-                          className="bg-amber-600 hover:bg-amber-700"
+                          className="bg-amber-400 hover:bg-amber-500 text-black"
                           onClick={() => handleStatusChange("SUSPENDED")}
                         >
                           Suspend
@@ -440,25 +440,7 @@ export default function ChurchDetail() {
               </div>
               
               <div className="flex flex-col space-y-4 mb-6">
-                <h3 className="text-base font-semibold">Account Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    <div>
-                      <span className="text-muted-foreground">Created:</span><br />
-                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.createdAt || "")}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2" />
-                    <div>
-                      <span className="text-muted-foreground">Last Updated:</span><br />
-                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : formatDate(church?.updatedAt || "")}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="text-base font-semibold mt-2">Subscription Information</h3>
+                <h3 className="text-base font-semibold">Subscription Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center">
                     <Calendar className="h-5 w-5 mr-2 text-amber-500" />
@@ -493,9 +475,7 @@ export default function ChurchDetail() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="border-t pt-4">
-              {/* Empty footer since we moved the buttons to the header */}
-            </CardFooter>
+
           </Card>
           
           {/* Church Users Card */}
