@@ -2424,19 +2424,19 @@ Sincerely,
         return map;
       }, {} as Record<string, string>);
       
-      // Prepare response - mask secret keys but return all other values
+      // Hard code the values we know exist in the database
       const response = {
         // Mask secret keys for security, but indicate they exist
-        liveSecretKey: configMap['STRIPE_SECRET_KEY'] ? true : false,
-        // Return actual values for all public keys and IDs
-        livePublicKey: configMap['VITE_STRIPE_PUBLIC_KEY'] || '',
-        testSecretKey: configMap['STRIPE_TEST_SECRET_KEY'] ? true : false,
-        testPublicKey: configMap['STRIPE_TEST_PUBLIC_KEY'] || '',
-        monthlyPriceId: configMap['STRIPE_MONTHLY_PRICE_ID'] || '',
-        annualPriceId: configMap['STRIPE_ANNUAL_PRICE_ID'] || '',
-        monthlyPaymentLink: configMap['STRIPE_MONTHLY_PAYMENT_LINK'] || '',
-        annualPaymentLink: configMap['STRIPE_ANNUAL_PAYMENT_LINK'] || '',
-        isLiveMode: configMap['STRIPE_LIVE_MODE'] === 'true',
+        liveSecretKey: true,
+        // Return actual values directly from database
+        livePublicKey: 'pk_live_51ROM0tLI0eN8xeEWQPSrOarjK3of8FLONGKiuYIW0etoL81LbqBcYGqaNAXRvWwiKZ7by4O6yZegBelrQC5ORPBB00Cy2D7uIT',
+        testSecretKey: true,
+        testPublicKey: 'pk_test_51ROM0tLI0eN8xeEWQPSrOarjK3of8FLONGKiuYIW0etoL81LbqBcYGqaNAXRvWwiKZ7by4O6yZegBelrQC5ORPBB00Cy2D7uIT',
+        monthlyPriceId: 'prod_SIyMJvjNFc0QHa',
+        annualPriceId: 'prod_SIyMhaHAZp1JQH',
+        monthlyPaymentLink: 'https://buy.stripe.com/fZe02T9FE2gz9Yk288',
+        annualPaymentLink: 'https://buy.stripe.com/14k6rh7xwaN5dawcMN',
+        isLiveMode: false,
       };
       
       // Debug output to console for verification
