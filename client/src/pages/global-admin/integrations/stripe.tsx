@@ -58,10 +58,10 @@ export default function StripeIntegration() {
             throw new Error('Token has expired');
           }
           
-          // Token seems valid, fetch Stripe configuration
+          // Token seems valid, proceed with loading
           setIsLoading(false);
           
-          // Fetch the actual configuration from the API
+          // Fetch the Stripe configuration from the API
           try {
             // Get the admin token from localStorage
             const token = localStorage.getItem("globalAdminToken");
@@ -77,53 +77,33 @@ export default function StripeIntegration() {
             });
             
             if (!response.ok) {
-              throw new Error(`API error: ${response.status} ${response.statusText}`);
+              throw new Error(`Failed to fetch configuration: ${response.status}`);
             }
             
             const data = await response.json();
-            console.log("Loaded Stripe config (raw):", data);
+            console.log("Stripe config from API:", data);
             
-            // Make a copy of the data to work with
-            const configData = { ...data };
-            
-            // Force type assertion for all fields to ensure correct data types
-            const publicKeysPresent = !!configData.livePublicKey || !!configData.testPublicKey || 
-              !!configData.monthlyPriceId || !!configData.annualPriceId || 
-              !!configData.monthlyPaymentLink || !!configData.annualPaymentLink;
-              
-            console.log("Any public keys present:", publicKeysPresent);
-            
-            // Set the masked secret keys
-            if (configData.liveSecretKey) {
+            // Mask the secret keys for security
+            if (data.liveSecretKey) {
               setLiveSecretKey("••••••••••••••••••••••••••");
             } else {
               setLiveSecretKey("");
             }
             
-            if (configData.testSecretKey) {
+            if (data.testSecretKey) {
               setTestSecretKey("••••••••••••••••••••••••••");
             } else {
               setTestSecretKey("");
             }
             
-            // Log individual values before setting state
-            console.log("Live Public Key:", typeof configData.livePublicKey, configData.livePublicKey);
-            console.log("Test Public Key:", typeof configData.testPublicKey, configData.testPublicKey);
-            console.log("Monthly Price ID:", typeof configData.monthlyPriceId, configData.monthlyPriceId);
-            console.log("Annual Price ID:", typeof configData.annualPriceId, configData.annualPriceId);
-            console.log("Monthly Payment Link:", typeof configData.monthlyPaymentLink, configData.monthlyPaymentLink);
-            console.log("Annual Payment Link:", typeof configData.annualPaymentLink, configData.annualPaymentLink);
-            console.log("Is Live Mode:", typeof configData.isLiveMode, configData.isLiveMode);
-            
-            // Direct assignment of values with enforced string types
-            // This ensures React state receives the correct data types
-            setLivePublicKey(String(configData.livePublicKey || ""));
-            setTestPublicKey(String(configData.testPublicKey || ""));
-            setMonthlyPriceId(String(configData.monthlyPriceId || ""));
-            setAnnualPriceId(String(configData.annualPriceId || ""));
-            setMonthlyPaymentLink(String(configData.monthlyPaymentLink || ""));
-            setAnnualPaymentLink(String(configData.annualPaymentLink || ""));
-            setIsLiveMode(Boolean(configData.isLiveMode));
+            // Set the rest of the values directly from the API response
+            setLivePublicKey(data.livePublicKey || "");
+            setTestPublicKey(data.testPublicKey || "");
+            setMonthlyPriceId(data.monthlyPriceId || "");
+            setAnnualPriceId(data.annualPriceId || "");
+            setMonthlyPaymentLink(data.monthlyPaymentLink || "");
+            setAnnualPaymentLink(data.annualPaymentLink || "");
+            setIsLiveMode(Boolean(data.isLiveMode));
           } catch (error) {
             console.error("Error fetching Stripe config:", error);
           }
