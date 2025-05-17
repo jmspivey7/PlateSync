@@ -171,26 +171,30 @@ export default function GlobalAdminReports() {
           <CardContent className="h-[350px] flex items-center justify-center">
             <div className="text-center text-gray-500 flex flex-col items-center w-full">
               <div className="w-full h-full flex items-center justify-center flex-col">
-                <div className="w-full max-w-4xl h-[220px] bg-gray-100 rounded-md p-4 flex items-end justify-between gap-2">
+                <div className="w-full max-w-4xl h-[220px] bg-gray-100 rounded-md p-4 pb-8 mb-6 flex items-end justify-between gap-2 relative">
                   <div className="relative h-[70%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$120</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Jan</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$120</span>
                   </div>
                   <div className="relative h-[80%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$175</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Feb</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$175</span>
                   </div>
                   <div className="relative h-[65%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$140</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Mar</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$140</span>
                   </div>
                   <div className="relative h-[90%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$210</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Apr</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$210</span>
                   </div>
                   <div className="relative h-[100%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$250</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">May</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$250</span>
+                  </div>
+                  
+                  {/* Month labels below the gray area */}
+                  <div className="absolute left-0 right-0 bottom-0 flex justify-between px-4">
+                    <span className="text-xs font-bold">Jan</span>
+                    <span className="text-xs font-bold">Feb</span>
+                    <span className="text-xs font-bold">Mar</span>
+                    <span className="text-xs font-bold">Apr</span>
+                    <span className="text-xs font-bold">May</span>
                   </div>
                 </div>
               </div>
