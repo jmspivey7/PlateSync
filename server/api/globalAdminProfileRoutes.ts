@@ -120,6 +120,8 @@ router.post('/profile/avatar', avatarUpload.single('avatar'), async (req, res) =
       }
     }
     
+    // Make sure to set the correct content type
+    res.setHeader('Content-Type', 'application/json');
     res.status(200).json({
       success: true,
       message: 'Profile picture updated successfully',
