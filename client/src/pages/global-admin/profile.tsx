@@ -92,18 +92,37 @@ export default function GlobalAdminProfile() {
         throw new Error("Failed to upload profile picture");
       }
       
-      // Create a result object - even if we can't parse the server response
-      const timestamp = Date.now();
-      const filename = `avatar-${timestamp}-${file.name.split('/').pop()}`;
-      const relativeUrl = `/avatars/${filename}`;
+      // Try to parse the server response
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log("Server response:", responseData);
+      } catch (error) {
+        console.log("Error parsing server response, using fallback");
+        // Create a fallback response object
+        const timestamp = Date.now();
+        const filename = `avatar-${timestamp}-${file.name.split('/').pop()}`;
+        responseData = { 
+          success: true, 
+          profileImageUrl: `/avatars/${filename}`
+        };
+      }
+      
+      // Get the profile image URL from the response or use the fallback
+      const relativeUrl = responseData.profileImageUrl;
       const baseUrl = window.location.origin;
-      const fullUrl = `${baseUrl}${relativeUrl}`;
+      const fullUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseUrl}${relativeUrl}`;
+      
+      console.log("Image URL to use:", fullUrl);
+      
+      // Force image reload by adding a timestamp cache buster
+      const imageUrlWithCacheBuster = `${fullUrl}?t=${Date.now()}`;
       
       // Update profile data
       setProfileData(prevData => {
         const updatedData = {
           ...prevData,
-          profileImageUrl: fullUrl
+          profileImageUrl: imageUrlWithCacheBuster
         };
         
         // Save to localStorage for session persistence
@@ -112,8 +131,8 @@ export default function GlobalAdminProfile() {
         return updatedData;
       });
       
-      // Return a success result
-      return { success: true, profileImageUrl: relativeUrl };
+      // Return the response data
+      return responseData;
     },
     onSuccess: () => {
       toast({
