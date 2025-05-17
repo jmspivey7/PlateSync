@@ -1111,13 +1111,7 @@ const Settings = () => {
                   <div className="flex justify-between items-start gap-8">
                     <div className="max-w-[80%]">
                       <div className="text-sm text-gray-600">
-                        Email notifications can be sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries. Click here to test the <button 
-                          onClick={testSendGridConfiguration} 
-                          disabled={sendgridTestStatus === 'loading'}
-                          className="text-[#69ad4c] hover:underline font-medium focus:outline-none"
-                        >
-                          SendGrid
-                        </button> configuration.
+                        Email notifications can be sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries.
                       </div>
                     </div>
                     <div className="flex items-center pl-4">
