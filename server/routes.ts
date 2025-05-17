@@ -2394,6 +2394,139 @@ Sincerely,
     }
   });
 
+  // Global Admin: Stripe Integration - GET endpoint
+  app.get('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
+    try {
+      // Fetch Stripe configuration values from storage
+      const liveSecretKeyConfig = await storage.getSystemConfig('STRIPE_SECRET_KEY');
+      const livePublicKeyConfig = await storage.getSystemConfig('VITE_STRIPE_PUBLIC_KEY');
+      const testSecretKeyConfig = await storage.getSystemConfig('STRIPE_TEST_SECRET_KEY');
+      const testPublicKeyConfig = await storage.getSystemConfig('STRIPE_TEST_PUBLIC_KEY');
+      const monthlyPriceIdConfig = await storage.getSystemConfig('STRIPE_MONTHLY_PRICE_ID');
+      const annualPriceIdConfig = await storage.getSystemConfig('STRIPE_ANNUAL_PRICE_ID');
+      const monthlyPaymentLinkConfig = await storage.getSystemConfig('STRIPE_MONTHLY_PAYMENT_LINK');
+      const annualPaymentLinkConfig = await storage.getSystemConfig('STRIPE_ANNUAL_PAYMENT_LINK');
+      const isLiveModeConfig = await storage.getSystemConfig('STRIPE_LIVE_MODE');
+      
+      // Prepare response - omit actual secret key values for security
+      const response = {
+        liveSecretKey: liveSecretKeyConfig ? true : false, // Only indicate if exists
+        livePublicKey: livePublicKeyConfig?.value || '',
+        testSecretKey: testSecretKeyConfig ? true : false, // Only indicate if exists
+        testPublicKey: testPublicKeyConfig?.value || '',
+        monthlyPriceId: monthlyPriceIdConfig?.value || '',
+        annualPriceId: annualPriceIdConfig?.value || '',
+        monthlyPaymentLink: monthlyPaymentLinkConfig?.value || '',
+        annualPaymentLink: annualPaymentLinkConfig?.value || '',
+        isLiveMode: isLiveModeConfig?.value === 'true',
+      };
+      
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching Stripe configuration:', error);
+      res.status(500).json({ message: 'Error fetching Stripe configuration' });
+    }
+  });
+  
+  // Global Admin: Stripe Integration - POST endpoint
+  app.post('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
+    try {
+      const { 
+        liveSecretKey, 
+        livePublicKey, 
+        testSecretKey, 
+        testPublicKey,
+        monthlyPriceId,
+        annualPriceId,
+        monthlyPaymentLink,
+        annualPaymentLink,
+        isLiveMode
+      } = req.body;
+      
+      // Prepare config items array for batch update
+      const configItems = [];
+      
+      // Only update secret keys if provided (not null, which means masked in UI)
+      if (liveSecretKey !== null) {
+        configItems.push({ key: 'STRIPE_SECRET_KEY', value: liveSecretKey });
+      }
+      
+      if (livePublicKey !== undefined) {
+        configItems.push({ key: 'VITE_STRIPE_PUBLIC_KEY', value: livePublicKey });
+      }
+      
+      if (testSecretKey !== null) {
+        configItems.push({ key: 'STRIPE_TEST_SECRET_KEY', value: testSecretKey });
+      }
+      
+      if (testPublicKey !== undefined) {
+        configItems.push({ key: 'STRIPE_TEST_PUBLIC_KEY', value: testPublicKey });
+      }
+      
+      if (monthlyPriceId !== undefined) {
+        configItems.push({ key: 'STRIPE_MONTHLY_PRICE_ID', value: monthlyPriceId });
+      }
+      
+      if (annualPriceId !== undefined) {
+        configItems.push({ key: 'STRIPE_ANNUAL_PRICE_ID', value: annualPriceId });
+      }
+      
+      if (monthlyPaymentLink !== undefined) {
+        configItems.push({ key: 'STRIPE_MONTHLY_PAYMENT_LINK', value: monthlyPaymentLink });
+      }
+      
+      if (annualPaymentLink !== undefined) {
+        configItems.push({ key: 'STRIPE_ANNUAL_PAYMENT_LINK', value: annualPaymentLink });
+      }
+      
+      configItems.push({ key: 'STRIPE_LIVE_MODE', value: isLiveMode ? 'true' : 'false' });
+      
+      // Update the system configuration with all values
+      await storage.updateSystemConfig(configItems);
+      
+      // Update environment variables for the current process
+      if (liveSecretKey) {
+        process.env.STRIPE_SECRET_KEY = liveSecretKey;
+      }
+      
+      if (livePublicKey) {
+        process.env.VITE_STRIPE_PUBLIC_KEY = livePublicKey;
+      }
+      
+      if (monthlyPriceId) {
+        process.env.STRIPE_MONTHLY_PRICE_ID = monthlyPriceId;
+      }
+      
+      if (annualPriceId) {
+        process.env.STRIPE_ANNUAL_PRICE_ID = annualPriceId;
+      }
+      
+      if (monthlyPaymentLink) {
+        process.env.STRIPE_MONTHLY_PAYMENT_LINK = monthlyPaymentLink;
+      }
+      
+      if (annualPaymentLink) {
+        process.env.STRIPE_ANNUAL_PAYMENT_LINK = annualPaymentLink;
+      }
+      
+      // Reinitialize Stripe if needed
+      if ((isLiveMode && liveSecretKey) || (!isLiveMode && testSecretKey)) {
+        const keyToUse = isLiveMode ? liveSecretKey : testSecretKey;
+        if (keyToUse) {
+          console.log(`Stripe client reinitialized with ${isLiveMode ? 'live' : 'test'} mode`);
+        }
+      }
+      
+      res.status(200).json({ message: 'Stripe configuration updated successfully' });
+    } catch (error) {
+      console.error('Error updating Stripe configuration:', error);
+      res.status(500).json({ 
+        message: 'Failed to update Stripe configuration',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
