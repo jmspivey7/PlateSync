@@ -2327,6 +2327,9 @@ Sincerely,
   // Test Stripe Connection endpoint
   app.get('/api/test-stripe', async (req, res) => {
     try {
+      // Set response content type explicitly
+      res.setHeader('Content-Type', 'application/json');
+      
       // Get Stripe configuration from database
       const isLiveMode = (await storage.getSystemConfig('STRIPE_LIVE_MODE')) !== 'false';
       
@@ -2344,20 +2347,30 @@ Sincerely,
       // Initialize Stripe with the secret key
       const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' });
       
-      // Test the Stripe connection by making a simple API call
-      const balance = await stripe.balance.retrieve();
-      
-      // If we get here, the connection is valid
-      return res.status(200).json({ 
-        message: 'Stripe connection successful', 
-        mode: isLiveMode ? 'live' : 'test',
-        status: 'connected'
-      });
+      try {
+        // Test the Stripe connection by making a simple API call
+        const balance = await stripe.balance.retrieve();
+        
+        // If we get here, the connection is valid
+        return res.status(200).json({ 
+          message: 'Stripe connection successful', 
+          mode: isLiveMode ? 'live' : 'test',
+          status: 'connected'
+        });
+      } catch (stripeError) {
+        console.error('Stripe API error:', stripeError);
+        return res.status(400).json({
+          message: stripeError instanceof Error ? stripeError.message : 'Invalid Stripe API key or configuration',
+          mode: isLiveMode ? 'live' : 'test',
+          status: 'error'
+        });
+      }
     } catch (error) {
       console.error('Stripe test connection error:', error);
+      // Ensure we're returning a proper JSON response even in error cases
       return res.status(400).json({ 
-        message: 'Unexpected token "<"<!DOCTYPE html>' in JSON at position 0',
-        error: error instanceof Error ? error.message : String(error)
+        message: error instanceof Error ? error.message : 'Error testing Stripe connection',
+        status: 'error'
       });
     }
   });

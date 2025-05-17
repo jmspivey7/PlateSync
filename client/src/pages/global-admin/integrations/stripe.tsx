@@ -145,34 +145,42 @@ export default function StripeIntegration() {
         description: "Please wait while we verify your Stripe configuration.",
       });
       
-      // Call the API to test Stripe configuration
-      const response = await apiRequest('/api/test-stripe');
+      // Call the API to test Stripe configuration directly with fetch
+      // This avoids potential issues with apiRequest and gives us more control
+      const token = localStorage.getItem("globalAdminToken");
+      const response = await fetch('/api/test-stripe', {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Expected JSON response but received HTML. Please check your Stripe configuration.');
+      }
+      
+      // Parse the JSON response
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Error testing Stripe connection');
+      }
       
       // Show success toast
       toast({
         title: "Stripe is configured correctly",
-        description: `Your Stripe integration is working properly in ${data.mode} mode!`,
+        description: `Your Stripe integration is working properly in ${data.mode || 'live'} mode!`,
         className: "bg-[#69ad4c] text-white",
       });
     } catch (error) {
       console.error("Stripe test error:", error);
       
-      // Parse error message from the response if possible
-      let errorMessage = 'An unexpected error occurred';
-      
-      try {
-        if (error instanceof Error) {
-          // If it's a standard error object
-          errorMessage = error.message;
-        } else if (typeof error === 'object' && error !== null) {
-          // If it's a JSON response with error details
-          // @ts-ignore
-          errorMessage = error.message || errorMessage;
-        }
-      } catch (e) {
-        console.error("Error parsing error message:", e);
-      }
+      // Get the error message
+      let errorMessage = error instanceof Error 
+        ? error.message 
+        : 'An unexpected error occurred with Stripe connection';
       
       // Show error toast
       toast({
