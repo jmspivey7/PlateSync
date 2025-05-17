@@ -34,13 +34,19 @@ import {
   type Church,
   type InsertChurch,
   type Subscription,
-  type InsertSubscription
+  type InsertSubscription,
+  type SystemConfig,
+  type InsertSystemConfig
 } from "@shared/schema";
 import { db } from "./db";
 import { format } from "date-fns";
 
 // Interface for storage operations
 export interface IStorage {
+  // System Configuration operations
+  getSystemConfig(key: string): Promise<string | null>;
+  setSystemConfig(key: string, value: string): Promise<void>;
+  
   // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   getUserById(id: string): Promise<User | undefined>; // Alias for getUser for clarity
@@ -3027,6 +3033,8 @@ PlateSync Reporting System
       return undefined;
     }
   }
+}
+
 }
 
 export const storage = new DatabaseStorage();
