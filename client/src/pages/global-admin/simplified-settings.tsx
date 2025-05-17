@@ -80,10 +80,7 @@ export default function GlobalAdminSettings() {
                     <div 
                       key={template.id} 
                       className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
-                      onClick={() => toast({
-                        title: "Template editor",
-                        description: "The template editor is being updated. Please check back soon.",
-                      })}
+                      onClick={() => setLocation(`/global-admin/edit-email-template/${template.id}`)}
                     >
                       <div>
                         <h3 className="font-medium">
