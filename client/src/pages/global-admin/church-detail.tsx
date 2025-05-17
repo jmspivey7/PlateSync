@@ -501,7 +501,8 @@ export default function ChurchDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow className="font-bold">
-                        <TableHead className="font-bold">User</TableHead>
+                        <TableHead className="font-bold">User Name</TableHead>
+                        <TableHead className="font-bold">Email</TableHead>
                         <TableHead className="font-bold">Role</TableHead>
                         <TableHead className="font-bold">Created</TableHead>
                         <TableHead className="font-bold">Last Login</TableHead>
@@ -511,15 +512,12 @@ export default function ChurchDetail() {
                       {users.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell>
-                            <div>
-                              <div className="font-medium">
-                                {user.firstName ? `${user.firstName} ${user.lastName || ''}` : user.email}
-                              </div>
-                              <div className="text-sm text-muted-foreground flex items-center">
-                                <AtSign className="h-3 w-3 mr-1" />
-                                {user.email}
-                              </div>
+                            <div className="font-medium">
+                              {user.firstName ? `${user.firstName} ${user.lastName || ''}` : 'User'}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {user.email}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
