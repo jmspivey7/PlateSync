@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import plateSyncLogo from "@/assets/platesync-logo.png";
@@ -8,8 +9,7 @@ interface EmailTemplatePreviewProps {
 }
 
 const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({ subject, htmlContent }) => {
-  // Convert logo to base64 for inline embedding in email template preview
-  const logoSrc = plateSyncLogo;
+  const logoSrc = `${window.location.origin}/logo-with-text.png`;
   
   const previewHtml = htmlContent
     .replace(/{{userName}}/g, "John Smith")
@@ -17,6 +17,9 @@ const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({ subject, ht
     .replace(/{{churchName}}/g, "First Church") 
     .replace(/{{CHURCH_LOGO_URL}}/g, logoSrc)
     .replace(/{{churchLogoUrl}}/g, logoSrc)
+    .replace(/{{logoUrl}}/g, logoSrc)
+    .replace(/src="https:\/\/platesync\.replit\.app\/logo-with-text\.png"/g, `src="${logoSrc}"`)
+    .replace(/src="\/logo-with-text\.png"/g, `src="${logoSrc}"`)
     .replace(/{{loginUrl}}/g, "https://platesync.app/login")
     .replace(/{{resetUrl}}/g, "https://platesync.app/reset-password?token=example-token-123456")
     .replace(/{{verificationUrl}}/g, "https://platesync.app/verify?token=example-token-123456");
