@@ -169,31 +169,31 @@ export default function GlobalAdminReports() {
                 <p className="mb-4">Monthly Revenue from Stripe Subscriptions</p>
                 <div className="w-full max-w-4xl h-[220px] bg-gray-100 rounded-md p-4 flex items-end justify-between gap-2">
                   <div className="relative h-[70%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Jan</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$120</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$120</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Jan</span>
                   </div>
                   <div className="relative h-[80%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Feb</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$175</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$175</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Feb</span>
                   </div>
                   <div className="relative h-[65%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Mar</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$140</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$140</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Mar</span>
                   </div>
                   <div className="relative h-[90%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">Apr</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$210</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$210</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">Apr</span>
                   </div>
                   <div className="relative h-[100%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">May</span>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">$250</span>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium">$250</span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs">May</span>
                   </div>
                 </div>
               </div>
             </div>
           </CardContent>
           <CardFooter className="flex justify-center pb-4">
-            <Button className="bg-[#69ad4c] hover:bg-[#5a9740]">
+            <Button className="bg-[#69ad4c] hover:bg-[#5a9740] text-white">
               <Download className="h-4 w-4 mr-2" />
               Download Revenue Report
             </Button>
