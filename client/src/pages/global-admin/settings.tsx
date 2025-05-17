@@ -164,7 +164,7 @@ export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [activeTemplate, setActiveTemplate] = useState<EmailTemplate | null>(null);
   const [currentView, setCurrentView] = useState<"list" | "edit">("list");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("preview");
@@ -244,6 +244,16 @@ export default function GlobalAdminSettings() {
         throw new Error("Authentication required");
       }
       
+      console.log(`Saving template ID: ${activeTemplate.id}, type: ${activeTemplate.type}`);
+      
+      // First, ensure system templates are initialized
+      await fetch('/api/email-templates/initialize-system', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       // Format data for the API - matching the server's expected field names exactly
       const templateData = {
         subject: activeTemplate.subject,
@@ -262,7 +272,8 @@ export default function GlobalAdminSettings() {
       });
       
       if (!response.ok) {
-        throw new Error("Failed to save template");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save template");
       }
       
       // Update the templates array with the edited template

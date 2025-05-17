@@ -725,13 +725,159 @@ This is an automated email. Please do not reply to this message.
   
   // System Email Template Routes (for Global Admin)
   
+  // Initialize system email templates (if needed)
+  async function initializeSystemTemplates() {
+    try {
+      console.log('Checking if system templates need to be initialized...');
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      
+      // Check if templates exist
+      let templates = await storage.getEmailTemplates(systemChurchId);
+      
+      if (templates.length === 0) {
+        console.log('No system templates found. Creating default templates...');
+        
+        // Create welcome email template
+        await storage.createEmailTemplate({
+          templateType: 'WELCOME_EMAIL',
+          subject: 'Welcome to PlateSync',
+          bodyText: `
+Dear {{firstName}} {{lastName}},
+
+Welcome to PlateSync! You have been added as a user for {{churchName}}.
+
+Please verify your email and set up your password by clicking the following link:
+{{verificationUrl}}?token={{verificationToken}}
+
+This link will expire in 48 hours.
+
+If you did not request this account, you can safely ignore this email.
+
+Sincerely,
+The PlateSync Team
+          `,
+          bodyHtml: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Welcome to {{churchName}}</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Dear <strong>{{firstName}} {{lastName}}</strong>,</p>
+    
+    <p>Welcome to PlateSync! You have been added as a user for <strong>{{churchName}}</strong>.</p>
+    
+    <p>To complete your account setup, please verify your email and create a password by clicking the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{verificationUrl}}?token={{verificationToken}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Verify Email & Set Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 48 hours for security reasons.</p>
+    
+    <p>Once verified, you'll be able to log in and access the PlateSync system to help manage donations for your church.</p>
+    
+    <p>If you did not request this account, you can safely ignore this email.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>
+          `,
+          churchId: systemChurchId
+        });
+        
+        // Create password reset template
+        await storage.createEmailTemplate({
+          templateType: 'PASSWORD_RESET',
+          subject: 'PlateSync Password Reset Request',
+          bodyText: `
+Hello,
+
+We received a request to reset your password for your PlateSync account.
+
+Please click on the following link to reset your password:
+{{resetUrl}}
+
+This link will expire in 1 hour for security reasons.
+
+If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.
+
+Sincerely,
+The PlateSync Team
+          `,
+          bodyHtml: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
+  <!-- Header with Logo and Title -->
+  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+    <p style="margin-top: 0;">Hello,</p>
+    
+    <p>We received a request to reset the password for your PlateSync account.</p>
+    
+    <p>To set a new password, please click the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{resetUrl}}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
+    </div>
+    
+    <p>This link will expire in 1 hour for security reasons.</p>
+    
+    <p>If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+  
+  <!-- Footer -->
+  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="margin: 0;">This is an automated message from PlateSync.</p>
+    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
+  </div>
+</div>
+          `,
+          churchId: systemChurchId
+        });
+        
+        console.log('System templates initialized successfully');
+      } else {
+        console.log(`Found ${templates.length} existing system templates`);
+      }
+    } catch (error) {
+      console.error('Error initializing system templates:', error);
+    }
+  }
+
   // Get system-wide email templates
   app.get('/api/email-templates/system', requireGlobalAdmin, async (req: any, res) => {
     try {
       // System templates use the special SYSTEM_TEMPLATES churchId
       const systemChurchId = 'SYSTEM_TEMPLATES';
       
-      // Check if templates exist
+      // Make sure templates exist
+      await initializeSystemTemplates();
+      
+      // Get templates after initialization
       let templates = await storage.getEmailTemplates(systemChurchId);
       
       res.json(templates);
@@ -774,18 +920,23 @@ This is an automated email. Please do not reply to this message.
       }
       
       const systemChurchId = 'SYSTEM_TEMPLATES';
-      const { subject, bodyHtml, bodyText, templateType } = req.body;
+      const { subject, bodyHtml, bodyText } = req.body;
       
       if (!subject || !bodyHtml || !bodyText) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
       
-      // Check if template exists
-      const existingTemplate = await storage.getEmailTemplateById(templateId, systemChurchId);
+      // Check if templates need to be initialized
+      await initializeSystemTemplates();
+      
+      // Check if template exists after initialization
+      const existingTemplate = await storage.getEmailTemplateById(templateId);
       
       if (!existingTemplate) {
         return res.status(404).json({ message: 'Email template not found' });
       }
+      
+      console.log(`Updating system template ${templateId} with subject: ${subject.substring(0, 20)}...`);
       
       // Update the template
       const updatedTemplate = await storage.updateEmailTemplate(templateId, {
@@ -798,6 +949,7 @@ This is an automated email. Please do not reply to this message.
         return res.status(404).json({ message: 'Failed to update email template' });
       }
       
+      console.log(`Successfully updated template ${updatedTemplate.id}`);
       res.json(updatedTemplate);
     } catch (error) {
       console.error('Error updating system email template:', error);
@@ -807,6 +959,20 @@ This is an automated email. Please do not reply to this message.
   
   // Initialize system email templates
   app.post('/api/email-templates/initialize-system', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      // Call our initialization function
+      await initializeSystemTemplates();
+      
+      // Return success
+      res.json({ success: true, message: 'System templates initialized successfully' });
+    } catch (error) {
+      console.error('Error initializing system templates:', error);
+      res.status(500).json({ success: false, message: 'Failed to initialize system templates' });
+    }
+  });
+  
+  // Create new system email templates if needed - internal helper function
+  app.post('/api/email-templates/create-system-templates', requireGlobalAdmin, async (req: any, res) => {
     try {
       // System templates use the special SYSTEM_TEMPLATES churchId
       const systemChurchId = 'SYSTEM_TEMPLATES';
