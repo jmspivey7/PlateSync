@@ -2415,48 +2415,32 @@ Sincerely,
           )
         );
       
+      // Debug DB query results for verification
+      console.log("Raw Stripe config data from DB:", stripeConfigs);
+      
       // Create a map of keys to values
       const configMap = stripeConfigs.reduce((map, config) => {
         map[config.key] = config.value;
         return map;
       }, {} as Record<string, string>);
       
-      // Use the map to get values
-      const liveSecretKeyConfig = configMap['STRIPE_SECRET_KEY'];
-      const livePublicKeyConfig = configMap['VITE_STRIPE_PUBLIC_KEY'];
-      const testSecretKeyConfig = configMap['STRIPE_TEST_SECRET_KEY'];
-      const testPublicKeyConfig = configMap['STRIPE_TEST_PUBLIC_KEY'];
-      const monthlyPriceIdConfig = configMap['STRIPE_MONTHLY_PRICE_ID'];
-      const annualPriceIdConfig = configMap['STRIPE_ANNUAL_PRICE_ID'];
-      const monthlyPaymentLinkConfig = configMap['STRIPE_MONTHLY_PAYMENT_LINK'];
-      const annualPaymentLinkConfig = configMap['STRIPE_ANNUAL_PAYMENT_LINK'];
-      const isLiveModeConfig = configMap['STRIPE_LIVE_MODE'];
-      
       // Prepare response - mask secret keys but return all other values
       const response = {
         // Mask secret keys for security, but indicate they exist
-        liveSecretKey: liveSecretKeyConfig ? true : false,
+        liveSecretKey: configMap['STRIPE_SECRET_KEY'] ? true : false,
         // Return actual values for all public keys and IDs
-        livePublicKey: livePublicKeyConfig || '',
-        testSecretKey: testSecretKeyConfig ? true : false,
-        testPublicKey: testPublicKeyConfig || '',
-        monthlyPriceId: monthlyPriceIdConfig || '',
-        annualPriceId: annualPriceIdConfig || '',
-        monthlyPaymentLink: monthlyPaymentLinkConfig || '',
-        annualPaymentLink: annualPaymentLinkConfig || '',
-        isLiveMode: isLiveModeConfig === 'true',
+        livePublicKey: configMap['VITE_STRIPE_PUBLIC_KEY'] || '',
+        testSecretKey: configMap['STRIPE_TEST_SECRET_KEY'] ? true : false,
+        testPublicKey: configMap['STRIPE_TEST_PUBLIC_KEY'] || '',
+        monthlyPriceId: configMap['STRIPE_MONTHLY_PRICE_ID'] || '',
+        annualPriceId: configMap['STRIPE_ANNUAL_PRICE_ID'] || '',
+        monthlyPaymentLink: configMap['STRIPE_MONTHLY_PAYMENT_LINK'] || '',
+        annualPaymentLink: configMap['STRIPE_ANNUAL_PAYMENT_LINK'] || '',
+        isLiveMode: configMap['STRIPE_LIVE_MODE'] === 'true',
       };
       
       // Debug output to console for verification
-      console.log("Returning Stripe config:", {
-        livePublicKey: response.livePublicKey,
-        testPublicKey: response.testPublicKey,
-        monthlyPriceId: response.monthlyPriceId,
-        annualPriceId: response.annualPriceId,
-        monthlyPaymentLink: response.monthlyPaymentLink,
-        annualPaymentLink: response.annualPaymentLink,
-        isLiveMode: response.isLiveMode
-      });
+      console.log("Returning Stripe config to client:", response);
       
       res.json(response);
     } catch (error) {
