@@ -226,12 +226,14 @@ export default function ChurchDetail() {
     }
   };
   
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string, includeTime: boolean = false) => {
     if (!dateString) return "N/A";
     
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+      return includeTime 
+        ? date.toLocaleDateString() + " " + date.toLocaleTimeString() 
+        : date.toLocaleDateString();
     } catch (error) {
       return "Invalid date";
     }
@@ -525,8 +527,8 @@ export default function ChurchDetail() {
                               <span>{user.isAccountOwner ? "Account Owner" : "Standard User"}</span>
                             </div>
                           </TableCell>
-                          <TableCell>{formatDate(user.createdAt)}</TableCell>
-                          <TableCell>{user.lastLoginAt ? formatDate(user.lastLoginAt) : "Never"}</TableCell>
+                          <TableCell>{formatDate(user.createdAt, false)}</TableCell>
+                          <TableCell>{user.lastLoginAt ? formatDate(user.lastLoginAt, true) : "Never"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
