@@ -335,17 +335,10 @@ export default function ChurchDetail() {
         
 
         
-        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
+        <div className="space-y-6">
           
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4">
-            <Card>
+          {/* Church Overview Card */}
+          <Card>
               <CardHeader>
                 <CardTitle>Church Overview</CardTitle>
                 <CardDescription>
