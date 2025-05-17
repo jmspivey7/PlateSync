@@ -81,40 +81,40 @@ export default function GlobalAdminProfile() {
           body: formData
         });
         
-        // Try to parse the response as JSON, but handle non-JSON responses
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Upload error:", errorText);
+          throw new Error("Failed to upload avatar");
+        }
+        
+        // Try to parse the response as JSON
         let result;
         try {
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.indexOf("application/json") !== -1) {
             result = await response.json();
           } else {
-            // For now, create a mock response since the actual endpoint isn't 
-            // returning JSON properly
-            result = { 
-              success: true,
-              profileImageUrl: URL.createObjectURL(file)
-            };
+            console.error("Non-JSON response from server");
+            throw new Error("Unexpected response format");
           }
         } catch (error) {
           console.error("Error parsing response:", error);
-          // Use a local URL for the file as a fallback
-          result = { 
-            success: true,
-            profileImageUrl: URL.createObjectURL(file)
-          };
+          throw new Error("Failed to process server response");
         }
         
-        if (!response.ok && result.message) {
-          throw new Error(result.message || "Failed to upload avatar");
-        }
-        
-        // Update profile data with the new avatar URL
+        // Update profile data with the new avatar URL from the server
         if (result.success) {
-          // Update the profile data with the new avatar URL from the server
+          // Get the base URL for constructing the complete profile image URL
+          const baseUrl = window.location.origin;
+          const fullProfileImageUrl = result.profileImageUrl.startsWith('http') 
+            ? result.profileImageUrl 
+            : `${baseUrl}${result.profileImageUrl}`;
+          
+          // Update the profile data with the new avatar URL
           setProfileData(prevData => {
             const updatedData = {
               ...prevData,
-              profileImageUrl: result.profileImageUrl
+              profileImageUrl: fullProfileImageUrl
             };
             
             // Save to localStorage for persistence
