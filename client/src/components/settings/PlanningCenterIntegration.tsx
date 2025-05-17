@@ -7,8 +7,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
-// Reference the Planning Center logo from the public directory
-const planningCenterLogo = "/assets/planning-center-full-color.png";
+// Import the Planning Center logo directly
+import planningCenterLogo from "@assets/planning-center-full-color.png";
 
 // Planning Center brand color
 const PLANNING_CENTER_BLUE = "#2176FF";

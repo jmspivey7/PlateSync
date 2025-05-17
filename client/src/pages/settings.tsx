@@ -1188,39 +1188,7 @@ const Settings = () => {
                   <>
                     <div className="mb-4">
                       <div className="text-sm text-gray-600 max-w-[90%]">
-                        Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
-                          onClick={() => {
-                            fetch('/api/test-count-report')
-                              .then(response => response.json())
-                              .then(data => {
-                                if (data.success) {
-                                  toast({
-                                    title: "Test Email Sent",
-                                    description: data.message,
-                                    className: "bg-[#69ad4c] text-white",
-                                  });
-                                } else {
-                                  toast({
-                                    title: "Test Failed",
-                                    description: data.message,
-                                    variant: "destructive",
-                                    className: "bg-white border-red-600",
-                                  });
-                                }
-                              })
-                              .catch(error => {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to send test email. Make sure you have report recipients configured.",
-                                  variant: "destructive",
-                                  className: "bg-white border-red-600",
-                                });
-                              });
-                          }}
-                          className="text-[#69ad4c] hover:underline font-medium focus:outline-none"
-                        >
-                          Count Report email
-                        </button>.
+                        Email notifications can be sent to individuals specified to receive Count summaries.
                       </div>
                     </div>
                     
