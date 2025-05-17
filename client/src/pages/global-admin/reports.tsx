@@ -27,6 +27,48 @@ import {
   DollarSign,
   TrendingUp
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+
+// Revenue tracking data for the bar chart
+const revenueData = [
+  { month: "Jan", monthly: 120, annual: 45 },
+  { month: "Feb", monthly: 175, annual: 60 },
+  { month: "Mar", monthly: 140, annual: 90 },
+  { month: "Apr", monthly: 210, annual: 120 },
+  { month: "May", monthly: 250, annual: 150 },
+  { month: "Jun", monthly: 300, annual: 170 },
+];
+
+// Configuration for the revenue chart with our green color scheme
+const chartConfig = {
+  monthly: {
+    label: "Monthly Subscriptions",
+    color: "#69ad4c",
+  },
+  annual: {
+    label: "Annual Subscriptions",
+    color: "#132433",
+  },
+} satisfies ChartConfig;
+
+// Format dollar values for display
+const formatDollar = (value: number) => `$${value}`;
 
 export default function GlobalAdminReports() {
   const [_, setLocation] = useLocation();
@@ -168,39 +210,44 @@ export default function GlobalAdminReports() {
               Track subscription revenue from all paying subscribers
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[280px] flex items-center justify-center py-2">
-            <div className="text-center text-gray-500 flex flex-col items-center w-full">
-              <div className="w-full h-full flex items-center justify-center flex-col">
-                <div className="w-full max-w-4xl h-[200px] bg-gray-100 rounded-md p-4 pb-6 mb-2 flex items-end justify-between gap-2 relative">
-                  <div className="relative h-[70%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$120</span>
-                  </div>
-                  <div className="relative h-[80%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$175</span>
-                  </div>
-                  <div className="relative h-[65%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$140</span>
-                  </div>
-                  <div className="relative h-[90%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$210</span>
-                  </div>
-                  <div className="relative h-[100%] w-full max-w-[40px] bg-[#69ad4c] rounded-t-sm">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">$250</span>
-                  </div>
-                  
-                  {/* Month labels below the gray area */}
-                  <div className="absolute left-0 right-0 bottom-0 flex justify-between px-4">
-                    <span className="text-xs font-bold">Jan</span>
-                    <span className="text-xs font-bold">Feb</span>
-                    <span className="text-xs font-bold">Mar</span>
-                    <span className="text-xs font-bold">Apr</span>
-                    <span className="text-xs font-bold">May</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <CardContent className="pt-2 pb-0">
+            <ChartContainer config={chartConfig}>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={revenueData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fontWeight: 'bold', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip 
+                    content={<ChartTooltipContent 
+                      valueFormatter={formatDollar} 
+                    />} 
+                  />
+                  <Legend 
+                    content={<ChartLegendContent />}
+                    verticalAlign="bottom" 
+                    height={36}
+                  />
+                  <Bar 
+                    dataKey="monthly" 
+                    fill="var(--color-monthly)" 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={30}
+                  />
+                  <Bar 
+                    dataKey="annual" 
+                    fill="var(--color-annual)" 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={30}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
-          <CardFooter className="flex justify-center pb-4">
+          <CardFooter className="flex justify-center pb-4 pt-0">
             <Button className="bg-[#69ad4c] hover:bg-[#5a9740] text-white">
               <Download className="h-4 w-4 mr-2" />
               Download Revenue Report
