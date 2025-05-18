@@ -152,6 +152,7 @@ export interface IStorage {
   
   // Planning Center operations
   getPlanningCenterTokens(userId: string, churchId: string): Promise<PlanningCenterTokens | undefined>;
+  findPlanningCenterTokensByChurchId(churchId: string): Promise<PlanningCenterTokens | undefined>;
   savePlanningCenterTokens(data: InsertPlanningCenterTokens): Promise<PlanningCenterTokens>;
   deletePlanningCenterTokens(userId: string, churchId: string): Promise<void>;
   updatePlanningCenterLastSync(userId: string, churchId: string): Promise<void>;
@@ -2353,6 +2354,25 @@ PlateSync Reporting System
       return tokens;
     } catch (error) {
       console.error("Error in getPlanningCenterTokens:", error);
+      return undefined;
+    }
+  }
+  
+  async findPlanningCenterTokensByChurchId(churchId: string): Promise<PlanningCenterTokens | undefined> {
+    try {
+      console.log(`Looking for Planning Center tokens for church ${churchId} (any user)`);
+      
+      // Search just by church ID without requiring a specific user ID
+      const [tokens] = await db
+        .select()
+        .from(planningCenterTokens)
+        .where(eq(planningCenterTokens.churchId, churchId))
+        .limit(1);
+      
+      console.log(`Found tokens for church ${churchId}:`, tokens ? 'YES' : 'NO');
+      return tokens;
+    } catch (error) {
+      console.error("Error in findPlanningCenterTokensByChurchId:", error);
       return undefined;
     }
   }

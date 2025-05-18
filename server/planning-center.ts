@@ -931,19 +931,15 @@ export function setupPlanningCenterRoutes(app: Express) {
         tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.id);
       }
       
-      // If still not found, try a direct database query using just the churchId
+      // If still not found, try our new method to search with just churchId
       if (!tokens) {
         console.log('Attempting broader search with just churchId...');
         try {
-          // Use pool.query directly from storage to avoid TypeScript issues
-          const planningCenterTokens = await storage.findPlanningCenterTokensByChurchId(statusUser.churchId);
-          
-          if (planningCenterTokens) {
-            console.log('Found tokens via direct churchId query');
-            tokens = planningCenterTokens;
-          }
+          // Use our new specialized method to find tokens by church ID only
+          tokens = await storage.findPlanningCenterTokensByChurchId(statusUser.churchId);
+          console.log('Found tokens via churchId-only query:', tokens ? 'YES' : 'NO');
         } catch (dbError) {
-          console.error('Error in direct database query:', dbError);
+          console.error('Error in churchId token lookup:', dbError);
         }
       }
       
