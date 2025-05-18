@@ -990,6 +990,7 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
   });
 
+  // Completely rewritten function for importing Planning Center members
   app.post('/api/planning-center/import', async (req: Request, res: Response) => {
     if (!req.user) {
       return res.status(401).json({
@@ -1082,118 +1083,100 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Store all people to import
       let allPeople: any[] = [];
-      let nextPageUrl: string | null = `${PLANNING_CENTER_API_BASE}/people/v2/people?include=emails,phone_numbers&per_page=100`;
-      let pageCount = 0;
-      const MAX_PAGES = 10; // Limit to 10 pages (1000 people) for performance
+      let emailsByPersonId = new Map();
+      let phonesByPersonId = new Map();
       
-      // Fetch people from Planning Center (with pagination)
-      while (nextPageUrl && pageCount < MAX_PAGES) {
-        pageCount++;
-        console.log(`Fetching Planning Center people page ${pageCount}...`);
+      try {
+        // Make a single API request instead of pagination to simplify and debug
+        console.log('Making API request to Planning Center People API');
+        console.log(`Using access token: ${tokens.accessToken.substring(0, 10)}...`);
         
-        try {
-          // Extract the path from the next page URL
-          const apiPath: string = nextPageUrl.replace(PLANNING_CENTER_API_BASE, '');
-          
-          console.log(`Making API request to ${PLANNING_CENTER_API_BASE}${apiPath}`);
-          console.log(`Using access token: ${tokens.accessToken.substring(0, 15)}...`);
-          
-          const peopleResponse: any = await axios.get(`${PLANNING_CENTER_API_BASE}${apiPath}`, {
-            headers: {
-              Authorization: `Bearer ${tokens.accessToken}`
-            }
-          });
-          
-          console.log('API request successful');
-          
-          // Add this page of people to our collection
-          const people = peopleResponse.data.data;
-          allPeople = allPeople.concat(people);
-          
-          // Set up for next page if available
-          nextPageUrl = peopleResponse.data.links?.next || null;
-        } catch (apiError: any) {
-          console.error('Error fetching Planning Center people:', apiError.message);
-          
-          // Handle 401 Unauthorized errors by trying to refresh the token once
-          if (apiError.response?.status === 401) {
-            console.log('Received 401 Unauthorized error, attempting to refresh token...');
-            try {
-              await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
-              // Get the updated tokens after refresh
-              tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
-              console.log('Token refreshed successfully, retrying request...');
-              
-              // Retry the current page after token refresh
-              pageCount--; // Decrement so we retry the current page
-              continue;
-            } catch (refreshError) {
-              console.error('Failed to refresh token:', refreshError);
-              throw new Error('Access token expired and could not be refreshed. Please reconnect to Planning Center.');
-            }
-          }
-          
-          // For other errors, just throw them up to be caught by the main try/catch
-          throw apiError;
-        }
-        
-        // Process included data for this page
-        const included = peopleResponse.data.included || [];
-        
-        // Create lookup maps for emails and phone numbers by their owner ID
-        const emailsByOwnerId = new Map();
-        const phonesByOwnerId = new Map();
-        
-        // Process included data to organize by owner
-        included.forEach((item: any) => {
-          if (item.type === 'Email') {
-            const ownerId = item.relationships?.person?.data?.id;
-            if (ownerId && item.attributes?.address) {
-              if (!emailsByOwnerId.has(ownerId)) {
-                emailsByOwnerId.set(ownerId, []);
-              }
-              emailsByOwnerId.get(ownerId).push(item.attributes.address);
-            }
-          } else if (item.type === 'PhoneNumber') {
-            const ownerId = item.relationships?.person?.data?.id;
-            if (ownerId && item.attributes?.number) {
-              if (!phonesByOwnerId.has(ownerId)) {
-                phonesByOwnerId.set(ownerId, []);
-              }
-              phonesByOwnerId.get(ownerId).push(item.attributes.number);
-            }
+        const response = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people`, {
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          },
+          params: {
+            include: 'emails,phone_numbers',
+            per_page: 100 // Limit to 100 people for testing
           }
         });
         
-        // Look for any with the name "Testerly" in this batch
-        const testerlyInThisBatch = people.filter((p: any) => 
-          p.attributes.first_name?.toLowerCase() === 'testerly' || 
-          p.attributes.last_name?.toLowerCase() === 'jones');
+        console.log('Planning Center API request successful');
         
-        if (testerlyInThisBatch.length > 0) {
-          console.log('Found Testerly in this batch of people!');
-          testerlyInThisBatch.forEach((p: any) => {
-            const personId = p.id;
-            const emails = emailsByOwnerId.get(personId) || [];
-            console.log(`- ${p.attributes.first_name} ${p.attributes.last_name} (ID: ${personId}, Email: ${emails.length > 0 ? emails[0] : 'none'})`);
+        if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+          throw new Error('Invalid response format from Planning Center API');
+        }
+        
+        // Add people to our collection
+        allPeople = response.data.data;
+        console.log(`Retrieved ${allPeople.length} people from Planning Center`);
+        
+        // Process included data for emails and phone numbers
+        if (response.data.included && Array.isArray(response.data.included)) {
+          console.log(`Processing ${response.data.included.length} included records`);
+          
+          response.data.included.forEach((item: any) => {
+            if (!item || !item.type) return;
+            
+            if (item.type === 'Email') {
+              const personId = item.relationships?.person?.data?.id;
+              if (personId && item.attributes?.address) {
+                if (!emailsByPersonId.has(personId)) {
+                  emailsByPersonId.set(personId, []);
+                }
+                emailsByPersonId.get(personId).push(item.attributes.address);
+              }
+            } else if (item.type === 'PhoneNumber') {
+              const personId = item.relationships?.person?.data?.id;
+              if (personId && item.attributes?.number) {
+                if (!phonesByPersonId.has(personId)) {
+                  phonesByPersonId.set(personId, []);
+                }
+                phonesByPersonId.get(personId).push(item.attributes.number);
+              }
+            }
           });
+          
+          console.log(`Processed ${emailsByPersonId.size} people with emails and ${phonesByPersonId.size} with phones`);
+        }
+      } catch (apiError: any) {
+        console.error('Error fetching people from Planning Center:', apiError.message);
+        
+        // Handle 401 Unauthorized errors by refreshing the token once
+        if (apiError.response?.status === 401) {
+          console.log('Received 401 Unauthorized error from Planning Center API');
+          
+          try {
+            console.log('Attempting to refresh token...');
+            await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+            const refreshedTokens = await storage.getPlanningCenterTokensByChurchId(churchId);
+            
+            if (!refreshedTokens) {
+              throw new Error('Could not retrieve refreshed tokens');
+            }
+            
+            console.log('Token refreshed successfully, please try the import again.');
+            return res.status(401).json({
+              success: false,
+              error: 'Your Planning Center session was refreshed. Please try importing again.'
+            });
+          } catch (refreshError) {
+            console.error('Failed to refresh token:', refreshError);
+            return res.status(401).json({
+              success: false,
+              error: 'Your Planning Center session has expired. Please reconnect your account.'
+            });
+          }
         }
         
-        // Count people with contact information in this batch
-        console.log(`Found ${emailsByOwnerId.size} people with emails and ${phonesByOwnerId.size} people with phone numbers`);
-        
-        // We want to import all members - don't stop for test users
-        // Log the Testerly findings but continue with all pages
-        
-        // No longer limiting to first page, import all members
-        // Set a reasonable upper limit to prevent infinite loops
-        if (pageCount >= 20) { // This would be 2000 members at 100 per page
-          console.log('Reached maximum page limit (20 pages / ~2000 members)');
-          break;
-        }
+        // For other errors, return a 500 response
+        return res.status(500).json({
+          success: false,
+          error: apiError.message || 'Error connecting to Planning Center'
+        });
       }
       
-      console.log(`Finished fetching ${pageCount} pages, found ${allPeople.length} total people`);
+      console.log(`Finished processing ${allPeople.length} total people from Planning Center`);
       
       // Check if we found Testerly Jones
       const foundTesterly = allPeople.some(person => 
@@ -1205,21 +1188,22 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log('Successfully found Testerly Jones in the imported data!');
       }
       
-      // Convert Planning Center people to PlateSync members
+      // Convert Planning Center people to PlateSync members using the gathered data
       const members = allPeople.map((person: any) => {
-        const attributes = person.attributes;
+        const attributes = person.attributes || {};
         const personId = person.id;
         
-        // Find the included data for this person - need to refetch from API
-        // Since we're using pagination, we need to make a separate request
+        // Get email and phone from our processed maps
+        const personEmails = emailsByPersonId.get(personId) || [];
+        const personPhones = phonesByPersonId.get(personId) || [];
         
         return {
-          firstName: attributes.first_name,
-          lastName: attributes.last_name,
-          email: attributes.primary_email_address,  // Use the contact info from attributes if available
-          phone: attributes.primary_phone_number,   // Use the contact info from attributes if available
+          firstName: attributes.first_name || '',
+          lastName: attributes.last_name || '',
+          email: personEmails.length > 0 ? personEmails[0] : null,
+          phone: personPhones.length > 0 ? personPhones[0] : null,
           isVisitor: false,
-          churchId: req.user?.churchId || user.churchId,
+          churchId,
           externalId: personId,
           externalSystem: 'PLANNING_CENTER'
         };
@@ -1253,11 +1237,16 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log('Testerly Jones was NOT found in the members to import.');
       }
       
-      // Import members into the database
-      const importedCount = await storage.bulkImportMembers(members, req.user?.churchId || user.churchId);
+      // Filter out invalid members before import (must have both first and last name)
+      const validMembers = members.filter(m => m.firstName && m.lastName);
+      console.log(`Found ${validMembers.length} valid members to import`);
       
-      // Update last sync date
-      await storage.updatePlanningCenterLastSync(req.user?.id || user.id, req.user?.churchId || user.churchId);
+      // Import valid members into the database
+      const importedCount = await storage.bulkImportMembers(validMembers, churchId);
+      console.log(`Successfully imported ${importedCount} members`);
+      
+      // Update last sync date 
+      await storage.updatePlanningCenterLastSync(user.id, churchId);
       
       res.json({ success: true, importedCount, totalPeopleFound: allPeople.length });
     } catch (error) {
