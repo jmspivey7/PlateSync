@@ -115,25 +115,25 @@ const Dashboard = () => {
           })
           .slice(0, 4); // Take up to 4 most recent closed batches
         
-        if (closedBatches.length > 0) {
+        if (previousBatches.length > 0) {
           console.log("Latest finalized batch:", latestFinalizedBatch.id, latestFinalizedBatch.totalAmount);
-          console.log(`Using ${closedBatches.length} closed batches for comparison:`, 
-            closedBatches.map(b => ({ id: b.id, amount: b.totalAmount })));
+          console.log(`Using ${previousBatches.length} previous batches for comparison:`, 
+            previousBatches.map(b => ({ id: b.id, amount: b.totalAmount })));
           
-          // Calculate average of closed batches
-          const totalClosedAmount = closedBatches.reduce((sum, batch) => {
+          // Calculate average of previous batches
+          const totalPreviousAmount = previousBatches.reduce((sum, batch) => {
             return sum + parseFloat(batch.totalAmount?.toString() || '0');
           }, 0);
           
-          const averageClosedAmount = totalClosedAmount / closedBatches.length;
+          const averagePreviousAmount = totalPreviousAmount / previousBatches.length;
           
-          if (averageClosedAmount > 0) {
-            const percentageChange = ((finalizedAmount - averageClosedAmount) / averageClosedAmount) * 100;
-            console.log("Calculated trend using average of closed batches:", {
+          if (averagePreviousAmount > 0) {
+            const percentageChange = ((finalizedAmount - averagePreviousAmount) / averagePreviousAmount) * 100;
+            console.log("Calculated trend using average of previous batches:", {
               finalizedAmount,
-              averageClosedAmount,
+              averagePreviousAmount,
               percentageChange,
-              numberOfBatchesAveraged: closedBatches.length
+              numberOfBatchesAveraged: previousBatches.length
             });
             
             setTrend({
@@ -205,7 +205,7 @@ const Dashboard = () => {
       console.error("Error calculating trend:", error);
       setTrend({ percentage: 10, trending: 'up' }); // Default on error
     }
-  }, [lastFinalizedBatch, allBatches]);
+  }, [lastFinalizedBatch, finalizedBatches]);
   
   // Format currency
   const formatCurrency = (amount: string | number) => {
