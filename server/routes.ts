@@ -305,14 +305,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Checking Planning Center connection status for church ID: ${churchId}`);
-      const tokens = await storage.getPlanningCenterTokens(user.id, churchId);
+      
+      // First try to get tokens for the current user
+      let tokens = await storage.getPlanningCenterTokens(user.id, churchId);
+      
+      // If no tokens found for current user, check if any tokens exist for this church
+      if (!tokens) {
+        console.log(`No tokens found for current user ${user.id}, checking for any church tokens`);
+        tokens = await storage.getAnyPlanningCenterTokensForChurch(churchId);
+      }
       
       if (tokens) {
         console.log(`Planning Center connection found for church ID: ${churchId}`);
+        
+        // Get extra Planning Center data that might be stored
+        const lastSyncDate = tokens.lastSyncDate ? new Date(tokens.lastSyncDate).toISOString() : null;
+        const peopleCount = typeof tokens.peopleCount === 'number' ? tokens.peopleCount : 0;
+        
         res.json({
           connected: true,
-          lastSyncDate: tokens.lastSyncDate?.toISOString() || null,
-          peopleCount: tokens.peopleCount || 0
+          lastSyncDate: lastSyncDate,
+          peopleCount: peopleCount
         });
       } else {
         console.log(`No Planning Center connection found for church ID: ${churchId}`);
