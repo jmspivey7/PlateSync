@@ -1952,6 +1952,10 @@ Sincerely,
   });
 
   // Local authentication endpoints
+  // Register authentication routes for password reset functionality
+  app.use('/api/auth', authRoutes);
+  
+  // Local login endpoint
   app.post('/api/login-local', async (req, res) => {
     try {
       const { username, password } = req.body;
