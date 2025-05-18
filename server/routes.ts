@@ -379,6 +379,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     setupTestEndpoints(app);
   }
   
+  // Batch Routes - API endpoints for managing batches
+  
+  // Get all batches for the authenticated user's church
+  app.get('/api/batches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      console.log(`Fetching batches for church ID: ${churchId}`);
+      
+      const batches = await storage.getBatches(churchId);
+      console.log(`Found ${batches.length} batches for church ID: ${churchId}`);
+      
+      res.json(batches);
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      res.status(500).json({ message: 'Failed to fetch batches' });
+    }
+  });
+  
+  // Get the latest finalized batch for the authenticated user's church
+  app.get('/api/batches/latest-finalized', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      console.log(`Fetching latest finalized batch for church ID: ${churchId}`);
+      
+      const batch = await storage.getLatestFinalizedBatch(churchId);
+      
+      if (!batch) {
+        console.log(`No finalized batches found for church ID: ${churchId}`);
+        return res.status(404).json({ message: 'No finalized batches found' });
+      }
+      
+      console.log(`Found latest finalized batch: ${batch.id} for church ID: ${churchId}`);
+      res.json(batch);
+    } catch (error) {
+      console.error('Error fetching latest finalized batch:', error);
+      res.status(500).json({ message: 'Failed to fetch latest finalized batch' });
+    }
+  });
+  
+  // Get a specific batch with its donations
+  app.get('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      console.log(`Fetching batch ${batchId} for church ID: ${churchId}`);
+      const batch = await storage.getBatchWithDonations(batchId, churchId);
+      
+      if (!batch) {
+        return res.status(404).json({ message: 'Batch not found' });
+      }
+      
+      res.json(batch);
+    } catch (error) {
+      console.error('Error fetching batch with donations:', error);
+      res.status(500).json({ message: 'Failed to fetch batch details' });
+    }
+  });
+  
+  // Get donations for a specific batch
+  app.get('/api/batches/:id/donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      console.log(`Fetching donations for batch ${batchId} and church ID: ${churchId}`);
+      const donationList = await storage.getDonationsByBatchId(batchId, churchId);
+      
+      res.json(donationList);
+    } catch (error) {
+      console.error('Error fetching donations for batch:', error);
+      res.status(500).json({ message: 'Failed to fetch donations' });
+    }
+  });
+  
   // Email Template Routes
   
   // Get all email templates for a church
