@@ -1272,91 +1272,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       const validMembers = members.filter(m => m.firstName && m.lastName);
       console.log(`Found ${validMembers.length} valid members to import`);
       
-      // Import valid members into the database - use a more fault-tolerant approach
-      let importedCount = 0;
-      // Process members one by one to handle errors individually
-      for (const member of validMembers) {
-        try {
-          // First check if a member with this email already exists
-          if (member.email) {
-            const [existingMember] = await db
-              .select()
-              .from(members)
-              .where(and(
-                eq(members.email, member.email),
-                eq(members.churchId, churchId)
-              ));
-            
-            if (existingMember) {
-              // Update existing member with new info from Planning Center
-              await db
-                .update(members)
-                .set({
-                  firstName: member.firstName || existingMember.firstName,
-                  lastName: member.lastName || existingMember.lastName,
-                  phone: member.phone || existingMember.phone,
-                  externalId: member.externalId || existingMember.externalId,
-                  externalSystem: member.externalSystem || existingMember.externalSystem,
-                  updatedAt: new Date()
-                })
-                .where(eq(members.id, existingMember.id));
-              
-              importedCount++;
-              continue;
-            }
-          }
-          
-          // Check if member exists with same externalId
-          if (member.externalId && member.externalSystem) {
-            const [existingMember] = await db
-              .select()
-              .from(members)
-              .where(and(
-                eq(members.externalId, member.externalId),
-                eq(members.externalSystem, member.externalSystem),
-                eq(members.churchId, churchId)
-              ));
-            
-            if (existingMember) {
-              // Update existing member
-              await db
-                .update(members)
-                .set({
-                  firstName: member.firstName || existingMember.firstName,
-                  lastName: member.lastName || existingMember.lastName,
-                  email: member.email || existingMember.email,
-                  phone: member.phone || existingMember.phone,
-                  updatedAt: new Date()
-                })
-                .where(eq(members.id, existingMember.id));
-              
-              importedCount++;
-              continue;
-            }
-          }
-          
-          // If no existing member found, create a new one
-          await db
-            .insert(members)
-            .values({
-              firstName: member.firstName,
-              lastName: member.lastName,
-              email: member.email,
-              phone: member.phone,
-              isVisitor: member.isVisitor || false,
-              externalId: member.externalId,
-              externalSystem: member.externalSystem,
-              churchId,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            });
-          
-          importedCount++;
-        } catch (memberError) {
-          console.error(`Error processing member ${member.firstName} ${member.lastName}:`, memberError);
-          // Continue with next member
-        }
-      }
+      // Import valid members using the dedicated import helper that properly handles duplicates
+      const { importMembers } = await import('./import-members.js');
+      const importedCount = await importMembers(validMembers, churchId);
       console.log(`Successfully imported ${importedCount} members`);
       
       // Update last sync date 
