@@ -9,6 +9,7 @@ import CountModal from "@/components/counts/CountModal";
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import { DonationChart } from "@/components/dashboard/DonationChart";
+import { ChurchBatchData } from "@/components/dashboard/ChurchBatchData";
 // Import the Thumbs Up icon directly
 import thumbsUpIcon from "../../../public/assets/ThumbsUp.png";
 
