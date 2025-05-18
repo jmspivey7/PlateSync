@@ -911,26 +911,60 @@ export function setupPlanningCenterRoutes(app: Express) {
     console.log('Using churchId for token lookup:', churchId);
     
     try {
-      // DIRECT DATABASE QUERY to find any tokens for this church
-      // This bypasses all the complex logic and directly checks if tokens exist
-      const { rows } = await db.query(
-        'SELECT * FROM planning_center_tokens WHERE church_id = $1 LIMIT 1',
-        [churchId]
-      );
+      // First, try a direct SQL query to find tokens for this church
+      try {
+        const { rows } = await db.query(
+          'SELECT * FROM planning_center_tokens WHERE church_id = $1 LIMIT 1',
+          [churchId]
+        );
+        
+        const tokensFromSql = rows && rows.length > 0 ? rows[0] : null;
+        console.log('Planning Center direct SQL query result:', tokensFromSql ? 'FOUND' : 'NOT FOUND');
+        
+        // If we found a token via direct SQL query, return connected status
+        if (tokensFromSql) {
+          console.log('Planning Center connection FOUND for church via SQL:', churchId);
+          // Get the last sync date if available
+          let lastSyncDate = null;
+          try {
+            if (tokensFromSql.updated_at) {
+              lastSyncDate = tokensFromSql.updated_at;
+            }
+          } catch (e) {
+            console.error('Error parsing last sync date:', e);
+          }
+          
+          return res.status(200).json({
+            connected: true,
+            message: 'Connected to Planning Center',
+            userId: userId,
+            churchId: churchId,
+            tokenId: tokensFromSql.id,
+            lastSyncDate: lastSyncDate
+          });
+        }
+      } catch (sqlError) {
+        console.error('Error in direct SQL query:', sqlError);
+      }
       
-      const tokens = rows && rows.length > 0 ? rows[0] : null;
-      console.log('Planning Center direct DB query result:', tokens ? 'FOUND' : 'NOT FOUND');
-      
-      // If we found a token via direct query, return connected status
-      if (tokens) {
-        console.log('Planning Center connection FOUND for church:', churchId);
-        return res.status(200).json({
-          connected: true,
-          message: 'Connected to Planning Center',
-          userId: userId,
-          churchId: churchId,
-          tokenId: tokens.id
-        });
+      // If direct SQL query didn't work, try a fallback using token by church ID lookup
+      try {
+        const tokens = await storage.findPlanningCenterTokensByChurchId(churchId);
+        console.log('Fallback token query result:', tokens ? 'FOUND' : 'NOT FOUND');
+        
+        if (tokens) {
+          console.log('Planning Center connection FOUND via fallback method for church:', churchId);
+          return res.status(200).json({
+            connected: true,
+            message: 'Connected to Planning Center via fallback method',
+            userId: userId,
+            churchId: churchId,
+            tokenId: tokens.id,
+            lastSyncDate: tokens.updatedAt
+          });
+        }
+      } catch (fallbackError) {
+        console.error('Error in fallback token lookup:', fallbackError);
       }
       
       // No tokens found
