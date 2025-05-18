@@ -997,10 +997,12 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Type casting to handle req.user properties
     const user = req.user as any;
-    console.log('Importing Planning Center members for user:', user.id, 'church:', user.churchId);
+    const churchId = user.churchId;
+    console.log('Importing Planning Center members for user:', user.id, 'church:', churchId);
     
     try {
-      const tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
+      // Get tokens using only the church ID, not tied to a specific user ID
+      const tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
       
       if (!tokens) {
         return res.status(403).send('Planning Center not connected');

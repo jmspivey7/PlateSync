@@ -383,7 +383,7 @@ const PlanningCenterIntegration = () => {
               onClick={() => disconnectMutation.mutate()}
               disabled={disconnectMutation.isPending}
               className="w-full md:w-64 text-white hover:opacity-90"
-              style={{ backgroundColor: `${PLANNING_CENTER_BLUE}80`, borderColor: PLANNING_CENTER_BLUE }}
+              style={{ backgroundColor: "#e11d48", borderColor: "#e11d48" }}
             >
               {disconnectMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
