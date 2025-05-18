@@ -62,7 +62,7 @@ router.post("/forgot-password", async (req, res) => {
     // Send email with password reset link
     const emailSent = await sendPasswordResetEmail({
       to: user.email || '',
-      resetLink: resetUrl,
+      resetUrl: resetUrl,
       firstName: user.firstName || '',
       lastName: user.lastName || ''
     });
