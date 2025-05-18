@@ -3,7 +3,6 @@ import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
 import crypto from 'crypto';
-import { db } from './db';
 
 // Helper function to identify user from request.user
 function identifyUser(user: any): string {
@@ -863,17 +862,20 @@ export function setupPlanningCenterRoutes(app: Express) {
     // Debug user object to see what properties are available
     console.log('Full req.user object in status check:', JSON.stringify(req.user, null, 2));
     
-    // Extract user ID and church ID from req.user which might be in different formats
+    // Extract user ID from req.user which might be in different formats based on auth method
     let userId = '';
-    let churchId = '';
     
-    // Get user ID first
+    // Check for Replit Auth structure (claims.sub)
     if (statusUser.claims && statusUser.claims.sub) {
       userId = statusUser.claims.sub;
       console.log('Found userId in claims.sub:', userId);
     } 
+    // Try alternatives for username/email-based auth
     else if (statusUser.username || statusUser.email) {
+      // Use email if available, otherwise try username
       const emailToCheck = statusUser.email || statusUser.username;
+      
+      // Try to look up user by email
       try {
         const foundUser = await storage.getUserByEmail(emailToCheck);
         if (foundUser && foundUser.id) {
@@ -884,10 +886,12 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.error('Error looking up user by email:', err);
       }
     }
+    // Check for local auth structure (id)
     else if (statusUser.id) {
       userId = statusUser.id;
       console.log('Found userId in user.id:', userId);
     }
+    // If we can't find a user ID, we have a problem
     
     if (!userId) {
       console.error('Could not extract user ID from user object');
@@ -898,76 +902,33 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    // Now extract or derive church ID
-    if (statusUser.churchId) {
-      churchId = statusUser.churchId;
-      console.log('Found churchId in user object:', churchId);
-    } else {
-      // Fallback to using userId as churchId if none is provided
-      churchId = userId;
-      console.log('No churchId found, using userId as fallback:', churchId);
+    // Assign the extracted ID to statusUser.id for consistent usage
+    statusUser.id = userId;
+    console.log('Successfully identified user with ID:', userId);
+    
+    console.log('Using user ID:', statusUser.id);
+    
+    // If churchId is missing, fall back to using userId as churchId
+    if (!statusUser.churchId) {
+      console.log('No churchId found in user object, using user ID as fallback');
+      statusUser.churchId = statusUser.id;
+      console.log(`User ${statusUser.id} has churchId ${statusUser.churchId} directly assigned`);
     }
     
-    console.log('Using churchId for token lookup:', churchId);
+    console.log('Using churchId for token lookup:', statusUser.churchId);
     
     try {
-      // First, try a direct SQL query to find tokens for this church
-      try {
-        const { rows } = await db.query(
-          'SELECT * FROM planning_center_tokens WHERE church_id = $1 LIMIT 1',
-          [churchId]
-        );
-        
-        const tokensFromSql = rows && rows.length > 0 ? rows[0] : null;
-        console.log('Planning Center direct SQL query result:', tokensFromSql ? 'FOUND' : 'NOT FOUND');
-        
-        // If we found a token via direct SQL query, return connected status
-        if (tokensFromSql) {
-          console.log('Planning Center connection FOUND for church via SQL:', churchId);
-          // Get the last sync date if available
-          let lastSyncDate = null;
-          try {
-            if (tokensFromSql.updated_at) {
-              lastSyncDate = tokensFromSql.updated_at;
-            }
-          } catch (e) {
-            console.error('Error parsing last sync date:', e);
-          }
-          
-          return res.status(200).json({
-            connected: true,
-            message: 'Connected to Planning Center',
-            userId: userId,
-            churchId: churchId,
-            tokenId: tokensFromSql.id,
-            lastSyncDate: lastSyncDate
-          });
-        }
-      } catch (sqlError) {
-        console.error('Error in direct SQL query:', sqlError);
+      // Try to get tokens with churchId first (preferred)
+      let tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.churchId);
+      
+      // If that fails, try with userId as churchId
+      if (!tokens && statusUser.churchId !== statusUser.id) {
+        console.log('No tokens found with churchId, trying with userId as churchId...');
+        tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.id);
       }
       
-      // If direct SQL query didn't work, try a fallback using token by church ID lookup
-      try {
-        const tokens = await storage.findPlanningCenterTokensByChurchId(churchId);
-        console.log('Fallback token query result:', tokens ? 'FOUND' : 'NOT FOUND');
-        
-        if (tokens) {
-          console.log('Planning Center connection FOUND via fallback method for church:', churchId);
-          return res.status(200).json({
-            connected: true,
-            message: 'Connected to Planning Center via fallback method',
-            userId: userId,
-            churchId: churchId,
-            tokenId: tokens.id,
-            lastSyncDate: tokens.updatedAt
-          });
-        }
-      } catch (fallbackError) {
-        console.error('Error in fallback token lookup:', fallbackError);
-      }
+      console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
       
-      // No tokens found
       if (!tokens) {
         // Show more details in the 'false' response
         return res.status(200).json({ 
