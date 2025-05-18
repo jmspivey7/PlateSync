@@ -3,6 +3,7 @@ import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
 import crypto from 'crypto';
+import { db } from './db';
 
 // Helper function to identify user from request.user
 function identifyUser(user: any): string {
@@ -918,13 +919,32 @@ export function setupPlanningCenterRoutes(app: Express) {
     console.log('Using churchId for token lookup:', statusUser.churchId);
     
     try {
-      // Try to get tokens with churchId first (preferred)
-      let tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.churchId);
+      // Query for Planning Center tokens using multiple potential combinations
+      let tokens = null;
+      
+      // Try to get tokens with user ID and churchId first (preferred)
+      tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.churchId);
       
       // If that fails, try with userId as churchId
       if (!tokens && statusUser.churchId !== statusUser.id) {
         console.log('No tokens found with churchId, trying with userId as churchId...');
         tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.id);
+      }
+      
+      // If still not found, try a direct database query using just the churchId
+      if (!tokens) {
+        console.log('Attempting broader search with just churchId...');
+        try {
+          // Use pool.query directly from storage to avoid TypeScript issues
+          const planningCenterTokens = await storage.findPlanningCenterTokensByChurchId(statusUser.churchId);
+          
+          if (planningCenterTokens) {
+            console.log('Found tokens via direct churchId query');
+            tokens = planningCenterTokens;
+          }
+        } catch (dbError) {
+          console.error('Error in direct database query:', dbError);
+        }
       }
       
       console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
