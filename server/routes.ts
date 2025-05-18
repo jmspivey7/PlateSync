@@ -491,7 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const churchId = user.churchId || userId;
       
       console.log(`Fetching donations for batch ${batchId} and church ID: ${churchId}`);
-      const donationList = await storage.getDonationsByBatchId(batchId, churchId);
+      const donationList = await storage.getDonationsByBatch(batchId, churchId);
       
       res.json(donationList);
     } catch (error) {

@@ -203,7 +203,11 @@ export function DonationChart() {
   }
   
   // Handle error states or no data - show empty chart with view history option
-  if (loadingTimedOut || batchError || donationsError || !Array.isArray(batches) || batches.length === 0 || (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
+  // Only show fallback when there's truly no data available
+  if ((loadingTimedOut && (!Array.isArray(batches) || batches.length === 0)) || 
+      batchError || 
+      (!Array.isArray(batches) || batches.length === 0) || 
+      (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
     return (
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
