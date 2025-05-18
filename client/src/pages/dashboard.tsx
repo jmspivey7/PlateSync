@@ -285,51 +285,9 @@ const Dashboard = () => {
           </Card>
         </div>
         
-        {/* Last Count Submitted */}
+        {/* Last Count Submitted - Using direct church data */}
         <div className="md:w-2/3">
-          {isLoadingBatch ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : lastFinalizedBatch ? (
-            <Card className="border rounded-xl shadow-sm h-full">
-              <CardContent className="p-4 h-full">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg text-muted-foreground font-medium">Last Count Finalized</h2>
-                  <div className="bg-background border rounded-full px-3 py-1 flex items-center text-sm font-medium">
-                    {trend.trending === 'up' ? (
-                      <TrendingUp className="h-4 w-4 mr-1 text-primary" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4 mr-1 text-destructive" />
-                    )}
-                    {trend.trending === 'up' ? '+' : '-'}{trend.percentage.toFixed(1)}%
-                  </div>
-                </div>
-                <div className="text-3xl font-bold my-2">
-                  {formatCurrency(lastFinalizedBatch.totalAmount || 0)}
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="text-base font-medium flex items-center">
-                    {trend.trending === 'up' ? (
-                      <>Trending up <TrendingUp className="h-4 w-4 ml-1 text-primary" /></>
-                    ) : (
-                      <>Trending down <TrendingDown className="h-4 w-4 ml-1 text-destructive" /></>
-                    )}
-                  </div>
-                  <div className="text-sm font-bold">
-                    {formatSafeDate(lastFinalizedBatch.date)}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-muted h-full">
-              <CardContent className="p-4 text-center flex flex-col items-center justify-center h-full">
-                <h2 className="text-lg font-medium mb-1">No Finalized Counts Yet</h2>
-                <p className="text-muted-foreground">Finalize a count to see it displayed here</p>
-              </CardContent>
-            </Card>
-          )}
+          <ChurchBatchData />
         </div>
       </div>
       
