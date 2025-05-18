@@ -1008,6 +1008,21 @@ export function setupPlanningCenterRoutes(app: Express) {
         return res.status(403).send('Planning Center not connected');
       }
       
+      // Check if token is expired and refresh if needed
+      if (tokens.expiresAt < new Date()) {
+        console.log('Planning Center token expired, refreshing...');
+        try {
+          await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+          console.log('Successfully refreshed Planning Center token');
+        } catch (refreshError) {
+          console.error('Error refreshing Planning Center token:', refreshError);
+          return res.status(401).json({
+            success: false, 
+            error: 'Authorization expired with Planning Center. Please reconnect your account.'
+          });
+        }
+      }
+      
       // Search for a specific test user if we're debugging
       if (req.query.debug === 'true') {
         try {
