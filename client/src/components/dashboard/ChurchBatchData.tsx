@@ -91,12 +91,8 @@ export function ChurchBatchData() {
     }
   }, [lastFinalizedBatch]);
   
-  // Fetch total donations amount for this church
-  const { data: totalDonationsData } = useQuery<{total: number}>({
-    queryKey: ['/api/batches/total'],
-    retry: 3,
-    refetchOnMount: true
-  });
+  // We don't need the total donations query as we're calculating from finalized batches directly
+  // This avoids the "Invalid batch ID" error in the console
   
   // No longer needed since we're using finalizedBatches directly
   
@@ -170,7 +166,8 @@ export function ChurchBatchData() {
     }
   }, [finalizedBatches]);
   
-  if (isBatchesLoading || isLatestLoading) {
+  // Show loading state when batches are being fetched
+  if (isBatchesLoading) {
     return (
       <Card className="border rounded-xl shadow-sm h-full">
         <CardContent className="p-4 h-full flex items-center justify-center">

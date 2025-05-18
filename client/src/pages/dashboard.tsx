@@ -57,16 +57,12 @@ const Dashboard = () => {
     ? finalizedBatches[0] // They're ordered by date DESC, so first is most recent
     : null;
   
-  // Fetch all batches for trend calculation
-  const { data: allBatches } = useQuery<Batch[]>({
-    queryKey: ['/api/batches'],
-    enabled: isAuthenticated,
-  });
+  // We no longer need to fetch all batches separately since we're directly fetching finalized batches
   
   // Calculate trend when data is available
   useEffect(() => {
     try {
-      if (!lastFinalizedBatch || !allBatches || allBatches.length === 0) {
+      if (!lastFinalizedBatch || !finalizedBatches || finalizedBatches.length === 0) {
         console.log("No batches available for trend calculation");
         return;
       }
@@ -77,16 +73,16 @@ const Dashboard = () => {
         return;
       }
       
-      // Find all finalized batches with valid dates
-      const finalizedBatches = allBatches
-        .filter(batch => batch.status === 'FINALIZED' && isValidDate(batch.date))
+      // Filter batches for valid dates (they're already finalized from the API)
+      const validBatches = finalizedBatches
+        .filter(batch => isValidDate(batch.date))
         .sort((a, b) => {
           const dateA = safelyParseDate(a.date);
           const dateB = safelyParseDate(b.date);
           return dateB.getTime() - dateA.getTime();
         });
       
-      console.log("Finalized batches for trend:", finalizedBatches.map(b => ({
+      console.log("Finalized batches for trend:", validBatches.map(b => ({
         id: b.id,
         name: b.name,
         amount: b.totalAmount,
@@ -94,7 +90,7 @@ const Dashboard = () => {
         status: b.status
       })));
       
-      if (finalizedBatches.length === 0) {
+      if (validBatches.length === 0) {
         console.log("No finalized batches with valid dates found");
         setTrend({ percentage: 10, trending: 'up' }); // Default trend
         return;
@@ -105,11 +101,11 @@ const Dashboard = () => {
         const latestFinalizedBatch = finalizedBatches[0];
         const finalizedAmount = parseFloat(latestFinalizedBatch.totalAmount?.toString() || '0');
         
-        // Find up to 4 closed batches with valid dates to compare with
-        const closedBatches = allBatches
+        // Since we only have finalizedBatches now, we'll just use previous finalized batches
+        // and won't be comparing with CLOSED batches
+        const previousBatches = finalizedBatches.slice(1)
           .filter(batch => {
-            return batch.status === 'CLOSED' && 
-                   batch.id !== latestFinalizedBatch.id &&
+            return batch.id !== latestFinalizedBatch.id &&
                    isValidDate(batch.date);
           })
           .sort((a, b) => {
