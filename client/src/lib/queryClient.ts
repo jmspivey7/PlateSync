@@ -156,10 +156,21 @@ export const getQueryFn = <T>(options: { on401: UnauthorizedBehavior } = { on401
       }
       
       try {
+        // Check if response is empty (zero content length)
+        const contentLength = res.headers.get('content-length');
+        if (contentLength === '0' || res.headers.get('content-type') === null) {
+          // Return empty object for empty responses instead of trying to parse
+          return {} as T;
+        }
+        
         return await res.json();
       } catch (jsonError) {
-        console.error("Error parsing JSON response:", jsonError);
-        // If JSON parsing fails but response was OK, return empty object
+        // Don't log error for empty responses - this is a normal situation
+        if (res.status === 200) {
+          return {} as T;
+        }
+        // For other situations where parsing failed, return empty object with minimal logging
+        console.log("Response could not be parsed as JSON, returning empty object");
         return {} as T;
       }
     } catch (error) {
