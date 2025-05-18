@@ -9,8 +9,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Register our direct finalized counts router before any other routes
+// Register our fix routes with direct database access before any other routes
 app.use(directFinalizedCounts);
+app.use(require('./fix-routes'));
 
 // Serve the logos directory for uploaded church logos
 app.use('/logos', express.static(path.join(process.cwd(), 'public/logos')));

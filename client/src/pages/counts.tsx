@@ -54,7 +54,7 @@ const CountsPage = () => {
   
   // Fetch finalized batches directly using our dedicated endpoint
   const { data: finalizedBatches, isLoading: isLoadingFinalized } = useQuery<Batch[]>({
-    queryKey: ["/api/batches/finalized"],
+    queryKey: ["/fix/batches/finalized-list"],
     retry: 3,
     refetchOnMount: true
   });
