@@ -548,11 +548,11 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     return false;
   }
   
-  // Set the API key dynamically for this specific email send
-  mailService.setApiKey(apiKey);
-  
   console.log(`📧 Using sender email from Global Admin settings: ${fromEmail}`);
   console.log(`📧 Sending to: ${params.to}`);
+  
+  // We'll use direct SendGrid API approach for reliable email delivery
+  let sendgridDirectMode = true;
   
   try {
     // First try to fetch the global admin password reset template from the database
