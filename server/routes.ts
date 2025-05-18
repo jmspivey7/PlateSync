@@ -14,6 +14,7 @@ const directChurchDataFix = require('./fix/direct-church-data');
 import directChurchDataWithPortal from './api/directChurchDataWithPortal';
 const church40829937fix = require('./church40829937fix');
 const directFix = require('./directFix');
+const fixBatchData = require('./fix-batch-data');
 
 // Extend express-session with our user type
 declare global {
