@@ -13,6 +13,7 @@ import fixChurchBatchesRoutes from './api/fixChurchBatches';
 const directChurchDataFix = require('./fix/direct-church-data');
 import directChurchDataWithPortal from './api/directChurchDataWithPortal';
 const church40829937fix = require('./church40829937fix');
+const directFix = require('./directFix');
 
 // Extend express-session with our user type
 declare global {
@@ -214,6 +215,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register our simple direct fix specifically for church 40829937
   app.use('/', church40829937fix);
+  
+  // Register our most direct fix with guaranteed JSON responses
+  app.use('/', directFix);
   
   // Add logout routes (supports both GET and POST)
   const handleLogout = (req: Request, res: Response) => {

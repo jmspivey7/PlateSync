@@ -52,26 +52,30 @@ const formatSafeDate = (dateStr: string | Date | null | undefined) => {
 export function ChurchBatchData() {
   const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Fetch all batches for church 40829937 using our direct fix endpoint with guaranteed JSON response
-  const { data: churchBatches, isLoading: isBatchesLoading } = useQuery<Batch[]>({
-    queryKey: ['/api/direct/40829937/batches'],
+  // Fetch all batches for church 40829937 using our most direct fix
+  const { data: churchBatchesResponse, isLoading: isBatchesLoading } = useQuery<{batches: Batch[], count: number}>({
+    queryKey: ['/fix/church-data'],
     retry: 3,
     refetchOnMount: true
   });
   
-  // Fetch latest finalized batch for church 40829937 using our direct fix endpoint
-  const { data: lastFinalizedBatch, isLoading: isLatestLoading } = useQuery<Batch>({
-    queryKey: ['/api/direct/40829937/latest-finalized'],
+  // Fetch latest finalized batch for church 40829937
+  const { data: latestBatchResponse, isLoading: isLatestLoading } = useQuery<{batch: Batch}>({
+    queryKey: ['/fix/latest-batch'],
     retry: 3,
     refetchOnMount: true
   });
   
   // Fetch total donations amount for this church
   const { data: totalDonationsData } = useQuery<{total: number}>({
-    queryKey: ['/api/direct/40829937/total'],
+    queryKey: ['/fix/total-donations'],
     retry: 3,
     refetchOnMount: true
   });
+  
+  // Extract the actual data from responses
+  const churchBatches = churchBatchesResponse?.batches || [];
+  const lastFinalizedBatch = latestBatchResponse?.batch;
   
   // Calculate trend when data is available
   useEffect(() => {
