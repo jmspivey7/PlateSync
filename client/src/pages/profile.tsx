@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User } from "lucide-react";
+import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
@@ -54,6 +54,9 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile"); // "profile" or "password"
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Set up profile form with default values
   const profileForm = useForm<ProfileFormValues>({
@@ -340,11 +343,26 @@ const Profile = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="currentPassword" className="font-bold">Current Password:</Label>
-                      <Input 
-                        id="currentPassword" 
-                        type="password"
-                        {...passwordForm.register("currentPassword")}
-                      />
+                      <div className="relative">
+                        <Input 
+                          id="currentPassword" 
+                          type={showCurrentPassword ? "text" : "password"}
+                          className="pr-10"
+                          {...passwordForm.register("currentPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          tabIndex={-1}
+                        >
+                          {showCurrentPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
                       {passwordForm.formState.errors.currentPassword && (
                         <p className="text-sm text-red-500 mt-1">
                           {passwordForm.formState.errors.currentPassword.message}
@@ -354,11 +372,26 @@ const Profile = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="newPassword" className="font-bold">New Password:</Label>
-                      <Input 
-                        id="newPassword" 
-                        type="password"
-                        {...passwordForm.register("newPassword")}
-                      />
+                      <div className="relative">
+                        <Input 
+                          id="newPassword" 
+                          type={showNewPassword ? "text" : "password"}
+                          className="pr-10"
+                          {...passwordForm.register("newPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          tabIndex={-1}
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
                       {passwordForm.formState.errors.newPassword && (
                         <p className="text-sm text-red-500 mt-1">
                           {passwordForm.formState.errors.newPassword.message}
@@ -371,11 +404,26 @@ const Profile = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword" className="font-bold">Confirm New Password:</Label>
-                      <Input 
-                        id="confirmPassword" 
-                        type="password"
-                        {...passwordForm.register("confirmPassword")}
-                      />
+                      <div className="relative">
+                        <Input 
+                          id="confirmPassword" 
+                          type={showConfirmPassword ? "text" : "password"}
+                          className="pr-10"
+                          {...passwordForm.register("confirmPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
                       {passwordForm.formState.errors.confirmPassword && (
                         <p className="text-sm text-red-500 mt-1">
                           {passwordForm.formState.errors.confirmPassword.message}

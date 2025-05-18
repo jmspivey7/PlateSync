@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, KeyRound } from "lucide-react";
+import { Loader2, Mail, KeyRound, Eye, EyeOff } from "lucide-react";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -37,6 +37,7 @@ export default function GlobalAdminLogin() {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Check if already authenticated
   useEffect(() => {
@@ -144,11 +145,19 @@ export default function GlobalAdminLogin() {
                         <div className="relative">
                           <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input 
-                            type="password" 
+                            type={showPassword ? "text" : "password"}
                             placeholder="" 
-                            className="pl-9"
+                            className="pl-9 pr-9"
                             {...field} 
                           />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground"
+                            onClick={() => setShowPassword(!showPassword)}
+                            tabIndex={-1}
+                          >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
