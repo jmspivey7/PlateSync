@@ -2,10 +2,15 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
+// Import our direct finalized counts router
+const directFinalizedCounts = require('./fix/direct-finalized-counts');
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Register our direct finalized counts router before any other routes
+app.use(directFinalizedCounts);
 
 // Serve the logos directory for uploaded church logos
 app.use('/logos', express.static(path.join(process.cwd(), 'public/logos')));

@@ -48,8 +48,15 @@ const CountsPage = () => {
   };
 
   // Fetch all batches
-  const { data: batches, isLoading: isLoadingBatches } = useQuery<Batch[]>({
+  const { data: allBatches, isLoading: isLoadingAllBatches } = useQuery<Batch[]>({
     queryKey: ["/api/batches"],
+  });
+  
+  // Fetch finalized batches directly using our dedicated endpoint
+  const { data: finalizedBatches, isLoading: isLoadingFinalized } = useQuery<Batch[]>({
+    queryKey: ["/api/batches/finalized"],
+    retry: 3,
+    refetchOnMount: true
   });
 
   // Fetch selected batch with donations
@@ -66,12 +73,10 @@ const CountsPage = () => {
     enabled: !!selectedBatchId,
   });
 
-  // Filter batches by status - simplified to just OPEN and FINALIZED
-  const filteredBatches = Array.isArray(batches) ? batches.filter((batch) => {
-    if (activeTab === "open") return batch.status === "OPEN";
-    if (activeTab === "finalized") return batch.status === "FINALIZED";
-    return true;
-  }) : [];
+  // Filter batches by status - use dedicated endpoint for finalized batches
+  const filteredBatches = activeTab === "finalized"
+    ? (Array.isArray(finalizedBatches) ? finalizedBatches : [])
+    : (Array.isArray(allBatches) ? allBatches.filter(batch => batch.status === "OPEN") : []);
 
   const handleCreateBatch = () => {
     setSelectedBatchId(null);
@@ -115,7 +120,7 @@ const CountsPage = () => {
     return statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800";
   };
 
-  if (isLoadingBatches) {
+  if (isLoadingAllBatches || isLoadingFinalized) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-[#4299E1]" />
