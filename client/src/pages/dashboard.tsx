@@ -34,17 +34,28 @@ const Dashboard = () => {
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Fetch the latest finalized batch for display
-  const { data: lastFinalizedBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
-    queryKey: ['/api/batches/latest-finalized'],
+  // Fetch the latest finalized batch directly from our fix endpoint
+  const { data: finalizedBatches, isLoading: isLoadingBatch } = useQuery<Batch[]>({
+    queryKey: ['/fix-batches/finalized'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/fix-batches/finalized');
+        if (!response.ok) {
+          throw new Error('Failed to fetch finalized batches');
+        }
+        return response.json();
+      } catch (err) {
+        console.error('Error fetching finalized batches:', err);
+        return [];
+      }
+    },
     enabled: isAuthenticated,
-    retry: false, // Don't retry 404 errors
-    throwOnError: false, // Don't throw on any error
-    select: (data) => {
-      console.log("Latest finalized batch from API:", data);
-      return data;
-    }
   });
+  
+  // Get the most recent finalized batch
+  const lastFinalizedBatch = finalizedBatches && finalizedBatches.length > 0 
+    ? finalizedBatches[0] // They're ordered by date DESC, so first is most recent
+    : null;
   
   // Fetch all batches for trend calculation
   const { data: allBatches } = useQuery<Batch[]>({

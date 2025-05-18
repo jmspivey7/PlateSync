@@ -204,17 +204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register fix routes for church 40829937
   app.use('/api', fixChurchBatchesRoutes);
   
-  // Register our direct fix routes for church 40829937 batches
-  app.use('/api', directChurchDataFix);
-  
   // Register our enhanced direct fix with guaranteed JSON responses
   app.use('/api', directChurchDataWithPortal);
-  
-  // Register our simple direct fix specifically for church 40829937
-  app.use('/', church40829937fix);
-  
-  // Register our most direct fix with guaranteed JSON responses
-  app.use('/', directFix);
   
   // Add logout routes (supports both GET and POST)
   const handleLogout = (req: Request, res: Response) => {

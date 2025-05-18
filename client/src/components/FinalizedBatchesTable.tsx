@@ -1,140 +1,131 @@
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 import { format } from 'date-fns';
-import { useLocation } from 'wouter';
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from 'lucide-react';
 
-// Define batch type
-interface Batch {
+interface FinalizedBatch {
   id: number;
   name: string;
   date: string;
   status: string;
-  totalAmount: string;
+  totalAmount: number;
   churchId: string;
   service: string;
 }
 
 export default function FinalizedBatchesTable() {
-  const [finalized, setFinalized] = useState<Batch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [batches, setBatches] = useState<FinalizedBatch[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [_, navigate] = useLocation();
 
-  // Format currency values
-  const formatCurrency = (amount: string | number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
-  };
-
-  // Badge styling
-  const getBadgeClass = (status: string) => {
-    return "bg-blue-100 text-blue-800 hover:bg-blue-100";
-  };
-
-  // Fetch finalized batches from our direct endpoint
   useEffect(() => {
-    const loadFinalizedBatches = async () => {
-      setIsLoading(true);
-      setError(null);
-      
+    const fetchFinalizedBatches = async () => {
       try {
-        // Add cache-busting parameter to prevent Vite from interfering
-        const timestamp = new Date().getTime();
-        const response = await fetch(`/api/direct-finalized-counts?t=${timestamp}`);
-        
-        console.log('Finalized counts response status:', response.status);
+        setLoading(true);
+        // Use our direct endpoint with no middleware interference
+        const response = await fetch('/fix-batches/finalized');
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch finalized counts: ${response.status}`);
+          throw new Error(`Failed to fetch data: ${response.status}`);
         }
         
-        // Parse the response as JSON
         const data = await response.json();
-        console.log('Finalized counts data:', data);
-        
-        if (Array.isArray(data)) {
-          setFinalized(data);
-        } else {
-          throw new Error('Invalid response format: expected an array');
-        }
+        console.log('Fetched finalized batches:', data);
+        setBatches(data);
       } catch (err) {
-        console.error('Error loading finalized batches:', err);
-        setError('Failed to load finalized counts. Please try again later.');
+        console.error('Error fetching finalized batches:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch finalized batches');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
-    loadFinalizedBatches();
+
+    fetchFinalizedBatches();
   }, []);
 
-  // Loading state
-  if (isLoading) {
+  // Calculate total amount
+  const totalAmount = batches.reduce((sum, batch) => sum + Number(batch.totalAmount), 0);
+
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-40">
-        <Loader2 className="h-8 w-8 animate-spin text-[#69ad4c]" />
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading finalized batches...</span>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+        <p className="font-bold">Error loading finalized batches</p>
         <p>{error}</p>
       </div>
     );
   }
 
-  // Empty state
-  if (!finalized || finalized.length === 0) {
+  if (batches.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <p>No finalized counts found</p>
+      <div className="text-center p-8 border border-gray-200 rounded-md bg-gray-50">
+        <p className="text-gray-500">No finalized batches found</p>
       </div>
     );
   }
 
-  // Display finalized batches
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b">
-            <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Status</th>
-            <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Date</th>
-            <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/3">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {finalized.map((batch) => (
-            <tr 
-              key={batch.id}
-              className="border-b hover:bg-gray-50 cursor-pointer"
-              onClick={() => navigate(`/batch/${batch.id}`)}
-            >
-              <td className="py-3 px-3">
-                <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
-              </td>
-              <td className="py-3 px-3 text-gray-700 font-medium">
-                {(() => {
-                  const dateObj = new Date(batch.date);
-                  // Add timezone offset for consistent display
-                  const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
-                  return format(correctedDate, 'MM/dd/yyyy');
-                })()}
-              </td>
-              <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
-                {formatCurrency(batch.totalAmount || 0)}
-              </td>
-            </tr>
+    <div className="space-y-4">
+      <div className="font-medium text-green-700 flex items-center bg-green-50 p-2 rounded">
+        <span>Found {batches.length} finalized batches</span>
+      </div>
+      
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Service</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {batches.map((batch) => (
+            <TableRow key={batch.id}>
+              <TableCell>
+                {format(new Date(batch.date), 'MM/dd/yyyy')}
+              </TableCell>
+              <TableCell>{batch.service}</TableCell>
+              <TableCell>{batch.name}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  {batch.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right font-medium">
+                ${Number(batch.totalAmount).toFixed(2)}
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+          
+          {/* Total row */}
+          <TableRow className="font-bold">
+            <TableCell colSpan={4} className="text-right">
+              TOTAL
+            </TableCell>
+            <TableCell className="text-right">
+              ${totalAmount.toFixed(2)}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
   );
 }

@@ -8,17 +8,19 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// EMERGENCY FIX - Direct API endpoint that completely bypasses any middleware
-// This ensures we can get the finalized batches data without any interference
-app.get('/api/direct/church-40829937/finalized-batches', async (req, res) => {
+// Create a simple direct route for finalized batches - placed before any other middleware
+app.get('/fix-batches/finalized', async (req, res) => {
+  // Add headers to ensure proper content type
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
   
   try {
+    // Connect directly to database
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     const client = await pool.connect();
     
     try {
+      // Query for finalized batches for church ID 40829937
       const result = await client.query(`
         SELECT 
           id, 
@@ -33,13 +35,13 @@ app.get('/api/direct/church-40829937/finalized-batches', async (req, res) => {
         ORDER BY date DESC
       `);
       
-      console.log(`[EMERGENCY FIX] Found ${result.rows.length} finalized batches for church 40829937`);
+      console.log(`[DIRECT FIX] Found ${result.rows.length} finalized batches for church 40829937`);
       return res.json(result.rows);
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('[EMERGENCY FIX] Error fetching finalized batches:', error);
+    console.error('[DIRECT FIX] Error fetching finalized batches:', error);
     return res.status(500).json({ error: 'Database query failed' });
   }
 });
