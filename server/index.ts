@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: false }));
 // Register our fix routes with direct database access before any other routes
 app.use(directFinalizedCounts);
 app.use(require('./fix-routes'));
+app.use(require('./direct-finalized-counts')); // Add our new direct finalized counts endpoint
 
 // Serve the logos directory for uploaded church logos
 app.use('/logos', express.static(path.join(process.cwd(), 'public/logos')));

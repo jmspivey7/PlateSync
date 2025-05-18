@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Batch, BatchWithDonations } from "../../../shared/schema";
 import CountModal from "../components/counts/CountModal";
-import DirectFinalizedBatches from "@/components/counts/DirectFinalizedBatches";
+import FinalizedBatchesTable from "@/components/FinalizedBatchesTable";
 import { apiRequest } from "@/lib/queryClient";
 import PageLayout from "@/components/layout/PageLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -214,8 +214,8 @@ const CountsPage = () => {
             </TabsContent>
             
             <TabsContent value="finalized" className="mt-4">
-              {/* Use our dedicated component for finalized batches */}
-              <DirectFinalizedBatches />
+              {/* Use our new dedicated component that directly queries the database */}
+              <FinalizedBatchesTable />
             </TabsContent>
           </Tabs>
         </CardHeader>
