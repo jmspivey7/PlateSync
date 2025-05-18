@@ -392,6 +392,8 @@ export const planningCenterTokens = pgTable("planning_center_tokens", {
   accessToken: text("access_token").notNull(),
   refreshToken: text("refresh_token").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
+  lastSyncDate: timestamp("last_sync_date"),
+  peopleCount: integer("people_count"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
