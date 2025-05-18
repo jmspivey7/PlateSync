@@ -2147,8 +2147,11 @@ Sincerely,
           // Only include users that belong to this church  
           const isChurchMember = user.churchId === churchId;
           
-          // Filter out any users where role is MASTER_ADMIN
-          const isNotGlobalAdmin = user.role !== "MASTER_ADMIN";
+          // Filter out any users where role is GLOBAL_ADMIN, MASTER_ADMIN, or any other admin type
+          const isNotGlobalAdmin = 
+            user.role !== "GLOBAL_ADMIN" && 
+            user.role !== "MASTER_ADMIN" &&
+            !(user.id !== userId && user.id !== churchId && user.role === "ADMIN");
           
           // Only include users that are church members and not global admins
           return isChurchMember && isNotGlobalAdmin;
