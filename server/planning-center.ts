@@ -992,7 +992,10 @@ export function setupPlanningCenterRoutes(app: Express) {
 
   app.post('/api/planning-center/import', async (req: Request, res: Response) => {
     if (!req.user) {
-      return res.status(401).send('Authentication required');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
     }
     
     // Type casting to handle req.user properties
@@ -1005,22 +1008,46 @@ export function setupPlanningCenterRoutes(app: Express) {
       let tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
       
       if (!tokens) {
-        return res.status(403).send('Planning Center not connected');
+        return res.status(403).json({
+          success: false,
+          error: 'Planning Center not connected. Please connect your account first.'
+        });
       }
       
+      console.log('Planning Center tokens:', {
+        accessToken: tokens.accessToken ? `${tokens.accessToken.substring(0, 10)}...` : 'missing',
+        refreshToken: tokens.refreshToken ? `${tokens.refreshToken.substring(0, 10)}...` : 'missing',
+        expiresAt: tokens.expiresAt ? tokens.expiresAt.toISOString() : 'missing',
+        now: new Date().toISOString(),
+        isExpired: tokens.expiresAt ? (tokens.expiresAt < new Date()) : true
+      });
+      
       // Check if token is expired and refresh if needed
-      if (tokens.expiresAt < new Date()) {
+      if (!tokens.expiresAt || tokens.expiresAt < new Date()) {
         console.log('Planning Center token expired, refreshing...');
         try {
-          await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+          if (!tokens.refreshToken) {
+            throw new Error('No refresh token available');
+          }
+          
+          // Perform token refresh
+          const newAccessToken = await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+          console.log('Token refresh API call completed successfully');
+          
           // Get the updated tokens after refresh
-          tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
+          const refreshedTokens = await storage.getPlanningCenterTokensByChurchId(churchId);
+          
+          if (!refreshedTokens || !refreshedTokens.accessToken) {
+            throw new Error('Could not retrieve refreshed tokens');
+          }
+          
+          tokens = refreshedTokens;
           console.log('Successfully refreshed Planning Center token');
         } catch (refreshError) {
           console.error('Error refreshing Planning Center token:', refreshError);
           return res.status(401).json({
             success: false, 
-            error: 'Authorization expired with Planning Center. Please reconnect your account.'
+            error: 'Your Planning Center connection has expired. Please reconnect your account.'
           });
         }
       }
@@ -1082,9 +1109,33 @@ export function setupPlanningCenterRoutes(app: Express) {
           // Add this page of people to our collection
           const people = peopleResponse.data.data;
           allPeople = allPeople.concat(people);
-        
-        // Set up for next page if available
-        nextPageUrl = peopleResponse.data.links?.next || null;
+          
+          // Set up for next page if available
+          nextPageUrl = peopleResponse.data.links?.next || null;
+        } catch (apiError: any) {
+          console.error('Error fetching Planning Center people:', apiError.message);
+          
+          // Handle 401 Unauthorized errors by trying to refresh the token once
+          if (apiError.response?.status === 401) {
+            console.log('Received 401 Unauthorized error, attempting to refresh token...');
+            try {
+              await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+              // Get the updated tokens after refresh
+              tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
+              console.log('Token refreshed successfully, retrying request...');
+              
+              // Retry the current page after token refresh
+              pageCount--; // Decrement so we retry the current page
+              continue;
+            } catch (refreshError) {
+              console.error('Failed to refresh token:', refreshError);
+              throw new Error('Access token expired and could not be refreshed. Please reconnect to Planning Center.');
+            }
+          }
+          
+          // For other errors, just throw them up to be caught by the main try/catch
+          throw apiError;
+        }
         
         // Process included data for this page
         const included = peopleResponse.data.included || [];
