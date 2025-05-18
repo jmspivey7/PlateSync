@@ -9,10 +9,9 @@ import globalAdminProfileRoutes from './api/globalAdminProfileRoutes';
 import profileRoutes from './api/profileRoutes';
 import batchRoutes from './api/batchRoutes';
 import fixChurchBatchesRoutes from './api/fixChurchBatches';
-// Import our direct church data fixes
-const directChurchDataFix = require('./fix/direct-church-data');
+// Import our direct church data fixes properly using ESM syntax
 import directChurchDataWithPortal from './api/directChurchDataWithPortal';
-const church40829937fix = require('./church40829937fix');
+import directFinalizedBatches from './api/directFinalizedBatches';
 const directFix = require('./directFix');
 const fixBatchData = require('./fix-batch-data');
 

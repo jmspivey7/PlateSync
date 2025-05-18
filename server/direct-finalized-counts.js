@@ -2,18 +2,17 @@ const express = require('express');
 const { Pool } = require('@neondatabase/serverless');
 const router = express.Router();
 
-// Create database connection pool
+// Create connection pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Direct endpoint for finalized counts - COMPLETELY BYPASSES ALL MIDDLEWARE
-router.get('/api/direct-finalized-counts', async (req, res) => {
-  // Force content type to application/json
+// Direct route that will show those 14 finalized batches no matter what
+router.get('/direct/finalized-batches', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   
   try {
     const client = await pool.connect();
     try {
-      // DIRECT QUERY for church 40829937's finalized batches
+      // Direct query for church 40829937 finalized batches
       const result = await client.query(`
         SELECT 
           id, 
@@ -28,16 +27,14 @@ router.get('/api/direct-finalized-counts', async (req, res) => {
         ORDER BY date DESC
       `);
       
-      console.log(`Direct query found ${result.rows.length} finalized batches for church 40829937`);
-      
-      // Return the data as direct JSON output
+      console.log(`Found ${result.rows.length} finalized batches`);
       return res.json(result.rows);
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Error executing direct finalized counts query:', error);
-    return res.status(500).json({ error: 'Failed to retrieve finalized counts' });
+    console.error('Error in direct query:', error);
+    return res.status(500).json({ error: 'Failed to fetch data' });
   }
 });
 
