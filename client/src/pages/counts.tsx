@@ -67,11 +67,11 @@ const CountsPage = () => {
   });
 
   // Filter batches by status - simplified to just OPEN and FINALIZED
-  const filteredBatches = batches?.filter((batch) => {
+  const filteredBatches = Array.isArray(batches) ? batches.filter((batch) => {
     if (activeTab === "open") return batch.status === "OPEN";
     if (activeTab === "finalized") return batch.status === "FINALIZED";
     return true;
-  });
+  }) : [];
 
   const handleCreateBatch = () => {
     setSelectedBatchId(null);
