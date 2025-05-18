@@ -12,10 +12,9 @@ import { PlusCircle, Loader2, Package, Calendar, DollarSign, Eye } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Batch, BatchWithDonations } from "../../../shared/schema";
 import CountModal from "../components/counts/CountModal";
-import FinalizedBatchesTable from "@/components/FinalizedBatchesTable";
 import { apiRequest } from "@/lib/queryClient";
 import PageLayout from "@/components/layout/PageLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,27 +48,8 @@ const CountsPage = () => {
   };
 
   // Fetch all batches
-  const { data: allBatches, isLoading: isLoadingAllBatches } = useQuery<Batch[]>({
+  const { data: batches, isLoading: isLoadingBatches } = useQuery<Batch[]>({
     queryKey: ["/api/batches"],
-  });
-  
-  // Fetch finalized batches directly using our dedicated endpoint
-  const { data: finalizedBatches, isLoading: isLoadingFinalized } = useQuery<Batch[]>({
-    queryKey: ["/fix-batches/finalized"],
-    queryFn: async () => {
-      try {
-        const response = await fetch('/fix-batches/finalized');
-        if (!response.ok) {
-          throw new Error('Failed to fetch finalized batches');
-        }
-        return response.json();
-      } catch (err) {
-        console.error('Error fetching finalized batches:', err);
-        return [];
-      }
-    },
-    retry: 3,
-    refetchOnMount: true
   });
 
   // Fetch selected batch with donations
@@ -86,10 +66,12 @@ const CountsPage = () => {
     enabled: !!selectedBatchId,
   });
 
-  // Filter batches by status - use dedicated endpoint for finalized batches
-  const filteredBatches = activeTab === "finalized"
-    ? (Array.isArray(finalizedBatches) ? finalizedBatches : [])
-    : (Array.isArray(allBatches) ? allBatches.filter(batch => batch.status === "OPEN") : []);
+  // Filter batches by status - simplified to just OPEN and FINALIZED
+  const filteredBatches = batches?.filter((batch) => {
+    if (activeTab === "open") return batch.status === "OPEN";
+    if (activeTab === "finalized") return batch.status === "FINALIZED";
+    return true;
+  });
 
   const handleCreateBatch = () => {
     setSelectedBatchId(null);
@@ -133,7 +115,7 @@ const CountsPage = () => {
     return statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800";
   };
 
-  if (isLoadingAllBatches || isLoadingFinalized) {
+  if (isLoadingBatches) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-[#4299E1]" />
@@ -174,64 +156,67 @@ const CountsPage = () => {
                 Finalized
               </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="open" className="mt-4">
-              {Array.isArray(allBatches) && allBatches.filter(batch => batch.status === "OPEN").length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Status</th>
-                        <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Date</th>
-                        <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/3">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {allBatches.filter(batch => batch.status === "OPEN").map((batch) => (
-                        <tr 
-                          key={batch.id}
-                          className={`border-b hover:bg-gray-50 cursor-pointer ${
-                            selectedBatchId === batch.id ? 'bg-blue-50' : ''
-                          }`}
-                          onClick={() => {
-                            handleViewSummary(batch.id);
-                          }}
-                        >
-                          <td className="py-3 px-3">
-                            <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
-                          </td>
-                          <td className="py-3 px-3 text-gray-700 font-medium">
-                            {(() => {
-                              const dateObj = new Date(batch.date);
-                              const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
-                              return format(correctedDate, 'MM/dd/yyyy');
-                            })()}
-                          </td>
-                          <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
-                            {formatCurrency(batch.totalAmount || 0)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <div>
-                    <p>No open counts found</p>
-                    <p className="text-sm mt-1">Create a new count to get started</p>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="finalized" className="mt-4">
-              {/* Use our new dedicated component that directly queries the database */}
-              <FinalizedBatchesTable />
-            </TabsContent>
           </Tabs>
         </CardHeader>
         <CardContent>
+          {filteredBatches && filteredBatches.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Status</th>
+                    <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Date</th>
+                    <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/3">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBatches.map((batch) => {
+                    // Extract service name from the batch name
+                    const batchNameParts = batch.name.split(', ');
+                    const serviceName = batchNameParts.length > 1 ? batchNameParts[0] : 'Regular Service';
+                    
+                    return (
+                      <tr 
+                        key={batch.id}
+                        className={`border-b hover:bg-gray-50 cursor-pointer ${
+                          selectedBatchId === batch.id ? 'bg-blue-50' : ''
+                        }`}
+                        onClick={() => {
+                          // Navigate directly to the batch detail page for all counts
+                          handleViewSummary(batch.id);
+                        }}
+                      >
+                        <td className="py-3 px-3">
+                          <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                        </td>
+                        <td className="py-3 px-3 text-gray-700 font-medium">
+                          {(() => {
+                            // Parse the date string and add timezone offset to ensure correct display
+                            const dateObj = new Date(batch.date);
+                            // Add the timezone offset to keep the date as stored in the database
+                            const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+                            return format(correctedDate, 'MM/dd/yyyy');
+                          })()}
+                        </td>
+                        <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
+                          {formatCurrency(batch.totalAmount || 0)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div>
+                <p>No {activeTab} counts found</p>
+                {activeTab === "open" && (
+                  <p className="text-sm mt-1">Create a new count to get started</p>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

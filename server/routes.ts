@@ -7,10 +7,6 @@ import passport from 'passport';
 import connectPg from 'connect-pg-simple';
 import globalAdminProfileRoutes from './api/globalAdminProfileRoutes';
 import profileRoutes from './api/profileRoutes';
-import batchRoutes from './api/batchRoutes';
-import fixChurchBatchesRoutes from './api/fixChurchBatches';
-// Import our direct church data fixes properly using ESM syntax
-import directChurchDataWithPortal from './api/directChurchDataWithPortal';
 
 // Extend express-session with our user type
 declare global {
@@ -197,15 +193,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup auth middleware and routes
   setupSessionMiddleware(app);
-  
-  // Register batch routes - directly access batch data
-  app.use('/api/batches', batchRoutes);
-  
-  // Register fix routes for church 40829937
-  app.use('/api', fixChurchBatchesRoutes);
-  
-  // Register our enhanced direct fix with guaranteed JSON responses
-  app.use('/api', directChurchDataWithPortal);
   
   // Add logout routes (supports both GET and POST)
   const handleLogout = (req: Request, res: Response) => {

@@ -9,7 +9,6 @@ import CountModal from "@/components/counts/CountModal";
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import { DonationChart } from "@/components/dashboard/DonationChart";
-import { ChurchBatchData } from "@/components/dashboard/ChurchBatchData";
 // Import the Thumbs Up icon directly
 import thumbsUpIcon from "../../../public/assets/ThumbsUp.png";
 
@@ -34,35 +33,28 @@ const Dashboard = () => {
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Fetch the latest finalized batch directly from our fix endpoint
-  const { data: finalizedBatches, isLoading: isLoadingBatch } = useQuery<Batch[]>({
-    queryKey: ['/fix-batches/finalized'],
-    queryFn: async () => {
-      try {
-        const response = await fetch('/fix-batches/finalized');
-        if (!response.ok) {
-          throw new Error('Failed to fetch finalized batches');
-        }
-        return response.json();
-      } catch (err) {
-        console.error('Error fetching finalized batches:', err);
-        return [];
-      }
-    },
+  // Fetch the latest finalized batch for display
+  const { data: lastFinalizedBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
+    queryKey: ['/api/batches/latest-finalized'],
     enabled: isAuthenticated,
+    retry: false, // Don't retry 404 errors
+    throwOnError: false, // Don't throw on any error
+    select: (data) => {
+      console.log("Latest finalized batch from API:", data);
+      return data;
+    }
   });
   
-  // Get the most recent finalized batch
-  const lastFinalizedBatch = finalizedBatches && finalizedBatches.length > 0 
-    ? finalizedBatches[0] // They're ordered by date DESC, so first is most recent
-    : null;
-  
-  // We no longer need to fetch all batches separately since we're directly fetching finalized batches
+  // Fetch all batches for trend calculation
+  const { data: allBatches } = useQuery<Batch[]>({
+    queryKey: ['/api/batches'],
+    enabled: isAuthenticated,
+  });
   
   // Calculate trend when data is available
   useEffect(() => {
     try {
-      if (!lastFinalizedBatch || !finalizedBatches || finalizedBatches.length === 0) {
+      if (!lastFinalizedBatch || !allBatches || allBatches.length === 0) {
         console.log("No batches available for trend calculation");
         return;
       }
@@ -73,16 +65,16 @@ const Dashboard = () => {
         return;
       }
       
-      // Filter batches for valid dates (they're already finalized from the API)
-      const validBatches = finalizedBatches
-        .filter(batch => isValidDate(batch.date))
+      // Find all finalized batches with valid dates
+      const finalizedBatches = allBatches
+        .filter(batch => batch.status === 'FINALIZED' && isValidDate(batch.date))
         .sort((a, b) => {
           const dateA = safelyParseDate(a.date);
           const dateB = safelyParseDate(b.date);
           return dateB.getTime() - dateA.getTime();
         });
       
-      console.log("Finalized batches for trend:", validBatches.map(b => ({
+      console.log("Finalized batches for trend:", finalizedBatches.map(b => ({
         id: b.id,
         name: b.name,
         amount: b.totalAmount,
@@ -90,7 +82,7 @@ const Dashboard = () => {
         status: b.status
       })));
       
-      if (validBatches.length === 0) {
+      if (finalizedBatches.length === 0) {
         console.log("No finalized batches with valid dates found");
         setTrend({ percentage: 10, trending: 'up' }); // Default trend
         return;
@@ -101,11 +93,11 @@ const Dashboard = () => {
         const latestFinalizedBatch = finalizedBatches[0];
         const finalizedAmount = parseFloat(latestFinalizedBatch.totalAmount?.toString() || '0');
         
-        // Since we only have finalizedBatches now, we'll just use previous finalized batches
-        // and won't be comparing with CLOSED batches
-        const previousBatches = finalizedBatches.slice(1)
+        // Find up to 4 closed batches with valid dates to compare with
+        const closedBatches = allBatches
           .filter(batch => {
-            return batch.id !== latestFinalizedBatch.id &&
+            return batch.status === 'CLOSED' && 
+                   batch.id !== latestFinalizedBatch.id &&
                    isValidDate(batch.date);
           })
           .sort((a, b) => {
@@ -115,25 +107,25 @@ const Dashboard = () => {
           })
           .slice(0, 4); // Take up to 4 most recent closed batches
         
-        if (previousBatches.length > 0) {
+        if (closedBatches.length > 0) {
           console.log("Latest finalized batch:", latestFinalizedBatch.id, latestFinalizedBatch.totalAmount);
-          console.log(`Using ${previousBatches.length} previous batches for comparison:`, 
-            previousBatches.map(b => ({ id: b.id, amount: b.totalAmount })));
+          console.log(`Using ${closedBatches.length} closed batches for comparison:`, 
+            closedBatches.map(b => ({ id: b.id, amount: b.totalAmount })));
           
-          // Calculate average of previous batches
-          const totalPreviousAmount = previousBatches.reduce((sum, batch) => {
+          // Calculate average of closed batches
+          const totalClosedAmount = closedBatches.reduce((sum, batch) => {
             return sum + parseFloat(batch.totalAmount?.toString() || '0');
           }, 0);
           
-          const averagePreviousAmount = totalPreviousAmount / previousBatches.length;
+          const averageClosedAmount = totalClosedAmount / closedBatches.length;
           
-          if (averagePreviousAmount > 0) {
-            const percentageChange = ((finalizedAmount - averagePreviousAmount) / averagePreviousAmount) * 100;
-            console.log("Calculated trend using average of previous batches:", {
+          if (averageClosedAmount > 0) {
+            const percentageChange = ((finalizedAmount - averageClosedAmount) / averageClosedAmount) * 100;
+            console.log("Calculated trend using average of closed batches:", {
               finalizedAmount,
-              averagePreviousAmount,
+              averageClosedAmount,
               percentageChange,
-              numberOfBatchesAveraged: previousBatches.length
+              numberOfBatchesAveraged: closedBatches.length
             });
             
             setTrend({
@@ -205,7 +197,7 @@ const Dashboard = () => {
       console.error("Error calculating trend:", error);
       setTrend({ percentage: 10, trending: 'up' }); // Default on error
     }
-  }, [lastFinalizedBatch, finalizedBatches]);
+  }, [lastFinalizedBatch, allBatches]);
   
   // Format currency
   const formatCurrency = (amount: string | number) => {
@@ -293,9 +285,51 @@ const Dashboard = () => {
           </Card>
         </div>
         
-        {/* Last Count Submitted - Using direct church data */}
+        {/* Last Count Submitted */}
         <div className="md:w-2/3">
-          <ChurchBatchData />
+          {isLoadingBatch ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : lastFinalizedBatch ? (
+            <Card className="border rounded-xl shadow-sm h-full">
+              <CardContent className="p-4 h-full">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg text-muted-foreground font-medium">Last Count Finalized</h2>
+                  <div className="bg-background border rounded-full px-3 py-1 flex items-center text-sm font-medium">
+                    {trend.trending === 'up' ? (
+                      <TrendingUp className="h-4 w-4 mr-1 text-primary" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 mr-1 text-destructive" />
+                    )}
+                    {trend.trending === 'up' ? '+' : '-'}{trend.percentage.toFixed(1)}%
+                  </div>
+                </div>
+                <div className="text-3xl font-bold my-2">
+                  {formatCurrency(lastFinalizedBatch.totalAmount || 0)}
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-base font-medium flex items-center">
+                    {trend.trending === 'up' ? (
+                      <>Trending up <TrendingUp className="h-4 w-4 ml-1 text-primary" /></>
+                    ) : (
+                      <>Trending down <TrendingDown className="h-4 w-4 ml-1 text-destructive" /></>
+                    )}
+                  </div>
+                  <div className="text-sm font-bold">
+                    {formatSafeDate(lastFinalizedBatch.date)}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-muted h-full">
+              <CardContent className="p-4 text-center flex flex-col items-center justify-center h-full">
+                <h2 className="text-lg font-medium mb-1">No Finalized Counts Yet</h2>
+                <p className="text-muted-foreground">Finalize a count to see it displayed here</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
       

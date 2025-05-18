@@ -2,49 +2,10 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
-import { Pool } from '@neondatabase/serverless';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// Create a simple direct route for finalized batches - placed before any other middleware
-app.get('/fix-batches/finalized', async (req, res) => {
-  // Add headers to ensure proper content type
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store');
-  
-  try {
-    // Connect directly to database
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const client = await pool.connect();
-    
-    try {
-      // Query for finalized batches for church ID 40829937
-      const result = await client.query(`
-        SELECT 
-          id, 
-          name, 
-          date, 
-          status, 
-          total_amount as "totalAmount", 
-          church_id as "churchId", 
-          service
-        FROM batches 
-        WHERE church_id = '40829937' AND status = 'FINALIZED' 
-        ORDER BY date DESC
-      `);
-      
-      console.log(`[DIRECT FIX] Found ${result.rows.length} finalized batches for church 40829937`);
-      return res.json(result.rows);
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('[DIRECT FIX] Error fetching finalized batches:', error);
-    return res.status(500).json({ error: 'Database query failed' });
-  }
-});
 
 // Serve the logos directory for uploaded church logos
 app.use('/logos', express.static(path.join(process.cwd(), 'public/logos')));

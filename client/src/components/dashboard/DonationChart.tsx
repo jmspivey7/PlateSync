@@ -98,51 +98,46 @@ export function DonationChart() {
     return () => clearTimeout(timeoutId);
   }, []);
   
-  // Fetch finalized batches directly using our fix endpoint
+  // Fetch all batches
   const { data: batches, isLoading, error: batchError } = useQuery<Batch[]>({
-    queryKey: ['/fix-batches/finalized'],
-    queryFn: async () => {
-      try {
-        const response = await fetch('/fix-batches/finalized');
-        if (!response.ok) {
-          throw new Error('Failed to fetch finalized batches');
-        }
-        const data = await response.json();
-        console.log("Chart received finalized batch data:", data || []);
-        return data || [];
-      } catch (err) {
-        console.error('Error fetching finalized batches:', err);
-        return [];
-      }
-    },
+    queryKey: ['/api/batches'],
     retry: 2, // Reduced retry count
     retryDelay: 1000,
     throwOnError: false,
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    select: (data) => {
+      console.log("Chart received batch data:", data || []);
+      return data || [];
+    }
   });
   
-  // For each batch, fetch its donations directly
+  // For each batch, fetch its donations
   const { data: batchDonations, isLoading: isDonationsLoading, error: donationsError } = useQuery<Record<number, Donation[]>>({
     queryKey: ['/api/batches/donations'],
     queryFn: async () => {
       try {
         if (!batches || !Array.isArray(batches) || batches.length === 0) {
           console.log("No batches available for donations query");
-          return {}; // Return empty object immediately if no batches
+          // Return empty object immediately if no batches
+          return {}; 
         }
         
-        // No need to filter for FINALIZED batches since we're already using the finalized batches endpoint
-        if (batches.length === 0) {
-          console.log("No finalized batches found");
-          return {}; // Return empty object if no finalized batches
+        // Fetch donations only for FINALIZED batches that have a totalAmount > 0
+        const relevantBatches = batches.filter((batch: Batch) => 
+          batch.status === 'FINALIZED' && parseFloat(batch.totalAmount?.toString() || '0') > 0
+        );
+        
+        if (relevantBatches.length === 0) {
+          console.log("No relevant batches found (FINALIZED with positive amounts)");
+          return {}; // Return empty object if no relevant batches
         }
         
         // Create a map of batchId to donations
         const donationsMap: Record<number, Donation[]> = {};
         
-        // Fetch donations for each finalized batch in parallel
-        await Promise.all(batches.map(async (batch: Batch) => {
+        // Fetch donations for each batch in parallel
+        await Promise.all(relevantBatches.map(async (batch: Batch) => {
           if (!batch.id) return; // Skip batches without ID
           
           try {
@@ -153,7 +148,10 @@ export function DonationChart() {
             if (response.ok) {
               const donations = await response.json();
               donationsMap[batch.id] = donations;
-              console.log(`Batch ${batch.id} donations:`, donations);
+            } else if (response.status === 401) {
+              console.warn("Authentication required for batch donations");
+              // Initialize with empty array instead of skipping
+              donationsMap[batch.id] = [];
             } else {
               console.error(`Error response for batch ${batch.id}:`, response.status);
               // Initialize with empty array
@@ -166,6 +164,7 @@ export function DonationChart() {
           }
         }));
         
+        console.log("Fetched donations for batches:", donationsMap);
         return donationsMap;
       } catch (error) {
         console.error("Error in batch donations query:", error);
@@ -204,7 +203,7 @@ export function DonationChart() {
   }
   
   // Handle error states or no data - show empty chart with view history option
-  if (loadingTimedOut || batchError || donationsError || !Array.isArray(batches) || batches.length === 0) {
+  if (loadingTimedOut || batchError || donationsError || !Array.isArray(batches) || batches.length === 0 || (Array.isArray(batches) && batches.filter(b => b.status === 'FINALIZED' && parseFloat(b.totalAmount?.toString() || '0') > 0).length === 0)) {
     return (
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
@@ -249,7 +248,6 @@ export function DonationChart() {
 
   // Get all FINALIZED batches from the last 12 months
   const recentBatches = (() => {
-    
     try {
       if (!Array.isArray(batches) || batches.length === 0) return [];
       
