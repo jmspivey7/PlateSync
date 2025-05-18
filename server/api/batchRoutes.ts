@@ -1,11 +1,10 @@
 import express from 'express';
 import { storage } from '../storage';
-import { isAuthenticated } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
 // Get all batches for a church
-router.get('/', isAuthenticated, async (req: any, res) => {
+router.get('/', async (req: any, res) => {
   try {
     const userId = req.user.id || req.user.claims?.sub;
     
@@ -34,7 +33,7 @@ router.get('/', isAuthenticated, async (req: any, res) => {
 });
 
 // Get the latest finalized batch
-router.get('/latest-finalized', isAuthenticated, async (req: any, res) => {
+router.get('/latest-finalized', async (req: any, res) => {
   try {
     const userId = req.user.id || req.user.claims?.sub;
     
@@ -74,7 +73,7 @@ router.get('/latest-finalized', isAuthenticated, async (req: any, res) => {
 });
 
 // Get batch by ID with donations
-router.get('/:id', isAuthenticated, async (req: any, res) => {
+router.get('/:id', async (req: any, res) => {
   try {
     const userId = req.user.id || req.user.claims?.sub;
     const batchId = parseInt(req.params.id);
@@ -110,7 +109,7 @@ router.get('/:id', isAuthenticated, async (req: any, res) => {
 });
 
 // Get donations for a batch
-router.get('/:id/donations', isAuthenticated, async (req: any, res) => {
+router.get('/:id/donations', async (req: any, res) => {
   try {
     const userId = req.user.id || req.user.claims?.sub;
     const batchId = parseInt(req.params.id);
