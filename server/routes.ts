@@ -252,6 +252,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Service Options endpoints
+  app.get('/api/service-options', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      console.log(`Fetching service options for church ID: ${churchId}`);
+      const options = await storage.getServiceOptions(churchId);
+      console.log(`Found ${options.length} service options for church ID: ${churchId}`);
+      
+      res.json(options);
+    } catch (error) {
+      console.error('Error fetching service options:', error);
+      res.status(500).json({ message: 'Failed to fetch service options' });
+    }
+  });
+  
+  // Report Recipients endpoints
+  app.get('/api/report-recipients', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      console.log(`Fetching report recipients for church ID: ${churchId}`);
+      const recipients = await storage.getReportRecipients(churchId);
+      console.log(`Found ${recipients.length} report recipients for church ID: ${churchId}`);
+      
+      res.json(recipients);
+    } catch (error) {
+      console.error('Error fetching report recipients:', error);
+      res.status(500).json({ message: 'Failed to fetch report recipients' });
+    }
+  });
+  
+  // Planning Center connection status endpoint
+  app.get('/api/planning-center/status', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      console.log(`Checking Planning Center connection status for church ID: ${churchId}`);
+      const tokens = await storage.getPlanningCenterTokens(user.id, churchId);
+      
+      if (tokens) {
+        console.log(`Planning Center connection found for church ID: ${churchId}`);
+        res.json({
+          connected: true,
+          lastSyncDate: tokens.lastSyncDate?.toISOString() || null,
+          peopleCount: tokens.peopleCount || 0
+        });
+      } else {
+        console.log(`No Planning Center connection found for church ID: ${churchId}`);
+        res.json({ connected: false });
+      }
+    } catch (error) {
+      console.error('Error checking Planning Center connection status:', error);
+      res.status(500).json({ message: 'Failed to check Planning Center connection status' });
+    }
+  });
+  
   // SendGrid configuration endpoints for global admin
   app.get('/api/global-admin/integrations/sendgrid', requireGlobalAdmin, async (req, res) => {
     try {
