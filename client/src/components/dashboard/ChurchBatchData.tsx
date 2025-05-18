@@ -52,19 +52,44 @@ const formatSafeDate = (dateStr: string | Date | null | undefined) => {
 export function ChurchBatchData() {
   const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Fetch all batches for the church
-  const { data: batches, isLoading: isBatchesLoading } = useQuery<Batch[]>({
-    queryKey: ['/api/batches'],
+  // Fetch finalized batches directly using our fix endpoint
+  const { data: finalizedBatches, isLoading: isBatchesLoading } = useQuery<Batch[]>({
+    queryKey: ['/fix-batches/finalized'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/fix-batches/finalized');
+        if (!response.ok) {
+          throw new Error('Failed to fetch finalized batches');
+        }
+        const data = await response.json();
+        console.log("Finalized batches for trend:", data?.map((b: Batch) => ({
+          id: b.id,
+          name: b.name,
+          amount: b.totalAmount,
+          date: b.date,
+          status: b.status
+        })));
+        return data || [];
+      } catch (err) {
+        console.error('Error fetching finalized batches:', err);
+        return [];
+      }
+    },
     retry: 3,
     refetchOnMount: true
   });
   
-  // Fetch latest finalized batch
-  const { data: lastFinalizedBatch, isLoading: isLatestLoading } = useQuery<Batch>({
-    queryKey: ['/api/batches/latest-finalized'],
-    retry: 3,
-    refetchOnMount: true
-  });
+  // Get the latest finalized batch (already sorted by date DESC)
+  const lastFinalizedBatch = finalizedBatches && finalizedBatches.length > 0 
+    ? finalizedBatches[0] 
+    : undefined;
+  
+  // Additional log to check the latest batch
+  useEffect(() => {
+    if (lastFinalizedBatch) {
+      console.log("Latest finalized batch:", lastFinalizedBatch.id, lastFinalizedBatch.totalAmount);
+    }
+  }, [lastFinalizedBatch]);
   
   // Fetch total donations amount for this church
   const { data: totalDonationsData } = useQuery<{total: number}>({
@@ -73,29 +98,20 @@ export function ChurchBatchData() {
     refetchOnMount: true
   });
   
-  // Convert batches to properly typed array
-  const churchBatches = Array.isArray(batches) ? batches : [];
+  // No longer needed since we're using finalizedBatches directly
   
-  // Calculate trend when data is available
+  // Calculate trend when finalized batches are available
   useEffect(() => {
-    if (!churchBatches || churchBatches.length < 2) {
+    if (!finalizedBatches || finalizedBatches.length < 2) {
       // Set default trend if we don't have enough data
       setTrend({ percentage: 10, trending: 'up' });
       return;
     }
     
     try {
-      // Get all finalized batches
-      const finalizedBatches = churchBatches
-        .filter(batch => batch.status === 'FINALIZED' && batch.totalAmount)
-        .sort((a, b) => {
-          const dateA = new Date(a.date || new Date());
-          const dateB = new Date(b.date || new Date());
-          return dateB.getTime() - dateA.getTime();
-        });
-      
+      // Batches are already finalized and sorted by date DESC from the API
       if (finalizedBatches.length >= 2) {
-        // We have at least 2 finalized batches to compare
+        // Basic comparison between most recent and previous batch
         const latestBatch = finalizedBatches[0];
         const previousBatch = finalizedBatches[1];
         
@@ -113,12 +129,46 @@ export function ChurchBatchData() {
           // Default if previous amount is zero
           setTrend({ percentage: 10, trending: 'up' });
         }
+      } else if (finalizedBatches.length >= 5) {
+        // More sophisticated: Average the previous 4 batches to compare with latest
+        const latestBatch = finalizedBatches[0];
+        const previousBatches = finalizedBatches.slice(1, 5); // Get batches 1-4 (indexes 1,2,3,4)
+        
+        const latestAmount = parseFloat(latestBatch.totalAmount?.toString() || '0');
+        const previousAmounts = previousBatches.map(b => parseFloat(b.totalAmount?.toString() || '0'));
+        
+        // Calculate average of previous batches
+        const averagePreviousAmount = previousAmounts.reduce((sum, amount) => sum + amount, 0) / previousAmounts.length;
+        
+        console.log("Previous 4 batches:", previousBatches.map(b => ({
+          id: b.id,
+          amount: b.totalAmount
+        })));
+        
+        if (averagePreviousAmount > 0) {
+          const percentageChange = ((latestAmount - averagePreviousAmount) / averagePreviousAmount) * 100;
+          
+          console.log("Calculated trend using average of last few batches:", {
+            latestAmount,
+            averagePreviousAmount,
+            percentageChange,
+            numberOfBatchesAveraged: previousBatches.length
+          });
+          
+          setTrend({
+            percentage: Math.abs(percentageChange),
+            trending: percentageChange >= 0 ? 'up' : 'down'
+          });
+        } else {
+          // Default if average is zero
+          setTrend({ percentage: 10, trending: 'up' });
+        }
       }
     } catch (error) {
       console.error("Error calculating trend:", error);
       setTrend({ percentage: 10, trending: 'up' }); // Default on error
     }
-  }, [churchBatches]);
+  }, [finalizedBatches]);
   
   if (isBatchesLoading || isLatestLoading) {
     return (
