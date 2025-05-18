@@ -152,7 +152,7 @@ export interface IStorage {
   
   // Planning Center operations
   getPlanningCenterTokens(userId: string, churchId: string): Promise<PlanningCenterTokens | undefined>;
-  getAnyPlanningCenterTokensForChurch(churchId: string): Promise<PlanningCenterTokens | undefined>;
+  getPlanningCenterTokensByChurchId(churchId: string): Promise<PlanningCenterTokens | undefined>;
   savePlanningCenterTokens(data: InsertPlanningCenterTokens): Promise<PlanningCenterTokens>;
   deletePlanningCenterTokens(userId: string, churchId: string): Promise<void>;
   updatePlanningCenterLastSync(userId: string, churchId: string): Promise<void>;
@@ -2358,11 +2358,11 @@ PlateSync Reporting System
     }
   }
   
-  async getAnyPlanningCenterTokensForChurch(churchId: string): Promise<PlanningCenterTokens | undefined> {
+  async getPlanningCenterTokensByChurchId(churchId: string): Promise<PlanningCenterTokens | undefined> {
     try {
-      console.log(`Looking for any Planning Center tokens for church ID: ${churchId}`);
+      console.log(`Looking for Planning Center tokens for church ID: ${churchId}`);
       
-      // Find any token for this church
+      // Find any token for this church - focusing only on church ID
       const [tokens] = await db
         .select()
         .from(planningCenterTokens)
@@ -2372,12 +2372,12 @@ PlateSync Reporting System
       if (tokens) {
         console.log(`Found Planning Center tokens for church ID: ${churchId} (belongs to user: ${tokens.userId})`);
       } else {
-        console.log(`No Planning Center tokens found for any user in church ID: ${churchId}`);
+        console.log(`No Planning Center tokens found for church ID: ${churchId}`);
       }
       
       return tokens;
     } catch (error) {
-      console.error("Error in getAnyPlanningCenterTokensForChurch:", error);
+      console.error("Error in getPlanningCenterTokensByChurchId:", error);
       return undefined;
     }
   }

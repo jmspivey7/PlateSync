@@ -306,14 +306,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Checking Planning Center connection status for church ID: ${churchId}`);
       
-      // First try to get tokens for the current user
-      let tokens = await storage.getPlanningCenterTokens(user.id, churchId);
-      
-      // If no tokens found for current user, check if any tokens exist for this church
-      if (!tokens) {
-        console.log(`No tokens found for current user ${user.id}, checking for any church tokens`);
-        tokens = await storage.getAnyPlanningCenterTokensForChurch(churchId);
-      }
+      // Check if any Planning Center tokens exist for this church (regardless of user)
+      const tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
       
       if (tokens) {
         console.log(`Planning Center connection found for church ID: ${churchId}`);
