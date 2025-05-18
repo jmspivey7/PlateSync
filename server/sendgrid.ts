@@ -560,7 +560,7 @@ Hello ${userName},
 We received a request to reset your password for PlateSync. If you did not make this request, please ignore this email.
       
 To reset your password, please click on the link below:
-${params.resetLink}
+${params.resetUrl}
       
 This link will expire in 1 hour.
       
@@ -570,36 +570,37 @@ Sincerely,
 The PlateSync Team
     `;
     
-    // HTML version of the email
+    // HTML version of the email with PlateSync branding (logo and green color scheme)
     const html = `
-<div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-  <div style="background-color: #69ad4c; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="color: white; margin: 0;">PlateSync Password Reset</h1>
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+  <div style="padding: 20px; text-align: center;">
+    <img src="https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/739cc76d-9a1c-49b8-81d4-debf5f1bb208/PlateSync+Logo.png" alt="PlateSync Logo" style="width: 270px; margin: 0 auto;">
   </div>
   
-  <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p>Hello ${userName},</p>
+  <!-- Main Content -->
+  <div style="padding: 0 30px 30px;">
+    <p style="margin-top: 0;">Hello ${userName},</p>
     
-    <p>We received a request to reset your password for PlateSync. If you did not make this request, you can safely ignore this email.</p>
+    <p>We received a request to reset the password for your PlateSync account.</p>
     
-    <p>To reset your password, please click on the button below:</p>
+    <p>To set a new password, please click the button below:</p>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${params.resetLink}" style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Reset Your Password</a>
+      <a href="${params.resetUrl}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
     </div>
     
     <p>Or copy and paste this link into your browser:</p>
-    <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 14px;">${params.resetLink}</p>
+    <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 14px;">${params.resetUrl}</p>
     
-    <p><strong>Note:</strong> This link will expire in 1 hour.</p>
+    <p><strong>Note:</strong> This link will expire in 1 hour for security reasons.</p>
     
-    <p>If you have any questions or need assistance, please contact your church administrator.</p>
-    
-    <p style="margin-top: 30px;">Sincerely,<br>The PlateSync Team</p>
-  </div>
-  
-  <div style="text-align: center; color: #718096; font-size: 12px; margin-top: 20px;">
     <p>If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
   </div>
 </div>
     `;

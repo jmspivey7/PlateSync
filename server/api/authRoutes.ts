@@ -60,17 +60,23 @@ router.post("/forgot-password", async (req, res) => {
     console.log(`Reset URL: ${resetUrl}`);
     
     // Send email with password reset link
-    const emailSent = await sendPasswordResetEmail({
-      to: user.email || '',
-      resetUrl: resetUrl,
-      firstName: user.firstName || '',
-      lastName: user.lastName || ''
-    });
-    
-    if (emailSent) {
-      console.log(`Password reset email sent to ${user.email}`);
-    } else {
-      console.error(`Failed to send password reset email to ${user.email}`);
+    console.log(`Attempting to send password reset email to ${user.email} with URL: ${resetUrl}`);
+    try {
+      const emailSent = await sendPasswordResetEmail({
+        to: user.email || '',
+        resetUrl: resetUrl,
+        firstName: user.firstName || '',
+        lastName: user.lastName || ''
+      });
+      
+      if (emailSent) {
+        console.log(`✅ Password reset email successfully sent to ${user.email}`);
+      } else {
+        console.error(`❌ Failed to send password reset email to ${user.email}`);
+        // We still return success to the client for security reasons
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending password reset email:', emailError);
       // We still return success to the client for security reasons
     }
     
