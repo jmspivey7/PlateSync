@@ -50,31 +50,31 @@ const formatSafeDate = (dateStr: string | Date | null | undefined) => {
 };
 
 export function ChurchBatchData() {
-  const [trend, setTrend] = useState({ percentage: 12.5, trending: 'up' });
+  const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Direct hardcoded data from database query results for church ID 40829937
-  // This is a temporary fix until the API endpoints are working correctly
-  const lastFinalizedBatch = {
-    id: 119,
-    name: "Morning Service, May 4, 2025",
-    date: "2025-05-04",
-    status: "FINALIZED",
-    totalAmount: 3320.00,
-    churchId: "40829937",
-    service: "morning-service",
-    primaryAttestorName: "John Spivey",
-    secondaryAttestorName: "Test User"
-  } as Batch;
+  // Fetch all batches for the church
+  const { data: batches, isLoading: isBatchesLoading } = useQuery<Batch[]>({
+    queryKey: ['/api/batches'],
+    retry: 3,
+    refetchOnMount: true
+  });
   
-  // Simulating 14 batches based on database query
-  const churchBatches = [lastFinalizedBatch] as Batch[];
+  // Fetch latest finalized batch
+  const { data: lastFinalizedBatch, isLoading: isLatestLoading } = useQuery<Batch>({
+    queryKey: ['/api/batches/latest-finalized'],
+    retry: 3,
+    refetchOnMount: true
+  });
   
-  // Simulating loading states
-  const isBatchesLoading = false;
-  const isLatestLoading = false;
+  // Fetch total donations amount for this church
+  const { data: totalDonationsData } = useQuery<{total: number}>({
+    queryKey: ['/api/batches/total'],
+    retry: 3,
+    refetchOnMount: true
+  });
   
-  // Total donations from database
-  const totalDonationsData = { total: 3320.00 };
+  // Convert batches to properly typed array
+  const churchBatches = Array.isArray(batches) ? batches : [];
   
   // Calculate trend when data is available
   useEffect(() => {
