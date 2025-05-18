@@ -45,6 +45,7 @@ import { setupTestEndpoints } from "./test-endpoints";
 import { setupPlanningCenterRoutes } from "./planning-center";
 import { requireGlobalAdmin, restrictSuspendedChurchAccess } from "./middleware/globalAdminMiddleware";
 import globalAdminRoutes from "./api/globalAdmin";
+import authRoutes from "./api/authRoutes";
 import { eq, sql, and, or, inArray } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as fs from "fs";
