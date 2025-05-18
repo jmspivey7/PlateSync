@@ -1002,7 +1002,7 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     try {
       // Get tokens using only the church ID, not tied to a specific user ID
-      const tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
+      let tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
       
       if (!tokens) {
         return res.status(403).send('Planning Center not connected');
@@ -1013,6 +1013,8 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log('Planning Center token expired, refreshing...');
         try {
           await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+          // Get the updated tokens after refresh
+          tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
           console.log('Successfully refreshed Planning Center token');
         } catch (refreshError) {
           console.error('Error refreshing Planning Center token:', refreshError);
@@ -1062,18 +1064,24 @@ export function setupPlanningCenterRoutes(app: Express) {
         pageCount++;
         console.log(`Fetching Planning Center people page ${pageCount}...`);
         
-        // Extract the path from the next page URL
-        const apiPath: string = nextPageUrl.replace(PLANNING_CENTER_API_BASE, '');
-        
-        const peopleResponse: any = await axios.get(`${PLANNING_CENTER_API_BASE}${apiPath}`, {
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-          }
-        });
-        
-        // Add this page of people to our collection
-        const people = peopleResponse.data.data;
-        allPeople = allPeople.concat(people);
+        try {
+          // Extract the path from the next page URL
+          const apiPath: string = nextPageUrl.replace(PLANNING_CENTER_API_BASE, '');
+          
+          console.log(`Making API request to ${PLANNING_CENTER_API_BASE}${apiPath}`);
+          console.log(`Using access token: ${tokens.accessToken.substring(0, 15)}...`);
+          
+          const peopleResponse: any = await axios.get(`${PLANNING_CENTER_API_BASE}${apiPath}`, {
+            headers: {
+              Authorization: `Bearer ${tokens.accessToken}`
+            }
+          });
+          
+          console.log('API request successful');
+          
+          // Add this page of people to our collection
+          const people = peopleResponse.data.data;
+          allPeople = allPeople.concat(people);
         
         // Set up for next page if available
         nextPageUrl = peopleResponse.data.links?.next || null;
