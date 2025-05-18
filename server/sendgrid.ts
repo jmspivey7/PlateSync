@@ -534,15 +534,24 @@ interface PasswordResetEmailParams {
 export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<boolean> {
   console.log('\n📧 Starting password reset email function...');
   
-  // Check if SendGrid API key is set
-  if (!process.env.SENDGRID_API_KEY) {
-    console.error('❌ SendGrid API key is not set! Cannot send password reset email.');
+  // First try to get SendGrid settings from database (Global Admin settings)
+  const dbApiKey = await storage.getSystemConfig('SENDGRID_API_KEY');
+  const dbFromEmail = await storage.getSystemConfig('SENDGRID_FROM_EMAIL');
+  
+  // Use database values or fall back to environment variables
+  const apiKey = dbApiKey || process.env.SENDGRID_API_KEY;
+  const fromEmail = dbFromEmail || process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
+  
+  // Check if SendGrid API key is available
+  if (!apiKey) {
+    console.error('❌ SendGrid API key is not set in Global Admin settings or environment! Cannot send password reset email.');
     return false;
   }
   
-  // Get sender email from environment variable with fallback
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
-  console.log(`📧 Using sender email: ${fromEmail}`);
+  // Set the API key dynamically for this specific email send
+  mailService.setApiKey(apiKey);
+  
+  console.log(`📧 Using sender email from Global Admin settings: ${fromEmail}`);
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
