@@ -974,11 +974,27 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       console.log('Planning Center API responded successfully');
       
-      // Return connection status with people count if available
+      // Return connection status with people count
+      // First check if we have a stored people count in the database
+      // This count is updated during imports and stays accurate between sessions
+      const databasePeopleCount = typeof tokens.peopleCount === 'number' ? tokens.peopleCount : 0;
+      
+      // Also get live count from API response
+      const livePeopleCount = peopleResponse.data.meta?.total_count || 0;
+      
+      // Use the database count if available, otherwise use the live count
+      const finalPeopleCount = databasePeopleCount > 0 ? databasePeopleCount : livePeopleCount;
+      
+      console.log('Planning Center people counts:', {
+        databaseCount: databasePeopleCount,
+        liveApiCount: livePeopleCount,
+        finalCount: finalPeopleCount
+      });
+      
       res.status(200).json({
         connected: true,
-        lastSyncDate: tokens.updatedAt?.toISOString(),
-        peopleCount: peopleResponse.data.meta?.total_count || 0
+        lastSyncDate: tokens.lastSyncDate ? tokens.lastSyncDate.toISOString() : tokens.updatedAt?.toISOString(),
+        peopleCount: finalPeopleCount
       });
     } catch (error) {
       console.error('Error fetching Planning Center status:', error);
