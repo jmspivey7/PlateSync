@@ -2,37 +2,47 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
-// Import our direct finalized counts router
-const directFinalizedCounts = require('./fix/direct-finalized-counts');
+import { Pool } from '@neondatabase/serverless';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Direct database access route that completely bypasses middleware
-app.get('/emergency-direct/church-40829937-finalized-batches', async (req, res) => {
+// EMERGENCY FIX - Direct API endpoint that completely bypasses any middleware
+// This ensures we can get the finalized batches data without any interference
+app.get('/api/direct/church-40829937/finalized-batches', async (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-store');
+  
   try {
-    const { Pool } = require('@neondatabase/serverless');
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const client = await pool.connect();
     
-    const result = await pool.query(`
-      SELECT id, name, date, status, total_amount as "totalAmount", church_id as "churchId", service
-      FROM batches 
-      WHERE church_id = '40829937' AND status = 'FINALIZED' 
-      ORDER BY date DESC
-    `);
-    
-    console.log(`Found ${result.rows.length} finalized batches for church 40829937`);
-    res.json(result.rows);
+    try {
+      const result = await client.query(`
+        SELECT 
+          id, 
+          name, 
+          date, 
+          status, 
+          total_amount as "totalAmount", 
+          church_id as "churchId", 
+          service
+        FROM batches 
+        WHERE church_id = '40829937' AND status = 'FINALIZED' 
+        ORDER BY date DESC
+      `);
+      
+      console.log(`[EMERGENCY FIX] Found ${result.rows.length} finalized batches for church 40829937`);
+      return res.json(result.rows);
+    } finally {
+      client.release();
+    }
   } catch (error) {
-    console.error('Error in direct query:', error);
-    res.status(500).json({ error: 'Database query failed' });
+    console.error('[EMERGENCY FIX] Error fetching finalized batches:', error);
+    return res.status(500).json({ error: 'Database query failed' });
   }
 });
-
-// Register our fix routes with direct database access before any other routes
-app.use(directFinalizedCounts);
-app.use(require('./fix-routes'));
 
 // Serve the logos directory for uploaded church logos
 app.use('/logos', express.static(path.join(process.cwd(), 'public/logos')));

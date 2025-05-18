@@ -11,9 +11,6 @@ import batchRoutes from './api/batchRoutes';
 import fixChurchBatchesRoutes from './api/fixChurchBatches';
 // Import our direct church data fixes properly using ESM syntax
 import directChurchDataWithPortal from './api/directChurchDataWithPortal';
-import directFinalizedBatches from './api/directFinalizedBatches';
-const directFix = require('./directFix');
-const fixBatchData = require('./fix-batch-data');
 
 // Extend express-session with our user type
 declare global {

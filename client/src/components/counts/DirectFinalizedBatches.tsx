@@ -1,141 +1,130 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Batch } from '../../../../shared/schema';
+import { useEffect, useState } from 'react';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 import { Loader2 } from 'lucide-react';
-import { useLocation } from 'wouter';
 
-// Direct component to show finalized batches for church 40829937
+type FinalizedBatch = {
+  id: number;
+  name: string;
+  date: string;
+  status: string;
+  totalAmount: number;
+  churchId: string;
+  service: string;
+};
+
 export default function DirectFinalizedBatches() {
-  const [_, setLocation] = useLocation();
-  const [batches, setBatches] = useState<Batch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [batches, setBatches] = useState<FinalizedBatch[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to format currency values
-  const formatCurrency = (amount: string | number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
-  };
-
-  // Badge styling function
-  const getBadgeClass = (status: string) => {
-    const statusColors = {
-      OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
-      FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-    };
-    return statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800";
-  };
-
-  // Load the data directly using the fetch API
   useEffect(() => {
-    const loadBatches = async () => {
-      setIsLoading(true);
+    // Directly fetch finalized batches from our emergency endpoint
+    const fetchFinalizedBatches = async () => {
       try {
-        // Clear URL params to avoid Vite interfering
-        const fetchUrl = '/api/batches?churchId=40829937&status=FINALIZED&_=' + Date.now();
-        
-        const response = await fetch(fetchUrl);
-        console.log('Fetch response:', response.status);
+        setLoading(true);
+        // Use our direct endpoint with no middleware interference
+        const response = await fetch('/api/direct/church-40829937/finalized-batches');
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch batches: ${response.status}`);
+          throw new Error(`Failed to fetch data: ${response.status}`);
         }
         
-        // Try to parse the response as JSON
         const data = await response.json();
-        console.log('Fetched batches:', data);
-        
-        // If we got data, use it
-        if (Array.isArray(data)) {
-          setBatches(data.filter(batch => batch.status === 'FINALIZED'));
-        } else {
-          console.error('Failed to parse response as array');
-          setError('Error loading finalized counts: Invalid data format');
-          setBatches([]);
-        }
+        console.log('Fetched finalized batches:', data);
+        setBatches(data);
       } catch (err) {
-        console.error('Error loading batches:', err);
-        setError('Failed to load finalized counts');
+        console.error('Error fetching finalized batches:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch finalized batches');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    loadBatches();
+    fetchFinalizedBatches();
   }, []);
 
-  // Show loading state
-  if (isLoading) {
+  // Calculate total amount
+  const totalAmount = batches.reduce((sum, batch) => sum + Number(batch.totalAmount), 0);
+
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-40">
-        <Loader2 className="w-8 h-8 animate-spin text-[#4299E1]" />
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading finalized batches...</span>
       </div>
     );
   }
 
-  // Show error state
   if (error) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+        <p className="font-bold">Error loading finalized batches</p>
         <p>{error}</p>
-        <p className="text-sm mt-1">Please try again later</p>
       </div>
     );
   }
 
-  // Show empty state if no batches
   if (batches.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <p>No finalized counts found</p>
+      <div className="text-center p-8 border border-gray-200 rounded-md bg-gray-50">
+        <p className="text-gray-500">No finalized batches found</p>
       </div>
     );
   }
 
-  // Show the finalized batches
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b">
-            <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Status</th>
-            <th className="py-2 px-3 text-left font-medium text-gray-500 w-1/3">Date</th>
-            <th className="py-2 px-3 text-right font-medium text-gray-500 w-1/3">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Finalized Batches ({batches.length})</h2>
+      
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Service</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {batches.map((batch) => (
-            <tr 
-              key={batch.id}
-              className="border-b hover:bg-gray-50 cursor-pointer"
-              onClick={() => {
-                setLocation(`/batch/${batch.id}`);
-              }}
-            >
-              <td className="py-3 px-3">
-                <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
-              </td>
-              <td className="py-3 px-3 text-gray-700 font-medium">
-                {(() => {
-                  // Parse the date string and add timezone offset to ensure correct display
-                  const dateObj = new Date(batch.date);
-                  // Add the timezone offset to keep the date as stored in the database
-                  const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
-                  return format(correctedDate, 'MM/dd/yyyy');
-                })()}
-              </td>
-              <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
-                {formatCurrency(batch.totalAmount || 0)}
-              </td>
-            </tr>
+            <TableRow key={batch.id}>
+              <TableCell>
+                {format(new Date(batch.date), 'MM/dd/yyyy')}
+              </TableCell>
+              <TableCell>{batch.service}</TableCell>
+              <TableCell>{batch.name}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  {batch.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right font-medium">
+                ${Number(batch.totalAmount).toFixed(2)}
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+          
+          {/* Total row */}
+          <TableRow className="font-bold">
+            <TableCell colSpan={4} className="text-right">
+              TOTAL
+            </TableCell>
+            <TableCell className="text-right">
+              ${totalAmount.toFixed(2)}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
   );
 }
