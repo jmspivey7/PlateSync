@@ -91,7 +91,7 @@ export async function sendEmail(
   try {
     // We'll attempt to actually send the email in any environment (dev or prod)
     // But first show a preview in the console
-    console.log('\n📧 ========== DONATION EMAIL PREVIEW ==========');
+    console.log('\n📧 ========== EMAIL PREVIEW ==========');
     console.log('📧 To:      ', params.to);
     console.log('📧 From:    ', params.from);
     console.log('📧 Subject: ', params.subject);
@@ -546,6 +546,58 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
+    // First try to fetch the global admin password reset template from the database
+    console.log('📧 Looking for global password reset template (ID 2)');
+    const globalTemplate = await storage.getEmailTemplateById(2);
+    
+    if (globalTemplate) {
+      console.log('📧 Using global password reset template from Global Admin settings');
+      
+      // Format name for personalization
+      const userName = params.firstName ? 
+        `${params.firstName}${params.lastName ? ' ' + params.lastName : ''}` : 
+        'Church Member';
+      
+      // Replace template variables with actual values
+      let subject = globalTemplate.subject || 'Reset Your PlateSync Password';
+      let text = globalTemplate.bodyText || '';
+      let html = globalTemplate.bodyHtml || '';
+      
+      // Replace placeholder variables
+      const replacements: Record<string, string> = {
+        '{{userName}}': userName,
+        '{{resetUrl}}': params.resetUrl,
+        '{{recipientName}}': userName
+      };
+      
+      // Apply all replacements
+      Object.entries(replacements).forEach(([key, value]) => {
+        subject = subject.replace(new RegExp(key, 'g'), value);
+        text = text.replace(new RegExp(key, 'g'), value);
+        html = html.replace(new RegExp(key, 'g'), value);
+      });
+      
+      // Send the email using the template from Global Admin settings
+      const emailSent = await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+      
+      if (emailSent) {
+        console.log(`✅ Password reset email sent successfully to ${params.to}`);
+      } else {
+        console.error(`❌ Failed to send password reset email to ${params.to}`);
+      }
+      
+      return emailSent;
+    }
+    
+    // Fallback to default template if global template not found
+    console.log('⚠️ Global password reset template not found, using default template');
+    
     // Format name for personalization
     const userName = params.firstName ? 
       `${params.firstName}${params.lastName ? ' ' + params.lastName : ''}` : 
