@@ -54,15 +54,15 @@ export function ChurchBatchData() {
   
   // Fetch all batches for church 40829937 specifically
   const { data: churchBatches, isLoading: isBatchesLoading } = useQuery<Batch[]>({
-    queryKey: ['/api/church-batches/40829937'],
-    retry: false,
+    queryKey: ['/api/direct-access/church-batches/40829937'],
+    retry: 3,
     refetchOnMount: true
   });
   
   // Fetch latest finalized batch for church 40829937
   const { data: lastFinalizedBatch, isLoading: isLatestLoading } = useQuery<Batch>({
-    queryKey: ['/api/church-batches/40829937/latest-finalized'],
-    retry: false,
+    queryKey: ['/api/direct-access/church-batches/40829937/latest-finalized'],
+    retry: 3,
     refetchOnMount: true
   });
   
