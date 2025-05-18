@@ -2457,7 +2457,8 @@ PlateSync Reporting System
       await db
         .update(planningCenterTokens)
         .set({
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          lastSyncDate: new Date()
         })
         .where(and(
           eq(planningCenterTokens.userId, userId),
@@ -2465,6 +2466,24 @@ PlateSync Reporting System
         ));
     } catch (error) {
       console.error("Error in updatePlanningCenterLastSync:", error);
+      throw error;
+    }
+  }
+  
+  async updatePlanningCenterImportStats(churchId: string, peopleCount: number): Promise<void> {
+    try {
+      // Update the tokens record for this church with the people count
+      await db
+        .update(planningCenterTokens)
+        .set({
+          peopleCount: peopleCount,
+          updatedAt: new Date()
+        })
+        .where(eq(planningCenterTokens.churchId, churchId));
+        
+      console.log(`Updated Planning Center stats for church ${churchId}: ${peopleCount} people available`);
+    } catch (error) {
+      console.error("Error in updatePlanningCenterImportStats:", error);
       throw error;
     }
   }

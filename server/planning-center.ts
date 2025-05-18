@@ -1178,14 +1178,14 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       console.log(`Finished processing ${allPeople.length} total people from Planning Center`);
       
-      // Check if we found Testerly Jones
+      // Check if we found any test accounts for debugging
       const foundTesterly = allPeople.some(person => 
-        person.attributes.first_name?.toLowerCase() === 'testerly' || 
-        person.attributes.last_name?.toLowerCase() === 'jones'
+        person.attributes?.first_name?.toLowerCase()?.includes('test') || 
+        person.attributes?.last_name?.toLowerCase()?.includes('test')
       );
       
       if (foundTesterly) {
-        console.log('Successfully found Testerly Jones in the imported data!');
+        console.log('Found test account in Planning Center data for import validation');
       }
       
       // Convert Planning Center people to PlateSync members using the gathered data
@@ -1226,15 +1226,15 @@ export function setupPlanningCenterRoutes(app: Express) {
         });
       }
       
-      // For each member, check if one has name "Testerly Jones"
-      const testerly = potentialMembers.find(m => 
-        m.firstName?.toLowerCase() === 'testerly' && 
-        m.lastName?.toLowerCase() === 'jones');
-        
-      if (testerly) {
-        console.log('Found Testerly Jones in the list to import!', testerly);
+      // Log some sample members that will be imported
+      if (potentialMembers.length > 0) {
+        const sampleMembers = potentialMembers.slice(0, 3);
+        console.log(`Sample members to import (showing ${sampleMembers.length} of ${potentialMembers.length}):`);
+        sampleMembers.forEach(member => {
+          console.log(`- ${member.firstName} ${member.lastName} (Email: ${member.email || 'None'}, Phone: ${member.phone || 'None'}, ID: ${member.externalId})`);
+        });
       } else {
-        console.log('Testerly Jones was NOT found in the members to import.');
+        console.log('No valid members found to import. Please check Planning Center permissions and make sure members exist.');
       }
       
       // Filter out invalid members before import (must have both first and last name)
@@ -1248,7 +1248,15 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Update last sync date 
       await storage.updatePlanningCenterLastSync(user.id, churchId);
       
-      res.json({ success: true, importedCount, totalPeopleFound: allPeople.length });
+      // Update connection status with successful import details
+      await storage.updatePlanningCenterImportStats(churchId, validMembers.length);
+      
+      res.json({ 
+        success: true, 
+        importedCount, 
+        totalPeopleFound: allPeople.length,
+        validMembersCount: validMembers.length
+      });
     } catch (error) {
       console.error('Error importing Planning Center members:', error);
       res.status(500).json({ 
