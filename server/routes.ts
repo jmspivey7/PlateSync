@@ -231,6 +231,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Regular user profile routes
   app.use('/api/profile', isAuthenticated, profileRoutes);
   
+  // Member data endpoints
+  app.get('/api/members', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      console.log(`Fetching members for church ID: ${churchId}`);
+      const members = await storage.getMembers(churchId);
+      console.log(`Found ${members.length} members for church ID: ${churchId}`);
+      
+      res.json(members);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      res.status(500).json({ message: 'Failed to fetch members' });
+    }
+  });
+  
   // SendGrid configuration endpoints for global admin
   app.get('/api/global-admin/integrations/sendgrid', requireGlobalAdmin, async (req, res) => {
     try {
