@@ -1103,58 +1103,73 @@ export function setupPlanningCenterRoutes(app: Express) {
       let phonesByPersonId = new Map();
       
       try {
-        // Make a single API request instead of pagination to simplify and debug
+        // Make API requests with pagination to fetch all people
         console.log('Making API request to Planning Center People API');
         console.log(`Using access token: ${tokens.accessToken.substring(0, 10)}...`);
         
-        const response = await axios.get(`${PLANNING_CENTER_API_BASE}/people/v2/people`, {
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-          },
-          params: {
-            include: 'emails,phone_numbers',
-            per_page: 100 // Limit to 100 people for testing
-          }
-        });
+        let nextUrl = `${PLANNING_CENTER_API_BASE}/people/v2/people?include=emails,phone_numbers&per_page=100`;
+        let hasMorePages = true;
+        const maxPages = 20; // Maximum 20 pages (up to 2,000 members)
+        let currentPage = 0;
         
-        console.log('Planning Center API request successful');
-        
-        if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
-          throw new Error('Invalid response format from Planning Center API');
-        }
-        
-        // Add people to our collection
-        allPeople = response.data.data;
-        console.log(`Retrieved ${allPeople.length} people from Planning Center`);
-        
-        // Process included data for emails and phone numbers
-        if (response.data.included && Array.isArray(response.data.included)) {
-          console.log(`Processing ${response.data.included.length} included records`);
+        // Fetch all pages of people
+        while (hasMorePages && nextUrl && currentPage < maxPages) {
+          currentPage++;
+          console.log(`Fetching Planning Center people page ${currentPage}`);
           
-          response.data.included.forEach((item: any) => {
-            if (!item || !item.type) return;
-            
-            if (item.type === 'Email') {
-              const personId = item.relationships?.person?.data?.id;
-              if (personId && item.attributes?.address) {
-                if (!emailsByPersonId.has(personId)) {
-                  emailsByPersonId.set(personId, []);
-                }
-                emailsByPersonId.get(personId).push(item.attributes.address);
-              }
-            } else if (item.type === 'PhoneNumber') {
-              const personId = item.relationships?.person?.data?.id;
-              if (personId && item.attributes?.number) {
-                if (!phonesByPersonId.has(personId)) {
-                  phonesByPersonId.set(personId, []);
-                }
-                phonesByPersonId.get(personId).push(item.attributes.number);
-              }
+          // Make the API request
+          const response = await axios.get(nextUrl, {
+            headers: {
+              Authorization: `Bearer ${tokens.accessToken}`
             }
           });
           
-          console.log(`Processed ${emailsByPersonId.size} people with emails and ${phonesByPersonId.size} with phones`);
+          if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+            throw new Error('Invalid response format from Planning Center API');
+          }
+          
+          // Add people from this page to our collection
+          allPeople = [...allPeople, ...response.data.data];
+          
+          // Process included data for emails and phone numbers
+          if (response.data.included && Array.isArray(response.data.included)) {
+            response.data.included.forEach((item: any) => {
+              if (!item || !item.type) return;
+              
+              if (item.type === 'Email') {
+                const personId = item.relationships?.person?.data?.id;
+                if (personId && item.attributes?.address) {
+                  if (!emailsByPersonId.has(personId)) {
+                    emailsByPersonId.set(personId, []);
+                  }
+                  emailsByPersonId.get(personId).push(item.attributes.address);
+                }
+              } else if (item.type === 'PhoneNumber') {
+                const personId = item.relationships?.person?.data?.id;
+                if (personId && item.attributes?.number) {
+                  if (!phonesByPersonId.has(personId)) {
+                    phonesByPersonId.set(personId, []);
+                  }
+                  phonesByPersonId.get(personId).push(item.attributes.number);
+                }
+              }
+            });
+          }
+          
+          // Check if there are more pages
+          nextUrl = response.data.links?.next || null;
+          hasMorePages = !!nextUrl;
+          
+          console.log(`Retrieved ${response.data.data.length} more people (total so far: ${allPeople.length})`);
+          
+          // If this is the first page, log the total count if available
+          if (currentPage === 1 && response.data.meta?.total_count) {
+            console.log(`Planning Center reports a total of ${response.data.meta.total_count} people`);
+          }
         }
+        
+        console.log(`Planning Center API requests complete, retrieved ${allPeople.length} total people`);
+        console.log(`Processed ${emailsByPersonId.size} people with emails and ${phonesByPersonId.size} with phones`);
       } catch (apiError: any) {
         console.error('Error fetching people from Planning Center:', apiError.message);
         
