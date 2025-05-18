@@ -52,16 +52,23 @@ const formatSafeDate = (dateStr: string | Date | null | undefined) => {
 export function ChurchBatchData() {
   const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Fetch all batches for church 40829937 specifically using our direct fix endpoint
+  // Fetch all batches for church 40829937 using our direct fix endpoint with guaranteed JSON response
   const { data: churchBatches, isLoading: isBatchesLoading } = useQuery<Batch[]>({
-    queryKey: ['/api/fix-church-40829937/batches'],
+    queryKey: ['/api/direct/40829937/batches'],
     retry: 3,
     refetchOnMount: true
   });
   
   // Fetch latest finalized batch for church 40829937 using our direct fix endpoint
   const { data: lastFinalizedBatch, isLoading: isLatestLoading } = useQuery<Batch>({
-    queryKey: ['/api/fix-church-40829937/latest-finalized'],
+    queryKey: ['/api/direct/40829937/latest-finalized'],
+    retry: 3,
+    refetchOnMount: true
+  });
+  
+  // Fetch total donations amount for this church
+  const { data: totalDonationsData } = useQuery<{total: number}>({
+    queryKey: ['/api/direct/40829937/total'],
     retry: 3,
     refetchOnMount: true
   });
