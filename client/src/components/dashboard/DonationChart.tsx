@@ -310,32 +310,71 @@ export function DonationChart() {
   console.log("Recent batches for chart:", recentBatches.map(b => b.id));
 
   // Calculate cash and check totals for each batch
-  const chartData = recentBatches.map(batch => {
-    // Get donations for this batch from our fetched data
-    const donations = (batchDonations && batchDonations[batch.id]) || [];
-    console.log(`Batch ${batch.id} donations:`, donations);
-    
-    // Calculate cash and check totals
-    const cashTotal = donations
-      .filter((d: Donation) => d.donationType === "CASH")
-      .reduce((sum: number, d: Donation) => sum + parseFloat(d.amount.toString()), 0);
-    
-    const checkTotal = donations
-      .filter((d: Donation) => d.donationType === "CHECK")
-      .reduce((sum: number, d: Donation) => sum + parseFloat(d.amount.toString()), 0);
+  const chartData = (() => {
+    try {
+      // If we have no batches or donations data, create a fallback with the latest batch data only
+      if (!recentBatches || recentBatches.length === 0) {
+        console.log("No batches available for chart data");
+        return [];
+      }
+      
+      // Create chart data from batches and donations
+      const data = recentBatches.map(batch => {
+        // Get donations for this batch from our fetched data
+        const donations = (batchDonations && batchDonations[batch.id]) || [];
+        console.log(`Processing batch ${batch.id} with ${donations.length} donations`);
+        
+        // Calculate cash and check totals with safety checks
+        let cashTotal = 0;
+        let checkTotal = 0;
+        
+        if (Array.isArray(donations)) {
+          cashTotal = donations
+            .filter((d: Donation) => d.donationType === "CASH")
+            .reduce((sum: number, d: Donation) => {
+              const amount = parseFloat(d.amount?.toString() || '0');
+              return sum + (isNaN(amount) ? 0 : amount);
+            }, 0);
+          
+          checkTotal = donations
+            .filter((d: Donation) => d.donationType === "CHECK")
+            .reduce((sum: number, d: Donation) => {
+              const amount = parseFloat(d.amount?.toString() || '0');
+              return sum + (isNaN(amount) ? 0 : amount);
+            }, 0);
+        } else {
+          console.warn(`Donations for batch ${batch.id} is not an array:`, donations);
+        }
 
-    // Ensure date is displayed correctly by adjusting for timezone offset
-    const dateObj = new Date(batch.date);
-    const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
-    
-    return {
-      date: format(correctedDate, 'MMM d'),
-      cash: cashTotal,
-      check: checkTotal,
-      // Store the full date for tooltip
-      fullDate: format(correctedDate, 'MMMM d, yyyy')
-    };
-  });
+        // Use direct batch total as fallback if no donation details
+        if (cashTotal === 0 && checkTotal === 0 && batch.totalAmount) {
+          // If no donation breakdown is available, use the total amount as check total
+          // This ensures we at least have a value for display
+          checkTotal = parseFloat(batch.totalAmount.toString());
+        }
+
+        // Ensure date is displayed correctly by adjusting for timezone offset
+        const dateObj = new Date(batch.date || new Date());
+        const correctedDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+        
+        return {
+          id: batch.id,
+          date: format(correctedDate, 'MMM d'),
+          cash: cashTotal,
+          check: checkTotal,
+          total: cashTotal + checkTotal,
+          // Store the full date for tooltip
+          fullDate: format(correctedDate, 'MMMM d, yyyy')
+        };
+      });
+      
+      console.log("Processed chart data:", data);
+      return data;
+    } catch (error) {
+      console.error("Error generating chart data:", error);
+      return [];
+    }
+  })();
 
   // Calculate trend percentage
   const calculateTrend = () => {
@@ -385,7 +424,7 @@ export function DonationChart() {
         </Button>
       </CardHeader>
       <CardContent className="relative pb-6">
-        <ChartContainer config={chartConfig} className="h-[300px]">
+        <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={chartData}
@@ -413,9 +452,9 @@ export function DonationChart() {
                 iconType="circle" 
                 iconSize={8}
                 wrapperStyle={{ 
-                  visibility: 'hidden', 
-                  height: 0, 
-                  position: 'absolute' 
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  marginTop: '10px',
                 }} 
               />
               <Area
@@ -423,8 +462,8 @@ export function DonationChart() {
                 dataKey="cash"
                 name="Cash"
                 stackId="1"
-                stroke="var(--color-cash)"
-                fill="var(--color-cash)"
+                stroke="#69ad4c"
+                fill="#69ad4c"
                 fillOpacity={0.4}
               />
               <Area
@@ -432,13 +471,13 @@ export function DonationChart() {
                 dataKey="check"
                 name="Check"
                 stackId="1"
-                stroke="var(--color-check)"
-                fill="var(--color-check)"
+                stroke="#3b82f6"
+                fill="#3b82f6"
                 fillOpacity={0.4}
               />
             </AreaChart>
           </ResponsiveContainer>
-        </ChartContainer>
+        </div>
       </CardContent>
       <CardFooter className="pt-2 pb-3">
         <div className="flex w-full justify-between items-center">
