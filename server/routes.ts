@@ -9,6 +9,9 @@ import globalAdminProfileRoutes from './api/globalAdminProfileRoutes';
 import profileRoutes from './api/profileRoutes';
 import batchRoutes from './api/batchRoutes';
 import fixChurchBatchesRoutes from './api/fixChurchBatches';
+// Import our direct church data fixes
+const directChurchDataFix = require('./fix/direct-church-data');
+import directChurchDataWithPortal from './api/directChurchDataWithPortal';
 
 // Extend express-session with our user type
 declare global {
@@ -201,6 +204,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register fix routes for church 40829937
   app.use('/api', fixChurchBatchesRoutes);
+  
+  // Register our direct fix routes for church 40829937 batches
+  app.use('/api', directChurchDataFix);
   
   // Add logout routes (supports both GET and POST)
   const handleLogout = (req: Request, res: Response) => {

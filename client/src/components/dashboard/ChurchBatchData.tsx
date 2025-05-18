@@ -52,16 +52,16 @@ const formatSafeDate = (dateStr: string | Date | null | undefined) => {
 export function ChurchBatchData() {
   const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Fetch all batches for church 40829937 specifically
+  // Fetch all batches for church 40829937 specifically using our direct fix endpoint
   const { data: churchBatches, isLoading: isBatchesLoading } = useQuery<Batch[]>({
-    queryKey: ['/api/direct-access/church-batches/40829937'],
+    queryKey: ['/api/fix-church-40829937/batches'],
     retry: 3,
     refetchOnMount: true
   });
   
-  // Fetch latest finalized batch for church 40829937
+  // Fetch latest finalized batch for church 40829937 using our direct fix endpoint
   const { data: lastFinalizedBatch, isLoading: isLatestLoading } = useQuery<Batch>({
-    queryKey: ['/api/direct-access/church-batches/40829937/latest-finalized'],
+    queryKey: ['/api/fix-church-40829937/latest-finalized'],
     retry: 3,
     refetchOnMount: true
   });
