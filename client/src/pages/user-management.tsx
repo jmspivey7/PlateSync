@@ -289,9 +289,14 @@ const UserManagement = () => {
         title: "User deleted",
         description: "User has been deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
+      
+      // Close all related dialogs
       setDeleteDialogOpen(false);
+      setUserDetailsOpen(false);
       setSelectedUserId(null);
+      
+      // Refresh the user list
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
     },
     onError: (error: any) => {
       console.error("Delete user error:", error);
@@ -372,14 +377,25 @@ const UserManagement = () => {
     mutate({ userId, role });
   };
   
-  // Filter users based on search query
+  // Filter users based on search query and active status
   const filteredUsers = users?.filter(user => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      (user.email && user.email.toLowerCase().includes(searchLower)) ||
-      (user.firstName && user.firstName.toLowerCase().includes(searchLower)) ||
-      (user.lastName && user.lastName.toLowerCase().includes(searchLower))
-    );
+    // First filter out inactive users (with INACTIVE_ email prefix)
+    if (user.email && user.email.startsWith('INACTIVE_')) {
+      return false;
+    }
+    
+    // Then apply search filter if there's a query
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        (user.email && user.email.toLowerCase().includes(searchLower)) ||
+        (user.firstName && user.firstName.toLowerCase().includes(searchLower)) ||
+        (user.lastName && user.lastName.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // If no search query, include all active users
+    return true;
   }) || [];
   
   // If not admin, redirect or show error

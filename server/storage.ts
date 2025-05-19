@@ -1132,7 +1132,20 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
-      console.log(`Deleting user with ID: ${id}`);
+      console.log(`Checking if user ${id} has attestation records...`);
+      
+      // Check if user has attestation records (was involved in batch counts)
+      const hasAttestations = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(batches)
+        .where(
+          or(
+            eq(batches.primaryAttestorId, id),
+            eq(batches.secondaryAttestorId, id),
+            eq(batches.attestationConfirmedBy, id)
+          )
+        )
+        .then(result => result[0]?.count > 0);
       
       // Use transaction to ensure data consistency
       await db.transaction(async (tx) => {
@@ -1148,11 +1161,26 @@ export class DatabaseStorage implements IStorage {
           sql`DELETE FROM verification_codes WHERE user_id = ${id}`
         );
         
-        // Remove the user completely
-        await tx.delete(users).where(eq(users.id, id));
+        if (hasAttestations) {
+          // For users with attestation history, mark as inactive by prefixing email
+          console.log(`User ${id} has attestation records - marking as inactive`);
+          await tx
+            .update(users)
+            .set({
+              // Only prefix if not already inactive
+              email: sql`CASE WHEN email NOT LIKE 'INACTIVE_%' THEN CONCAT('INACTIVE_', email) ELSE email END`,
+              isActive: false,
+              updatedAt: new Date()
+            })
+            .where(eq(users.id, id));
+        } else {
+          // For users with no history, completely remove
+          console.log(`User ${id} has no attestation records - removing completely`);
+          await tx.delete(users).where(eq(users.id, id));
+        }
       });
       
-      console.log(`Successfully deleted user: ${id}`);
+      console.log(`Successfully processed user deletion: ${id}`);
       return true;
     } catch (error) {
       console.error(`Error deleting user ${id}:`, error);
