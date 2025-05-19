@@ -341,6 +341,8 @@ const BatchDetailPage = () => {
     setShowDeleteConfirm(true);
   };
   
+  // Using the existing deleteBatchMutation defined above
+  
   const handleDeleteBatch = () => {
     deleteBatchMutation.mutate();
   };
