@@ -163,11 +163,11 @@ const CreateUserForm = ({
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="ADMIN">Administrator</SelectItem>
-                  <SelectItem value="USHER">Usher</SelectItem>
+                  <SelectItem value="STANDARD_USER">Standard User</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
-                Administrators can manage most aspects of the system. Ushers can only record and count donations.
+                Administrators can manage most aspects of the system. Standard Users can only record and count donations.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -607,7 +607,7 @@ const UserManagement = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="ADMIN">Administrator</SelectItem>
-                            <SelectItem value="USHER">Usher</SelectItem>
+                            <SelectItem value="STANDARD_USER">Standard User</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
