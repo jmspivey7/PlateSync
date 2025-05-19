@@ -211,6 +211,54 @@ export default function ChurchDetail() {
       });
     },
   });
+
+  // Mutation for purging church data (both church and users)
+  const purgeChurchMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) throw new Error("Authentication required");
+      
+      const response = await fetch(`/api/global-admin/churches/${id}/purge`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to purge church data");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Church data purged",
+        description: `${church?.name} and all its users have been permanently deleted for testing purposes`,
+      });
+      
+      // Invalidate queries to ensure the churches list is refreshed
+      queryClient.invalidateQueries({ queryKey: ["churches"] });
+      
+      // Redirect back to the churches list
+      setTimeout(() => {
+        setLocation("/global-admin/churches");
+      }, 1500);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Purge failed",
+        description: error.message || "Failed to purge church data",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Function to handle purging church data
+  const purgeChurchData = () => {
+    purgeChurchMutation.mutate();
+  };
   
   const handleStatusChange = (newStatus: string) => {
     updateStatusMutation.mutate(newStatus);
@@ -379,6 +427,32 @@ export default function ChurchDetail() {
                     Reactivate Church
                   </Button>
                 ) : null}
+                
+                {/* Purge Data Button */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button className="bg-purple-600 hover:bg-purple-700 text-white">Purge Data</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Purge Church Data</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        <p className="text-red-600 font-semibold mb-2">WARNING: This is a destructive testing action!</p>
+                        <p>This will permanently delete {church?.name} AND all associated users from the database.</p>
+                        <p className="mt-2">This action is for testing purposes only and CANNOT be undone.</p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        className="bg-purple-600 hover:bg-purple-700"
+                        onClick={() => purgeChurchData()}
+                      >
+                        Purge Data
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
