@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User, Eye, EyeOff, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
