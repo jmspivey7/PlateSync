@@ -401,11 +401,16 @@ router.delete("/churches/:id/purge", requireGlobalAdmin, async (req, res) => {
       );
       console.log(`Deleted members`);
       
-      // Delete users associated with the church
-      await db.execute(
-        `DELETE FROM users WHERE church_id = '${id}'`
+      // First get the church details for account_owner_id
+      const churchDetails = await db.execute(
+        `SELECT * FROM churches WHERE id = '${id}'`
       );
-      console.log(`Deleted users`);
+      
+      // Set account_owner_id to NULL to remove foreign key constraint
+      await db.execute(
+        `UPDATE churches SET account_owner_id = NULL WHERE id = '${id}'`
+      );
+      console.log(`Removed account owner reference`);
       
       // Delete sessions associated with users
       // The sessions table stores session data in JSON format
@@ -415,6 +420,12 @@ router.delete("/churches/:id/purge", requireGlobalAdmin, async (req, res) => {
         );
         console.log(`Deleted user sessions`);
       }
+      
+      // Now delete users associated with the church
+      await db.execute(
+        `DELETE FROM users WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted users`);
       
       // Finally, delete the church itself
       await db.execute(
