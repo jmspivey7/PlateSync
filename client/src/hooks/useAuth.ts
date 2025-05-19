@@ -38,8 +38,21 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       try {
-        const response = await apiRequest<any>("/api/login-local", "POST", credentials);
-        return response;
+        const response = await fetch("/api/login-local", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(credentials),
+          credentials: "include",
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Login failed");
+        }
+        
+        return await response.json();
       } catch (error) {
         console.error("Login error:", error);
         throw error;
