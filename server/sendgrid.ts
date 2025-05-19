@@ -438,6 +438,17 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
+      // Format user role to convert UPPER_CASE with underscores to Title Case with spaces
+      const formatUserRole = (role: string): string => {
+        if (!role) return 'User';
+        
+        // Convert from UPPER_CASE to Title Case with spaces
+        return role.toLowerCase()
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      };
+
       // Replace template variables with both formats (old and new)
       const replacements: Record<string, string> = {
         '{{firstName}}': params.firstName,
@@ -450,6 +461,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         '{{resetLink}}': `${params.verificationUrl}?token=${params.verificationToken}`,
         '{{USER_EMAIL}}': params.to,
         '{{USER_ROLE}}': params.role || 'User',
+        '{{formattedUserRole}}': formatUserRole(params.role || 'User'),
         '{{userName}}': `${params.firstName} ${params.lastName}`,
       };
       
