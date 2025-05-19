@@ -131,10 +131,16 @@ router.post('/', async (req, res) => {
       })
       .where(eq(users.id, userId));
     
-    // Invalidate user session to reflect changes
+    // Invalidate user session to reflect changes immediately
     if (req.user) {
-      if (firstName) req.user.firstName = firstName;
-      if (lastName) req.user.lastName = lastName;
+      req.user.firstName = firstName ?? req.user.firstName;
+      req.user.lastName = lastName ?? req.user.lastName;
+      // Save updated session
+      req.session.save((err) => {
+        if (err) {
+          console.error('Error saving session:', err);
+        }
+      });
     }
     
     res.json({ success: true, message: 'Profile updated successfully' });

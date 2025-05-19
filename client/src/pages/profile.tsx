@@ -88,10 +88,18 @@ const Profile = () => {
       return apiRequest('/api/profile', 'POST', data);
     },
     onSuccess: () => {
+      // Invalidate user query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
       toast({
         title: 'Success',
         description: 'Your profile has been updated successfully',
       });
+      
+      // Force window refresh to ensure all components update
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     },
     onError: () => {
       toast({
