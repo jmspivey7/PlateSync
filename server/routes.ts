@@ -2482,6 +2482,40 @@ Sincerely,
   });
 
   // User management endpoints
+  
+  // Delete user endpoint
+  app.delete('/api/users/:userId', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Don't allow deleting self
+      if (req.user.id === userId) {
+        return res.status(400).json({ message: 'You cannot delete your own account' });
+      }
+      
+      // Check if the user exists first
+      const userToDelete = await storage.getUser(userId);
+      if (!userToDelete) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Don't allow deleting account owners unless current user is master admin
+      if ((userToDelete.role === 'ACCOUNT_OWNER' || userToDelete.isAccountOwner) && !req.user.isMasterAdmin) {
+        return res.status(403).json({ message: 'You cannot delete an account owner' });
+      }
+      
+      // Delete the user
+      await storage.deleteUser(userId);
+      
+      // If we get here without an error being thrown, assume success
+      console.log(`Successfully deleted user: ${userId}`);
+      return res.status(200).json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: 'Failed to delete user' });
+    }
+  });
+  
   // Create new user
   app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
