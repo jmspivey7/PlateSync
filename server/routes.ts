@@ -2318,7 +2318,7 @@ Sincerely,
       
       if (!user) {
         console.log(`User not found for email: ${username}`);
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ message: 'No user found with the provided credentials.' });
       }
       
       console.log(`User found: ${user.id}, verifying password...`);
@@ -2327,7 +2327,7 @@ Sincerely,
       const passwordValid = await verifyPassword(password, user.password || '');
       if (!passwordValid) {
         console.log(`Invalid password for user: ${user.id}`);
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ message: 'No user found with the provided credentials.' });
       }
       
       console.log(`Password verified successfully for user: ${user.id}`);
