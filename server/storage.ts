@@ -1151,15 +1151,13 @@ export class DatabaseStorage implements IStorage {
       await db.transaction(async (tx) => {
         // First delete any related records that reference this user
         
-        // Delete any church user relationships
-        await tx.execute(
-          sql`DELETE FROM church_users WHERE user_id = ${id}`
-        );
+        // Delete any verification tokens
+        await tx.delete(verificationTokens)
+          .where(eq(verificationTokens.userId, id));
         
-        // Delete any email verification or password reset tokens
-        await tx.execute(
-          sql`DELETE FROM verification_codes WHERE user_id = ${id}`
-        );
+        // Delete any password reset tokens
+        await tx.delete(passwordResetTokens)
+          .where(eq(passwordResetTokens.userId, id));
         
         if (hasAttestations) {
           // For users with attestation history, mark as inactive by prefixing email
@@ -1169,7 +1167,6 @@ export class DatabaseStorage implements IStorage {
             .set({
               // Only prefix if not already inactive
               email: sql`CASE WHEN email NOT LIKE 'INACTIVE_%' THEN CONCAT('INACTIVE_', email) ELSE email END`,
-              isActive: false,
               updatedAt: new Date()
             })
             .where(eq(users.id, id));
