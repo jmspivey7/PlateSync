@@ -2551,8 +2551,8 @@ Sincerely,
         const verificationUrl = `${req.protocol}://${req.get('host')}/verify-email?token=${newUser.passwordResetToken}`;
         
         // Get church details for the welcome email
-        const churchDetails = await storage.getChurchById(userChurchId);
-        const churchName = churchDetails?.name || 'Your Church';
+        const churchDetails = await storage.getChurch(userChurchId);
+        const churchName = churchDetails?.churchName || 'Your Church';
         
         await sendWelcomeEmail({
           to: newUser.email,
