@@ -460,7 +460,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
         
       if (batch?.churchId) {
-        console.log(`Found churchId ${batch.churchId} from batch for USHER ${userId}`);
+        console.log(`Found churchId ${batch.churchId} from batch for STANDARD_USER ${userId}`);
         
         // Update the user with this churchId for future reference
         await db
@@ -501,7 +501,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       
       if (anyAdmin) {
-        console.log(`Found admin user ${anyAdmin.id} as churchId for USHER ${userId}`);
+        console.log(`Found admin user ${anyAdmin.id} as churchId for STANDARD_USER ${userId}`);
         
         // Update the user with this churchId for future reference
         await db
@@ -513,7 +513,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       // If all else fails, use the user's own ID
-      console.log(`No churchId found for USHER ${userId}, using userId as fallback`);
+      console.log(`No churchId found for STANDARD_USER ${userId}, using userId as fallback`);
       return userId;
     } catch (error) {
       console.error(`Error in getChurchIdForUser: ${error}`);
@@ -643,7 +643,7 @@ export class DatabaseStorage implements IStorage {
   
   async getUsersByChurchId(churchId: string): Promise<User[]> {
     try {
-      // Get both ADMIN and USHER users associated with this church
+      // Get both ADMIN and STANDARD_USER users associated with this church
       // First, get the ADMIN user (church owner)
       const adminId = await this.getAdminIdForChurch(churchId);
       
@@ -945,8 +945,8 @@ export class DatabaseStorage implements IStorage {
       updateData.role = role;
       updateData.isAccountOwner = false;
     } else if (role === "STANDARD") {
-      // Map STANDARD to USHER for backwards compatibility
-      updateData.role = "USHER"; 
+      // Update to STANDARD_USER for consistency with new role naming
+      updateData.role = "STANDARD_USER"; 
       updateData.isAccountOwner = false;
     } else {
       // For any other role, just set it directly
@@ -1066,7 +1066,7 @@ export class DatabaseStorage implements IStorage {
           lastName: userData.lastName || null,
           bio: userData.bio || null,
           profileImageUrl: userData.profileImageUrl || null,
-          role: userData.role || 'USHER',
+          role: userData.role || 'STANDARD_USER',
           password: userData.password || null,
           createdAt: new Date(),
           updatedAt: new Date(),
