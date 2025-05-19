@@ -51,7 +51,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const Profile = () => {
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading, updateLocalProfile } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -107,8 +107,8 @@ const Profile = () => {
       // This ensures the profile changes are reflected immediately across all components
       if (updateLocalProfile) {
         updateLocalProfile({
-          firstName: form.getValues().firstName,
-          lastName: form.getValues().lastName
+          firstName: profileForm.getValues().firstName,
+          lastName: profileForm.getValues().lastName
         });
       }
       
