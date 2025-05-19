@@ -2636,7 +2636,11 @@ Sincerely,
           const isChurchMember = user.churchId === churchId;
           
           // Filter out any users with INACTIVE_ prefix in email (these are deleted users)
-          const isActive = !(user.email && user.email.startsWith('INACTIVE_'));
+          // Debug the email filtering
+          if (user.email && typeof user.email === 'string' && user.email.startsWith('INACTIVE_')) {
+            console.log(`Filtering out inactive user: ${user.id} (${user.email})`);
+            return false;
+          }
           
           // Filter out any users where role is GLOBAL_ADMIN, MASTER_ADMIN, or any other admin type
           const isNotGlobalAdmin = 
@@ -2644,8 +2648,8 @@ Sincerely,
             user.role !== "MASTER_ADMIN" &&
             !(user.id !== userId && user.id !== churchId && user.role === "ADMIN");
           
-          // Only include users that are church members, active, and not global admins
-          return isChurchMember && isNotGlobalAdmin && isActive;
+          // Only include users that are church members and not global admins
+          return isChurchMember && isNotGlobalAdmin;
         });
         
         // Remove password field before sending response

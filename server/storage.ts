@@ -1116,10 +1116,6 @@ export class DatabaseStorage implements IStorage {
       await db.transaction(async (tx) => {
         // First delete any related records that reference this user
         
-        // Delete any verification tokens
-        await tx.delete(verificationTokens)
-          .where(eq(verificationTokens.userId, id));
-        
         // Delete any password reset tokens
         await tx.delete(passwordResetTokens)
           .where(eq(passwordResetTokens.userId, id));
