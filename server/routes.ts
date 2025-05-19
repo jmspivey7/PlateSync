@@ -2481,6 +2481,52 @@ Sincerely,
     }
   });
 
+  // User management endpoints
+  // Create new user
+  app.post('/api/users', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { email, firstName, lastName, role, churchId } = req.body;
+      
+      // Get the current user's church ID if not provided
+      const currentUser = req.user;
+      const userChurchId = churchId || currentUser.churchId || currentUser.id;
+      
+      if (!email || !firstName || !lastName || !role) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: 'A user with this email already exists' });
+      }
+      
+      // Create the user
+      const newUser = await storage.createUser({
+        email,
+        firstName,
+        lastName,
+        role,
+        churchId: userChurchId,
+        isAccountOwner: false
+      });
+      
+      // Send welcome email with verification/password setup link
+      try {
+        await sendWelcomeEmail(newUser);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Continue with user creation even if email fails
+      }
+      
+      console.log(`Created new user: ${newUser.id} with role ${role}`);
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ message: 'Failed to create user' });
+    }
+  });
+  
   // Test users endpoint - used by the User Management page
   app.get('/api/test-users', async (req: any, res) => {
     try {
