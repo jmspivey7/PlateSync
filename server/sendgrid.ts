@@ -419,6 +419,12 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
     // Get the template by type and SYSTEM_TEMPLATES churchId
     let template = await storage.getEmailTemplateByType('WELCOME_EMAIL', 'SYSTEM_TEMPLATES');
     
+    // If no template exists in SYSTEM_TEMPLATES, try fallback church-specific template
+    if (!template) {
+      console.log('📧 No SYSTEM_TEMPLATES welcome email found, trying church-specific template');
+      template = await storage.getEmailTemplateByType('WELCOME_EMAIL', params.churchId);
+    }
+    
     if (template) {
       console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
     } else {
