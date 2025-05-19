@@ -991,9 +991,13 @@ export function setupPlanningCenterRoutes(app: Express) {
         finalCount: finalPeopleCount
       });
       
+      // Make sure we explicitly convert dates to ISO strings and log the value
+      const lastSyncDateValue = tokens.lastSyncDate ? tokens.lastSyncDate.toISOString() : tokens.updatedAt?.toISOString();
+      console.log('Last import date for response:', lastSyncDateValue);
+      
       res.status(200).json({
         connected: true,
-        lastSyncDate: tokens.lastSyncDate ? tokens.lastSyncDate.toISOString() : tokens.updatedAt?.toISOString(),
+        lastSyncDate: lastSyncDateValue,
         peopleCount: finalPeopleCount
       });
     } catch (error) {
