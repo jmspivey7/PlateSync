@@ -1,13 +1,14 @@
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, Users } from 'lucide-react';
+import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, Users, Clock } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'wouter';
+import { format } from 'date-fns';
 
 const CsvImporter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -19,6 +20,12 @@ const CsvImporter = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Fetch CSV import stats
+  const { data: importStats } = useQuery({
+    queryKey: ['/api/csv-import/stats'],
+    refetchOnWindowFocus: false,
+  });
 
   const importMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -255,11 +262,11 @@ const CsvImporter = () => {
           </div>
         )}
 
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center">
           <Button
             onClick={handleImport}
             disabled={!file || importStatus === 'loading'}
-            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6"
+            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6 mb-2"
           >
             {importStatus === 'loading' ? (
               <>
@@ -273,6 +280,16 @@ const CsvImporter = () => {
               </>
             )}
           </Button>
+          
+          {/* Last import timestamp display */}
+          <div className="text-xs text-gray-500 flex items-center mt-2">
+            <Clock className="h-3 w-3 mr-1" />
+            {importStats?.lastImportDate ? (
+              <>Last import: {format(new Date(importStats.lastImportDate), 'MMM d, yyyy') + ' at ' + format(new Date(importStats.lastImportDate), 'h:mm a')}</>
+            ) : (
+              <>Last import: Never</>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
