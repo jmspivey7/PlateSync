@@ -418,7 +418,10 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
     
     // Look for Global Admin template first
     console.log('📧 Looking for Global Admin WELCOME template');
-    let template = await storage.getEmailTemplateByType('WELCOME', 'global');
+    // First get all welcome templates
+    const allWelcomeTemplates = await storage.getAllEmailTemplatesByType('WELCOME');
+    // Find the global admin template (has churchId = '0')
+    let template = allWelcomeTemplates.find(t => t.churchId === '0');
     
     // If no global template, check for church-specific template as fallback
     if (!template) {
@@ -575,8 +578,11 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
   
   try {
     // First try to fetch the global admin password reset template from the database
-    console.log('📧 Looking for global password reset template (ID 2)');
-    const globalTemplate = await storage.getEmailTemplateById(2);
+    console.log('📧 Looking for global password reset template');
+    // First get all password reset templates
+    const allResetTemplates = await storage.getAllEmailTemplatesByType('PASSWORD_RESET');
+    // Find the global admin template (has churchId = '0')
+    const globalTemplate = allResetTemplates.find(t => t.churchId === '0');
     
     if (globalTemplate) {
       console.log('📧 Using global password reset template from Global Admin settings');
