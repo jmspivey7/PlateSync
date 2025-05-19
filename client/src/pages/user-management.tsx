@@ -485,14 +485,10 @@ const UserManagement = () => {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
-                            <AvatarFallback className="bg-gray-100 text-gray-800">
-                              {user.role === "ACCOUNT_OWNER" || 
-                                user.isAccountOwner || 
-                                user.isMasterAdmin
-                                ? "O" 
-                                : user.role === "ADMIN" 
-                                  ? "A" 
-                                  : "S"}
+                            <AvatarFallback className="bg-[#69ad4c] text-white">
+                              {user.firstName && user.lastName 
+                                ? `${user.firstName[0]}${user.lastName[0]}`
+                                : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -553,14 +549,10 @@ const UserManagement = () => {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarImage src={selectedUser.profileImageUrl || ""} alt={`${selectedUser.firstName} ${selectedUser.lastName}`} />
-                    <AvatarFallback className="text-lg bg-gray-100 text-gray-800">
-                      {selectedUser.role === "ACCOUNT_OWNER" || 
-                        selectedUser.isAccountOwner || 
-                        selectedUser.isMasterAdmin
-                        ? "O" 
-                        : selectedUser.role === "ADMIN" 
-                          ? "A" 
-                          : "S"}
+                    <AvatarFallback className="text-lg bg-[#69ad4c] text-white">
+                      {selectedUser.firstName && selectedUser.lastName 
+                        ? `${selectedUser.firstName[0]}${selectedUser.lastName[0]}`
+                        : selectedUser.role === "ACCOUNT_OWNER" ? "AO" : selectedUser.role === "ADMIN" ? "AD" : "SU"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
