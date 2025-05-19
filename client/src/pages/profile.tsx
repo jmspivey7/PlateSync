@@ -24,6 +24,8 @@ import { z } from "zod";
 
 // Define Zod schemas for validation
 const profileSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   churchName: z.string().optional(),
   role: z.string().optional(),
   emailNotificationsEnabled: z.boolean().default(false),
@@ -62,6 +64,8 @@ const Profile = () => {
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
       churchName: user?.churchName || "",
       role: user?.role || "",
       emailNotificationsEnabled: user?.emailNotificationsEnabled || false,
@@ -296,26 +300,30 @@ const Profile = () => {
               </TabsList>
               
               <TabsContent value="profile" className="space-y-6">
-                <div className="space-y-4">
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName" className="font-bold">First Name:</Label>
                       <Input 
                         id="firstName" 
-                        value={user?.firstName || ""} 
-                        disabled
+                        {...profileForm.register("firstName")}
                       />
+                      {profileForm.formState.errors.firstName && (
+                        <p className="text-red-500 text-sm">{profileForm.formState.errors.firstName.message}</p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="lastName" className="font-bold">Last Name:</Label>
                       <Input 
                         id="lastName" 
-                        value={user?.lastName || ""} 
-                        disabled
+                        {...profileForm.register("lastName")}
                       />
+                      {profileForm.formState.errors.lastName && (
+                        <p className="text-red-500 text-sm">{profileForm.formState.errors.lastName.message}</p>
+                      )}
                     </div>
-                    
+                  
                     <div className="space-y-2">
                       <Label htmlFor="email" className="font-bold">Email:</Label>
                       <Input 
@@ -335,7 +343,27 @@ const Profile = () => {
                       />
                     </div>
                   </div>
-                </div>
+                  
+                  <div className="flex justify-end mt-4">
+                    <Button 
+                      type="submit" 
+                      disabled={updateProfileMutation.isPending}
+                      className="bg-[#69ad4c] hover:bg-[#5c9941]"
+                    >
+                      {updateProfileMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
               </TabsContent>
               
               <TabsContent value="password" className="space-y-6">
