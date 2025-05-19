@@ -931,42 +931,7 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   
-  async deleteUser(userId: string): Promise<boolean> {
-    try {
-      // First check if user exists
-      const user = await this.getUser(userId);
-      if (!user) {
-        console.log(`Cannot delete non-existent user: ${userId}`);
-        return false;
-      }
-      
-      console.log(`Deleting user with ID: ${userId}`);
-      
-      // Use transaction to ensure data consistency
-      await db.transaction(async (tx) => {
-        // First delete any related records that reference this user
-        
-        // Delete any donations this user counted
-        await tx.execute(
-          sql`DELETE FROM donations WHERE created_by = ${userId}`
-        );
-        
-        // Delete any email verification or password reset tokens
-        await tx.execute(
-          sql`DELETE FROM password_reset_tokens WHERE user_id = ${userId}`
-        );
-        
-        // Finally delete the user
-        await tx.delete(users).where(eq(users.id, userId));
-      });
-      
-      console.log(`Successfully deleted user: ${userId}`);
-      return true;
-    } catch (error) {
-      console.error(`Error deleting user ${userId}:`, error);
-      return false;
-    }
-  }
+  // This method was a duplicate - see the complete implementation below
   
   async updateUserRole(id: string, role: string): Promise<User> {
     // Prepare update data
