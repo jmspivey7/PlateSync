@@ -2561,7 +2561,8 @@ Sincerely,
           churchName: churchName,
           churchId: userChurchId,
           verificationToken: newUser.passwordResetToken || '',
-          verificationUrl: verificationUrl
+          verificationUrl: verificationUrl,
+          role: newUser.role
         });
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
