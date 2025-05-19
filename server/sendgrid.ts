@@ -413,36 +413,21 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    console.log('📧 Looking for welcome template');
+    // Get specifically the Global Admin template with ID = 1
+    console.log('📧 Looking for Global Admin welcome template with ID = 1');
     
-    // Try multiple approaches to find a template in order of preference
-    let template;
+    // Get the template directly by ID
+    let template = await storage.getEmailTemplateById(1);
     
-    // First try: Get template from Global Admin (SYSTEM_TEMPLATES)
-    console.log('📧 Looking for Global Admin welcome template from SYSTEM_TEMPLATES');
-    template = await storage.getEmailTemplateByType('WELCOME_EMAIL', 'SYSTEM_TEMPLATES');
-    
-    // Second try: If no template exists in SYSTEM_TEMPLATES, try fallback church-specific template
-    if (!template) {
-      console.log('📧 No SYSTEM_TEMPLATES welcome email found, trying church-specific template');
-      template = await storage.getEmailTemplateByType('WELCOME_EMAIL', params.churchId);
-    }
-    
-    // Third try: If no template exists, try getting by ID=1 (legacy approach)
-    if (!template) {
-      console.log('📧 No church-specific welcome email found, trying by ID=1');
-      try {
-        template = await storage.getEmailTemplate(1, 'SYSTEM_TEMPLATES');
-      } catch (error) {
-        console.log('📧 Error getting template by ID=1:', error);
-      }
-    }
-    
-    // Log what we found for debugging
     if (template) {
-      console.log(`📧 Found welcome template with id: ${template.id}, type: ${template.templateType}, church: ${template.churchId}`);
+      console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
     } else {
-      console.log('📧 No welcome template found using any method');
+      console.log('📧 No Global Admin welcome template found');
+    }
+    
+    // Additional debugging to see what we found
+    if (template) {
+      console.log(`📧 Found welcome template with id: ${template.id}`);
     }
     
     if (template) {
