@@ -66,7 +66,7 @@ const BatchDetailPage = () => {
   const [location, setLocation] = useLocation();
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
-  const { isAdmin, isMasterAdmin } = useAuth();
+  const { isAdmin, isAccountOwner } = useAuth();
   
   // Check if we're on the summary route
   const isSummaryRoute = location.includes('batch-summary');
@@ -394,8 +394,8 @@ const BatchDetailPage = () => {
                 )}
 
                 
-                {/* Inline confirmation buttons that replace the Delete button when clicked */}
-                {isFinalized && isMasterAdmin && showDeleteConfirm && (
+                {/* Inline confirmation buttons that show when delete is clicked */}
+                {showDeleteConfirm && (
                   <div className="ml-2 flex gap-2 items-center border border-gray-200 rounded-md p-1.5">
                     <span className="text-sm font-medium text-gray-700 mr-1">Confirm deletion?</span>
                     <Button 
@@ -440,8 +440,8 @@ const BatchDetailPage = () => {
                   </CardDescription>
                 </div>
                 
-                {/* Three-dot menu - Only show for master admins */}
-                {isMasterAdmin && (
+                {/* Three-dot menu - Only show for Account Owners */}
+                {isFinalized && isAccountOwner && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
