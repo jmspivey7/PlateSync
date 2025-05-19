@@ -97,16 +97,23 @@ const Profile = () => {
     onSuccess: async (data) => {
       console.log('Profile update successful:', data);
       
-      // Show success toast before navigation
+      // Show success toast
       toast({
         title: 'Success',
         description: 'Your profile has been updated successfully',
       });
       
-      // Instead of trying to update the React Query cache,
-      // navigate to login-local then immediately back to refresh everything
-      // This forces a complete authentication refresh which is most reliable
-      window.location.href = "/login-local?redirectTo=" + encodeURIComponent(window.location.pathname);
+      // Update localStorage directly for instant UI updates
+      // This ensures the profile changes are reflected immediately across all components
+      if (updateLocalProfile) {
+        updateLocalProfile({
+          firstName: form.getValues().firstName,
+          lastName: form.getValues().lastName
+        });
+      }
+      
+      // Still invalidate the query cache to ensure it refreshes on next fetch
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
     },
     onError: (error) => {
       console.error('Profile update error:', error);

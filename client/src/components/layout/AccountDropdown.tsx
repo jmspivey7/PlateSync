@@ -21,14 +21,45 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+
+// Same key as in useAuth
+const LOCAL_STORAGE_USER_KEY = "platesync_user_profile";
 
 const AccountDropdown = () => {
   const [_, setLocation] = useLocation();
   const { user, isAdmin, isAccountOwner } = useAuth();
+  const [localUserData, setLocalUserData] = useState<any>(null);
+  
+  // Set up interval to check for profile updates in localStorage
+  useEffect(() => {
+    // Initial load from localStorage
+    const loadUserData = () => {
+      try {
+        const userData = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
+        if (userData) {
+          setLocalUserData(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error("Error loading user data from localStorage:", error);
+      }
+    };
+    
+    // Load initial data
+    loadUserData();
+    
+    // Check for updates every second
+    const intervalId = setInterval(loadUserData, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  // Use the most up-to-date user data
+  const effectiveUser = localUserData || user;
   
   // Get initials or use default fallback
   const getInitials = () => {
-    if (!user) return "U";
+    if (!effectiveUser) return "U";
     
     // If account owner, show "O", if admin show "A", otherwise "S" for standard user
     if (isAccountOwner) return "O";
@@ -37,15 +68,15 @@ const AccountDropdown = () => {
   
   // Get full name or fall back to username/email
   const getDisplayName = () => {
-    if (!user) return "User";
+    if (!effectiveUser) return "User";
     
     // Display First Name Last Name if available
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
+    if (effectiveUser.firstName && effectiveUser.lastName) {
+      return `${effectiveUser.firstName} ${effectiveUser.lastName}`;
     }
     
     // Fall back to username or email if no name is available
-    return user.username || user.email || "User";
+    return effectiveUser.username || effectiveUser.email || "User";
   };
   
   return (

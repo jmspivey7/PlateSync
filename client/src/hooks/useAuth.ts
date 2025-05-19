@@ -2,15 +2,38 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
 import type { User } from "../../../shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type LoginCredentials = {
   username: string;
   password: string;
 };
 
+// Cache user data in local storage
+const LOCAL_STORAGE_USER_KEY = "platesync_user_profile";
+
+// Save user data to local storage
+const saveUserToLocalStorage = (userData: User) => {
+  if (!userData) return;
+  localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(userData));
+};
+
+// Get user data from local storage
+const getUserFromLocalStorage = (): User | null => {
+  const userData = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
+  if (!userData) return null;
+  
+  try {
+    return JSON.parse(userData) as User;
+  } catch (e) {
+    console.error("Failed to parse user data from localStorage:", e);
+    return null;
+  }
+};
+
 export function useAuth() {
   const { toast } = useToast();
+  const [localUser, setLocalUser] = useState<User | null>(getUserFromLocalStorage());
   
   // Get the current user data
   const { 
@@ -25,7 +48,27 @@ export function useAuth() {
     refetchInterval: false,
     refetchOnWindowFocus: true,
     queryFn: getQueryFn({ on401: "returnNull" }),
+    onSuccess: (data) => {
+      if (data) {
+        // Save user data to localStorage when API call succeeds
+        saveUserToLocalStorage(data);
+        setLocalUser(data);
+      }
+    }
   });
+
+  // Set up interval to synchronize local user data with React Query cache
+  useEffect(() => {
+    // Check for updates in localStorage every second
+    const intervalId = setInterval(() => {
+      const storedUser = getUserFromLocalStorage();
+      if (storedUser) {
+        setLocalUser(storedUser);
+      }
+    }, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Debug user data issues
   useEffect(() => {
@@ -105,19 +148,31 @@ export function useAuth() {
     },
   });
 
+  // Merge the API data with localStorage data to provide the most up-to-date information
+  const effectiveUser = localUser || user;
+  
   return {
-    user,
+    user: effectiveUser,
     isLoading,
     refetch,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === "ADMIN" || user?.role === "ACCOUNT_OWNER",
-    isStandard: user?.role === "STANDARD" || !user?.role,
-    isAccountOwner: user?.role === "ACCOUNT_OWNER" || (user?.role === "ADMIN" && user?.isAccountOwner === true),
+    isAuthenticated: !!effectiveUser,
+    isAdmin: effectiveUser?.role === "ADMIN" || effectiveUser?.role === "ACCOUNT_OWNER",
+    isStandard: effectiveUser?.role === "STANDARD" || !effectiveUser?.role,
+    isAccountOwner: effectiveUser?.role === "ACCOUNT_OWNER" || (effectiveUser?.role === "ADMIN" && effectiveUser?.isAccountOwner === true),
     login: loginMutation.mutate,
     logout: logoutMutation.mutate,
     loginStatus: {
       isLoading: loginMutation.isPending,
       error: loginMutation.error,
     },
+    // Expose a method to update profile in localStorage
+    updateLocalProfile: (updatedData: Partial<User>) => {
+      const currentUserData = getUserFromLocalStorage();
+      if (currentUserData) {
+        const updatedUser = { ...currentUserData, ...updatedData };
+        saveUserToLocalStorage(updatedUser);
+        setLocalUser(updatedUser);
+      }
+    }
   };
 }
