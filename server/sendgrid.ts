@@ -413,27 +413,32 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    // Get specifically the template from Global Admin (SYSTEM_TEMPLATES)
+    console.log('📧 Looking for welcome template');
+    
+    // Try multiple approaches to find a template in order of preference
+    let template;
+    
+    // First try: Get template from Global Admin (SYSTEM_TEMPLATES)
     console.log('📧 Looking for Global Admin welcome template from SYSTEM_TEMPLATES');
+    template = await storage.getEmailTemplateByType('WELCOME_EMAIL', 'SYSTEM_TEMPLATES');
     
-    // Get the template by type and SYSTEM_TEMPLATES churchId
-    let template = await storage.getEmailTemplateByType('WELCOME_EMAIL', 'SYSTEM_TEMPLATES');
-    
-    // If no template exists in SYSTEM_TEMPLATES, try fallback church-specific template
+    // Second try: If no template exists in SYSTEM_TEMPLATES, try fallback church-specific template
     if (!template) {
       console.log('📧 No SYSTEM_TEMPLATES welcome email found, trying church-specific template');
       template = await storage.getEmailTemplateByType('WELCOME_EMAIL', params.churchId);
     }
     
-    if (template) {
-      console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
-    } else {
-      console.log('📧 No Global Admin welcome template found');
+    // Third try: If no template exists, try getting by ID=1 (legacy approach)
+    if (!template) {
+      console.log('📧 No church-specific welcome email found, trying by ID=1');
+      template = await storage.getEmailTemplate(1);
     }
     
-    // Additional debugging to see what we found
+    // Log what we found for debugging
     if (template) {
-      console.log(`📧 Found welcome template with id: ${template.id}`);
+      console.log(`📧 Found welcome template with id: ${template.id}, type: ${template.templateType}, church: ${template.churchId}`);
+    } else {
+      console.log('📧 No welcome template found using any method');
     }
     
     if (template) {
