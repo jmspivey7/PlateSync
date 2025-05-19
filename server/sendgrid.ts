@@ -413,7 +413,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    // Get specifically the Global Admin template with ID = 1
+    // First try to get the Global Admin template with ID = 1 (used for actual emails)
     console.log('📧 Looking for Global Admin welcome template with ID = 1');
     
     // Get the template directly by ID
