@@ -449,8 +449,11 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         '{{churchName}}': params.churchName,
         '{{CHURCH_NAME}}': params.churchName,
         '{{verificationUrl}}': params.verificationUrl,
+        '{{verificationToken}}': params.verificationToken,
+        '{{resetLink}}': `${params.verificationUrl}?token=${params.verificationToken}`,
         '{{USER_EMAIL}}': params.to,
         '{{USER_ROLE}}': params.role || 'User',
+        '{{userName}}': `${params.firstName} ${params.lastName}`,
       };
       
       Object.entries(replacements).forEach(([key, value]) => {
