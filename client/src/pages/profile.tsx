@@ -55,6 +55,7 @@ const Profile = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemovingPicture, setIsRemovingPicture] = useState(false);
   const [activeTab, setActiveTab] = useState("profile"); // "profile" or "password"
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -153,6 +154,37 @@ const Profile = () => {
       }
     },
   });
+  
+  // Remove profile picture mutation
+  const removeProfilePictureMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        await apiRequest('/api/profile/avatar/remove', 'POST');
+        
+        // Invalidate user query to refresh the avatar
+        queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+        
+        toast({
+          title: 'Success',
+          description: 'Your profile picture has been removed',
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to remove profile picture',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsRemovingPicture(false);
+      }
+    },
+  });
+  
+  // Function to handle profile picture removal
+  const removeProfilePicture = () => {
+    setIsRemovingPicture(true);
+    removeProfilePictureMutation.mutate();
+  };
   
   // Handle file change for avatar upload
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -280,7 +312,7 @@ const Profile = () => {
                   {user?.isMasterAdmin ? "Master Admin" : user?.role === "ADMIN" ? "Administrator" : "Usher"}
                 </p>
                 
-                <div className="mt-2">
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -300,6 +332,28 @@ const Profile = () => {
                       </>
                     )}
                   </Button>
+                  
+                  {user?.profileImageUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-sm text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                      onClick={removeProfilePicture}
+                      disabled={isUploading || isRemovingPicture}
+                    >
+                      {isRemovingPicture ? (
+                        <>
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Removing...
+                        </>
+                      ) : (
+                        <>
+                          <X className="mr-1 h-3 w-3" />
+                          Remove picture
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
