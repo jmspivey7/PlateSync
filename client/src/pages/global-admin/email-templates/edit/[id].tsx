@@ -79,9 +79,28 @@ export default function EditSystemTemplate() {
   // Update form data when template is loaded
   useEffect(() => {
     if (template) {
+      // Fix GoogleAPIs URL in template if present
+      let updatedHtml = template.bodyHtml;
+      if (updatedHtml.includes("googleapis.com")) {
+        updatedHtml = updatedHtml.replace(
+          /https:\/\/storage\.googleapis\.com\/files-replit\/platesync-logo\.png/g, 
+          "https://plate-sync-jspivey.replit.app/logo-with-text.png"
+        );
+        // Also fix the URL shown in the screenshot
+        updatedHtml = updatedHtml.replace(
+          /https:\/\/storage\.googleapis\.com\/files-replit\/platesync-logo\.png/g, 
+          "https://plate-sync-jspivey.replit.app/logo-with-text.png"
+        );
+        // More generic pattern in case the exact URL is different
+        updatedHtml = updatedHtml.replace(
+          /https:\/\/storage\.googleapis\.com\/.*?\/platesync-logo(\.png|\.jpg)/g, 
+          "https://plate-sync-jspivey.replit.app/logo-with-text.png"
+        );
+      }
+      
       setFormData({
         subject: template.subject,
-        bodyHtml: template.bodyHtml,
+        bodyHtml: updatedHtml,
         bodyText: template.bodyText
       });
     }
