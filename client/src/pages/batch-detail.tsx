@@ -394,33 +394,43 @@ const BatchDetailPage = () => {
                 )}
 
                 
-                {/* Inline confirmation buttons that show when delete is clicked */}
+                {/* Delete confirmation dialog with warning */}
                 {showDeleteConfirm && (
-                  <div className="ml-2 flex gap-2 items-center border border-gray-200 rounded-md p-1.5">
-                    <span className="text-sm font-medium text-gray-700 mr-1">Confirm deletion?</span>
-                    <Button 
-                      size="sm"
-                      variant="outline" 
-                      onClick={() => setShowDeleteConfirm(false)}
-                      className="border-gray-300 text-gray-600"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleDeleteBatch}
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                      disabled={deleteBatchMutation.isPending}
-                    >
-                      {deleteBatchMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          Deleting...
-                        </>
-                      ) : (
-                        "Confirm Delete"
-                      )}
-                    </Button>
+                  <div className="ml-2 flex flex-col border border-red-200 bg-red-50 rounded-md p-3">
+                    <div className="mb-2">
+                      <h4 className="text-sm font-semibold text-red-700 flex items-center">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Warning: This action cannot be undone
+                      </h4>
+                      <p className="text-xs text-gray-700 mt-1">
+                        Deleting this count will permanently remove all associated donation records and reports.
+                      </p>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button 
+                        size="sm"
+                        variant="outline" 
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="border-gray-300 text-gray-600"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleDeleteBatch}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        disabled={deleteBatchMutation.isPending}
+                      >
+                        {deleteBatchMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          "Delete Permanently"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {!isFinalized && (
