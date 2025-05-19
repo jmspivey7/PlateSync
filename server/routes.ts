@@ -1136,8 +1136,11 @@ This is an automated email. Please do not reply to this message.
       // Check if templates exist
       let templates = await storage.getEmailTemplates(systemChurchId);
       
-      if (templates.length === 0) {
-        console.log('No system templates found. Creating default templates...');
+      // Make sure we have a welcome email template specifically
+      const welcomeTemplate = await storage.getEmailTemplateByType('WELCOME_EMAIL', systemChurchId);
+      
+      if (templates.length === 0 || !welcomeTemplate) {
+        console.log('System templates missing or incomplete. Creating/updating default templates...');
         
         // Create welcome email template
         await storage.createEmailTemplate({

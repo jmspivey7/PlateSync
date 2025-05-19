@@ -413,11 +413,11 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    // Get specifically the Global Admin template with ID = 1
-    console.log('📧 Looking for Global Admin welcome template with ID = 1');
+    // Get specifically the template from Global Admin (SYSTEM_TEMPLATES)
+    console.log('📧 Looking for Global Admin welcome template from SYSTEM_TEMPLATES');
     
-    // Get the template directly by ID
-    let template = await storage.getEmailTemplateById(1);
+    // Get the template by type and SYSTEM_TEMPLATES churchId
+    let template = await storage.getEmailTemplateByType('WELCOME_EMAIL', 'SYSTEM_TEMPLATES');
     
     if (template) {
       console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
