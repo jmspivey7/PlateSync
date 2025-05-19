@@ -413,20 +413,19 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    // First try to fetch the custom email template from the database
-    console.log(`📧 Looking for WELCOME template for church ID: ${params.churchId}`);
+    // Get only the system template from Global Admin (churchId = 'SYSTEM_TEMPLATES')
+    console.log('📧 Looking for Global Admin welcome template (SYSTEM_TEMPLATES)');
     
-    // Look for Global Admin template first
-    console.log('📧 Looking for Global Admin WELCOME template');
-    // First get all welcome templates
-    const allWelcomeTemplates = await storage.getAllEmailTemplatesByType('WELCOME');
-    // Find the global admin template (has churchId = '0')
-    let template = allWelcomeTemplates.find(t => t.churchId === '0');
+    // Get all welcome email templates
+    const systemTemplates = await storage.getAllEmailTemplatesByType('WELCOME_EMAIL');
     
-    // If no global template, check for church-specific template as fallback
-    if (!template) {
-      console.log('📧 No global WELCOME template found, checking church-specific template');
-      template = await storage.getEmailTemplateByType('WELCOME', params.churchId);
+    // Find the one with churchId = 'SYSTEM_TEMPLATES' 
+    let template = systemTemplates.find(t => t.churchId === 'SYSTEM_TEMPLATES');
+    
+    if (template) {
+      console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
+    } else {
+      console.log('📧 No Global Admin welcome template found');
     }
     
     // Additional debugging to see what we found
