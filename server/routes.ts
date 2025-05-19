@@ -54,11 +54,16 @@ import { generateCountReportPDF } from "./pdf-generator";
 import Stripe from "stripe";
 import { createTrialSubscriptionForOnboarding } from "./subscription-helper";
 import { verifyStripeSubscription, updateSubscriptionFromStripe, cancelStripeSubscription } from "./stripe-helper";
+import multer from "multer";
+import { parse } from "csv-parse/sync";
+import { importMembers } from "./import-members";
+import { queryClient } from "./query-client";
 import { 
   batches, 
   churches, 
   donations, 
-  members, 
+  members,
+  csvImportStats, 
   registerChurchSchema,
   reportRecipients, 
   serviceOptions, 
@@ -328,6 +333,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error checking Planning Center connection status:', error);
       res.status(500).json({ message: 'Failed to check Planning Center connection status' });
+    }
+  });
+  
+  // Get CSV import statistics for church
+  app.get('/api/csv-import/stats', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      console.log(`Fetching CSV import stats for church ID: ${churchId}`);
+      
+      const stats = await storage.getCsvImportStats(churchId);
+      
+      if (stats) {
+        res.json({
+          lastImportDate: stats.lastImportDate,
+          importCount: stats.importCount,
+          totalMembersImported: stats.totalMembersImported
+        });
+      } else {
+        res.json({});
+      }
+    } catch (error) {
+      console.error('Error fetching CSV import stats:', error);
+      res.status(500).json({ message: 'Failed to fetch CSV import statistics' });
+    }
+  });
+  
+  // CSV Member Import endpoint
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+  
+  app.post('/api/members/import', isAuthenticated, restrictSuspendedChurchAccess, upload.single('csvFile'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No CSV file provided' });
+      }
+      
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      const userId = user?.id || '';
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      console.log(`Processing CSV import for church ID: ${churchId}, file size: ${req.file.size} bytes`);
+      
+      // Parse CSV data
+      const csvContent = req.file.buffer.toString('utf8');
+      let records = parse(csvContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+      
+      // Normalize header names and validate required fields
+      records = records.map((record: any) => {
+        const normalizedRecord: any = {};
+        Object.keys(record).forEach(key => {
+          const normalizedKey = key.trim().toLowerCase();
+          
+          if (normalizedKey.includes('first') && normalizedKey.includes('name')) {
+            normalizedRecord.firstName = record[key];
+          } else if (normalizedKey.includes('last') && normalizedKey.includes('name')) {
+            normalizedRecord.lastName = record[key];
+          } else if (normalizedKey.includes('email')) {
+            normalizedRecord.email = record[key];
+          } else if (
+            (normalizedKey.includes('phone') || normalizedKey.includes('mobile') || normalizedKey.includes('cell')) && 
+            !normalizedKey.includes('home')
+          ) {
+            normalizedRecord.phone = record[key];
+          } else if (normalizedKey.includes('note')) {
+            normalizedRecord.notes = record[key];
+          }
+        });
+        
+        return normalizedRecord;
+      });
+      
+      // Filter out records without required name fields
+      const validRecords = records.filter((record: any) => record.firstName && record.lastName);
+      
+      if (validRecords.length === 0) {
+        return res.status(400).json({ message: 'No valid records found in the CSV file' });
+      }
+      
+      console.log(`Found ${validRecords.length} valid records out of ${records.length} total records`);
+      
+      // Import the members using the shared import function
+      const result = await importMembers(validRecords, churchId);
+      
+      // Record the import stats in the database
+      await storage.updateCsvImportStats(userId, churchId, result.importedCount);
+      
+      // Invalidate relevant cache
+      await queryClient.invalidateQueries(['/api/csv-import/stats']);
+      
+      // Return success response
+      res.status(200).json({
+        success: true,
+        importedCount: result.importedCount,
+        totalRecords: validRecords.length,
+        duplicatesSkipped: result.duplicatesSkipped || 0
+      });
+      
+    } catch (error) {
+      console.error('Error processing CSV import:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Failed to import members from CSV' 
+      });
     }
   });
   
