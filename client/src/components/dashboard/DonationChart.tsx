@@ -448,14 +448,15 @@ export function DonationChart() {
                 content={<CustomTooltip />}
                 cursor={{ stroke: '#69ad4c', strokeWidth: 1, strokeDasharray: '5 5' }}
               />
-              <Legend 
-                iconType="circle" 
-                iconSize={8}
-                wrapperStyle={{ 
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  marginTop: '10px',
-                }} 
+              {/* Removed the Legend component here to avoid redundancy */}
+              <Area
+                type="monotone"
+                dataKey="check"
+                name="Check"
+                stackId="1"
+                stroke="#3b82f6"
+                fill="#3b82f6"
+                fillOpacity={0.4}
               />
               <Area
                 type="monotone"
@@ -464,15 +465,6 @@ export function DonationChart() {
                 stackId="1"
                 stroke="#69ad4c"
                 fill="#69ad4c"
-                fillOpacity={0.4}
-              />
-              <Area
-                type="monotone"
-                dataKey="check"
-                name="Check"
-                stackId="1"
-                stroke="#3b82f6"
-                fill="#3b82f6"
                 fillOpacity={0.4}
               />
             </AreaChart>
