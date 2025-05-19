@@ -66,7 +66,10 @@ const GLOBAL_ADMIN_PATHS = [
   "/global-admin/church/",  // Updated to support all church detail pages with trailing slash
   "/global-admin/profile",
   "/global-admin/users",
-  "/global-admin/reports"
+  "/global-admin/reports",
+  "/global-admin/settings",  // Added settings path
+  "/global-admin/integrations", // Added for integrations pages
+  "/global-admin/edit-email-template", // Added for email template editing
 ];
 
 function isPublicPath(path: string) {
@@ -74,7 +77,8 @@ function isPublicPath(path: string) {
 }
 
 function isGlobalAdminPath(path: string) {
-  return GLOBAL_ADMIN_PATHS.some(adminPath => path.startsWith(adminPath));
+  // Simpler approach: any path that starts with /global-admin/ is considered a global admin path
+  return path.startsWith('/global-admin/');
 }
 
 function Router() {
