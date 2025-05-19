@@ -249,7 +249,7 @@ export default function EditEmailTemplate() {
                               className="mt-1"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Available variables: {{USER_NAME}}, {{CHURCH_NAME}}, {{formattedUserRole}}, etc.
+                              Available variables: {'{'}{'{USER_NAME}'}{'},'} {'{'}{'{CHURCH_NAME}'}{'},'} {'{'}{'{formattedUserRole}'}{'},'} etc.
                             </p>
                           </div>
                           
@@ -269,7 +269,7 @@ export default function EditEmailTemplate() {
                               rows={15}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              HTML version of the email. Use variables like {{USER_NAME}}, {{CHURCH_NAME}}, {{formattedUserRole}}, etc.
+                              HTML version of the email. Use variables like {'{'}'{'{'}USER_NAME{'}'}'{'}'}, {'{'}'{'{'}CHURCH_NAME{'}'}'{'}'}, {'{'}'{'{'}formattedUserRole{'}'}'{'}'}, etc.
                             </p>
                           </div>
 
