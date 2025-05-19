@@ -1116,10 +1116,6 @@ export class DatabaseStorage implements IStorage {
       await db.transaction(async (tx) => {
         // First delete any related records that reference this user
         
-        // Delete any password reset tokens
-        await tx.delete(passwordResetTokens)
-          .where(eq(passwordResetTokens.userId, id));
-        
         if (hasAttestations) {
           // For users with attestation history, mark as inactive by prefixing email
           console.log(`User ${id} has attestation records - marking as inactive`);
