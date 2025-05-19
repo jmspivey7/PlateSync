@@ -398,6 +398,18 @@ export const planningCenterTokens = pgTable("planning_center_tokens", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// CSV Import Stats table
+export const csvImportStats = pgTable("csv_import_stats", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  churchId: varchar("church_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  lastImportDate: timestamp("last_import_date"),
+  importCount: integer("import_count").default(0),
+  totalMembersImported: integer("total_members_imported").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertPlanningCenterTokensSchema = createInsertSchema(planningCenterTokens).pick({
   userId: true,
   churchId: true,
@@ -406,8 +418,18 @@ export const insertPlanningCenterTokensSchema = createInsertSchema(planningCente
   expiresAt: true,
 });
 
+export const insertCsvImportStatsSchema = createInsertSchema(csvImportStats).pick({
+  userId: true,
+  churchId: true,
+  lastImportDate: true,
+  importCount: true,
+  totalMembersImported: true,
+});
+
 export type InsertPlanningCenterTokens = z.infer<typeof insertPlanningCenterTokensSchema>;
 export type PlanningCenterTokens = typeof planningCenterTokens.$inferSelect;
+export type InsertCsvImportStats = z.infer<typeof insertCsvImportStatsSchema>;
+export type CsvImportStats = typeof csvImportStats.$inferSelect;
 
 // Verification codes table for email verification during onboarding
 export const verificationCodes = pgTable("verification_codes", {
