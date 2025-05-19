@@ -59,7 +59,9 @@ const systemTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://plate-sync-jspivey.replit.app/logo-with-text.png" alt="PlateSync Logo" style="max-width: 250px; height: auto;">
+      <div style="text-align: center;">
+        <img src="https://plate-sync-jspivey.replit.app/logo-with-text.png" alt="PlateSync Logo" style="max-width: 250px; height: auto; margin: 0 auto; display: block;">
+      </div>
       <h1>Welcome to PlateSync!</h1>
       <p>Your donation management system</p>
     </div>
@@ -123,7 +125,9 @@ const systemTemplates: EmailTemplate[] = [
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://plate-sync-jspivey.replit.app/logo-with-text.png" alt="PlateSync Logo" style="max-width: 250px; height: auto;">
+      <div style="text-align: center;">
+        <img src="https://plate-sync-jspivey.replit.app/logo-with-text.png" alt="PlateSync Logo" style="max-width: 250px; height: auto; margin: 0 auto; display: block;">
+      </div>
       <h1>Password Reset Request</h1>
       <p>PlateSync Account Recovery</p>
     </div>
