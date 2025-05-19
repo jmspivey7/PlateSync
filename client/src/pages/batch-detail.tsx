@@ -250,6 +250,8 @@ const BatchDetailPage = () => {
     });
   };
   
+  // Function was moved down below
+  
   const handleEditDonation = (donationId: number) => {
     // Only allow editing if batch is not finalized
     if (!isFinalized) {
@@ -334,10 +336,9 @@ const BatchDetailPage = () => {
     setLocation("/counts");
   };
   
+  // Show delete confirmation dialog when the three-dot menu delete option is clicked
   const handleShowDeleteConfirm = () => {
-    console.log("Delete button clicked, setting showDeleteConfirm to true");
     setShowDeleteConfirm(true);
-    console.log("Current showDeleteConfirm value:", showDeleteConfirm);
   };
   
   const handleDeleteBatch = () => {
