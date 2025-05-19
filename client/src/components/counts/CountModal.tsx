@@ -261,9 +261,15 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       return response.json();
     },
     onSuccess: (data) => {
+      // Invalidate all relevant queries to ensure complete UI refresh
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       queryClient.invalidateQueries({ queryKey: ['/api/batches/current'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      
+      // Also invalidate these queries to ensure dashboard data refreshes
+      queryClient.invalidateQueries({ queryKey: ['/api/batches/latest-finalized'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       
       toast({
         title: "Success",
