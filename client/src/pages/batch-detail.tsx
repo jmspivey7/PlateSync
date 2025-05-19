@@ -209,7 +209,13 @@ const BatchDetailPage = () => {
       return { success: true };
     },
     onSuccess: () => {
+      // Invalidate all relevant queries to ensure full UI refresh
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches/latest-finalized"] });
+      
+      // Also invalidate any dashboard-related data
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
       toast({
         title: "Success",
