@@ -108,17 +108,34 @@ router.post('/', async (req, res) => {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
     }
     
-    const { churchName, role, emailNotificationsEnabled } = req.body;
+    const { firstName, lastName, churchName, role, emailNotificationsEnabled } = req.body;
+    
+    // Log update request for debugging
+    console.log(`Profile update request for user ${userId}:`, {
+      firstName,
+      lastName,
+      churchName,
+      role,
+      emailNotificationsEnabled
+    });
     
     await db
       .update(users)
       .set({ 
+        firstName: firstName ?? undefined,
+        lastName: lastName ?? undefined,
         churchName: churchName ?? undefined,
         role: role ?? undefined,
         emailNotificationsEnabled: emailNotificationsEnabled ?? undefined,
         updatedAt: new Date()
       })
       .where(eq(users.id, userId));
+    
+    // Invalidate user session to reflect changes
+    if (req.user) {
+      if (firstName) req.user.firstName = firstName;
+      if (lastName) req.user.lastName = lastName;
+    }
     
     res.json({ success: true, message: 'Profile updated successfully' });
   } catch (error) {
