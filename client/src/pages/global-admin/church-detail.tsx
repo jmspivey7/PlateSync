@@ -397,76 +397,134 @@ export default function ChurchDetail() {
                   <Skeleton className="h-10 w-32" />
                 ) : (
                   <>
-                    {/* Purge Data Button */}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          className="bg-purple-600 text-white hover:bg-purple-700"
-                        >
-                          Purge Data
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            <p>This action will permanently delete <strong>ALL</strong> data associated with this church:</p>
-                            <ul className="list-disc pl-5 mt-2 space-y-1">
-                              <li>All user accounts</li>
-                              <li>All members</li>
-                              <li>All donations</li>
-                              <li>All batches</li>
-                              <li>All service options</li>
-                              <li>Planning Center integrations</li>
-                              <li>Subscription data</li>
-                            </ul>
-                            <p className="mt-3 font-bold text-destructive">This action cannot be undone and is intended for testing purposes only.</p>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => purgeChurchData()}
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                          >
-                            Purge All Data
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    
-                    {church?.status === "ACTIVE" ? (
+                    {/* Purge Data Button - Only visible for DELETED churches */}
+                    {church?.status === "DELETED" && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button className="bg-amber-400 hover:bg-amber-500 text-black">Suspend Church</Button>
+                          <Button 
+                            variant="outline" 
+                            className="bg-purple-600 text-white hover:bg-purple-700"
+                          >
+                            Purge Data
+                          </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Suspend Church</AlertDialogTitle>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to suspend {church?.name}? This will prevent all users from accessing the church account until you reactivate it.
+                              <p>This action will permanently delete <strong>ALL</strong> data associated with this church:</p>
+                              <ul className="list-disc pl-5 mt-2 space-y-1">
+                                <li>All user accounts</li>
+                                <li>All members</li>
+                                <li>All donations</li>
+                                <li>All batches</li>
+                                <li>All service options</li>
+                                <li>Planning Center integrations</li>
+                                <li>Subscription data</li>
+                              </ul>
+                              <p className="mt-3 font-bold text-destructive">This action cannot be undone and is intended for testing purposes only.</p>
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction 
-                              className="bg-amber-400 hover:bg-amber-500 text-black"
-                              onClick={() => handleStatusChange("SUSPENDED")}
+                              onClick={() => purgeChurchData()}
+                              className="bg-purple-600 hover:bg-purple-700 text-white"
                             >
-                              Suspend
+                              Purge All Data
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                    )}
+                    
+                    {/* Status Change Buttons */}
+                    {church?.status === "ACTIVE" ? (
+                      <>
+                        {/* Suspend Church Button */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button className="bg-amber-400 hover:bg-amber-500 text-black">Suspend Church</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Suspend Church</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to suspend {church?.name}? This will prevent all users from accessing the church account until you reactivate it.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-amber-400 hover:bg-amber-500 text-black"
+                                onClick={() => handleStatusChange("SUSPENDED")}
+                              >
+                                Suspend
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        
+                        {/* Delete Church Button */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button className="bg-red-500 hover:bg-red-600 text-white">Delete Church</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Church</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {church?.name}? This will mark the church as deleted and remove it from active churches.
+                                <p className="mt-2 font-medium">Note: The data will still exist in the database. To completely remove all data, use the Purge Data function after deletion.</p>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                                onClick={() => handleStatusChange("DELETED")}
+                              >
+                                Delete Church
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
                     ) : church?.status === "SUSPENDED" ? (
-                      <Button
-                        variant="outline"
-                        className="border-green-500 text-green-500 hover:bg-green-500/10"
-                        onClick={() => handleStatusChange("ACTIVE")}
-                      >
-                        Reactivate Church
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          className="border-green-500 text-green-500 hover:bg-green-500/10"
+                          onClick={() => handleStatusChange("ACTIVE")}
+                        >
+                          Reactivate Church
+                        </Button>
+                        
+                        {/* Delete Church Button */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button className="bg-red-500 hover:bg-red-600 text-white">Delete Church</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Church</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {church?.name}? This will mark the church as deleted and remove it from active churches.
+                                <p className="mt-2 font-medium">Note: The data will still exist in the database. To completely remove all data, use the Purge Data function after deletion.</p>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                                onClick={() => handleStatusChange("DELETED")}
+                              >
+                                Delete Church
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
                     ) : null}
                   </>
                 )}
