@@ -185,6 +185,81 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Remove profile picture
+router.post('/avatar/remove', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    
+    // Get current user from database to check if they have a profile image
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // If user has a profile image, remove it from filesystem
+    if (user.profileImageUrl) {
+      try {
+        const avatarPath = path.join(process.cwd(), 'public', user.profileImageUrl);
+        
+        // Check if file exists before attempting to delete
+        if (fs.existsSync(avatarPath)) {
+          fs.unlinkSync(avatarPath);
+          console.log(`Deleted avatar file: ${avatarPath}`);
+        }
+      } catch (fileError) {
+        console.error('Error deleting avatar file:', fileError);
+        // Continue even if file deletion fails
+      }
+    }
+    
+    // Update user in database to remove profile image URL
+    await db
+      .update(users)
+      .set({ 
+        profileImageUrl: null,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+    
+    // Update the user session as well
+    if (req.user && req.user.profileImageUrl) {
+      req.user.profileImageUrl = null;
+      
+      // Save the session
+      try {
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              console.error('Error saving session:', err);
+              reject(err);
+            } else {
+              console.log('Session saved successfully after removing profile picture');
+              resolve();
+            }
+          });
+        });
+      } catch (sessionError) {
+        console.error('Error saving session:', sessionError);
+      }
+    }
+    
+    console.log(`Removed profile picture for user: ${userId}`);
+    
+    res.json({ success: true, message: 'Profile picture removed successfully' });
+  } catch (error) {
+    console.error('Error removing profile picture:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Update password
 router.post('/password', async (req, res) => {
   try {
