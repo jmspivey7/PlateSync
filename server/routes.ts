@@ -2513,7 +2513,22 @@ Sincerely,
       
       // Send welcome email with verification/password setup link
       try {
-        await sendWelcomeEmail(newUser);
+        // Create verification URL for password setup
+        const verificationUrl = `${req.protocol}://${req.get('host')}/verify-email?token=${newUser.passwordResetToken}`;
+        
+        // Get church details for the welcome email
+        const churchDetails = await storage.getChurchById(userChurchId);
+        const churchName = churchDetails?.name || 'Your Church';
+        
+        await sendWelcomeEmail({
+          to: newUser.email,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          churchName: churchName,
+          churchId: userChurchId,
+          verificationToken: newUser.passwordResetToken || '',
+          verificationUrl: verificationUrl
+        });
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
         // Continue with user creation even if email fails

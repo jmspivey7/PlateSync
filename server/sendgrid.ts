@@ -414,7 +414,14 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   try {
     // First try to fetch the custom email template from the database
     console.log(`📧 Looking for WELCOME template for church ID: ${params.churchId}`);
-    const template = await storage.getEmailTemplateByType('WELCOME', params.churchId);
+    // Try to get church-specific template first
+    let template = await storage.getEmailTemplateByType('WELCOME', params.churchId);
+    
+    // If no church-specific template found, look for Global Admin template
+    if (!template) {
+      console.log('📧 No church-specific template found, looking for Global Admin template');
+      template = await storage.getEmailTemplateByType('WELCOME', 'global');
+    }
     
     if (template) {
       console.log('📧 Using custom welcome template from database');
