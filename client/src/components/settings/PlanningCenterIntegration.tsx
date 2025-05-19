@@ -409,7 +409,7 @@ const PlanningCenterIntegration = () => {
               <span className="text-xs text-gray-500 mt-1 text-center">
                 {status.lastSyncDate 
                   ? `Last import: ${new Date(status.lastSyncDate).toLocaleDateString()} at ${new Date(status.lastSyncDate).toLocaleTimeString()}`
-                  : "No members imported yet"}
+                  : isImporting ? "Import in progress..." : "No members imported yet"}
               </span>
             </div>
           </div>
