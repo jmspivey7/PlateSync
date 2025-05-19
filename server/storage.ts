@@ -9,6 +9,7 @@ import {
   reportRecipients,
   emailTemplates,
   planningCenterTokens,
+  csvImportStats,
   churches,
   subscriptions,
   systemConfig,
@@ -31,6 +32,8 @@ import {
   type InsertEmailTemplate,
   type PlanningCenterTokens,
   type InsertPlanningCenterTokens,
+  type CsvImportStats,
+  type InsertCsvImportStats,
   type Church,
   type InsertChurch,
   type Subscription,
@@ -2486,6 +2489,75 @@ PlateSync Reporting System
       console.log(`Updated Planning Center stats for church ${churchId}: ${peopleCount} people available, lastSyncDate: ${now.toISOString()}`);
     } catch (error) {
       console.error("Error in updatePlanningCenterImportStats:", error);
+      throw error;
+    }
+  }
+  
+  // Get CSV import stats for a church
+  async getCsvImportStats(churchId: string): Promise<{ lastImportDate: Date | null; importCount: number; totalMembersImported: number; } | null> {
+    try {
+      const [stats] = await db
+        .select()
+        .from(csvImportStats)
+        .where(eq(csvImportStats.churchId, churchId));
+        
+      if (!stats) {
+        return null;
+      }
+      
+      return {
+        lastImportDate: stats.lastImportDate,
+        importCount: stats.importCount,
+        totalMembersImported: stats.totalMembersImported
+      };
+    } catch (error) {
+      console.error("Error in getCsvImportStats:", error);
+      return null;
+    }
+  }
+  
+  // Update CSV import stats for a church
+  async updateCsvImportStats(userId: string, churchId: string, membersImported: number): Promise<void> {
+    try {
+      const now = new Date();
+      
+      // Check if an entry already exists for this church
+      const [existingStats] = await db
+        .select()
+        .from(csvImportStats)
+        .where(eq(csvImportStats.churchId, churchId));
+        
+      if (existingStats) {
+        // Update existing entry
+        await db
+          .update(csvImportStats)
+          .set({
+            lastImportDate: now,
+            importCount: existingStats.importCount + 1,
+            totalMembersImported: existingStats.totalMembersImported + membersImported,
+            updatedAt: now
+          })
+          .where(eq(csvImportStats.churchId, churchId));
+          
+        console.log(`Updated CSV import stats for church ${churchId}: ${membersImported} members imported, lastImportDate: ${now.toISOString()}`);
+      } else {
+        // Create new entry
+        await db
+          .insert(csvImportStats)
+          .values({
+            userId: userId,
+            churchId: churchId,
+            lastImportDate: now,
+            importCount: 1,
+            totalMembersImported: membersImported,
+            createdAt: now,
+            updatedAt: now
+          });
+          
+        console.log(`Created CSV import stats for church ${churchId}: ${membersImported} members imported, lastImportDate: ${now.toISOString()}`);
+      }
+    } catch (error) {
+      console.error("Error in updateCsvImportStats:", error);
       throw error;
     }
   }
