@@ -325,6 +325,117 @@ router.patch("/churches/:id/status", requireGlobalAdmin, validateSchema(updateCh
   }
 });
 
+// Purge church data - completely delete church and all associated data
+router.delete("/churches/:id/purge", requireGlobalAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if the church exists
+    const [existingChurch] = await db
+      .select()
+      .from(churches)
+      .where(eq(churches.id, id));
+    
+    if (!existingChurch) {
+      return res.status(404).json({ message: "Church not found" });
+    }
+    
+    // Start a transaction to ensure all deletions succeed or fail together
+    await db.execute(`BEGIN`);
+    
+    try {
+      // Get users associated with church (needed for later deletions)
+      const usersResult = await db.execute(
+        `SELECT id FROM users WHERE church_id = '${id}'`
+      );
+      const userIds = usersResult.rows.map(user => user.id);
+      const userIdsForQuery = userIds.length > 0 ? userIds.map(id => `'${id}'`).join(',') : "'0'";
+      
+      console.log(`Purging church ${id} and ${userIds.length} associated users`);
+      
+      // Delete verification codes associated with users
+      if (userIds.length > 0) {
+        await db.execute(
+          `DELETE FROM verification_codes WHERE user_id IN (${userIdsForQuery})`
+        );
+        console.log(`Deleted verification codes for users`);
+      }
+      
+      // Delete planning center tokens
+      await db.execute(
+        `DELETE FROM planning_center_tokens WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted planning center tokens`);
+      
+      // Delete subscription data
+      await db.execute(
+        `DELETE FROM subscriptions WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted subscriptions`);
+      
+      // Delete service options
+      await db.execute(
+        `DELETE FROM service_options WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted service options`);
+      
+      // Delete report recipients
+      await db.execute(
+        `DELETE FROM report_recipients WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted report recipients`);
+      
+      // Delete donations first to maintain referential integrity
+      await db.execute(
+        `DELETE FROM donations WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted donations`);
+      
+      // Delete batches
+      await db.execute(
+        `DELETE FROM batches WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted batches`);
+      
+      // Delete members
+      await db.execute(
+        `DELETE FROM members WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted members`);
+      
+      // Delete users associated with the church
+      await db.execute(
+        `DELETE FROM users WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted users`);
+      
+      // Finally, delete the church itself
+      await db.execute(
+        `DELETE FROM churches WHERE id = '${id}'`
+      );
+      console.log(`Deleted church entity`);
+      
+      // Commit the transaction
+      await db.execute(`COMMIT`);
+      
+      res.status(200).json({
+        message: "Church and all associated data purged successfully",
+        churchId: id
+      });
+      
+    } catch (error) {
+      // Rollback the transaction if any queries fail
+      await db.execute(`ROLLBACK`);
+      console.error("Error in purge transaction:", error);
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error("Error purging church data:", error);
+    res.status(500).json({ message: "Failed to purge church data" });
+  }
+});
+
 // Get users for a specific church
 router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
   try {
