@@ -362,7 +362,15 @@ const Profile = () => {
                       <Label htmlFor="role" className="font-bold">Role:</Label>
                       <Input 
                         id="role" 
-                        value={user?.isMasterAdmin ? "Master Admin" : user?.role === "ADMIN" ? "Administrator" : "Usher"} 
+                        value={
+                          user?.isMasterAdmin 
+                            ? "Master Admin" 
+                            : user?.role === "ACCOUNT_OWNER" 
+                              ? "Account Owner" 
+                              : user?.role === "ADMIN" 
+                                ? "Administrator" 
+                                : "Standard User"
+                        } 
                         disabled
                       />
                     </div>
@@ -372,7 +380,7 @@ const Profile = () => {
                     <Button 
                       type="submit" 
                       disabled={updateProfileMutation.isPending}
-                      className="bg-[#69ad4c] hover:bg-[#5c9941]"
+                      className="bg-[#69ad4c] hover:bg-[#5c9941] text-white"
                     >
                       {updateProfileMutation.isPending ? (
                         <>
