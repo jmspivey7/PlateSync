@@ -75,7 +75,7 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["ADMIN", "STANDARD"]),
+  role: z.enum(["ADMIN", "STANDARD_USER"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -94,7 +94,7 @@ const CreateUserForm = ({
       email: "",
       firstName: "",
       lastName: "",
-      role: "STANDARD",
+      role: "STANDARD_USER",
     },
   });
 
@@ -508,8 +508,8 @@ const UserManagement = () => {
                           <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
                         ) : user.role === "ADMIN" ? (
                           <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
-                        ) : user.role === "USHER" ? (
-                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Usher</Badge>
+                        ) : user.role === "STANDARD_USER" ? (
+                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
                         ) : (
                           <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{user.role}</Badge>
                         )}
@@ -573,8 +573,8 @@ const UserManagement = () => {
                         <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
                       ) : selectedUser.role === "ADMIN" ? (
                         <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
-                      ) : selectedUser.role === "USHER" ? (
-                        <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Usher</Badge>
+                      ) : selectedUser.role === "STANDARD_USER" ? (
+                        <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
                       ) : (
                         <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{selectedUser.role}</Badge>
                       )}

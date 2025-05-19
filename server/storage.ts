@@ -380,7 +380,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Get the church ID for a user - for ADMIN users, it's their own ID
-  // For USHER users, we need to find which church they belong to
+  // For STANDARD_USER users, we need to find which church they belong to
   async getChurchIdForUser(userId: string): Promise<string> {
     try {
       // Get user details from the database
@@ -446,7 +446,7 @@ export class DatabaseStorage implements IStorage {
         return userId;
       }
       
-      // For USHER users without a churchId, we need to find the ADMIN they're associated with
+      // For STANDARD_USER users without a churchId, we need to find the ADMIN they're associated with
       
       // First check if they've participated in any batches
       const [batch] = await db
