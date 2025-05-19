@@ -216,24 +216,6 @@ export default function PlanningCenterIntegration() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-100 rounded-md p-4 flex items-start mb-4">
-                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-medium text-blue-800">Setting up Planning Center OAuth</h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    You need to register an OAuth application in Planning Center's Developer portal.
-                    <a 
-                      href="https://api.planningcenteronline.com/oauth/applications" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline ml-1 inline-flex items-center"
-                    >
-                      Open Planning Center Developer Portal
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </p>
-                </div>
-              </div>
             
               <div className="space-y-2">
                 <Label htmlFor="clientId">Client ID</Label>
