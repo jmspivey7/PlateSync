@@ -347,7 +347,8 @@ const Profile = () => {
                         <Input 
                           id="currentPassword" 
                           type={showCurrentPassword ? "text" : "password"}
-                          className="pr-10"
+                          className="pr-10 [text-security:disc]"
+                          placeholder="••••••••"
                           {...passwordForm.register("currentPassword")}
                         />
                         <button
@@ -376,7 +377,8 @@ const Profile = () => {
                         <Input 
                           id="newPassword" 
                           type={showNewPassword ? "text" : "password"}
-                          className="pr-10"
+                          className="pr-10 [text-security:disc]"
+                          placeholder="••••••••"
                           {...passwordForm.register("newPassword")}
                         />
                         <button
@@ -408,7 +410,8 @@ const Profile = () => {
                         <Input 
                           id="confirmPassword" 
                           type={showConfirmPassword ? "text" : "password"}
-                          className="pr-10"
+                          className="pr-10 [text-security:disc]"
+                          placeholder="••••••••"
                           {...passwordForm.register("confirmPassword")}
                         />
                         <button
@@ -435,7 +438,7 @@ const Profile = () => {
                   <div className="pt-4">
                     <Button 
                       type="submit" 
-                      className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                      className="bg-[#69ad4c] hover:bg-[#588f3f] text-white"
                       disabled={changePasswordMutation.isPending}
                     >
                       {changePasswordMutation.isPending ? (
@@ -445,7 +448,7 @@ const Profile = () => {
                         </>
                       ) : (
                         <>
-                          <Lock className="mr-2 h-4 w-4" />
+                          <Key className="mr-2 h-4 w-4" />
                           Change Password
                         </>
                       )}

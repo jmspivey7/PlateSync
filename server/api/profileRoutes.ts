@@ -138,8 +138,37 @@ router.post('/password', async (req, res) => {
     
     const { currentPassword, newPassword } = req.body;
     
-    // This would need to verify the current password and hash the new one
-    // Implement password hashing and verification as needed
+    // Get current user from database
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    if (!user || !user.password) {
+      return res.status(400).json({ success: false, message: 'User not found or no password set' });
+    }
+    
+    // Verify current password
+    const { verifyPassword, scryptHash } = await import('../util');
+    const isPasswordValid = await verifyPassword(currentPassword, user.password);
+    
+    if (!isPasswordValid) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+    
+    // Hash new password
+    const hashedPassword = await scryptHash(newPassword);
+    
+    // Update password in database
+    await db
+      .update(users)
+      .set({ 
+        password: hashedPassword,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+    
+    console.log(`Updated password for user: ${userId}`);
     
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
