@@ -353,13 +353,11 @@ router.delete("/churches/:id/purge", requireGlobalAdmin, async (req, res) => {
       
       console.log(`Purging church ${id} and ${userIds.length} associated users`);
       
-      // Delete verification codes associated with users
-      if (userIds.length > 0) {
-        await db.execute(
-          `DELETE FROM verification_codes WHERE user_id IN (${userIdsForQuery})`
-        );
-        console.log(`Deleted verification codes for users`);
-      }
+      // Delete verification codes for this church
+      await db.execute(
+        `DELETE FROM verification_codes WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted verification codes for church`);
       
       // Delete planning center tokens
       await db.execute(
@@ -408,6 +406,15 @@ router.delete("/churches/:id/purge", requireGlobalAdmin, async (req, res) => {
         `DELETE FROM users WHERE church_id = '${id}'`
       );
       console.log(`Deleted users`);
+      
+      // Delete sessions associated with users
+      // The sessions table stores session data in JSON format
+      if (userIds.length > 0) {
+        await db.execute(
+          `DELETE FROM sessions WHERE sess::jsonb->'user'->>'id' IN (${userIdsForQuery})`
+        );
+        console.log(`Deleted user sessions`);
+      }
       
       // Finally, delete the church itself
       await db.execute(

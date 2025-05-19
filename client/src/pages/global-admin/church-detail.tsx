@@ -395,228 +395,247 @@ export default function ChurchDetail() {
               <div className="flex space-x-2">
                 {isLoadingChurch ? (
                   <Skeleton className="h-10 w-32" />
-                ) : church?.status === "ACTIVE" ? (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button className="bg-amber-400 hover:bg-amber-500 text-black">Suspend Church</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Suspend Church</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to suspend {church?.name}? This will prevent all users from accessing the church account until you reactivate it.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          className="bg-amber-400 hover:bg-amber-500 text-black"
-                          onClick={() => handleStatusChange("SUSPENDED")}
+                ) : (
+                  <>
+                    {/* Purge Data Button */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          className="bg-purple-600 text-white hover:bg-purple-700"
                         >
-                          Suspend
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                ) : church?.status === "SUSPENDED" ? (
-                  <Button
-                    variant="outline"
-                    className="border-green-500 text-green-500 hover:bg-green-500/10"
-                    onClick={() => handleStatusChange("ACTIVE")}
-                  >
-                    Reactivate Church
-                  </Button>
-                ) : null}
-                
-                {/* Purge Data Button */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button className="bg-purple-600 hover:bg-purple-700 text-white">Purge Data</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Purge Church Data</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        <p className="text-red-600 font-semibold mb-2">WARNING: This is a destructive testing action!</p>
-                        <p>This will permanently delete {church?.name} AND all associated users from the database.</p>
-                        <p className="mt-2">This action is for testing purposes only and CANNOT be undone.</p>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        className="bg-purple-600 hover:bg-purple-700"
-                        onClick={() => purgeChurchData()}
+                          Purge Data
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            <p>This action will permanently delete <strong>ALL</strong> data associated with this church:</p>
+                            <ul className="list-disc pl-5 mt-2 space-y-1">
+                              <li>All user accounts</li>
+                              <li>All members</li>
+                              <li>All donations</li>
+                              <li>All batches</li>
+                              <li>All service options</li>
+                              <li>Planning Center integrations</li>
+                              <li>Subscription data</li>
+                            </ul>
+                            <p className="mt-3 font-bold text-destructive">This action cannot be undone and is intended for testing purposes only.</p>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => purgeChurchData()}
+                            className="bg-purple-600 hover:bg-purple-700"
+                          >
+                            Purge All Data
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    
+                    {church?.status === "ACTIVE" ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="bg-amber-400 hover:bg-amber-500 text-black">Suspend Church</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Suspend Church</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to suspend {church?.name}? This will prevent all users from accessing the church account until you reactivate it.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              className="bg-amber-400 hover:bg-amber-500 text-black"
+                              onClick={() => handleStatusChange("SUSPENDED")}
+                            >
+                              Suspend
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : church?.status === "SUSPENDED" ? (
+                      <Button
+                        variant="outline"
+                        className="border-green-500 text-green-500 hover:bg-green-500/10"
+                        onClick={() => handleStatusChange("ACTIVE")}
                       >
-                        Purge Data
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button className="bg-red-600 hover:bg-red-700 text-white">Delete Church</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Church</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete {church?.name}? This action cannot be undone and all data will be permanently removed.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => handleStatusChange("DELETED")}
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        Reactivate Church
+                      </Button>
+                    ) : null}
+                  </>
+                )}
               </div>
             </CardHeader>
             <CardContent>
               <div className="mb-4">
-                <span className="text-base">
-                  {isLoadingChurch ? <Skeleton className="h-5 w-48 inline-block" /> : church?.contactEmail}
-                </span>
+                <h4 className="text-base font-medium mb-2">Church Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Contact Email</span>
+                    <span className="flex items-center">
+                      <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-6 w-full" />
+                      ) : (
+                        <a href={`mailto:${church?.contactEmail}`} className="text-blue-600 hover:underline">
+                          {church?.contactEmail}
+                        </a>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Created On</span>
+                    <span className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-6 w-36" />
+                      ) : (
+                        formatDate(church?.createdAt || "", false)
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Last Updated</span>
+                    <span className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-6 w-36" />
+                      ) : (
+                        formatDate(church?.updatedAt || "", true)
+                      )}
+                    </span>
+                  </div>
+                </div>
               </div>
               
-              <div className="flex flex-wrap gap-6 mb-6">
-                <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Users</span>
-                  <span className="text-2xl font-semibold">
-                    {isLoadingChurch ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      church?.userCount || 0
-                    )}
-                  </span>
-                </div>
-                <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Members</span>
-                  <span className="text-2xl font-semibold">
-                    {isLoadingChurch ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      church?.totalMembers || 0
-                    )}
-                  </span>
-                </div>
-                <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Total Donations</span>
-                  <span className="text-2xl font-semibold">
-                    {isLoadingChurch ? (
-                      <Skeleton className="h-8 w-24" />
-                    ) : (
-                      new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                      }).format(parseFloat(church?.totalDonations || "0"))
-                    )}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex flex-col space-y-4 mb-2">
-                <h3 className="text-base font-semibold">Subscription Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2 text-amber-500" />
-                    <div>
-                      <span className="text-muted-foreground">Trial Start Date:</span><br />
-                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "05/01/2025"}</span>
-                    </div>
+              <div>
+                <h4 className="text-base font-medium mb-2">Key Metrics</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Users</span>
+                    <span className="text-2xl font-semibold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-12" />
+                      ) : (
+                        church?.userCount || 0
+                      )}
+                    </span>
                   </div>
-                  <div className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2 text-green-500" />
-                    <div>
-                      <span className="text-muted-foreground">Subscription Start Date:</span><br />
-                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "05/15/2025"}</span>
-                    </div>
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Members</span>
+                    <span className="text-2xl font-semibold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-12" />
+                      ) : (
+                        church?.totalMembers || 0
+                      )}
+                    </span>
                   </div>
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-blue-500" />
-                    <div>
-                      <span className="text-muted-foreground">Last Payment Date:</span><br />
-                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "05/15/2025"}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="h-5 w-5 mr-2 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
-                    <div>
-                      <span className="text-muted-foreground">Last Payment Made:</span><br />
-                      <span className="font-medium">{isLoadingChurch ? <Skeleton className="h-5 w-32 inline-block" /> : "$25.00"}</span>
-                    </div>
+                  <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Total Donations</span>
+                    <span className="text-2xl font-semibold">
+                      {isLoadingChurch ? (
+                        <Skeleton className="h-8 w-24" />
+                      ) : (
+                        new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                        }).format(parseFloat(church?.totalDonations || "0"))
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
             </CardContent>
-
           </Card>
           
           {/* Church Users Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Church Users</CardTitle>
-              <CardDescription>
-                Manage user accounts for this church
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    Church Users
+                  </CardTitle>
+                  <CardDescription>All users associated with this church</CardDescription>
+                </div>
+                <div className="flex items-center">
+                  <div className="px-3 py-1 bg-gray-100 rounded-md text-sm font-medium flex items-center">
+                    <span>{isLoadingUsers ? "..." : users?.length || 0} Users</span>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoadingUsers ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 border border-gray-200 rounded-md">
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-6 w-24" />
+                    </div>
+                  ))}
+                </div>
+              ) : isUsersError ? (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-700">Failed to load users. Please try again.</p>
                 </div>
               ) : users && users.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="font-bold">
-                        <TableHead className="font-bold">User Name</TableHead>
-                        <TableHead className="font-bold">Email</TableHead>
-                        <TableHead className="font-bold">Role</TableHead>
-                        <TableHead className="font-bold text-right">Created</TableHead>
-                        <TableHead className="font-bold text-right">Last Login</TableHead>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Last Login</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {users.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell>
-                            <div className="font-medium">
-                              {user.firstName ? `${user.firstName} ${user.lastName || ''}` : 'User'}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{user.firstName || ""} {user.lastName || ""}</span>
+                              <span className="text-sm text-muted-foreground flex items-center">
+                                <AtSign className="h-3 w-3 mr-1" />
+                                {user.email}
+                              </span>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {user.email}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
-                              <Shield className="h-4 w-4 mr-1 text-blue-600" />
-                              <span>{user.isAccountOwner ? "Account Owner" : "Standard User"}</span>
+                              {user.isAccountOwner && (
+                                <Shield className="h-4 w-4 mr-1 text-indigo-600" />
+                              )}
+                              <span>{user.role === "ADMIN" ? "Administrator" : "Usher"}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">{formatDate(user.createdAt, false)}</TableCell>
-                          <TableCell className="text-right">{user.lastLoginAt ? formatDate(user.lastLoginAt, true) : "Never"}</TableCell>
+                          <TableCell>{formatDate(user.createdAt)}</TableCell>
+                          <TableCell>{user.lastLoginAt ? formatDate(user.lastLoginAt, true) : "Never"}</TableCell>
+                          <TableCell>
+                            <Badge variant={user.isActive ? "outline" : "destructive"} className={user.isActive ? "bg-green-500 text-white hover:bg-green-500" : ""}>
+                              {user.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
               ) : (
-                <div className="text-center py-10 text-muted-foreground">
-                  <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                  <p>No users found for this church</p>
+                <div className="p-6 text-center border border-dashed border-gray-300 rounded-lg">
+                  <Users className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <h3 className="text-lg font-medium text-gray-900">No users found</h3>
+                  <p className="text-sm text-gray-500 mt-1">This church doesn't have any users yet.</p>
                 </div>
               )}
             </CardContent>
