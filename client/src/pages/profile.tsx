@@ -97,19 +97,16 @@ const Profile = () => {
     onSuccess: async (data) => {
       console.log('Profile update successful:', data);
       
-      // First invalidate auth user data
-      await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      
-      // Clear all caches to ensure fresh data
-      queryClient.clear();
-      
+      // Show success toast before navigation
       toast({
         title: 'Success',
         description: 'Your profile has been updated successfully',
       });
       
-      // Hard navigation to force a complete refresh - most reliable approach
-      window.location.href = window.location.pathname;
+      // Instead of trying to update the React Query cache,
+      // navigate to login-local then immediately back to refresh everything
+      // This forces a complete authentication refresh which is most reliable
+      window.location.href = "/login-local?redirectTo=" + encodeURIComponent(window.location.pathname);
     },
     onError: (error) => {
       console.error('Profile update error:', error);
