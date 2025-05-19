@@ -423,7 +423,7 @@ export function DonationChart() {
           All Counts
         </Button>
       </CardHeader>
-      <CardContent className="relative pb-6">
+      <CardContent className="relative pb-4">
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -471,7 +471,7 @@ export function DonationChart() {
           </ResponsiveContainer>
         </div>
       </CardContent>
-      <CardFooter className="pt-2 pb-3">
+      <CardFooter className="pt-1 pb-3">
         <div className="flex w-full justify-between items-center">
           <div className="grid gap-1">
             <div className="flex items-center gap-2 font-medium leading-none">
