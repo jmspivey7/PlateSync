@@ -431,7 +431,11 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
     // Third try: If no template exists, try getting by ID=1 (legacy approach)
     if (!template) {
       console.log('📧 No church-specific welcome email found, trying by ID=1');
-      template = await storage.getEmailTemplate(1);
+      try {
+        template = await storage.getEmailTemplate(1, 'SYSTEM_TEMPLATES');
+      } catch (error) {
+        console.log('📧 Error getting template by ID=1:', error);
+      }
     }
     
     // Log what we found for debugging
