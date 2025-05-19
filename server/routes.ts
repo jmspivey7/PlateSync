@@ -2552,7 +2552,7 @@ Sincerely,
         
         // Get church details for the welcome email
         const churchDetails = await storage.getChurch(userChurchId);
-        const churchName = churchDetails?.churchName || 'Your Church';
+        const churchName = churchDetails?.name || 'Your Church';
         
         await sendWelcomeEmail({
           to: newUser.email,
@@ -2635,14 +2635,17 @@ Sincerely,
           // Only include users that belong to this church  
           const isChurchMember = user.churchId === churchId;
           
+          // Filter out any users with INACTIVE_ prefix in email (these are deleted users)
+          const isActive = !(user.email && user.email.startsWith('INACTIVE_'));
+          
           // Filter out any users where role is GLOBAL_ADMIN, MASTER_ADMIN, or any other admin type
           const isNotGlobalAdmin = 
             user.role !== "GLOBAL_ADMIN" && 
             user.role !== "MASTER_ADMIN" &&
             !(user.id !== userId && user.id !== churchId && user.role === "ADMIN");
           
-          // Only include users that are church members and not global admins
-          return isChurchMember && isNotGlobalAdmin;
+          // Only include users that are church members, active, and not global admins
+          return isChurchMember && isNotGlobalAdmin && isActive;
         });
         
         // Remove password field before sending response
