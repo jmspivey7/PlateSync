@@ -2472,16 +2472,18 @@ PlateSync Reporting System
   
   async updatePlanningCenterImportStats(churchId: string, peopleCount: number): Promise<void> {
     try {
-      // Update the tokens record for this church with the people count
+      const now = new Date();
+      // Update the tokens record for this church with the people count AND the lastSyncDate
       await db
         .update(planningCenterTokens)
         .set({
           peopleCount: peopleCount,
-          updatedAt: new Date()
+          lastSyncDate: now,
+          updatedAt: now
         })
         .where(eq(planningCenterTokens.churchId, churchId));
         
-      console.log(`Updated Planning Center stats for church ${churchId}: ${peopleCount} people available`);
+      console.log(`Updated Planning Center stats for church ${churchId}: ${peopleCount} people available, lastSyncDate: ${now.toISOString()}`);
     } catch (error) {
       console.error("Error in updatePlanningCenterImportStats:", error);
       throw error;
