@@ -57,13 +57,35 @@ const AccountDropdown = () => {
   // Use the most up-to-date user data
   const effectiveUser = localUserData || user;
   
-  // Get initials or use default fallback
+  // Get initials from first and last name
   const getInitials = () => {
     if (!effectiveUser) return "U";
     
-    // If account owner, show "O", if admin show "A", otherwise "S" for standard user
-    if (isAccountOwner) return "O";
-    return isAdmin ? "A" : "S";
+    // Use first letter of first name and first letter of last name
+    if (effectiveUser.firstName && effectiveUser.lastName) {
+      return `${effectiveUser.firstName.charAt(0)}${effectiveUser.lastName.charAt(0)}`;
+    }
+    
+    // If only first name is available
+    if (effectiveUser.firstName) {
+      return effectiveUser.firstName.charAt(0);
+    }
+    
+    // If only last name is available
+    if (effectiveUser.lastName) {
+      return effectiveUser.lastName.charAt(0);
+    }
+    
+    // Fall back to email or username
+    if (effectiveUser.email) {
+      return effectiveUser.email.charAt(0).toUpperCase();
+    }
+    
+    if (effectiveUser.username) {
+      return effectiveUser.username.charAt(0).toUpperCase();
+    }
+    
+    return "U";
   };
   
   // Get full name or fall back to username/email
@@ -87,7 +109,7 @@ const AccountDropdown = () => {
             {user?.profileImageUrl ? (
               <AvatarImage src={user.profileImageUrl} alt={getDisplayName()} />
             ) : (
-              <AvatarFallback>{getInitials()}</AvatarFallback>
+              <AvatarFallback className="text-white">{getInitials()}</AvatarFallback>
             )}
           </Avatar>
           <span className="text-[1.1rem]">{getDisplayName()}</span>
