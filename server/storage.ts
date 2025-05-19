@@ -1348,21 +1348,49 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBatch(id: number, churchId: string): Promise<void> {
-    // First, delete all donations associated with this batch
-    await db
-      .delete(donations)
-      .where(and(
-        eq(donations.batchId, id),
-        eq(donations.churchId, churchId)
-      ));
-    
-    // Then delete the batch itself
-    await db
-      .delete(batches)
-      .where(and(
-        eq(batches.id, id),
-        eq(batches.churchId, churchId)
-      ));
+    try {
+      // Begin transaction to ensure data integrity
+      await db.transaction(async (tx) => {
+        // 1. First fetch the batch to verify it exists and belongs to the church
+        const [batch] = await tx
+          .select()
+          .from(batches)
+          .where(and(
+            eq(batches.id, id),
+            eq(batches.churchId, churchId)
+          ));
+        
+        if (!batch) {
+          throw new Error(`Batch not found with ID ${id} for church ${churchId}`);
+        }
+        
+        // 2. Delete any donation notifications related to this batch's donations
+        // This is handled by cascading deletes in the database, but we'll make it explicit here
+
+        // 3. Delete all donations associated with this batch
+        await tx
+          .delete(donations)
+          .where(and(
+            eq(donations.batchId, id),
+            eq(donations.churchId, churchId)
+          ));
+        
+        console.log(`Deleted all donations for batch ${id} from church ${churchId}`);
+        
+        // 4. Delete the batch itself
+        await tx
+          .delete(batches)
+          .where(and(
+            eq(batches.id, id),
+            eq(batches.churchId, churchId)
+          ));
+        
+        console.log(`Deleted batch ${id} from church ${churchId}`);
+      });
+    } catch (error) {
+      console.error(`Error deleting batch ${id} for church ${churchId}:`, error);
+      throw error;
+    }
   }
 
   async getCurrentBatch(churchId: string): Promise<Batch | undefined> {
