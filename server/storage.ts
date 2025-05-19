@@ -1123,19 +1123,40 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async deleteUser(id: string): Promise<void> {
-    // Note: This is a temporary implementation until we can run the migration
-    // to add the isActive column. For now, we'll mark the user as inactive
-    // by prefixing their email with "INACTIVE_" which is better than deleting.
-    const user = await this.getUser(id);
-    if (user) {
-      await db
-        .update(users)
-        .set({
-          email: `INACTIVE_${user.email}`,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, id));
+  async deleteUser(id: string): Promise<boolean> {
+    try {
+      // First check if user exists
+      const user = await this.getUser(id);
+      if (!user) {
+        console.log(`Cannot delete non-existent user: ${id}`);
+        return false;
+      }
+      
+      console.log(`Deleting user with ID: ${id}`);
+      
+      // Use transaction to ensure data consistency
+      await db.transaction(async (tx) => {
+        // First delete any related records that reference this user
+        
+        // Delete any church user relationships
+        await tx.execute(
+          sql`DELETE FROM church_users WHERE user_id = ${id}`
+        );
+        
+        // Delete any email verification or password reset tokens
+        await tx.execute(
+          sql`DELETE FROM verification_codes WHERE user_id = ${id}`
+        );
+        
+        // Remove the user completely
+        await tx.delete(users).where(eq(users.id, id));
+      });
+      
+      console.log(`Successfully deleted user: ${id}`);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting user ${id}:`, error);
+      return false;
     }
   }
 
