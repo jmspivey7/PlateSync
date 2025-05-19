@@ -59,11 +59,8 @@ export function useAuth() {
       }, 500);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Login failed",
-        description: error.message || "Invalid credentials",
-        variant: "destructive",
-      });
+      // Login error is handled and displayed in the UI component
+      console.error("Login error in useAuth hook:", error.message);
     },
   });
 
