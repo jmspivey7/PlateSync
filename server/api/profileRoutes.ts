@@ -131,16 +131,36 @@ router.post('/', async (req, res) => {
       })
       .where(eq(users.id, userId));
     
-    // Invalidate user session to reflect changes immediately
-    if (req.user) {
-      req.user.firstName = firstName ?? req.user.firstName;
-      req.user.lastName = lastName ?? req.user.lastName;
-      // Save updated session
-      req.session.save((err) => {
-        if (err) {
-          console.error('Error saving session:', err);
+    // Get the current user from the database with updated values
+    try {
+      // Fetch the updated user data after the update
+      const [updatedUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId));
+      
+      if (updatedUser) {
+        console.log('Updating session with new user data:', {
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName
+        });
+        
+        // Properly update the session user with all properties
+        if (req.user) {
+          Object.assign(req.user, updatedUser);
+          
+          // Save the updated session
+          req.session.save((err) => {
+            if (err) {
+              console.error('Error saving session:', err);
+            } else {
+              console.log('Session updated successfully');
+            }
+          });
         }
-      });
+      }
+    } catch (fetchError) {
+      console.error('Error fetching updated user data:', fetchError);
     }
     
     res.json({ success: true, message: 'Profile updated successfully' });

@@ -84,24 +84,36 @@ const Profile = () => {
   
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: ProfileFormValues) => {
-      return apiRequest('/api/profile', 'POST', data);
+    mutationFn: async (data: ProfileFormValues) => {
+      // Log the data being sent
+      console.log('Updating profile with data:', data);
+      
+      // Make the API request
+      const response = await apiRequest<{success: boolean, message: string}>('/api/profile', 'POST', data);
+      
+      // Return the response data
+      return response;
     },
-    onSuccess: () => {
-      // Invalidate user query to refresh the data
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+    onSuccess: (data) => {
+      console.log('Profile update successful:', data);
+      
+      // Clear all cached data to ensure fresh fetch
+      queryClient.clear();
       
       toast({
         title: 'Success',
         description: 'Your profile has been updated successfully',
       });
       
-      // Force window refresh to ensure all components update
+      // Force a complete page reload to ensure all components are refreshed
+      // This is the most reliable way to ensure the UI reflects the updated data
       setTimeout(() => {
         window.location.reload();
-      }, 300);
+      }, 500);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Profile update error:', error);
+      
       toast({
         title: 'Error',
         description: 'Failed to update your profile',
