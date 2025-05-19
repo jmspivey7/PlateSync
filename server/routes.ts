@@ -723,6 +723,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Delete a batch and all associated donations
+  app.delete('/api/batches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Only allow account owners to delete finalized batches
+      if (!user.isAccountOwner) {
+        // Check if this is a finalized batch
+        const batch = await storage.getBatch(batchId, user.churchId || userId);
+        if (batch && batch.status === 'FINALIZED') {
+          return res.status(403).json({ 
+            message: 'Only account owners can delete finalized counts' 
+          });
+        }
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      console.log(`Deleting batch ${batchId} for church ID: ${churchId}`);
+      
+      // The deleteBatch function in storage.ts already handles deleting associated donations first
+      await storage.deleteBatch(batchId, churchId);
+      
+      res.status(200).json({ message: 'Batch deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting batch:', error);
+      
+      // Check for foreign key constraint violation
+      if (error instanceof Error && error.message.includes('foreign key constraint')) {
+        return res.status(400).json({ 
+          message: 'Cannot delete this count because it has associated records. Please contact support.' 
+        });
+      }
+      
+      res.status(500).json({ message: 'Failed to delete batch' });
+    }
+  });
+  
   // Email Template Routes
   
   // Get all email templates for a church
