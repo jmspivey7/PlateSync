@@ -395,6 +395,7 @@ interface WelcomeEmailParams {
   churchId: string;
   verificationToken: string;
   verificationUrl: string;
+  role?: string;
 }
 
 export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
@@ -414,13 +415,20 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   try {
     // First try to fetch the custom email template from the database
     console.log(`📧 Looking for WELCOME template for church ID: ${params.churchId}`);
-    // Try to get church-specific template first
-    let template = await storage.getEmailTemplateByType('WELCOME', params.churchId);
     
-    // If no church-specific template found, look for Global Admin template
+    // Look for Global Admin template first
+    console.log('📧 Looking for Global Admin WELCOME template');
+    let template = await storage.getEmailTemplateByType('WELCOME', 'global');
+    
+    // If no global template, check for church-specific template as fallback
     if (!template) {
-      console.log('📧 No church-specific template found, looking for Global Admin template');
-      template = await storage.getEmailTemplateByType('WELCOME', 'global');
+      console.log('📧 No global WELCOME template found, checking church-specific template');
+      template = await storage.getEmailTemplateByType('WELCOME', params.churchId);
+    }
+    
+    // Additional debugging to see what we found
+    if (template) {
+      console.log(`📧 Found welcome template with id: ${template.id}`);
     }
     
     if (template) {
@@ -431,12 +439,16 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
-      // Replace template variables
+      // Replace template variables with both formats (old and new)
       const replacements: Record<string, string> = {
         '{{firstName}}': params.firstName,
         '{{lastName}}': params.lastName,
+        '{{USER_NAME}}': `${params.firstName} ${params.lastName}`,
         '{{churchName}}': params.churchName,
+        '{{CHURCH_NAME}}': params.churchName,
         '{{verificationUrl}}': params.verificationUrl,
+        '{{USER_EMAIL}}': params.to,
+        '{{USER_ROLE}}': params.role || 'User',
       };
       
       Object.entries(replacements).forEach(([key, value]) => {
