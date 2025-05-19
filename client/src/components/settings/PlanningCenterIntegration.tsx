@@ -196,12 +196,17 @@ const PlanningCenterIntegration = () => {
     queryFn: async () => {
       try {
         const response = await apiRequest('/api/planning-center/status', 'GET');
+        console.log('Planning Center status response:', response);
         return response;
       } catch (error) {
         // If we get a 403, it means Planning Center is not connected
+        console.error('Planning Center status error:', error);
         return { connected: false };
       }
     },
+    // Force refetch after successful import
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // We'll use a dedicated redirect page that's meant to handle Planning Center auth
@@ -409,7 +414,9 @@ const PlanningCenterIntegration = () => {
               <span className="text-xs text-gray-500 mt-1 text-center">
                 {status.lastSyncDate 
                   ? `Last import: ${new Date(status.lastSyncDate).toLocaleDateString()} at ${new Date(status.lastSyncDate).toLocaleTimeString()}`
-                  : isImporting ? "Import in progress..." : "No members imported yet"}
+                  : isImporting ? "Import in progress..." : importMembersMutation.isSuccess 
+                      ? "Import completed successfully" 
+                      : "No members imported yet"}
               </span>
             </div>
           </div>
