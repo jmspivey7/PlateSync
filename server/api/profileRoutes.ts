@@ -147,17 +147,42 @@ router.post('/', async (req, res) => {
         
         // Properly update the session user with all properties
         if (req.user) {
-          Object.assign(req.user, updatedUser);
+          // Explicitly update each field to ensure changes are applied
+          req.user.firstName = updatedUser.firstName;
+          req.user.lastName = updatedUser.lastName;
+          req.user.churchName = updatedUser.churchName;
+          req.user.emailNotificationsEnabled = updatedUser.emailNotificationsEnabled;
+          req.user.role = updatedUser.role;
+          req.user.updatedAt = updatedUser.updatedAt;
           
-          // Save the updated session
-          req.session.save((err) => {
-            if (err) {
-              console.error('Error saving session:', err);
-            } else {
-              console.log('Session updated successfully');
-            }
+          // Save the updated session and wait for completion
+          await new Promise<void>((resolve, reject) => {
+            req.session.save((err) => {
+              if (err) {
+                console.error('Error saving session:', err);
+                reject(err);
+              } else {
+                console.log('Session updated successfully');
+                resolve();
+              }
+            });
+          });
+          
+          // Force regenerate the session to ensure changes are applied
+          await new Promise<void>((resolve, reject) => {
+            req.session.regenerate((err) => {
+              if (err) {
+                console.error('Error regenerating session:', err);
+                reject(err);
+              } else {
+                console.log('Session regenerated successfully');
+                resolve();
+              }
+            });
           });
         }
+      } else {
+        console.error('Could not fetch updated user after profile update');
       }
     } catch (fetchError) {
       console.error('Error fetching updated user data:', fetchError);

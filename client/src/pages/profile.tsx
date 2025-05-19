@@ -94,10 +94,13 @@ const Profile = () => {
       // Return the response data
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Profile update successful:', data);
       
-      // Clear all cached data to ensure fresh fetch
+      // First invalidate auth user data
+      await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
+      // Clear all caches to ensure fresh data
       queryClient.clear();
       
       toast({
@@ -105,11 +108,8 @@ const Profile = () => {
         description: 'Your profile has been updated successfully',
       });
       
-      // Force a complete page reload to ensure all components are refreshed
-      // This is the most reliable way to ensure the UI reflects the updated data
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // Hard navigation to force a complete refresh - most reliable approach
+      window.location.href = window.location.pathname;
     },
     onError: (error) => {
       console.error('Profile update error:', error);
