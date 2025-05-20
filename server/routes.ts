@@ -744,10 +744,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the churchId from the user object, or fallback to using the userId as churchId
       const churchId = user.churchId || userId;
       
+      // Process the date to ensure it's in the correct format
       const batchData = {
         ...req.body,
         churchId
       };
+      
+      // If date is a string (e.g. "2025-05-19"), convert it to a proper Date object
+      if (batchData.date && typeof batchData.date === 'string') {
+        try {
+          // Parse the date string and create a proper Date object
+          const dateStr = batchData.date.trim();
+          const dateObj = new Date(dateStr);
+          
+          // Check if date is valid
+          if (isNaN(dateObj.getTime())) {
+            throw new Error('Invalid date format');
+          }
+          
+          batchData.date = dateObj;
+        } catch (dateError) {
+          console.error('Error parsing date:', dateError);
+          return res.status(400).json({ message: 'Invalid date format' });
+        }
+      }
       
       console.log(`Creating batch for church ID: ${churchId}`);
       const newBatch = await storage.createBatch(batchData);
