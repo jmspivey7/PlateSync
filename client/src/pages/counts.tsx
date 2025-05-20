@@ -66,9 +66,12 @@ const CountsPage = () => {
     enabled: !!selectedBatchId,
   });
 
-  // Filter batches by status - simplified to just OPEN and FINALIZED
+  // Filter batches by status - showing PENDING_FINALIZATION in "open" tab
   const filteredBatches = batches?.filter((batch) => {
-    if (activeTab === "open") return batch.status === "OPEN";
+    if (activeTab === "open") {
+      // Consider both OPEN and PENDING_FINALIZATION as "open" counts
+      return batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION";
+    }
     if (activeTab === "finalized") return batch.status === "FINALIZED";
     return true;
   });
