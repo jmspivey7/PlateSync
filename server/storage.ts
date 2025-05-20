@@ -88,10 +88,54 @@ export async function syncChurchInfoToMembers(db: any, churchId: string) {
       .set(updates)
       .where(eq(users.churchId, churchId));
       
-    console.log(`Updated ${result.count || 'multiple'} users with synced church information`);
+    console.log(`Updated ${result.count || 'unknown number of'} users with synced church information`);
     return true;
   } catch (error) {
     console.error(`Error syncing church information: ${error}`);
+    return false;
+  }
+}
+
+// Function to apply church details to a specific user
+export async function applyChurchDetailsToUser(db: any, userId: string, churchId: string) {
+  try {
+    console.log(`User ${userId} missing church details, checking church ID: ${churchId}`);
+    
+    // Get church owner/admin information (source of truth)
+    const [churchAdmin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, churchId));
+      
+    if (!churchAdmin) {
+      console.log(`No church admin found with ID ${churchId}`);
+      return false;
+    }
+    
+    // Extract church details
+    const updates: any = {
+      updatedAt: new Date()
+    };
+    
+    if (churchAdmin.churchName) {
+      updates.churchName = churchAdmin.churchName;
+    }
+    
+    if (churchAdmin.churchLogoUrl) {
+      updates.churchLogoUrl = churchAdmin.churchLogoUrl;
+      console.log(`Found church logo: ${churchAdmin.churchLogoUrl} for church ${churchId}`);
+    }
+    
+    // Update the specific user
+    await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, userId));
+      
+    console.log(`Updated user ${userId} with church logo information`);
+    return true;
+  } catch (error) {
+    console.error(`Error applying church details to user ${userId}: ${error}`);
     return false;
   }
 }
