@@ -258,6 +258,46 @@ See `shared/schema.ts` for complete database schema definitions.
 
 ---
 
+## Church Logo Management
+
+Proper handling of church logos is essential to ensure all users within a church organization see the same branding.
+
+### Logo Storage and Synchronization
+
+1. **Storage Structure:**
+   - Church logos are stored as files in the `/public/logos` directory
+   - The file path is saved in the `church_logo_url` column in the `users` table
+   - Every user associated with a church must have the same logo URL in their user record
+
+2. **Logo Update Flow:**
+   - When an Account Owner uploads a new church logo:
+     - The logo file is saved to the server
+     - The logo URL is updated in the Account Owner's user record
+     - The same logo URL must be propagated to all other users who belong to the same church
+
+3. **Implementation Details:**
+   ```sql
+   -- SQL query to synchronize logo URL across all users in a church
+   UPDATE users 
+   SET church_logo_url = '/logos/church-logo-example.png' 
+   WHERE church_id = '12345' AND (church_logo_url IS NULL OR church_logo_url = '');
+   ```
+
+4. **Common Issues and Solutions:**
+   - **Issue:** Logo appears for Account Owner but not for other users
+     - **Solution:** Ensure the logo URL is copied to all users with the same `church_id`
+   - **Issue:** Logo disappears after user profile updates
+     - **Solution:** Preserve the `church_logo_url` field during any user record updates
+   - **Issue:** Different users see different logos
+     - **Solution:** Run a synchronization query to update all users in the church
+
+5. **Technical Implementation:**
+   - The logo URL should be maintained in the SharedNavigation component that displays the header
+   - Whenever a logo is uploaded, all users with matching `church_id` should have their `church_logo_url` field updated
+   - This ensures consistent branding across all user accounts in the same church
+
+---
+
 ## Planning Center Mobile Authentication Flow
 
 For a proper mobile authentication experience with Planning Center, the following workflow was implemented:
