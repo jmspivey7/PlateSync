@@ -8,6 +8,7 @@ import connectPg from 'connect-pg-simple';
 import globalAdminProfileRoutes from './api/globalAdminProfileRoutes';
 import profileRoutes from './api/profileRoutes';
 import settingsRoutes from './api/settingsRoutes';
+import donationRoutes from './api/donationRoutes';
 
 // Extend express-session with our user type
 declare global {
@@ -239,6 +240,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Settings routes including church logo management
   app.use('/api/settings', isAuthenticated, settingsRoutes);
+  
+  // Donation deletion endpoint
+  app.delete('/api/donations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.churchId) {
+        console.error(`User with ID ${userId} not found or has no church ID`);
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      const donationId = parseInt(req.params.id);
+      
+      if (isNaN(donationId)) {
+        return res.status(400).json({ message: 'Invalid donation ID' });  
+      }
+      
+      // Delete the donation
+      const deletedDonation = await storage.deleteDonation(donationId, user.churchId);
+      
+      if (!deletedDonation) {
+        return res.status(404).json({ message: 'Donation not found' });
+      }
+      
+      console.log(`Donation ${donationId} deleted successfully by user ${userId}`);
+      res.json({ success: true, message: 'Donation deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting donation:', error);
+      res.status(500).json({ message: 'Failed to delete donation' });
+    }
+  });
   
   // Member data endpoints
   app.get('/api/members', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
