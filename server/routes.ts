@@ -2426,22 +2426,62 @@ Sincerely,
       if (req.isAuthenticated && req.isAuthenticated() && req.user) {
         console.log("User authenticated via passport:", req.user.id);
         
-        // If req.user is already a complete user object from storage (via deserializer)
-        if (req.user.email) {
-          // Remove sensitive data
-          const { password, ...userWithoutPassword } = req.user;
-          return res.status(200).json(userWithoutPassword);
-        }
-        
         // Otherwise, get full user data using the ID
         const userId = req.user.id;
         console.log(`Getting full user data for ID: ${userId}`);
         
-        const user = await storage.getUserById(userId);
+        let user = await storage.getUserById(userId);
         
         if (!user) {
           console.log("User not found in database:", userId);
           return res.status(200).json(null);
+        }
+        
+        // Check if user belongs to a church and ensure they have the church logo synced
+        if (user.churchId && (!user.churchLogoUrl || !user.churchName)) {
+          try {
+            console.log(`User ${userId} missing church details, checking church ID: ${user.churchId}`);
+            
+            // Get church details from database
+            const churchUser = await storage.getUserById(user.churchId);
+            
+            if (churchUser && (churchUser.churchLogoUrl || churchUser.churchName)) {
+              console.log(`Found church details for ${user.churchId}, syncing logo and name to user ${userId}`);
+              
+              // Update user in the database with church details
+              const updates: any = {
+                updatedAt: new Date()
+              };
+              
+              if (churchUser.churchLogoUrl) {
+                updates.churchLogoUrl = churchUser.churchLogoUrl;
+              }
+              
+              if (churchUser.churchName) {
+                updates.churchName = churchUser.churchName;
+              }
+              
+              // Update the database
+              await db
+                .update(users)
+                .set(updates)
+                .where(eq(users.id, userId));
+                
+              // Also update the user object to be returned in this response
+              if (churchUser.churchLogoUrl) {
+                user.churchLogoUrl = churchUser.churchLogoUrl;
+              }
+              
+              if (churchUser.churchName) {
+                user.churchName = churchUser.churchName;
+              }
+              
+              console.log(`Updated user ${userId} with church logo information`);
+            }
+          } catch (syncError) {
+            console.error(`Error syncing church details for user ${userId}:`, syncError);
+            // Continue without failing the whole request
+          }
         }
         
         // Remove sensitive data
