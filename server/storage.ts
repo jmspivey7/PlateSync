@@ -1574,13 +1574,33 @@ export class DatabaseStorage implements IStorage {
   
   async finalizeBatch(id: number, churchId: string, userId: string): Promise<Batch | undefined> {
     try {
-      // First update the batch status
+      // First get the batch with donations to calculate the total amount
+      const batchWithDonations = await this.getBatchWithDonations(id, churchId);
+      if (!batchWithDonations) {
+        console.error(`Failed to get batch with donations for batch ${id}`);
+        return undefined;
+      }
+      
+      // Calculate the total amount
+      let totalAmount = "0.00";
+      if (batchWithDonations.donations && batchWithDonations.donations.length > 0) {
+        const total = batchWithDonations.donations.reduce(
+          (sum, donation) => sum + parseFloat(donation.amount.toString()),
+          0
+        );
+        totalAmount = total.toFixed(2);
+      }
+      
+      console.log(`Calculated total amount ${totalAmount} for batch ${id}`);
+      
+      // Update the batch status and total amount
       const [updatedBatch] = await db
         .update(batches)
         .set({
           attestationConfirmedBy: userId,
           attestationConfirmationDate: new Date(),
           status: 'FINALIZED',
+          totalAmount: totalAmount,
           updatedAt: new Date()
         })
         .where(and(
