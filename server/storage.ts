@@ -1573,21 +1573,160 @@ export class DatabaseStorage implements IStorage {
   }
   
   async finalizeBatch(id: number, churchId: string, userId: string): Promise<Batch | undefined> {
-    const [updatedBatch] = await db
-      .update(batches)
-      .set({
-        attestationConfirmedBy: userId,
-        attestationConfirmationDate: new Date(),
-        status: 'FINALIZED',
-        updatedAt: new Date()
-      })
-      .where(and(
-        eq(batches.id, id),
-        eq(batches.churchId, churchId)
-      ))
-      .returning();
-    
-    return updatedBatch;
+    try {
+      // First update the batch status
+      const [updatedBatch] = await db
+        .update(batches)
+        .set({
+          attestationConfirmedBy: userId,
+          attestationConfirmationDate: new Date(),
+          status: 'FINALIZED',
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(batches.id, id),
+          eq(batches.churchId, churchId)
+        ))
+        .returning();
+      
+      if (!updatedBatch) {
+        console.error(`Failed to update batch ${id}`);
+        return undefined;
+      }
+
+      // Check if we should send email notifications
+      const church = await this.getChurchById(churchId);
+      if (church && church.emailNotificationsEnabled) {
+        console.log(`Email notifications are enabled for church ${churchId}. Preparing to send finalization emails...`);
+        
+        // Get the batch with donations for sending emails
+        const batchWithDonations = await this.getBatchWithDonations(id, churchId);
+        if (batchWithDonations) {
+          // Start processing emails in the background
+          setTimeout(async () => {
+            try {
+              // First, handle donor receipt emails if members have email addresses
+              console.log(`Processing donation receipt emails for batch ${id}...`);
+              const { donations } = batchWithDonations;
+              
+              if (donations && donations.length > 0) {
+                for (const donation of donations) {
+                  if (donation.memberId) {
+                    const member = await this.getMember(donation.memberId, churchId);
+                    if (member && member.email) {
+                      // We have a member with an email, send receipt
+                      const donationDate = donation.createdAt 
+                        ? format(new Date(donation.createdAt), 'MMMM d, yyyy')
+                        : format(new Date(), 'MMMM d, yyyy');
+                        
+                      const { sendDonationNotification } = await import('./sendgrid');
+                      await sendDonationNotification({
+                        to: member.email,
+                        amount: donation.amount.toString(),
+                        date: donationDate,
+                        donorName: `${member.firstName} ${member.lastName}`,
+                        churchName: church.name || 'Your Church',
+                        churchId: churchId,
+                        churchLogoUrl: church.logoUrl,
+                        donationId: donation.id.toString()
+                      });
+                      
+                      console.log(`Sent donation receipt to ${member.email} for donation ${donation.id}`);
+                    }
+                  }
+                }
+              }
+              
+              // Now send the count report to all report recipients
+              const recipients = await this.getReportRecipients(churchId);
+              if (recipients && recipients.length > 0) {
+                console.log(`Sending count report to ${recipients.length} recipients...`);
+                
+                // Get service option name
+                let serviceName = "Regular Service";
+                if (batchWithDonations.serviceOptionId) {
+                  const serviceOption = await this.getServiceOption(batchWithDonations.serviceOptionId, churchId);
+                  if (serviceOption) {
+                    serviceName = serviceOption.name;
+                  }
+                }
+                
+                // Calculate totals
+                const totalAmount = donations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                const cashDonations = donations.filter(d => d.type === 'CASH');
+                const checkDonations = donations.filter(d => d.type === 'CHECK');
+                const cashAmount = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                const checkAmount = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                
+                // Format date
+                const batchDate = batchWithDonations.createdAt 
+                  ? format(new Date(batchWithDonations.createdAt), 'MMMM d, yyyy')
+                  : format(new Date(), 'MMMM d, yyyy');
+                
+                // Get counter names
+                const primaryAttestor = await this.getUser(batchWithDonations.attestorId);
+                const secondaryAttestor = batchWithDonations.secondaryAttestorId 
+                  ? await this.getUser(batchWithDonations.secondaryAttestorId) 
+                  : null;
+                
+                // Format counter names
+                const primaryAttestorName = primaryAttestor 
+                  ? `${primaryAttestor.firstName || ''} ${primaryAttestor.lastName || ''}`.trim() || primaryAttestor.email 
+                  : 'Unknown';
+                
+                const secondaryAttestorName = secondaryAttestor 
+                  ? `${secondaryAttestor.firstName || ''} ${secondaryAttestor.lastName || ''}`.trim() || secondaryAttestor.email 
+                  : '';
+                
+                const counterNames = secondaryAttestorName 
+                  ? `${primaryAttestorName} and ${secondaryAttestorName}` 
+                  : primaryAttestorName;
+                
+                // Send to each recipient
+                for (const recipient of recipients) {
+                  if (recipient.email) {
+                    const { sendCountReport } = await import('./sendgrid');
+                    await sendCountReport({
+                      to: recipient.email,
+                      recipientName: `${recipient.firstName} ${recipient.lastName}`,
+                      churchName: church.name || 'Your Church',
+                      churchId: churchId,
+                      churchLogoUrl: church.logoUrl,
+                      batchId: id,
+                      batchName: serviceName,
+                      batchDate: batchDate,
+                      totalAmount: totalAmount.toFixed(2),
+                      cashAmount: cashAmount.toFixed(2),
+                      checkAmount: checkAmount.toFixed(2),
+                      donations: donations,
+                      donationCount: donations.length,
+                      counterNames: counterNames,
+                      date: new Date(batchWithDonations.createdAt),
+                      serviceOption: serviceName
+                    });
+                    
+                    console.log(`Sent count report to ${recipient.email}`);
+                  }
+                }
+              } else {
+                console.log(`No report recipients configured for church ${churchId}`);
+              }
+              
+            } catch (emailError) {
+              console.error('Error sending finalization emails:', emailError);
+              // Do not block the batch finalization process for email errors
+            }
+          }, 0);
+        }
+      } else {
+        console.log(`Email notifications are NOT enabled for church ${churchId}. Skipping emails.`);
+      }
+      
+      return updatedBatch;
+    } catch (error) {
+      console.error(`Error finalizing batch ${id}:`, error);
+      throw error;
+    }
   }
   
   async addSecondaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
