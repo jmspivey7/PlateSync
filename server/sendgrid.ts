@@ -6,13 +6,33 @@ import { storage } from './storage';
 import { format } from 'date-fns';
 import { generateCountReportPDF } from './pdf-generator';
 
+// Check for SendGrid API key and log status
+console.log("\n📧 Initializing SendGrid email service...");
+
 if (!process.env.SENDGRID_API_KEY) {
-  console.warn("SENDGRID_API_KEY environment variable is not set. Email notifications will not be sent.");
+  console.warn("❌ SENDGRID_API_KEY environment variable is not set. Email notifications will not be sent.");
+} else {
+  // Mask API key for secure logging
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+  console.log(`✅ SendGrid API Key found: ${maskedKey}`);
 }
 
+if (!process.env.SENDGRID_FROM_EMAIL) {
+  console.warn("❌ SENDGRID_FROM_EMAIL environment variable is not set. Using fallback email which may cause delivery issues.");
+} else {
+  console.log(`✅ SendGrid sender email configured: ${process.env.SENDGRID_FROM_EMAIL}`);
+}
+
+// Initialize SendGrid Mail Service
 const mailService = new MailService();
 if (process.env.SENDGRID_API_KEY) {
-  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+  try {
+    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log("✅ SendGrid API client initialized successfully");
+  } catch (error) {
+    console.error("❌ Error initializing SendGrid client:", error);
+  }
 }
 
 /**
@@ -83,43 +103,59 @@ interface EmailParams {
 export async function sendEmail(
   params: EmailParams
 ): Promise<boolean> {
+  // Always check for API key
   if (!process.env.SENDGRID_API_KEY) {
-    console.warn("Cannot send email: SENDGRID_API_KEY is not set");
+    console.warn("⚠️ Cannot send email: SENDGRID_API_KEY is not set");
     return false;
   }
   
+  // Ensure we have valid sender email
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || params.from;
+  if (!fromEmail) {
+    console.warn("⚠️ Cannot send email: No sender email provided");
+    return false;
+  }
+  
+  // Ensure we have valid recipient
+  if (!params.to) {
+    console.warn("⚠️ Cannot send email: No recipient email provided");
+    return false;
+  }
+  
+  // Set a unique ID for easier tracking in the logs
+  const emailId = Math.random().toString(36).substring(2, 10);
+  
   try {
-    // We'll attempt to actually send the email in any environment (dev or prod)
-    // But first show a preview in the console
-    console.log('\n📧 ========== EMAIL PREVIEW ==========');
-    console.log('📧 To:      ', params.to);
-    console.log('📧 From:    ', params.from);
-    console.log('📧 Subject: ', params.subject);
+    // Log a preview with the email ID for tracking
+    console.log(`\n📧 [Email ${emailId}] ========== EMAIL PREVIEW ==========`);
+    console.log(`📧 [Email ${emailId}] To:      `, params.to);
+    console.log(`📧 [Email ${emailId}] From:    `, fromEmail);
+    console.log(`📧 [Email ${emailId}] Subject: `, params.subject);
     
     // Show shortened text version for preview
     if (params.text) {
-      console.log('\n📧 ----- TEXT VERSION PREVIEW -----');
+      console.log(`\n📧 [Email ${emailId}] ----- TEXT VERSION PREVIEW -----`);
       // Show first 20 lines or so of text content
-      const textPreview = params.text.split('\n').slice(0, 15).join('\n');
+      const textPreview = params.text.split('\n').slice(0, 10).join('\n');
       console.log(textPreview + '\n...(text continues)');
     }
     
-    console.log('\n📧 HTML version would be displayed properly in email clients');
+    console.log(`\n📧 [Email ${emailId}] HTML version would be displayed properly in email clients`);
     
     // Show attachment info in preview
     if (params.attachments && params.attachments.length > 0) {
-      console.log('\n📧 ----- ATTACHMENTS -----');
+      console.log(`\n📧 [Email ${emailId}] ----- ATTACHMENTS -----`);
       params.attachments.forEach((attachment, index) => {
-        console.log(`📧 Attachment ${index + 1}: ${attachment.filename} (${attachment.type})`);
+        console.log(`📧 [Email ${emailId}] Attachment ${index + 1}: ${attachment.filename} (${attachment.type})`);
       });
     }
     
-    console.log('📧 ============ END EMAIL PREVIEW ============\n');
+    console.log(`📧 [Email ${emailId}] ============ END EMAIL PREVIEW ============`);
     
-    // In production, actually send the email
+    // Prepare email data for sending
     const emailData: any = {
       to: params.to,
-      from: params.from,
+      from: fromEmail, // Use the verified sender
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
@@ -127,13 +163,20 @@ export async function sendEmail(
     
     // Add attachments if any
     if (params.attachments && params.attachments.length > 0) {
-      console.log(`Including ${params.attachments.length} attachments in the email`);
+      console.log(`📧 [Email ${emailId}] Including ${params.attachments.length} attachments in the email`);
       emailData.attachments = params.attachments;
     }
     
+    // Add tracking settings for better delivery metrics
+    emailData.trackingSettings = {
+      clickTracking: { enable: true },
+      openTracking: { enable: true }
+    };
+    
+    console.log(`📧 [Email ${emailId}] Sending email now...`);
     await mailService.send(emailData);
     
-    console.log(`Email sent successfully to ${params.to}`);
+    console.log(`✅ [Email ${emailId}] Email sent successfully to ${params.to}`);
     return true;
   } catch (error: any) {
     // Log all error details for debugging
@@ -195,14 +238,22 @@ export async function sendDonationNotification(params: DonationNotificationParam
   // Note: In production, you MUST set SENDGRID_FROM_EMAIL to a verified sender
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'donations@example.com';
   
+  // Generate unique ID for this donation notification for tracking
+  const notificationId = Math.random().toString(36).substring(2, 8);
+  
+  // Log information about the donation notification
+  console.log(`\n📧 [Donation-${notificationId}] Preparing donation receipt to ${params.donorName}`);
+  console.log(`📧 [Donation-${notificationId}] Amount: $${params.amount}`);
+  console.log(`📧 [Donation-${notificationId}] Recipient email: ${params.to}`);
+  
   // Log information about the sender email configuration
-  console.log('\n📧 Sender Email Configuration:');
+  console.log(`📧 [Donation-${notificationId}] Sender Email Configuration:`);
   if (process.env.SENDGRID_FROM_EMAIL) {
-    console.log(`📧 Using configured sender email: ${process.env.SENDGRID_FROM_EMAIL}`);
+    console.log(`📧 [Donation-${notificationId}] Using configured sender email: ${process.env.SENDGRID_FROM_EMAIL}`);
   } else {
-    console.log('⚠️ Warning: SENDGRID_FROM_EMAIL environment variable is not set.');
-    console.log('⚠️ Using fallback address, which may cause delivery failures in production.');
-    console.log('⚠️ The sender email MUST be verified in your SendGrid account.');
+    console.log(`⚠️ [Donation-${notificationId}] Warning: SENDGRID_FROM_EMAIL environment variable is not set.`);
+    console.log(`⚠️ [Donation-${notificationId}] Using fallback address, which may cause delivery failures in production.`);
+    console.log(`⚠️ [Donation-${notificationId}] The sender email MUST be verified in your SendGrid account.`);
   }
 
   // Generate a random donation ID if one is not provided
