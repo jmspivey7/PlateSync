@@ -271,32 +271,35 @@ export async function sendDonationNotification(params: DonationNotificationParam
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
-      // Replace template variables
+      // Replace template variables but without the churchLogoUrl yet
       const replacements: Record<string, string> = {
         '{{donorName}}': params.donorName,
         '{{amount}}': params.amount,
         '{{date}}': params.date,
         '{{churchName}}': params.churchName,
         '{{donationId}}': donationId,
-        '{{churchLogoUrl}}': 'https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png',
       };
       
-      // Special handling for churchLogoUrl
+      // Handle churchLogoUrl separately to ensure it's properly used from the proper source
       if (params.churchLogoUrl) {
-        // Include the church logo if available
-        html = html.replace('{{churchLogoUrl}}', params.churchLogoUrl);
-      } else {
-        // If no logo, replace with a generic transparent 1px image to avoid broken image
-        const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        html = html.replace('{{churchLogoUrl}}', fallbackImgSrc);
+        // Log the actual church logo URL being used
+        console.log(`📧 [Donation-${notificationId}] Using church logo URL: ${params.churchLogoUrl}`);
         
-        // Add CSS to hide the image when using the fallback
+        // Include the church logo
+        replacements['{{churchLogoUrl}}'] = params.churchLogoUrl;
+      } else {
+        // If no logo, use a generic transparent 1px image
+        console.log(`📧 [Donation-${notificationId}] No church logo URL provided, using fallback`);
+        const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        replacements['{{churchLogoUrl}}'] = fallbackImgSrc;
+        
+        // Modify the HTML template to handle the case with no logo
         html = html.replace('<img src="{{churchLogoUrl}}"', '<img src="{{churchLogoUrl}}" style="display:none;"');
         
         // Add the church name as text for cases with no logo
-        html = html.replace('<p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>', 
+        html = html.replace('<p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>', 
           `<h1 style="margin: 0; font-size: 28px; color: #2D3748;">${params.churchName}</h1>
-           <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>`);
+           <p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>`);
       }
       
       Object.entries(replacements).forEach(([key, value]) => {
