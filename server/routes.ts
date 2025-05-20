@@ -237,6 +237,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Regular user profile routes
   app.use('/api/profile', isAuthenticated, profileRoutes);
   
+  // Settings routes including church logo management
+  app.use('/api/settings', isAuthenticated, settingsRoutes);
+  
   // Member data endpoints
   app.get('/api/members', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
