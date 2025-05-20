@@ -460,7 +460,29 @@ const BatchDetailPage = () => {
                 </div>
                 
                 {/* Three-dot menu - Only show for Account Owners */}
+                {/* Show delete menu for Account Owners on finalized counts */}
                 {isFinalized && isAccountOwner && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
+                        <span className="sr-only">Open menu</span>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
+                      <DropdownMenuItem 
+                        onClick={handleShowDeleteConfirm}
+                        className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Count
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                {/* Show delete menu for ALL users on open/pending counts */}
+                {!isFinalized && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
