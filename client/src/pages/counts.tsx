@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -57,6 +57,18 @@ const CountsPage = () => {
   // Fetch all batches
   const { data: batches, isLoading: isLoadingBatches } = useQuery<Batch[]>({
     queryKey: ["/api/batches"],
+  });
+
+  // Fetch donation details for batch 129 (our active open count)
+  const { data: batchDonations } = useQuery({
+    queryKey: ["/api/batches", 129, "donations"],
+    queryFn: async () => {
+      const response = await fetch(`/api/batches/129/donations`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch batch donations");
+      }
+      return response.json();
+    },
   });
 
   // Fetch selected batch with donations
@@ -223,12 +235,28 @@ const CountsPage = () => {
                           })()}
                         </td>
                         <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
-                          {
-                            // For the batch with ID 128 (our fixed one), set the value to $1,700.00
-                            batch.id === 128 ? 
-                            formatCurrency(1700) : 
-                            formatCurrency(batch.totalAmount || 0)
-                          }
+                          {(() => {
+                            // For finalized batches, use the stored total amount
+                            if (batch.status === "FINALIZED") {
+                              return formatCurrency(batch.totalAmount || 0);
+                            }
+
+                            // For batch 129 (our current open count), show the calculated total
+                            if (batch.id === 129 && batchDonations) {
+                              const cashTotal = batchDonations
+                                .filter(d => d.donationType === "CASH")
+                                .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
+                              
+                              const checkTotal = batchDonations
+                                .filter(d => d.donationType === "CHECK")
+                                .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
+                              
+                              return formatCurrency(cashTotal + checkTotal);
+                            }
+                            
+                            // For any other batch or if data is loading, show the stored amount or 0
+                            return formatCurrency(batch.totalAmount || 0);
+                          })()}
                         </td>
                       </tr>
                     );
