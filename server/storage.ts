@@ -1597,6 +1597,26 @@ export class DatabaseStorage implements IStorage {
     return updatedBatch;
   }
   
+  // Add a utility method to update just the batch total amount
+  async updateBatchTotal(id: number, churchId: string, total: string): Promise<Batch | undefined> {
+    console.log(`Updating batch ${id} total amount to ${total}`);
+    
+    // Update only the total amount in the batch
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        totalAmount: total,
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
   async addSecondaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
     const [updatedBatch] = await db
       .update(batches)

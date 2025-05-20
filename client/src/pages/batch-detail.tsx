@@ -408,6 +408,27 @@ const BatchDetailPage = () => {
                     View PDF Report
                   </Button>
                 )}
+                
+                {/* Add recalculate total button for finalized counts with potential total issues */}
+                {isFinalized && batch.totalAmount === "0.00" && (cashTotal > 0 || checkTotal > 0) && (
+                  <Button 
+                    onClick={handleRecalculateTotal} 
+                    className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto ml-0 sm:ml-2 mt-2 sm:mt-0"
+                    disabled={isRecalculating}
+                  >
+                    {isRecalculating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Recalculating...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Recalculate Total
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 
                 {/* Delete confirmation dialog with warning */}
