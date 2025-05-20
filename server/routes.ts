@@ -885,6 +885,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // PDF Report generation endpoint for batch
+  app.get('/api/batches/:id/pdf-report', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      // Fetch the batch data
+      const batch = await storage.getBatch(batchId, churchId);
+      if (!batch) {
+        return res.status(404).json({ message: 'Batch not found' });
+      }
+      
+      // Fetch all donations for this batch
+      const batchDonations = await storage.getBatchDonations(batchId, churchId);
+      
+      // Calculate totals
+      const cashDonations = batchDonations.filter(d => d.type === 'CASH');
+      const checkDonations = batchDonations.filter(d => d.type === 'CHECK');
+      
+      const cashTotal = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+      const checkTotal = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+      const total = cashTotal + checkTotal;
+      
+      // Set up PDF document
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument({ margin: 50 });
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="count-report-${batchId}.pdf"`);
+      
+      // Pipe the PDF to the response
+      doc.pipe(res);
+      
+      // Add church logo if available
+      if (user.churchLogoUrl) {
+        const logoPath = `${process.cwd()}/public${user.churchLogoUrl}`;
+        try {
+          // Check if file exists and is accessible
+          require('fs').accessSync(logoPath, require('fs').constants.R_OK);
+          doc.image(logoPath, {
+            fit: [200, 100],
+            align: 'center'
+          });
+        } catch (e) {
+          console.error('Church logo not found or not readable:', e);
+          // Continue without the logo
+        }
+      }
+      
+      // Add church name and report title
+      doc.fontSize(20).text(user.churchName || 'Church Count Report', { align: 'center' });
+      doc.moveDown(0.5);
+      doc.fontSize(16).text(`Count Report: ${batch.name}`, { align: 'center' });
+      doc.moveDown(1);
+      
+      // Draw a separator line
+      doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke();
+      doc.moveDown(1);
+      
+      // Batch information
+      doc.fontSize(14).text('Count Information');
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Date: ${new Date(batch.date).toLocaleDateString()}`);
+      doc.text(`Status: ${batch.status}`);
+      if (batch.notes) {
+        doc.text(`Notes: ${batch.notes}`);
+      }
+      doc.moveDown(1);
+      
+      // Attestation information
+      doc.fontSize(14).text('Attestation Information');
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      
+      // Primary attestation
+      doc.text('Primary Attestation:');
+      if (batch.primaryAttestorName) {
+        doc.text(`Attestor: ${batch.primaryAttestorName}`);
+        if (batch.primaryAttestationDate) {
+          doc.text(`Date: ${new Date(batch.primaryAttestationDate).toLocaleString()}`);
+        }
+        if (batch.primaryAttestationNotes) {
+          doc.text(`Notes: ${batch.primaryAttestationNotes}`);
+        }
+      } else {
+        doc.text('Not completed');
+      }
+      doc.moveDown(0.5);
+      
+      // Secondary attestation
+      doc.text('Secondary Attestation:');
+      if (batch.secondaryAttestorName) {
+        doc.text(`Attestor: ${batch.secondaryAttestorName}`);
+        if (batch.secondaryAttestationDate) {
+          doc.text(`Date: ${new Date(batch.secondaryAttestationDate).toLocaleString()}`);
+        }
+        if (batch.secondaryAttestationNotes) {
+          doc.text(`Notes: ${batch.secondaryAttestationNotes}`);
+        }
+      } else {
+        doc.text('Not completed');
+      }
+      doc.moveDown(1);
+      
+      // Summary totals
+      doc.fontSize(14).text('Count Summary');
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Cash Total: $${cashTotal.toFixed(2)}`);
+      doc.text(`Check Total: $${checkTotal.toFixed(2)}`);
+      doc.text(`Total Amount: $${total.toFixed(2)}`, { bold: true });
+      doc.moveDown(1);
+      
+      // Draw a separator line
+      doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke();
+      doc.moveDown(1);
+      
+      // Add signature fields if needed
+      doc.fontSize(12).text('Signatures:', { underline: true });
+      doc.moveDown(1);
+      
+      doc.text('_______________________________');
+      doc.text('Primary Counter Signature');
+      doc.moveDown(1);
+      
+      doc.text('_______________________________');
+      doc.text('Secondary Counter Signature');
+      doc.moveDown(1);
+      
+      doc.text('_______________________________');
+      doc.text('Finance Committee Member Signature');
+      
+      // Add timestamp and page number at bottom
+      doc.fontSize(10);
+      doc.text(
+        `Generated on ${new Date().toLocaleString()}`,
+        50,
+        doc.page.height - 50,
+        { align: 'center' }
+      );
+      
+      // Finalize the PDF
+      doc.end();
+      
+    } catch (error) {
+      console.error('Error generating PDF report:', error);
+      res.status(500).json({ message: 'Failed to generate PDF report' });
+    }
+  });
+  
   // Create a new batch
   app.post('/api/batches', isAuthenticated, async (req: any, res) => {
     try {
