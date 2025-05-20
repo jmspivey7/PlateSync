@@ -7,6 +7,7 @@ import passport from 'passport';
 import connectPg from 'connect-pg-simple';
 import globalAdminProfileRoutes from './api/globalAdminProfileRoutes';
 import profileRoutes from './api/profileRoutes';
+import settingsRoutes from './api/settingsRoutes';
 
 // Extend express-session with our user type
 declare global {
