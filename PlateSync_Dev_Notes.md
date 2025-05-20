@@ -152,6 +152,95 @@ User roles include:
 - ADMIN: Full access to all features
 - USHER: Limited access to donation counting features
 - MASTER_ADMIN: Special role for church-wide settings
+- ACCOUNT_OWNER: Special role for the main administrator of a church account
+- STANDARD_USER: Basic user with limited permissions based on assigned church
+- GLOBAL_ADMIN: Super-admin role with access to the entire system
+
+---
+
+## User Management
+
+PlateSync provides a comprehensive user management system for adding and managing users. The process includes email verification and password setup.
+
+### Adding New Users
+
+1. **User Addition Flow:**
+   - Navigate to the User Management screen
+   - Click "Add User" button
+   - Fill in required fields: First Name, Last Name, Email, and Role
+   - System sends a welcome email with verification link
+   - User clicks the verification link to set up their password
+   - User can then log in with their email and password
+
+2. **Welcome Email Process:**
+   - System uses the configured email template from the database
+   - Email includes dynamic variables:
+     - `{{firstName}}`: User's first name
+     - `{{lastName}}`: User's last name
+     - `{{role}}`: User's role (formatted for readability, e.g., "Standard User")
+     - `{{verificationLink}}`: Link to verify email and set password
+     - `{{churchName}}`: Church organization name
+
+3. **Implementation Details:**
+   - Welcome emails are sent using SendGrid API
+   - Verification tokens expire after 48 hours (configurable)
+   - Password requirements include minimum 8-character length
+   - Passwords are securely hashed using scrypt before storage
+
+### Email Verification and Password Setup
+
+1. **Verification Process:**
+   - User receives email with verification link
+   - Link format: `/verify?token=<verification_token>`
+   - User sets a password (minimum 8 characters)
+   - System validates the token and updates user record
+   - User is marked as verified in the database
+
+2. **Technical Implementation:**
+   ```typescript
+   // Sample verification endpoint implementation
+   app.post('/api/auth/verify-email', async (req, res) => {
+     const { token, password } = req.body;
+     
+     // Basic validation
+     if (!token || !password) {
+       return res.status(400).json({ message: "Token and password are required" });
+     }
+     
+     try {
+       // Find user with this token
+       const user = await findUserByResetToken(token);
+       
+       // Validate token and password
+       if (!user || user.passwordResetExpires < new Date()) {
+         return res.status(400).json({ message: "Invalid or expired token" });
+       }
+       
+       // Validate password strength
+       if (password.length < 8) {
+         return res.status(400).json({ message: "Password must be at least 8 characters long" });
+       }
+       
+       // Update user record
+       await updateUserVerification(user.id, password);
+       
+       return res.status(200).json({ message: "Email verified and password set successfully" });
+     } catch (error) {
+       console.error("Error during verification:", error);
+       return res.status(500).json({ message: "An error occurred while verifying your email" });
+     }
+   });
+   ```
+
+3. **Troubleshooting:**
+   - If users don't receive verification emails, check:
+     - Spam/junk folders
+     - Correct email address in the system
+     - SendGrid API configuration and limits
+   - If verification fails, check:
+     - Token expiration (default 48 hours)
+     - Password requirements (minimum 8 characters)
+     - Database connection and update permissions
 
 ---
 
