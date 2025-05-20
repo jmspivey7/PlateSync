@@ -1154,7 +1154,7 @@ const Settings = () => {
                               });
                             });
                           }}
-                          className={`${form.watch("emailNotificationsEnabled") ? "bg-[#69ad4c]" : "bg-gray-300"} relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
+                          className={`${form.watch("emailNotificationsEnabled") ? "bg-[#69ad4c]" : "bg-gray-300"} relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white border`}
                         />
                       </div>
                       <span className="ml-2 text-base font-semibold">
