@@ -241,8 +241,20 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         title: "Count finalized",
         description: "The count has been successfully finalized and attested.",
       });
+      
+      // Invalidate all relevant queries to ensure fresh data on dashboard
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches/latest-finalized'] });
+      
+      // Set step to complete to update the UI
       setStep('complete');
+      
+      // Add a small delay to ensure the queries are properly invalidated
+      setTimeout(() => {
+        // Redirect to dashboard to show the latest finalized count
+        setLocation("/dashboard?refresh=" + new Date().getTime());
+      }, 500);
+      
       if (onComplete) {
         onComplete();
       }
