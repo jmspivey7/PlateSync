@@ -617,11 +617,11 @@ const BatchDetailPage = () => {
                 </CardDescription>
               </div>
               
-              {/* Three-dot menu for Administrators and Standard Users on Open counts */}
-              {(isAdmin || isStandard) && (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
+              {/* Three-dot menu for Account Owners, Administrators and Standard Users on Open counts */}
+              {(isAccountOwner || isAdmin || isStandard) && (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0 ml-2">
+                    <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
                       <span className="sr-only">Open menu</span>
                       <MoreVertical className="h-5 w-5" />
                     </Button>
