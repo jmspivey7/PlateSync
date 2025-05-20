@@ -128,10 +128,12 @@ const AccountDropdown = () => {
             <span>Profile</span>
           </DropdownMenuItem>
           
-          <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/subscription")}>
-            <CreditCard className="mr-2 h-4 w-4" />
-            <span>Subscription</span>
-          </DropdownMenuItem>
+          {isAccountOwner && (
+            <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/subscription")}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              <span>Subscription</span>
+            </DropdownMenuItem>
+          )}
           
           <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/help")}>
             <HelpCircle className="mr-2 h-4 w-4" />
