@@ -3259,6 +3259,26 @@ PlateSync Reporting System
     }
   }
   
+  /**
+   * Update the church logo URL in the database
+   */
+  async updateChurchLogoUrl(id: string, logoUrl: string): Promise<boolean> {
+    try {
+      await db.update(churches)
+        .set({ 
+          logoUrl: logoUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id));
+      
+      console.log(`Successfully updated logo URL for church ${id} to ${logoUrl}`);
+      return true;
+    } catch (error) {
+      console.error(`Error updating logo URL for church ${id}:`, error);
+      return false;
+    }
+  }
+  
   async getChurchesByAccountOwner(accountOwnerId: string): Promise<Church[]> {
     try {
       console.log(`Looking for churches with account owner ID: ${accountOwnerId}`);
