@@ -160,6 +160,18 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         },
         body: JSON.stringify({ name }),
       });
+      
+      if (!response.ok) {
+        // Check if the response is JSON
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Attestation failed");
+        } else {
+          throw new Error(`Server error: ${response.status}`);
+        }
+      }
+      
       return await response.json();
     },
     onSuccess: () => {
@@ -167,10 +179,14 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         title: "Primary attestation complete",
         description: "Please select a second attestor to continue.",
       });
-      refetchBatch();
-      setStep('secondary');
+      // Refetch batch data first to ensure we have the latest data
+      refetchBatch().then(() => {
+        // Only change step after we have confirmed updated data
+        setStep('secondary');
+      });
     },
     onError: (error) => {
+      console.error("Primary attestation error:", error);
       toast({
         title: "Attestation failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",

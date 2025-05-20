@@ -1428,6 +1428,74 @@ export class DatabaseStorage implements IStorage {
     return updatedBatch;
   }
   
+  async updateBatchPrimaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        primaryAttestorId: attestationData.attestorId,
+        primaryAttestorName: attestationData.attestorName,
+        primaryAttestationDate: attestationData.attestationDate,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async updateBatchSecondaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        secondaryAttestorId: attestationData.attestorId,
+        secondaryAttestorName: attestationData.attestorName,
+        secondaryAttestationDate: attestationData.attestationDate,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async finalizeBatch(id: number, churchId: string, userId: string): Promise<Batch | undefined> {
+    // Get the batch to calculate total amount first
+    const batchWithDonations = await this.getBatchWithDonations(id, churchId);
+    
+    if (!batchWithDonations) {
+      throw new Error('Batch not found');
+    }
+    
+    // Calculate total amount from donations
+    const totalAmount = batchWithDonations.donations.reduce((sum, donation) => {
+      return sum + parseFloat(donation.amount.toString());
+    }, 0).toFixed(2);
+    
+    // Update the batch status to FINALIZED and set total amount
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        status: 'FINALIZED',
+        totalAmount,
+        attestationConfirmedBy: userId,
+        attestationConfirmationDate: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
   async addPrimaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
     const [updatedBatch] = await db
       .update(batches)

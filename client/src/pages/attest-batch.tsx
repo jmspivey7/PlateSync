@@ -117,7 +117,7 @@ const AttestBatchPage = () => {
   // Show attestation form for OPEN batches
   return (
     <PageLayout 
-      title={`Attest Count: ${batch.name}`}
+      title={`Attest Count: ${batch.name.replace(', ', ' ')}`}
     >
       <Card className="max-w-xl mx-auto">
         <div className="p-6 flex items-center justify-between">
