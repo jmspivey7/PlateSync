@@ -907,6 +907,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Confirm attestation endpoint for batch finalization
+  app.post('/api/batches/:id/confirm-attestation', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      console.log(`Confirming attestation for batch ${batchId} for church ID: ${churchId}`);
+      const updatedBatch = await storage.finalizeBatch(batchId, churchId, userId);
+      
+      if (!updatedBatch) {
+        return res.status(404).json({ message: 'Batch not found or could not be finalized' });
+      }
+      
+      res.status(200).json(updatedBatch);
+    } catch (error) {
+      console.error('Error confirming attestation:', error);
+      res.status(500).json({ message: 'Failed to confirm attestation' });
+    }
+  });
+  
   // Final confirmation endpoint for batch
   app.post('/api/batches/:id/finalize', isAuthenticated, async (req: any, res) => {
     try {
