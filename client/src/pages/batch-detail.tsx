@@ -98,7 +98,7 @@ const BatchDetailPage = () => {
   }, [showDeleteConfirm]);
 
   // Fetch batch data with donations
-  const { data: batch, isLoading, refetch } = useQuery<BatchWithDonations>({
+  const { data: batch, isLoading } = useQuery<BatchWithDonations>({
     queryKey: ["/api/batches", batchId, "details"],
     queryFn: async () => {
       const response = await fetch(`/api/batches/${batchId}`);
@@ -114,6 +114,7 @@ const BatchDetailPage = () => {
         }))
       } as BatchWithDonations;
     },
+    refetchInterval: 5000, // Poll for updates every 5 seconds
   });
 
   // Set isFinalized based on batch status when data is loaded
@@ -267,30 +268,12 @@ const BatchDetailPage = () => {
   // Mutation for deleting a donation
   const deleteDonationMutation = useMutation({
     mutationFn: async (donationId: number) => {
-      // Use fetch directly with proper error handling
-      const response = await fetch(`/api/donations/${donationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to delete donation");
-      }
-      
-      return { success: true };
+      return await apiRequest(`/api/donations/${donationId}`, "DELETE");
     },
     onSuccess: () => {
-      // Immediately refetch the batch data to update the UI
-      refetch();
-      
-      // Also invalidate related queries
+      // Invalidate relevant queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      
-      // Close the confirmation dialog
-      setIsDeletingDonation(null);
       
       toast({
         title: "Success",
@@ -298,9 +281,6 @@ const BatchDetailPage = () => {
       });
     },
     onError: (error) => {
-      // Close the confirmation dialog
-      setIsDeletingDonation(null);
-      
       toast({
         title: "Error",
         description: `Failed to delete donation: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -314,15 +294,6 @@ const BatchDetailPage = () => {
   const handleDeleteDonation = (donationId: number) => {
     // Set the donation ID that's being deleted to show confirmation
     setIsDeletingDonation(donationId);
-  };
-  
-  const confirmDeleteDonation = (donationId: number) => {
-    // Directly call the mutation without showing the dialog
-    deleteDonationMutation.mutate(donationId);
-  };
-  
-  const cancelDeleteDonation = () => {
-    setIsDeletingDonation(null);
   };
 
   const handleShowSummary = () => {
@@ -769,8 +740,7 @@ const BatchDetailPage = () => {
                               onClick={(e) => {
                                 e.preventDefault(); // Prevent edit from triggering
                                 e.stopPropagation(); // Prevent event bubbling
-                                // Direct delete without confirmation
-                                deleteDonationMutation.mutate(donation.id);
+                                handleDeleteDonation(donation.id);
                               }}
                               aria-label="Delete donation"
                             />
