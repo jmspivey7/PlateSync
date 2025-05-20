@@ -727,6 +727,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Create a new batch
+  app.post('/api/batches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      const batchData = {
+        ...req.body,
+        churchId
+      };
+      
+      console.log(`Creating batch for church ID: ${churchId}`);
+      const newBatch = await storage.createBatch(batchData);
+      
+      res.status(201).json(newBatch);
+    } catch (error) {
+      console.error('Error creating batch:', error);
+      res.status(500).json({ message: 'Failed to create batch' });
+    }
+  });
+  
   // Delete a batch and all associated donations
   app.delete('/api/batches/:id', isAuthenticated, async (req: any, res) => {
     try {
