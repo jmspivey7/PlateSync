@@ -727,6 +727,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Add a new donation
+  app.post('/api/donations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      const donationData = {
+        ...req.body,
+        churchId
+      };
+      
+      // If date is a string (e.g. "2025-05-19"), convert it to a proper Date object
+      if (donationData.date && typeof donationData.date === 'string') {
+        try {
+          // Parse the date string and create a proper Date object
+          const dateStr = donationData.date.trim();
+          const dateObj = new Date(dateStr);
+          
+          // Check if date is valid
+          if (isNaN(dateObj.getTime())) {
+            throw new Error('Invalid date format');
+          }
+          
+          donationData.date = dateObj;
+        } catch (dateError) {
+          console.error('Error parsing donation date:', dateError);
+          return res.status(400).json({ message: 'Invalid date format' });
+        }
+      }
+      
+      // Convert amount from string to number if needed
+      if (donationData.amount && typeof donationData.amount === 'string') {
+        donationData.amount = parseFloat(donationData.amount);
+      }
+      
+      console.log(`Creating donation for batch ${donationData.batchId} and church ID: ${churchId}`);
+      const newDonation = await storage.createDonation(donationData);
+      
+      res.status(200).json(newDonation);
+    } catch (error) {
+      console.error('Error creating donation:', error);
+      res.status(500).json({ message: 'Failed to create donation' });
+    }
+  });
+  
   // Create a new batch
   app.post('/api/batches', isAuthenticated, async (req: any, res) => {
     try {
