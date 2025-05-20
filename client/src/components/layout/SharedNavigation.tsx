@@ -254,15 +254,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             <div className="flex items-center">
               {icon && <div className="mr-2">{icon}</div>}
               <h2 className="text-2xl font-bold font-inter text-[#2D3748]">
-                {title.includes(',') ? (
-                  <>
-                    {title.split(',')[0]}
-                    <br />
-                    <span className="text-lg font-normal text-gray-600">
-                      {title.split(',').slice(1).join(',').trim()}
-                    </span>
-                  </>
-                ) : title}
+                {title}
               </h2>
             </div>
             {action && <div>{action}</div>}
