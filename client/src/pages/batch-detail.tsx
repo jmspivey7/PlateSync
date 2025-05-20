@@ -608,35 +608,38 @@ const BatchDetailPage = () => {
               )}
             </div>
             
-            {/* Right side - Title and Status - Full width on mobile */}
-            <div className="text-left md:text-right flex items-center justify-between w-full md:w-auto">
-              <div className="flex-1">
-                <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
+            {/* Right side - Header with Title, Status and Actions */}
+            <div className="flex items-center justify-between w-full">
+              <div>
+                <div className="flex items-center">
+                  <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
+                  
+                  {/* Always show three-dot menu for Standard/Admin/Account Owners on OPEN counts */}
+                  {(isStandard || isAdmin || isAccountOwner) && 
+                   (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="ml-2 p-0 h-8 w-8">
+                          <MoreVertical className="h-5 w-5" />
+                          <span className="sr-only">Actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={handleShowDeleteConfirm}
+                          className="text-red-600 cursor-pointer"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Count
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
                 <CardDescription className="mt-1">
                   Status: <Badge className={getBadgeClass(batch.status)}>{batch.status === "PENDING_FINALIZATION" ? "OPEN" : batch.status}</Badge>
                 </CardDescription>
               </div>
-              
-              {/* Three-dot menu for Account Owners, Administrators and Standard Users on Open counts */}
-              {(isAccountOwner || isAdmin || isStandard) && (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
-                      <span className="sr-only">Open menu</span>
-                      <MoreVertical className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
-                    <DropdownMenuItem 
-                      onClick={handleShowDeleteConfirm}
-                      className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Count
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
             </div>
           </div>
           
