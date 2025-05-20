@@ -77,7 +77,6 @@ const BatchDetailPage = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isRecalculating, setIsRecalculating] = useState(false);
   
   // Debug state management - this will help us see what's happening
   useEffect(() => {
@@ -308,44 +307,6 @@ const BatchDetailPage = () => {
   const handleFinalizeBatch = () => {
     finalizeBatchMutation.mutate();
   };
-  
-  // Function to handle recalculating the batch total amount
-  const handleRecalculateTotal = async () => {
-    if (!batch) return;
-    
-    setIsRecalculating(true);
-    
-    try {
-      const response = await fetch(`/api/batches/${batch.id}/update-total`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to recalculate total amount');
-      }
-      
-      // Refresh the data
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
-      
-      toast({
-        title: "Success",
-        description: "Total amount has been recalculated successfully.",
-      });
-    } catch (error) {
-      console.error('Error recalculating total:', error);
-      toast({
-        title: "Error",
-        description: "Failed to recalculate the total amount. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRecalculating(false);
-    }
-  };
 
   const handlePrint = () => {
     // Open the PDF report in a new tab, ensuring we have the correct batch ID
@@ -445,27 +406,6 @@ const BatchDetailPage = () => {
                   <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
                     <Printer className="mr-2 h-4 w-4" />
                     View PDF Report
-                  </Button>
-                )}
-                
-                {/* Add recalculate total button for finalized counts with potential total issues */}
-                {isFinalized && batch.totalAmount === "0.00" && (cashTotal > 0 || checkTotal > 0) && (
-                  <Button 
-                    onClick={handleRecalculateTotal} 
-                    className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto ml-0 sm:ml-2 mt-2 sm:mt-0"
-                    disabled={isRecalculating}
-                  >
-                    {isRecalculating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Recalculating...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Recalculate Total
-                      </>
-                    )}
                   </Button>
                 )}
 

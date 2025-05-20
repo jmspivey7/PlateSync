@@ -939,55 +939,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint to recalculate and update batch total amount
-  app.post('/api/batches/:id/update-total', isAuthenticated, async (req: any, res) => {
-    try {
-      const batchId = parseInt(req.params.id);
-      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User ID not found' });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      // Use the churchId from the user object, or fallback to using the userId as churchId
-      const churchId = user.churchId || userId;
-      
-      // Get all donations for this batch
-      const batchDonations = await storage.getDonationsForBatch(batchId, churchId);
-      
-      // Calculate the total amount from all donations
-      const totalAmount = batchDonations.reduce((sum, donation) => {
-        // Make sure to parse strings to numbers for proper addition
-        const donationAmount = typeof donation.amount === 'string' 
-          ? parseFloat(donation.amount) 
-          : Number(donation.amount);
-        return sum + (isNaN(donationAmount) ? 0 : donationAmount);
-      }, 0);
-      
-      // Format the total amount with 2 decimal places
-      const formattedTotal = totalAmount.toFixed(2);
-      
-      console.log(`Recalculating batch ${batchId}: Total amount ${formattedTotal} from ${batchDonations.length} donations`);
-      
-      // Update just the totalAmount in the batch
-      const updatedBatch = await storage.updateBatchTotal(batchId, churchId, formattedTotal);
-      
-      if (!updatedBatch) {
-        return res.status(404).json({ message: 'Batch not found' });
-      }
-      
-      res.status(200).json(updatedBatch);
-    } catch (error) {
-      console.error('Error updating batch total amount:', error);
-      res.status(500).json({ message: 'Failed to update batch total' });
-    }
-  });
-  
   // Final confirmation endpoint for batch
   app.post('/api/batches/:id/finalize', isAuthenticated, async (req: any, res) => {
     try {
