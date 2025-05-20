@@ -783,6 +783,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Primary attestation endpoint for batch
+  app.post('/api/batches/:id/attest-primary', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      // Prepare attestation data
+      const attestationData = {
+        ...req.body,
+        batchId,
+        attestorId: userId,
+        attestorName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        attestationDate: new Date()
+      };
+      
+      console.log(`Primary attestation for batch ${batchId} and church ID: ${churchId}`);
+      const updatedBatch = await storage.updateBatchPrimaryAttestation(batchId, churchId, attestationData);
+      
+      res.status(200).json(updatedBatch);
+    } catch (error) {
+      console.error('Error during primary attestation:', error);
+      res.status(500).json({ message: 'Failed to perform primary attestation' });
+    }
+  });
+  
+  // Secondary attestation endpoint for batch
+  app.post('/api/batches/:id/attest-secondary', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      // Prepare attestation data
+      const attestationData = {
+        ...req.body,
+        batchId,
+        attestorId: userId,
+        attestorName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        attestationDate: new Date()
+      };
+      
+      console.log(`Secondary attestation for batch ${batchId} and church ID: ${churchId}`);
+      const updatedBatch = await storage.updateBatchSecondaryAttestation(batchId, churchId, attestationData);
+      
+      res.status(200).json(updatedBatch);
+    } catch (error) {
+      console.error('Error during secondary attestation:', error);
+      res.status(500).json({ message: 'Failed to perform secondary attestation' });
+    }
+  });
+  
+  // Final confirmation endpoint for batch
+  app.post('/api/batches/:id/finalize', isAuthenticated, async (req: any, res) => {
+    try {
+      const batchId = parseInt(req.params.id);
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      console.log(`Finalizing batch ${batchId} for church ID: ${churchId}`);
+      const updatedBatch = await storage.finalizeBatch(batchId, churchId, userId);
+      
+      res.status(200).json(updatedBatch);
+    } catch (error) {
+      console.error('Error finalizing batch:', error);
+      res.status(500).json({ message: 'Failed to finalize batch' });
+    }
+  });
+  
   // Create a new batch
   app.post('/api/batches', isAuthenticated, async (req: any, res) => {
     try {
