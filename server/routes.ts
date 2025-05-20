@@ -3178,20 +3178,33 @@ Sincerely,
         return res.status(400).json({ message: "Password must be at least 8 characters long" });
       }
       
-      // Hash the password
-      const hashedPassword = await scryptHash(password);
-      
-      // Update the user record with the new password and mark as verified
-      await db
-        .update(users)
-        .set({
-          password: hashedPassword,
-          isVerified: true,
-          passwordResetToken: null,
-          passwordResetExpires: null,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, user.id));
+      try {
+        // Hash the password
+        const hashedPassword = await scryptHash(password);
+        
+        console.log("Updating user with ID:", user.id);
+        
+        // Use direct SQL query to update the user to avoid ORM typing issues
+        await db.$client.query(
+          `UPDATE users 
+          SET 
+            password = $1,
+            is_verified = true, 
+            password_reset_token = NULL,
+            password_reset_expires = NULL,
+            updated_at = NOW()
+          WHERE id = $2`,
+          [hashedPassword, user.id]
+        );
+        
+        console.log("User updated successfully");
+      } catch (updateError) {
+        console.error("Error updating user:", updateError);
+        return res.status(500).json({ 
+          message: "Failed to update user password",
+          error: updateError instanceof Error ? updateError.message : String(updateError)
+        });
+      }
       
       console.log("Email verified and password set for user:", user.id);
       
