@@ -783,6 +783,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Delete a donation
+  app.delete('/api/donations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const donationId = parseInt(req.params.id);
+      
+      if (isNaN(donationId)) {
+        return res.status(400).json({ message: 'Invalid donation ID' });
+      }
+      
+      const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Use the churchId from the user object, or fallback to using the userId as churchId
+      const churchId = user.churchId || userId;
+      
+      console.log(`Deleting donation ${donationId} for church ID: ${churchId}`);
+      const deletedDonation = await storage.deleteDonation(donationId, churchId);
+      
+      if (!deletedDonation) {
+        return res.status(404).json({ message: 'Donation not found or already deleted' });
+      }
+      
+      res.status(200).json({ success: true, id: donationId });
+    } catch (error) {
+      console.error('Error deleting donation:', error);
+      res.status(500).json({ message: 'Failed to delete donation' });
+    }
+  });
+  
   // Primary attestation endpoint for batch
   app.post('/api/batches/:id/attest-primary', isAuthenticated, async (req: any, res) => {
     try {
