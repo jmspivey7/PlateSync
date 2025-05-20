@@ -376,20 +376,35 @@ export function DonationChart() {
     }
   })();
 
-  // Calculate trend percentage
+  // Calculate trend percentage based on prior 12 months (or as far back as data allows)
   const calculateTrend = () => {
     if (chartData.length < 2) return { percentage: 0, trending: "none" };
     
     // Get total from most recent batch
     const currentTotal = chartData[chartData.length - 1].cash + chartData[chartData.length - 1].check;
     
-    // Get total from previous batch
-    const previousTotal = chartData[chartData.length - 2].cash + chartData[chartData.length - 2].check;
+    // Get all previous batches (excluding the most recent one)
+    const previousBatches = chartData.slice(0, chartData.length - 1);
     
-    if (previousTotal === 0) return { percentage: 0, trending: "none" };
+    // Calculate the average of all previous batches
+    const totalPreviousAmount = previousBatches.reduce((sum, batch) => {
+      return sum + batch.cash + batch.check;
+    }, 0);
     
-    const percentage = ((currentTotal - previousTotal) / previousTotal) * 100;
+    const averagePreviousAmount = totalPreviousAmount / previousBatches.length;
+    
+    if (averagePreviousAmount === 0) return { percentage: 0, trending: "none" };
+    
+    // Calculate percentage change against the average of all previous counts
+    const percentage = ((currentTotal - averagePreviousAmount) / averagePreviousAmount) * 100;
     const trending = percentage >= 0 ? "up" : "down";
+    
+    console.log("Count Trends Calculation:", {
+      currentTotal,
+      averagePreviousAmount,
+      numberOfBatchesAveraged: previousBatches.length,
+      percentageChange: percentage
+    });
     
     return { percentage: Math.abs(percentage), trending };
   };
