@@ -77,6 +77,7 @@ const BatchDetailPage = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   
   // Debug state management - this will help us see what's happening
   useEffect(() => {
@@ -306,6 +307,44 @@ const BatchDetailPage = () => {
 
   const handleFinalizeBatch = () => {
     finalizeBatchMutation.mutate();
+  };
+  
+  // Function to handle recalculating the batch total amount
+  const handleRecalculateTotal = async () => {
+    if (!batch) return;
+    
+    setIsRecalculating(true);
+    
+    try {
+      const response = await fetch(`/api/batches/${batch.id}/update-total`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to recalculate total amount');
+      }
+      
+      // Refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      
+      toast({
+        title: "Success",
+        description: "Total amount has been recalculated successfully.",
+      });
+    } catch (error) {
+      console.error('Error recalculating total:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recalculate the total amount. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRecalculating(false);
+    }
   };
 
   const handlePrint = () => {
