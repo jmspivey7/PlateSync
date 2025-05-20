@@ -333,6 +333,7 @@ const BatchDetailPage = () => {
   const getBadgeClass = (status: string) => {
     const statusColors = {
       OPEN: "bg-primary/20 text-primary hover:bg-primary/30",
+      PENDING_FINALIZATION: "bg-primary/20 text-primary hover:bg-primary/30", // Same style as OPEN
       FINALIZED: "bg-accent/20 text-accent hover:bg-accent/30",
     };
     return statusColors[status as keyof typeof statusColors] || "bg-muted text-muted-foreground";
@@ -610,7 +611,7 @@ const BatchDetailPage = () => {
               <div className="flex-1">
                 <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
                 <CardDescription className="mt-1">
-                  Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                  Status: <Badge className={getBadgeClass(batch.status)}>{batch.status === "PENDING_FINALIZATION" ? "OPEN" : batch.status}</Badge>
                 </CardDescription>
               </div>
               
