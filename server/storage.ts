@@ -1658,6 +1658,23 @@ export class DatabaseStorage implements IStorage {
           // Start processing emails in the background
           setTimeout(async () => {
             try {
+              // First, fetch the church data we'll need for all emails
+              console.log(`Fetching church data for ${churchId}...`);
+              const [churchData] = await db
+                .select()
+                .from(churches)
+                .where(eq(churches.id, churchId));
+              
+              if (!churchData) {
+                console.error(`Church data not found for ID: ${churchId}`);
+                return;
+              }
+              
+              const churchName = churchData.name || 'Your Church';
+              const churchLogoUrl = churchData.logoUrl;
+              
+              console.log(`Using church name: ${churchName} for emails`);
+              
               // First, handle donor receipt emails if members have email addresses
               console.log(`Processing donation receipt emails for batch ${id}...`);
               const { donations } = batchWithDonations;
@@ -1678,9 +1695,9 @@ export class DatabaseStorage implements IStorage {
                         amount: donation.amount.toString(),
                         date: donationDate,
                         donorName: `${member.firstName} ${member.lastName}`,
-                        churchName: church.name || 'Your Church',
+                        churchName: churchName,
                         churchId: churchId,
-                        churchLogoUrl: church.logoUrl,
+                        churchLogoUrl: churchLogoUrl,
                         donationId: donation.id.toString()
                       });
                       
@@ -1742,9 +1759,9 @@ export class DatabaseStorage implements IStorage {
                     await sendCountReport({
                       to: recipient.email,
                       recipientName: `${recipient.firstName} ${recipient.lastName}`,
-                      churchName: church.name || 'Your Church',
+                      churchName: churchName,
                       churchId: churchId,
-                      churchLogoUrl: church.logoUrl,
+                      churchLogoUrl: churchLogoUrl,
                       batchId: id,
                       batchName: serviceName,
                       batchDate: batchDate,
