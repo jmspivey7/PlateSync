@@ -66,7 +66,7 @@ const BatchDetailPage = () => {
   const [location, setLocation] = useLocation();
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
-  const { isAdmin, isAccountOwner, isStandard } = useAuth();
+  const { isAdmin, isAccountOwner } = useAuth();
   
   // Check if we're on the summary route
   const isSummaryRoute = location.includes('batch-summary');
@@ -333,7 +333,6 @@ const BatchDetailPage = () => {
   const getBadgeClass = (status: string) => {
     const statusColors = {
       OPEN: "bg-primary/20 text-primary hover:bg-primary/30",
-      PENDING_FINALIZATION: "bg-primary/20 text-primary hover:bg-primary/30", // Same style as OPEN
       FINALIZED: "bg-accent/20 text-accent hover:bg-accent/30",
     };
     return statusColors[status as keyof typeof statusColors] || "bg-muted text-muted-foreground";
@@ -460,10 +459,8 @@ const BatchDetailPage = () => {
                   </CardDescription>
                 </div>
                 
-                {/* Three-dot menu - Show for Account Owners on any count 
-                    OR for Admins/Standard users on Open counts */}
-                {(isFinalized && isAccountOwner) || 
-                 (!isFinalized && (isAdmin || isStandard || isAccountOwner)) && (
+                {/* Three-dot menu - Only show for Account Owners */}
+                {isFinalized && isAccountOwner && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
@@ -608,38 +605,37 @@ const BatchDetailPage = () => {
               )}
             </div>
             
-            {/* Right side - Header with Title, Status and Actions */}
-            <div className="flex items-center justify-between w-full">
-              <div>
-                <div className="flex items-center">
-                  <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
-                  
-                  {/* Always show three-dot menu for Standard/Admin/Account Owners on OPEN counts */}
-                  {(isStandard || isAdmin || isAccountOwner) && 
-                   (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="ml-2 p-0 h-8 w-8">
-                          <MoreVertical className="h-5 w-5" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={handleShowDeleteConfirm}
-                          className="text-red-600 cursor-pointer"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Count
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
+            {/* Right side - Title and Status - Full width on mobile */}
+            <div className="text-left md:text-right flex items-start w-full md:w-auto">
+              <div className="flex-1">
+                <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
                 <CardDescription className="mt-1">
-                  Status: <Badge className={getBadgeClass(batch.status)}>{batch.status === "PENDING_FINALIZATION" ? "OPEN" : batch.status}</Badge>
+                  Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
                 </CardDescription>
               </div>
+              
+              {/* Three-dot menu - Only show for admins */}
+              {isAdmin && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
+                      <span className="sr-only">Open menu</span>
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
+                    {batch.status === "OPEN" && (
+                      <DropdownMenuItem 
+                        onClick={handleShowDeleteConfirm}
+                        className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Count
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
           
