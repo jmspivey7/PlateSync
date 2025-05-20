@@ -1131,7 +1131,6 @@ const Settings = () => {
                                   "Content-Type": "application/json",
                                 },
                                 body: JSON.stringify({
-                                  churchName: form.getValues("churchName"),
                                   emailNotificationsEnabled: newValue
                                 })
                               })
