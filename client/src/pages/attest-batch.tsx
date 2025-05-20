@@ -34,8 +34,9 @@ const AttestBatchPage = () => {
 
   // Check if attestation is allowed based on batch status
   const canAttest = () => {
-    // Only OPEN batches can be attested
-    return batch && batch.status === "OPEN";
+    // Both OPEN and PENDING_FINALIZATION batches can be attested
+    // Only fully FINALIZED batches shouldn't be attested
+    return batch && (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION");
   };
 
   const handleBackToCount = () => {
@@ -81,6 +82,7 @@ const AttestBatchPage = () => {
 
   // Check if attestation is allowed
   if (!canAttest()) {
+    // This batch is truly finalized (not just pending finalization)
     return (
       <PageLayout 
         title={`Count Already Finalized: ${batch.name}`}

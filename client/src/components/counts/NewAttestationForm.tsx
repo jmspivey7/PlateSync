@@ -135,7 +135,13 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   // Update step based on attestation status when batch updates
   useEffect(() => {
     if (batch) {
-      if (batch.primaryAttestorId && batch.secondaryAttestorId) {
+      // Check if the batch status is PENDING_FINALIZATION (meaning it has both attestations but needs final confirmation)
+      if (batch.status === "PENDING_FINALIZATION") {
+        // Show confirmation step for batches that need final confirmation
+        if (step !== 'confirmation') {
+          setStep('confirmation');
+        }
+      } else if (batch.primaryAttestorId && batch.secondaryAttestorId) {
         // If we're coming from 'print' step don't go back to confirmation
         if (step !== 'print' && step !== 'confirmation') {
           setStep('print');
