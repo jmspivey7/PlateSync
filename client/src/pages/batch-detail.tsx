@@ -460,8 +460,10 @@ const BatchDetailPage = () => {
                   </CardDescription>
                 </div>
                 
-                {/* Three-dot menu - Only show for Account Owners */}
-                {isFinalized && isAccountOwner && (
+                {/* Three-dot menu - Show for Account Owners on any count 
+                    OR for Admins/Standard users on Open counts */}
+                {(isFinalized && isAccountOwner) || 
+                 (!isFinalized && (isAdmin || isStandard || isAccountOwner)) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
