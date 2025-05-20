@@ -607,7 +607,7 @@ const BatchDetailPage = () => {
             </div>
             
             {/* Right side - Title and Status - Full width on mobile */}
-            <div className="text-left md:text-right flex items-start w-full md:w-auto">
+            <div className="text-left md:text-right flex items-center justify-between w-full md:w-auto">
               <div className="flex-1">
                 <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
                 <CardDescription className="mt-1">
@@ -615,25 +615,23 @@ const BatchDetailPage = () => {
                 </CardDescription>
               </div>
               
-              {/* Three-dot menu - Show for all user types on Open counts */}
-              {(isAdmin || isStandard) && (
+              {/* Three-dot menu for Administrators and Standard Users on Open counts */}
+              {(isAdmin || isStandard) && (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
+                    <Button variant="ghost" className="h-8 w-8 p-0 ml-2">
                       <span className="sr-only">Open menu</span>
-                      <MoreVertical className="h-4 w-4" />
+                      <MoreVertical className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
-                    {(batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
-                      <DropdownMenuItem 
-                        onClick={handleShowDeleteConfirm}
-                        className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Count
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem 
+                      onClick={handleShowDeleteConfirm}
+                      className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Count
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
