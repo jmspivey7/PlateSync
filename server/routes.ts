@@ -999,6 +999,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Header - Logo (if available)
         let headerY = margin;
+        let logoHeight = 0;
+        
         try {
           if (user.churchLogoUrl) {
             const logoPath = `${process.cwd()}/public${user.churchLogoUrl}`;
@@ -1008,29 +1010,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const logoWidth = 312.5;
               const centerX = (pageWidth - logoWidth) / 2;
               
+              // Draw the logo
               doc.image(logoPath, centerX, headerY, { 
                 fit: [logoWidth, 125],
                 align: 'center'
               });
               
-              doc.moveDown(2);
+              // Update the vertical position - give more space for the logo
+              logoHeight = 125; // estimated logo height
+              headerY = margin + logoHeight + 20; // add extra padding after logo
             } else {
-              // If no logo, use church name in large font
+              // If no logo file exists, use church name in large font
               doc.font('Helvetica-Bold').fontSize(24);
               doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
                 align: 'center',
                 width: contentWidth
               });
-              doc.moveDown(1);
+              headerY += 30; // Move down after the church name
             }
           } else {
-            // If no logo, use church name in large font
+            // If no logo URL, use church name in large font
             doc.font('Helvetica-Bold').fontSize(24);
             doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
               align: 'center',
               width: contentWidth
             });
-            doc.moveDown(1);
+            headerY += 30; // Move down after the church name
           }
         } catch (error) {
           console.error("Error rendering logo:", error);
@@ -1041,23 +1046,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             align: 'center',
             width: contentWidth
           });
-          doc.moveDown(1);
+          headerY += 30; // Move down after the church name
         }
         
-        // Title and date
+        // Title and date - positioned after the logo or church name
+        // Set the cursor position explicitly instead of using moveDown
         doc.font('Helvetica-Bold').fontSize(18);
-        doc.text('Finalized Count Report', {
+        doc.text('Finalized Count Report', margin, headerY, {
           align: 'center',
           width: contentWidth
         });
-        doc.moveDown(0.5);
+        
+        // Move to the next position for the date
+        headerY += 25;
         
         doc.font('Helvetica').fontSize(14);
-        doc.text(formattedDate, {
+        doc.text(formattedDate, margin, headerY, {
           align: 'center',
           width: contentWidth
         });
-        doc.moveDown(2);
+        
+        // Move to the position for the content section
+        doc.y = headerY + 30;
         
         // Summary section
         doc.font('Helvetica').fontSize(12);
