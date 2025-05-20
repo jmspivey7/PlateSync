@@ -248,11 +248,38 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       }
     },
     onError: (error) => {
+      // Check for database connection issues
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      const isConnectionError = 
+        errorMessage.includes("connect") || 
+        errorMessage.includes("connection") || 
+        errorMessage.includes("compute node");
+      
       toast({
         title: "Finalization failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description: isConnectionError 
+          ? "Database connection error. Please try again in a few moments." 
+          : errorMessage,
         variant: "destructive",
       });
+
+      // Add retry button to toast if it's a connection error
+      if (isConnectionError) {
+        toast({
+          title: "Action required",
+          description: "The database connection was temporarily unavailable. Would you like to try again?",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => confirmAttestationMutation.mutate()}
+              className="mt-2"
+            >
+              Retry
+            </Button>
+          ),
+        });
+      }
     },
   });
   
