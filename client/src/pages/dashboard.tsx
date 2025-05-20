@@ -331,12 +331,15 @@ const Dashboard = () => {
                   }
                 </div>
                 <div className="flex justify-between items-center">
-                  <div className="text-base font-medium flex items-center">
-                    {trend.trending === 'up' ? (
-                      <>Trending up <TrendingUp className="h-4 w-4 ml-1 text-primary" /></>
-                    ) : (
-                      <>Trending down <TrendingDown className="h-4 w-4 ml-1 text-destructive" /></>
-                    )}
+                  <div className="flex flex-col">
+                    <div className="text-base font-medium flex items-center">
+                      {trend.trending === 'up' ? (
+                        <>Trending up <TrendingUp className="h-4 w-4 ml-1 text-primary" /></>
+                      ) : (
+                        <>Trending down <TrendingDown className="h-4 w-4 ml-1 text-destructive" /></>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">vs. Last 4 Counts</div>
                   </div>
                   <div className="text-sm font-bold">
                     {formatSafeDate(lastFinalizedBatch.date)}
