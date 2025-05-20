@@ -923,23 +923,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch all donations for this batch
-      const batchDonations = await storage.getDonationsForBatch(batchId, churchId);
+      const batchDonations = await storage.getDonationsByBatch(batchId, churchId);
       
       // Calculate totals
-      const cashDonations = batchDonations.filter(d => d.type === 'CASH');
-      const checkDonations = batchDonations.filter(d => d.type === 'CHECK');
+      const cashDonations = batchDonations.filter(d => d.donationType === 'CASH');
+      const checkDonations = batchDonations.filter(d => d.donationType === 'CHECK');
       
-      const cashTotal = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0);
-      const checkTotal = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+      const cashTotal = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+      const checkTotal = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
       const total = cashTotal + checkTotal;
       
-      // Set up PDF document
-      const PDFDocument = require('pdfkit');
-      const doc = new PDFDocument({ margin: 50 });
-      
-      // Set response headers
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="count-report-${batchId}.pdf"`);
+      try {
+        // Import necessary modules dynamically for ESM compatibility
+        const PDFKit = await import('pdfkit');
+        const fs = await import('fs/promises');
+        const DateFns = await import('date-fns');
+        
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="count-report-${batchId}.pdf"`);
+        
+        // Create PDF document with margins
+        const doc = new PDFKit.default({ margin: 50 });
       
       // Pipe the PDF to the response
       doc.pipe(res);
@@ -949,7 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const logoPath = `${process.cwd()}/public${user.churchLogoUrl}`;
         try {
           // Check if file exists and is accessible
-          require('fs').accessSync(logoPath, require('fs').constants.R_OK);
+          await fs.access(logoPath);
           doc.image(logoPath, {
             fit: [200, 100],
             align: 'center'
