@@ -910,7 +910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch all donations for this batch
-      const batchDonations = await storage.getBatchDonations(batchId, churchId);
+      const batchDonations = await storage.getDonationsForBatch(batchId, churchId);
       
       // Calculate totals
       const cashDonations = batchDonations.filter(d => d.type === 'CASH');

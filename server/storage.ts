@@ -1760,6 +1760,17 @@ export class DatabaseStorage implements IStorage {
     return donation;
   }
   
+  async getDonationsForBatch(batchId: number, churchId: string): Promise<Donation[]> {
+    return db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.batchId, batchId),
+        eq(donations.churchId, churchId)
+      ))
+      .orderBy(desc(donations.date));
+  }
+  
   async getDonationWithMember(id: number, churchId: string): Promise<DonationWithMember | undefined> {
     const [donation] = await db
       .select()
