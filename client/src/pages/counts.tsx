@@ -22,7 +22,14 @@ import { useLocation } from "wouter";
 
 const statusColors = {
   OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
+  PENDING_FINALIZATION: "bg-green-100 text-green-800 hover:bg-green-100", // Same style as OPEN
   FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+};
+
+// Helper to get friendly status display names
+const getStatusDisplayName = (status: string): string => {
+  if (status === "PENDING_FINALIZATION") return "OPEN";
+  return status;
 };
 
 const CountsPage = () => {
@@ -190,7 +197,7 @@ const CountsPage = () => {
                         }}
                       >
                         <td className="py-3 px-3">
-                          <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                          <Badge className={getBadgeClass(batch.status)}>{getStatusDisplayName(batch.status)}</Badge>
                         </td>
                         <td className="py-3 px-3 text-gray-700 font-medium">
                           {(() => {
