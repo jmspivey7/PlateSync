@@ -2535,13 +2535,20 @@ Sincerely,
         return res.status(409).json({ message: 'A user with this email already exists' });
       }
       
-      // Create the user
+      // Get church details for the welcome email first
+      const churchDetails = await storage.getChurch(userChurchId);
+      const churchName = churchDetails?.name || 'Your Church';
+      const churchLogoUrl = churchDetails?.logoUrl || null;
+
+      // Create the user with the church logo URL
       const newUser = await storage.createUser({
         email,
         firstName,
         lastName,
         role,
         churchId: userChurchId,
+        churchName: churchName,
+        churchLogoUrl: churchLogoUrl,
         isAccountOwner: false
       });
       
@@ -2549,10 +2556,6 @@ Sincerely,
       try {
         // Create verification URL for password setup - corrected to use /verify instead of /verify-email
         const verificationUrl = `${req.protocol}://${req.get('host')}/verify`;
-        
-        // Get church details for the welcome email
-        const churchDetails = await storage.getChurch(userChurchId);
-        const churchName = churchDetails?.name || 'Your Church';
         
         await sendWelcomeEmail({
           to: newUser.email,
