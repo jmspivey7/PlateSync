@@ -37,6 +37,7 @@ const Dashboard = () => {
   // Get URL params to check for refresh flag
   const [location] = useLocation();
   const shouldRefresh = location.includes('refresh=');
+  const queryClient = useQueryClient();
   
   // Fetch the latest finalized batch for display with force refresh
   const { data: lastFinalizedBatch, isLoading: isLoadingBatch, refetch: refetchLatestBatch } = useQuery<Batch>({
@@ -59,7 +60,7 @@ const Dashboard = () => {
       refetchLatestBatch();
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
     }
-  }, [shouldRefresh, refetchLatestBatch]);
+  }, [shouldRefresh, refetchLatestBatch, queryClient]);
   
   // Fetch all batches for trend calculation
   const { data: allBatches } = useQuery<Batch[]>({
