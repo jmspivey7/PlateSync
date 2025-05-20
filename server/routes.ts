@@ -925,6 +925,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch all donations for this batch
       const batchDonations = await storage.getDonationsByBatch(batchId, churchId);
       
+      // Get member data for each donation if possible
+      for (const donation of batchDonations) {
+        if (donation.memberId) {
+          try {
+            const member = await storage.getMember(donation.memberId, churchId);
+            if (member) {
+              donation.member = member;
+            }
+          } catch (err) {
+            console.error(`Failed to fetch member data for member ID ${donation.memberId}:`, err);
+          }
+        }
+      }
+
       // Calculate totals
       const cashDonations = batchDonations.filter(d => d.donationType === 'CASH');
       const checkDonations = batchDonations.filter(d => d.donationType === 'CHECK');
@@ -933,173 +947,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const checkTotal = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
       const total = cashTotal + checkTotal;
       
-      // Import necessary modules dynamically for ESM compatibility
-      const PDFKit = await import('pdfkit');
-      const formatDate = (date: Date) => {
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric', 
-          minute: 'numeric'
-        });
-      };
+      // Helper function to format currency with thousands separators
+      function formatCurrency(amount: string | number): string {
+        // Convert to number if it's a string
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        
+        // Format with thousands separator and 2 decimal places
+        const numStr = numAmount.toFixed(2);
+        
+        // Format with commas for thousands
+        const parts = numStr.split('.');
+        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return `$${integerPart}.${parts[1]}`;
+      }
       
       try {
+        // Import modules dynamically
+        const PDFKit = await import('pdfkit');
+        const fs = await import('fs');
+        
+        // Format the date for the report
+        const formattedDate = new Date(batch.date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
         // Set response headers
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="count-report-${batchId}.pdf"`);
         
         // Create PDF document with margins
-        const doc = new PDFKit.default({ margin: 50 });
+        const doc = new PDFKit.default({ 
+          margin: 50,
+          size: 'letter',
+          autoFirstPage: true
+        });
         
         // Pipe the PDF to the response
         doc.pipe(res);
         
-        // Add church name and report title
-        doc.fontSize(20).text(user.churchName || 'Church Count Report', { align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(16).text(`Count Report: ${batch.name}`, { align: 'center' });
-        doc.moveDown(1);
+        // Set up constants for layout
+        const pageWidth = doc.page.width;
+        const margin = 50;
+        const contentWidth = pageWidth - (margin * 2);
         
-        // Draw a separator line
-        doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke();
-        doc.moveDown(1);
+        // Set up table constants
+        const leftColX = margin;
+        const rightMargin = margin;
+        const amountColX = pageWidth - rightMargin - 100; 
         
-        // Batch information
-        doc.fontSize(14).text('Count Information');
-        doc.moveDown(0.5);
-        doc.fontSize(12);
-        doc.text(`Date: ${formatDate(new Date(batch.date))}`);
-        doc.text(`Status: ${batch.status}`);
-        if (batch.notes) {
-          doc.text(`Notes: ${batch.notes}`);
-        }
-        doc.moveDown(1);
-        
-        // Attestation information
-        doc.fontSize(14).text('Attestation Information');
-        doc.moveDown(0.5);
-        doc.fontSize(12);
-        
-        // Primary attestation
-        doc.text('Primary Attestation:');
-        if (batch.primaryAttestorName) {
-          doc.text(`Attestor: ${batch.primaryAttestorName}`);
-          if (batch.primaryAttestationDate) {
-            doc.text(`Date: ${formatDate(new Date(batch.primaryAttestationDate))}`);
+        // Header - Logo (if available)
+        let headerY = margin;
+        try {
+          if (user.churchLogoUrl) {
+            const logoPath = `${process.cwd()}/public${user.churchLogoUrl}`;
+            
+            if (fs.existsSync(logoPath)) {
+              // Position logo horizontally in the center
+              const logoWidth = 312.5;
+              const centerX = (pageWidth - logoWidth) / 2;
+              
+              doc.image(logoPath, centerX, headerY, { 
+                fit: [logoWidth, 125],
+                align: 'center'
+              });
+              
+              doc.moveDown(2);
+            } else {
+              // If no logo, use church name in large font
+              doc.font('Helvetica-Bold').fontSize(24);
+              doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
+                align: 'center',
+                width: contentWidth
+              });
+              doc.moveDown(1);
+            }
+          } else {
+            // If no logo, use church name in large font
+            doc.font('Helvetica-Bold').fontSize(24);
+            doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
+              align: 'center',
+              width: contentWidth
+            });
+            doc.moveDown(1);
           }
-        } else {
-          doc.text('Not completed');
+        } catch (error) {
+          console.error("Error rendering logo:", error);
+          
+          // Fallback to text if logo fails
+          doc.font('Helvetica-Bold').fontSize(24);
+          doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
+            align: 'center',
+            width: contentWidth
+          });
+          doc.moveDown(1);
         }
+        
+        // Title and date
+        doc.font('Helvetica-Bold').fontSize(18);
+        doc.text('Finalized Count Report', {
+          align: 'center',
+          width: contentWidth
+        });
         doc.moveDown(0.5);
         
-        // Secondary attestation
-        doc.text('Secondary Attestation:');
-        if (batch.secondaryAttestorName) {
-          doc.text(`Attestor: ${batch.secondaryAttestorName}`);
-          if (batch.secondaryAttestationDate) {
-            doc.text(`Date: ${formatDate(new Date(batch.secondaryAttestationDate))}`);
-          }
-        } else {
-          doc.text('Not completed');
-        }
-        doc.moveDown(1);
+        doc.font('Helvetica').fontSize(14);
+        doc.text(formattedDate, {
+          align: 'center',
+          width: contentWidth
+        });
+        doc.moveDown(2);
         
-        // Total information
-        doc.fontSize(14).text('Total Information');
+        // Summary section
+        doc.font('Helvetica').fontSize(12);
+        
+        // First row - Checks
+        let rowY = doc.y;
+        doc.text('Checks', leftColX, rowY);
+        doc.text(formatCurrency(checkTotal), amountColX, rowY, { align: 'right' });
         doc.moveDown(0.5);
-        doc.fontSize(12);
-        doc.text(`Cash Total: $${cashTotal.toFixed(2)}`);
-        doc.text(`Check Total: $${checkTotal.toFixed(2)}`);
-        doc.text(`Total Donations: ${batchDonations.length}`);
-        doc.fontSize(14).text(`TOTAL AMOUNT: $${total.toFixed(2)}`);
+        
+        // Second row - Cash
+        rowY = doc.y;
+        doc.text('Cash', leftColX, rowY);
+        doc.text(formatCurrency(cashTotal), amountColX, rowY, { align: 'right' });
+        doc.moveDown(0.5);
+        
+        // Add a line
+        doc.moveTo(leftColX, doc.y + 5)
+           .lineTo(pageWidth - rightMargin, doc.y + 5)
+           .stroke();
         doc.moveDown(1);
         
-        // Donations table
-        if (batchDonations.length > 0) {
-          doc.fontSize(14).text('Donation Details');
+        // Total row
+        rowY = doc.y;
+        doc.font('Helvetica-Bold');
+        doc.text('TOTAL', leftColX, rowY);
+        doc.text(formatCurrency(total), amountColX, rowY, { align: 'right' });
+        doc.moveDown(1.5);
+        
+        // CHECKS section
+        if (checkDonations.length > 0) {
+          doc.font('Helvetica-Bold').fontSize(14);
+          doc.text('CHECKS', leftColX);
           doc.moveDown(0.5);
           
-          // Table header
-          doc.fontSize(11);
-          const tableTop = doc.y;
-          const colWidth = (doc.page.width - 100) / 5; // 5 columns
+          // Check table header
+          doc.font('Helvetica-Bold').fontSize(12);
+          doc.text('Member / Donor', leftColX);
+          doc.text('Check #', leftColX + 225, doc.y - doc.currentLineHeight());
+          doc.text('Amount', amountColX, doc.y - doc.currentLineHeight(), { align: 'right' });
+          doc.moveDown(0.5);
           
-          doc.text('Type', 50, tableTop);
-          doc.text('Amount', 50 + colWidth, tableTop);
-          doc.text('Member', 50 + colWidth * 2, tableTop);
-          doc.text('Check #', 50 + colWidth * 3, tableTop);
-          doc.text('Notes', 50 + colWidth * 4, tableTop);
-          
-          // Underline
-          doc.moveTo(50, tableTop + 15)
-             .lineTo(doc.page.width - 50, tableTop + 15)
+          // Add a line under header
+          doc.moveTo(leftColX, doc.y)
+             .lineTo(pageWidth - rightMargin, doc.y)
              .stroke();
+          doc.moveDown(0.5);
           
-          let y = tableTop + 25;
+          // Check items
+          doc.font('Helvetica').fontSize(12);
           
-          // Table rows
-          batchDonations.forEach((donation, i) => {
-            // Check if we need a new page
-            if (y > doc.page.height - 100) {
-              doc.addPage();
-              y = 50;
-              
-              // Repeat header on new page
-              doc.fontSize(11);
-              doc.text('Type', 50, y);
-              doc.text('Amount', 50 + colWidth, y);
-              doc.text('Member', 50 + colWidth * 2, y);
-              doc.text('Check #', 50 + colWidth * 3, y);
-              doc.text('Notes', 50 + colWidth * 4, y);
-              
-              // Underline
-              doc.moveTo(50, y + 15)
-                 .lineTo(doc.page.width - 50, y + 15)
-                 .stroke();
-              
-              y += 25;
+          checkDonations.forEach(donation => {
+            let donorName = 'Anonymous';
+            if (donation.member) {
+              donorName = `${donation.member.firstName} ${donation.member.lastName}`.trim();
             }
             
-            // Format the amount
-            const amount = parseFloat(donation.amount.toString()).toFixed(2);
-            
-            // Get the member's name if available
-            let memberName = 'Visitor';
-            if (donation.memberId) {
-              memberName = `Member #${donation.memberId}`;
-            }
-            
-            // Draw the row
-            doc.fontSize(10);
-            doc.text(donation.donationType, 50, y);
-            doc.text(`$${amount}`, 50 + colWidth, y);
-            doc.text(memberName, 50 + colWidth * 2, y);
-            doc.text(donation.checkNumber || '', 50 + colWidth * 3, y);
-            doc.text(donation.notes || '', 50 + colWidth * 4, y);
-            
-            // Draw a light gray line between rows (except after the last row)
-            if (i < batchDonations.length - 1) {
-              doc.strokeColor('#dddddd')
-                 .moveTo(50, y + 15)
-                 .lineTo(doc.page.width - 50, y + 15)
-                 .stroke()
-                 .strokeColor('#000000'); // Reset to black
-            }
-            
-            y += 20;
+            const itemY = doc.y;
+            doc.text(donorName, leftColX, itemY);
+            doc.text(donation.checkNumber || '', leftColX + 225, itemY);
+            doc.text(formatCurrency(donation.amount), amountColX, itemY, { align: 'right' });
+            doc.moveDown(0.5);
           });
+          
+          // Add a line
+          doc.moveTo(leftColX, doc.y)
+             .lineTo(pageWidth - rightMargin, doc.y)
+             .stroke();
+          doc.moveDown(0.5);
+          
+          // Check subtotal row
+          rowY = doc.y;
+          doc.font('Helvetica-Bold');
+          doc.text('Sub-Total Checks', leftColX, rowY);
+          doc.text(formatCurrency(checkTotal), amountColX, rowY, { align: 'right' });
+          doc.moveDown(1.5);
         }
         
-        // Footer with generation date
-        doc.fontSize(8)
-           .text(
-             `Generated on ${formatDate(new Date())} | ${user.churchName || 'Church'} Donation System`, 
-             50, 
-             doc.page.height - 50, 
-             { align: 'center' }
-           );
+        // CASH section
+        if (cashDonations.length > 0) {
+          doc.font('Helvetica-Bold').fontSize(14);
+          doc.text('CASH', leftColX);
+          doc.moveDown(0.5);
+          
+          // Cash table header
+          doc.font('Helvetica-Bold').fontSize(12);
+          doc.text('Member / Donor', leftColX);
+          doc.text('Amount', amountColX, doc.y - doc.currentLineHeight(), { align: 'right' });
+          doc.moveDown(0.5);
+          
+          // Add a line under header
+          doc.moveTo(leftColX, doc.y)
+             .lineTo(pageWidth - rightMargin, doc.y)
+             .stroke();
+          doc.moveDown(0.5);
+          
+          // Cash items
+          doc.font('Helvetica').fontSize(12);
+          
+          cashDonations.forEach(donation => {
+            let donorName = 'Anonymous';
+            if (donation.member) {
+              donorName = `${donation.member.firstName} ${donation.member.lastName}`.trim();
+            }
+            
+            const itemY = doc.y;
+            doc.text(donorName, leftColX, itemY);
+            doc.text(formatCurrency(donation.amount), amountColX, itemY, { align: 'right' });
+            doc.moveDown(0.5);
+          });
+          
+          // Add a line
+          doc.moveTo(leftColX, doc.y)
+             .lineTo(pageWidth - rightMargin, doc.y)
+             .stroke();
+          doc.moveDown(0.5);
+          
+          // Cash subtotal row
+          rowY = doc.y;
+          doc.font('Helvetica-Bold');
+          doc.text('Sub-Total Cash', leftColX, rowY);
+          doc.text(formatCurrency(cashTotal), amountColX, rowY, { align: 'right' });
+          doc.moveDown(1.5);
+        }
+        
+        // GRAND TOTAL with double line
+        doc.moveTo(leftColX, doc.y)
+           .lineTo(pageWidth - rightMargin, doc.y)
+           .stroke();
+        doc.moveTo(leftColX, doc.y + 3)
+           .lineTo(pageWidth - rightMargin, doc.y + 3)
+           .stroke();
+        doc.moveDown(0.5);
+        
+        // Grand total row
+        rowY = doc.y;
+        doc.font('Helvetica-Bold').fontSize(14);
+        doc.text('GRAND TOTAL', leftColX, rowY);
+        doc.text(formatCurrency(total), amountColX, rowY, { align: 'right' });
         
         // Finalize the PDF
         doc.end();
