@@ -96,8 +96,9 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
       // Get church ID - either the user's own ID or their churchId
       const churchId = user.churchId || userId;
       
-      // Create URL for the uploaded logo
-      const logoUrl = `/logos/${req.file.filename}`;
+      // Create the full absolute URL for the uploaded logo (for email templates)
+      const baseUrl = req.protocol + '://' + req.get('host');
+      const logoUrl = `${baseUrl}/logos/${req.file.filename}`;
       console.log(`Setting logo URL: ${logoUrl} for church ${churchId}`);
       
       // Update the user's record first (always update the user who uploaded)
@@ -201,6 +202,126 @@ router.delete('/logo', isAuthenticated, async (req: any, res) => {
     console.error('Error removing logo:', error);
     res.status(500).json({
       message: 'Server error while removing logo',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// Fix church logo URLs - updates relative URLs to absolute URLs
+router.post('/fix-logo-urls', isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found in session' });
+    }
+    
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get church ID - either the user's own ID or their churchId
+    const churchId = user.churchId || userId;
+    
+    // Get the base URL for constructing absolute URLs
+    const baseUrl = req.protocol + '://' + req.get('host');
+    
+    // Find all users in this church who have a logo URL that starts with /logos/
+    const usersWithRelativeLogos = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.churchId, churchId),
+          sql`${users.churchLogoUrl} IS NOT NULL`,
+          sql`${users.churchLogoUrl} LIKE '/logos/%'`
+        )
+      );
+    
+    // Also check the church owner
+    const [churchOwner] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.id, churchId),
+          sql`${users.churchLogoUrl} IS NOT NULL`,
+          sql`${users.churchLogoUrl} LIKE '/logos/%'`
+        )
+      );
+    
+    // Add the church owner to the list if they have a relative logo URL
+    if (churchOwner && !usersWithRelativeLogos.some(u => u.id === churchOwner.id)) {
+      usersWithRelativeLogos.push(churchOwner);
+    }
+    
+    // Process found users
+    const updatedUsers = [];
+    
+    if (usersWithRelativeLogos.length > 0) {
+      console.log(`Found ${usersWithRelativeLogos.length} users with relative logo URLs`);
+      
+      // Update each user's logo URL to an absolute URL
+      for (const userToUpdate of usersWithRelativeLogos) {
+        if (userToUpdate.churchLogoUrl && userToUpdate.churchLogoUrl.startsWith('/logos/')) {
+          const absoluteLogoUrl = `${baseUrl}${userToUpdate.churchLogoUrl}`;
+          
+          // Update the user record
+          await db
+            .update(users)
+            .set({ 
+              churchLogoUrl: absoluteLogoUrl,
+              updatedAt: new Date()
+            })
+            .where(eq(users.id, userToUpdate.id));
+          
+          console.log(`Updated logo URL for user ${userToUpdate.id}:`);
+          console.log(`  - From: ${userToUpdate.churchLogoUrl}`);
+          console.log(`  - To: ${absoluteLogoUrl}`);
+          
+          updatedUsers.push({
+            id: userToUpdate.id,
+            oldUrl: userToUpdate.churchLogoUrl,
+            newUrl: absoluteLogoUrl
+          });
+        }
+      }
+      
+      // Also update any churches directly
+      await db
+        .update(churches)
+        .set({ 
+          logoUrl: sql`${baseUrl} || ${churches.logoUrl}`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(churches.id, churchId),
+            sql`${churches.logoUrl} IS NOT NULL`,
+            sql`${churches.logoUrl} LIKE '/logos/%'`
+          )
+        );
+      
+      return res.json({
+        success: true,
+        message: `Updated ${updatedUsers.length} logo URLs to absolute format`,
+        updatedUsers
+      });
+    } else {
+      return res.json({
+        success: true,
+        message: 'No relative logo URLs found that need updating'
+      });
+    }
+  } catch (error) {
+    console.error('Error fixing logo URLs:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fixing logo URLs',
       error: error instanceof Error ? error.message : String(error)
     });
   }
