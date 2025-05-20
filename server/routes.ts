@@ -2547,8 +2547,8 @@ Sincerely,
       
       // Send welcome email with verification/password setup link
       try {
-        // Create verification URL for password setup
-        const verificationUrl = `${req.protocol}://${req.get('host')}/verify-email?token=${newUser.passwordResetToken}`;
+        // Create verification URL for password setup - corrected to use /verify instead of /verify-email
+        const verificationUrl = `${req.protocol}://${req.get('host')}/verify`;
         
         // Get church details for the welcome email
         const churchDetails = await storage.getChurch(userChurchId);
