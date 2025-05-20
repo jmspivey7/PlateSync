@@ -2446,10 +2446,10 @@ Sincerely,
           try {
             console.log(`User ${userId} missing church details, checking church ID: ${user.churchId}`);
             
-            // Get church details from database
-            const churchUser = await storage.getUserById(user.churchId);
+            // Get church details directly from the church record - this is the critical fix
+            const church = await storage.getChurch(user.churchId);
             
-            if (churchUser && (churchUser.churchLogoUrl || churchUser.churchName)) {
+            if (church) {
               console.log(`Found church details for ${user.churchId}, syncing logo and name to user ${userId}`);
               
               // Update user in the database with church details
@@ -2457,12 +2457,12 @@ Sincerely,
                 updatedAt: new Date()
               };
               
-              if (churchUser.churchLogoUrl) {
-                updates.churchLogoUrl = churchUser.churchLogoUrl;
+              if (church.logoUrl) {
+                updates.churchLogoUrl = church.logoUrl;
               }
               
-              if (churchUser.churchName) {
-                updates.churchName = churchUser.churchName;
+              if (church.name) {
+                updates.churchName = church.name;
               }
               
               // Update the database
@@ -2472,12 +2472,12 @@ Sincerely,
                 .where(eq(users.id, userId));
                 
               // Also update the user object to be returned in this response
-              if (churchUser.churchLogoUrl) {
-                user.churchLogoUrl = churchUser.churchLogoUrl;
+              if (church.logoUrl) {
+                user.churchLogoUrl = church.logoUrl;
               }
               
-              if (churchUser.churchName) {
-                user.churchName = churchUser.churchName;
+              if (church.name) {
+                user.churchName = church.name;
               }
               
               console.log(`Updated user ${userId} with church logo information`);
