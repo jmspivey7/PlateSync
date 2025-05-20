@@ -45,6 +45,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Import the logo URL fix migration
+import { fixLogoUrls } from './migrations/fix-logo-urls';
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -75,5 +78,24 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Run database migrations after server starts
+    try {
+      // Get the base URL 
+      const hostname = process.env.REPL_SLUG ? `${process.env.REPL_SLUG}.replit.app` : 'localhost:5000';
+      const protocol = process.env.REPL_SLUG ? 'https' : 'http';
+      const baseUrl = `${protocol}://${hostname}`;
+      
+      console.log(`🚀 Running database migrations with base URL: ${baseUrl}`);
+      
+      // Fix church logo URLs in the database (run async)
+      fixLogoUrls(baseUrl).then(result => {
+        console.log(`✅ Logo URL migration results: Fixed ${result.usersFixed} user records and ${result.churchesFixed} church records`);
+      }).catch(error => {
+        console.error('❌ Error running logo URL migration:', error);
+      });
+    } catch (error) {
+      console.error('Error initializing migrations:', error);
+    }
   });
 })();
