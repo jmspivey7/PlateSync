@@ -2446,23 +2446,27 @@ Sincerely,
           try {
             console.log(`User ${userId} missing church details, checking church ID: ${user.churchId}`);
             
-            // Get church details directly from the church record - this is the critical fix
-            const church = await storage.getChurch(user.churchId);
-            
-            if (church) {
-              console.log(`Found church details for ${user.churchId}, syncing logo and name to user ${userId}`);
+            // Get church owner/admin information (the source of truth for church details)
+            const [churchAdmin] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, user.churchId));
+              
+            if (churchAdmin && (churchAdmin.churchLogoUrl || churchAdmin.churchName)) {
+              console.log(`Found church admin details for ${user.churchId}, syncing logo and name to user ${userId}`);
               
               // Update user in the database with church details
               const updates: any = {
                 updatedAt: new Date()
               };
               
-              if (church.logoUrl) {
-                updates.churchLogoUrl = church.logoUrl;
+              if (churchAdmin.churchLogoUrl) {
+                updates.churchLogoUrl = churchAdmin.churchLogoUrl;
+                console.log(`Found church logo: ${churchAdmin.churchLogoUrl} for church ${user.churchId}`);
               }
               
-              if (church.name) {
-                updates.churchName = church.name;
+              if (churchAdmin.churchName) {
+                updates.churchName = churchAdmin.churchName;
               }
               
               // Update the database
@@ -2472,12 +2476,12 @@ Sincerely,
                 .where(eq(users.id, userId));
                 
               // Also update the user object to be returned in this response
-              if (church.logoUrl) {
-                user.churchLogoUrl = church.logoUrl;
+              if (churchAdmin.churchLogoUrl) {
+                user.churchLogoUrl = churchAdmin.churchLogoUrl;
               }
               
-              if (church.name) {
-                user.churchName = church.name;
+              if (churchAdmin.churchName) {
+                user.churchName = churchAdmin.churchName;
               }
               
               console.log(`Updated user ${userId} with church logo information`);
