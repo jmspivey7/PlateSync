@@ -838,12 +838,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the churchId from the user object, or fallback to using the userId as churchId
       const churchId = user.churchId || userId;
       
+      // For secondary attestation, we should use the attestorId from the request body
+      // to get the correct attestor name, not the current user's ID
+      let attestorName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      
+      // If attestorId is provided in the request and it's different from the current user
+      if (req.body.attestorId && req.body.attestorId !== userId) {
+        // Fetch the user with the provided attestorId to get their full name
+        const secondaryAttestor = await storage.getUser(req.body.attestorId);
+        if (secondaryAttestor) {
+          attestorName = `${secondaryAttestor.firstName || ''} ${secondaryAttestor.lastName || ''}`.trim();
+        }
+      }
+      
       // Prepare attestation data
       const attestationData = {
         ...req.body,
         batchId,
-        attestorId: userId,
-        attestorName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        attestorId: req.body.attestorId || userId, // Use provided attestorId or default to current userId
+        attestorName: attestorName,
         attestationDate: new Date()
       };
       
