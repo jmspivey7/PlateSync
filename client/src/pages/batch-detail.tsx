@@ -671,7 +671,7 @@ const BatchDetailPage = () => {
             <div className="mb-2">
               <div className="text-sm text-muted-foreground">Total Amount</div>
               <div className="text-2xl font-bold text-secondary-foreground">
-                {formatCurrency(batch.totalAmount || 0)}
+                {formatCurrency(cashTotal + checkTotal)}
               </div>
             </div>
             <div className="mb-2">
