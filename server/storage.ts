@@ -1595,8 +1595,9 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Check if we should send email notifications
-      const church = await this.getChurchById(churchId);
-      if (church && church.emailNotificationsEnabled) {
+      // Get the user account that represents the church
+      const churchUser = await this.getUser(churchId);
+      if (churchUser && churchUser.emailNotificationsEnabled) {
         console.log(`Email notifications are enabled for church ${churchId}. Preparing to send finalization emails...`);
         
         // Get the batch with donations for sending emails
