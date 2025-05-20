@@ -439,6 +439,12 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       let html = template.bodyHtml || '';
       
       // Replace template variables with both formats (old and new)
+      const formattedUserRole = params.role === 'STANDARD_USER' ? 'Standard User' 
+                              : params.role === 'ACCOUNT_OWNER' ? 'Account Owner' 
+                              : params.role === 'USHER' ? 'Usher' 
+                              : params.role === 'ADMIN' ? 'Administrator' 
+                              : params.role || 'User';
+                              
       const replacements: Record<string, string> = {
         '{{firstName}}': params.firstName,
         '{{lastName}}': params.lastName,
@@ -450,6 +456,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         '{{resetLink}}': `${params.verificationUrl}?token=${params.verificationToken}`,
         '{{USER_EMAIL}}': params.to,
         '{{USER_ROLE}}': params.role || 'User',
+        '{{formattedUserRole}}': formattedUserRole,
         '{{userName}}': `${params.firstName} ${params.lastName}`,
       };
       
