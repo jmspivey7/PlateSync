@@ -240,6 +240,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings routes including church logo management
   app.use('/api/settings', isAuthenticated, settingsRoutes);
   
+  // Dedicated endpoint for toggling email notifications
+  app.post('/api/settings/email-notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      if (!user || !user.id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      // Validate input
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: 'Invalid input: enabled must be a boolean' });
+      }
+      
+      // Update user's email notification setting
+      await storage.updateUserEmailNotificationSetting(user.id, enabled);
+      
+      // Return success
+      return res.status(200).send('OK');
+    } catch (error) {
+      console.error('Error updating email notification setting:', error);
+      return res.status(500).json({ message: 'An error occurred while updating settings' });
+    }
+  });
+  
   // Member data endpoints
   app.get('/api/members', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {

@@ -1124,32 +1124,41 @@ const Settings = () => {
                               // Update the form value
                               form.setValue("emailNotificationsEnabled", newValue);
                               
-                              // Use updateSettingsMutation instead of direct fetch
-                              updateSettingsMutation.mutate(
-                                { 
-                                  churchName: form.getValues("churchName"),
-                                  emailNotificationsEnabled: newValue 
+                              // Use a simplified direct API call that only sends the emailNotificationsEnabled field
+                              const apiUrl = "/api/settings/email-notifications";
+                              
+                              // Make a focused API call just for this setting
+                              fetch(apiUrl, {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
                                 },
-                                {
-                                  onSuccess: () => {
-                                    toast({
-                                      title: "Notification Setting Updated",
-                                      description: `Email notifications have been turned ${newValue ? 'ON' : 'OFF'}.`,
-                                      className: "bg-[#69ad4c] text-white",
-                                    });
-                                  },
-                                  onError: (error) => {
-                                    // Revert the UI toggle if there's an error
-                                    form.setValue("emailNotificationsEnabled", !newValue);
-                                    toast({
-                                      title: "Error",
-                                      description: `Failed to update setting: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                                      variant: "destructive",
-                                      className: "bg-white border-red-600",
-                                    });
-                                  }
-                                }
-                              );
+                                body: JSON.stringify({ enabled: newValue })
+                              })
+                              .then(response => {
+                                if (!response.ok) throw new Error("Failed to update notification settings");
+                                return response.text();
+                              })
+                              .then(() => {
+                                // If successful, update the query cache
+                                queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                                toast({
+                                  title: "Notification Setting Updated",
+                                  description: `Email notifications have been turned ${newValue ? 'ON' : 'OFF'}.`,
+                                  className: "bg-[#69ad4c] text-white",
+                                });
+                              })
+                              .catch(error => {
+                                // Revert the UI toggle if there's an error
+                                form.setValue("emailNotificationsEnabled", !newValue);
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to update notification settings. Please try again.",
+                                  variant: "destructive",
+                                  className: "bg-white border-red-600",
+                                });
+                                console.error("Toggle error:", error);
+                              });
                             }}
                             className="focus:outline-none"
                             aria-label="Toggle email notifications"
