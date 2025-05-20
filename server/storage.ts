@@ -45,6 +45,57 @@ import { db } from "./db";
 import { format } from "date-fns";
 
 // Interface for storage operations
+// Utility function to sync church information between all members
+export async function syncChurchInfoToMembers(db: any, churchId: string) {
+  try {
+    console.log(`Syncing church information for all members of church ${churchId}`);
+    
+    // Get church owner/admin information (source of truth for church details)
+    const [churchAdmin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, churchId));
+      
+    if (!churchAdmin) {
+      console.log(`No church admin found with ID ${churchId}`);
+      return false;
+    }
+    
+    // Check if we have church information to sync
+    if (!churchAdmin.churchName && !churchAdmin.churchLogoUrl) {
+      console.log(`No church details to sync for church ${churchId}`);
+      return false;
+    }
+    
+    console.log(`Found church details to sync: Name=${churchAdmin.churchName}, Logo=${churchAdmin.churchLogoUrl || 'None'}`);
+    
+    // Update all church members with this information
+    const updates: any = {
+      updatedAt: new Date()
+    };
+    
+    if (churchAdmin.churchName) {
+      updates.churchName = churchAdmin.churchName;
+    }
+    
+    if (churchAdmin.churchLogoUrl) {
+      updates.churchLogoUrl = churchAdmin.churchLogoUrl;
+    }
+    
+    // Update all users with this churchId
+    const result = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.churchId, churchId));
+      
+    console.log(`Updated ${result.count || 'multiple'} users with synced church information`);
+    return true;
+  } catch (error) {
+    console.error(`Error syncing church information: ${error}`);
+    return false;
+  }
+}
+
 export interface IStorage {
   // System Configuration operations
   getSystemConfig(key: string): Promise<string | null>;
