@@ -40,19 +40,40 @@ export async function fixLogoUrls(baseUrl: string): Promise<{
     `);
     
     // Now, sync church logo URLs from users table to churches table where logo_url is NULL
-    const syncChurchLogosResult = await db.execute(sql`
-      UPDATE churches c
-      SET 
-        logo_url = u.church_logo_url,
-        updated_at = NOW()
-      FROM 
-        users u
-      WHERE 
-        c.id = u.id
-        AND u.church_logo_url IS NOT NULL
-        AND u.role = 'ACCOUNT_OWNER'
-        AND (c.logo_url IS NULL OR c.logo_url = '')
-    `);
+    console.log('Syncing church logos from user records to churches table...');
+    
+    // First, get all users with church logo URLs
+    const usersWithLogos = await db.select({
+      id: users.id,
+      churchLogoUrl: users.churchLogoUrl,
+      role: users.role
+    })
+    .from(users)
+    .where(sql`${users.churchLogoUrl} IS NOT NULL`);
+    
+    console.log(`Found ${usersWithLogos.length} users with logo URLs`);
+    
+    // Then update churches with NULL logo_url
+    let updatedCount = 0;
+    for (const user of usersWithLogos) {
+      // Use raw SQL for more direct control
+      const result = await db.execute(sql`
+        UPDATE churches 
+        SET 
+          logo_url = ${user.churchLogoUrl},
+          updated_at = NOW()
+        WHERE 
+          id = ${user.id}
+          AND (logo_url IS NULL OR logo_url = '')
+      `);
+      
+      if (result && 'rowCount' in result && result.rowCount > 0) {
+        updatedCount += result.rowCount;
+        console.log(`Updated church ${user.id} with logo URL: ${user.churchLogoUrl}`);
+      }
+    }
+    
+    const syncChurchLogosResult = { rowCount: updatedCount };
     
     // Count affected records
     const usersFixed = typeof fixUsersResult === 'object' && 'rowCount' in fixUsersResult 

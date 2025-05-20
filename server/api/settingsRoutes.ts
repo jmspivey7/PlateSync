@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { db } from '../db';
-import { users } from '@shared/schema';
+import { users, churches } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { syncChurchInfoToMembers } from '../storage';
 import { isAuthenticated } from '../middleware/auth';
@@ -109,6 +109,27 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
           updatedAt: new Date()
         })
         .where(eq(users.id, userId));
+      
+      // Now also update the church record in the churches table
+      const [church] = await db
+        .select()
+        .from(churches)
+        .where(eq(churches.id, churchId));
+      
+      if (church) {
+        // Update the church record with the logo URL
+        await db
+          .update(churches)
+          .set({
+            logoUrl: logoUrl,
+            updatedAt: new Date()
+          })
+          .where(eq(churches.id, churchId));
+        
+        console.log(`Updated church record with logo URL: ${logoUrl}`);
+      } else {
+        console.warn(`Church record not found for ID: ${churchId}`);
+      }
         
       // Use our synchronization function to update all users in this church
       const syncResult = await syncChurchInfoToMembers(db, churchId);
