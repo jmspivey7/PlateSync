@@ -1555,12 +1555,37 @@ export class DatabaseStorage implements IStorage {
   }
   
   async finalizeBatch(id: number, churchId: string, userId: string): Promise<Batch | undefined> {
+    // First, get all donations for this batch and calculate the total amount
+    const batchDonations = await db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.batchId, id),
+        eq(donations.churchId, churchId)
+      ));
+    
+    // Calculate the total amount from all donations
+    const totalAmount = batchDonations.reduce((sum, donation) => {
+      // Make sure to parse strings to numbers for proper addition
+      const donationAmount = typeof donation.amount === 'string' 
+        ? parseFloat(donation.amount) 
+        : Number(donation.amount);
+      return sum + (isNaN(donationAmount) ? 0 : donationAmount);
+    }, 0);
+    
+    // Format the total amount with 2 decimal places
+    const formattedTotal = totalAmount.toFixed(2);
+
+    console.log(`Finalizing batch ${id}: Calculated total amount ${formattedTotal} from ${batchDonations.length} donations`);
+    
+    // Update the batch with the finalization data and total amount
     const [updatedBatch] = await db
       .update(batches)
       .set({
         attestationConfirmedBy: userId,
         attestationConfirmationDate: new Date(),
         status: 'FINALIZED',
+        totalAmount: formattedTotal,
         updatedAt: new Date()
       })
       .where(and(
@@ -1591,12 +1616,37 @@ export class DatabaseStorage implements IStorage {
   }
   
   async confirmAttestation(id: number, confirmerId: string, churchId: string): Promise<Batch | undefined> {
+    // First, get all donations for this batch and calculate the total amount
+    const batchDonations = await db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.batchId, id),
+        eq(donations.churchId, churchId)
+      ));
+    
+    // Calculate the total amount from all donations
+    const totalAmount = batchDonations.reduce((sum, donation) => {
+      // Make sure to parse strings to numbers for proper addition
+      const donationAmount = typeof donation.amount === 'string' 
+        ? parseFloat(donation.amount) 
+        : Number(donation.amount);
+      return sum + (isNaN(donationAmount) ? 0 : donationAmount);
+    }, 0);
+    
+    // Format the total amount with 2 decimal places
+    const formattedTotal = totalAmount.toFixed(2);
+
+    console.log(`Confirming attestation for batch ${id}: Calculated total amount ${formattedTotal} from ${batchDonations.length} donations`);
+    
+    // Update the batch with the finalization data and total amount
     const [updatedBatch] = await db
       .update(batches)
       .set({
         attestationConfirmedBy: confirmerId,
         attestationConfirmationDate: new Date(),
         status: 'FINALIZED',
+        totalAmount: formattedTotal,
         updatedAt: new Date()
       })
       .where(and(
