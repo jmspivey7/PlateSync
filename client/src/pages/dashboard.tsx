@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Loader2, Plus, BarChart2, TrendingUp, TrendingDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Batch } from "@shared/schema";
 import CountModal from "@/components/counts/CountModal";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import PageLayout from "@/components/layout/PageLayout";
 import { DonationChart } from "@/components/dashboard/DonationChart";
 // Import the Thumbs Up icon directly
@@ -33,17 +34,32 @@ const Dashboard = () => {
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   const [trend, setTrend] = useState({ percentage: 0, trending: 'up' });
   
-  // Fetch the latest finalized batch for display
-  const { data: lastFinalizedBatch, isLoading: isLoadingBatch } = useQuery<Batch>({
+  // Get URL params to check for refresh flag
+  const [location] = useLocation();
+  const shouldRefresh = location.includes('refresh=');
+  
+  // Fetch the latest finalized batch for display with force refresh
+  const { data: lastFinalizedBatch, isLoading: isLoadingBatch, refetch: refetchLatestBatch } = useQuery<Batch>({
     queryKey: ['/api/batches/latest-finalized'],
     enabled: isAuthenticated,
     retry: false, // Don't retry 404 errors
     throwOnError: false, // Don't throw on any error
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gets focus
     select: (data) => {
-      console.log("Latest finalized batch from API:", data);
+      console.log("Latest finalized batch:", data);
       return data;
     }
   });
+  
+  // Force refresh data when coming from count finalization
+  useEffect(() => {
+    if (shouldRefresh) {
+      console.log("Forcing dashboard data refresh");
+      refetchLatestBatch();
+      queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+    }
+  }, [shouldRefresh, refetchLatestBatch]);
   
   // Fetch all batches for trend calculation
   const { data: allBatches } = useQuery<Batch[]>({
