@@ -1514,6 +1514,64 @@ export class DatabaseStorage implements IStorage {
     return updatedBatch;
   }
   
+  async updateBatchPrimaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        primaryAttestorId: attestationData.attestorId,
+        primaryAttestorName: attestationData.attestorName,
+        primaryAttestationDate: attestationData.attestationDate,
+        primaryAttestationNotes: attestationData.notes,
+        status: 'PENDING_SECONDARY',
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async updateBatchSecondaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        secondaryAttestorId: attestationData.attestorId,
+        secondaryAttestorName: attestationData.attestorName,
+        secondaryAttestationDate: attestationData.attestationDate,
+        secondaryAttestationNotes: attestationData.notes,
+        status: 'PENDING_FINALIZATION',
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async finalizeBatch(id: number, churchId: string, userId: string): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        attestationConfirmedBy: userId,
+        attestationConfirmationDate: new Date(),
+        status: 'FINALIZED',
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
   async addSecondaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
     const [updatedBatch] = await db
       .update(batches)
