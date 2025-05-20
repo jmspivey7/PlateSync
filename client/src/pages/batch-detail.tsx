@@ -98,7 +98,7 @@ const BatchDetailPage = () => {
   }, [showDeleteConfirm]);
 
   // Fetch batch data with donations
-  const { data: batch, isLoading } = useQuery<BatchWithDonations>({
+  const { data: batch, isLoading, refetch } = useQuery<BatchWithDonations>({
     queryKey: ["/api/batches", batchId, "details"],
     queryFn: async () => {
       const response = await fetch(`/api/batches/${batchId}`);
@@ -114,7 +114,6 @@ const BatchDetailPage = () => {
         }))
       } as BatchWithDonations;
     },
-    refetchInterval: 5000, // Poll for updates every 5 seconds
   });
 
   // Set isFinalized based on batch status when data is loaded
@@ -284,8 +283,10 @@ const BatchDetailPage = () => {
       return { success: true };
     },
     onSuccess: () => {
-      // Invalidate relevant queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["/api/batches", batchId, "details"] });
+      // Immediately refetch the batch data to update the UI
+      refetch();
+      
+      // Also invalidate related queries
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
       
       // Close the confirmation dialog
