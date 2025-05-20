@@ -66,7 +66,7 @@ const BatchDetailPage = () => {
   const [location, setLocation] = useLocation();
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
-  const { isAdmin, isAccountOwner } = useAuth();
+  const { isAdmin, isAccountOwner, isStandard } = useAuth();
   
   // Check if we're on the summary route
   const isSummaryRoute = location.includes('batch-summary');
@@ -614,8 +614,8 @@ const BatchDetailPage = () => {
                 </CardDescription>
               </div>
               
-              {/* Three-dot menu - Only show for admins */}
-              {isAdmin && (
+              {/* Three-dot menu - Show for all user types on Open counts */}
+              {(isAdmin || isStandard) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
@@ -624,7 +624,7 @@ const BatchDetailPage = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
-                    {batch.status === "OPEN" && (
+                    {(batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") && (
                       <DropdownMenuItem 
                         onClick={handleShowDeleteConfirm}
                         className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
