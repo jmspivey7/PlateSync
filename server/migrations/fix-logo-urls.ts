@@ -11,6 +11,7 @@ export async function fixLogoUrls(baseUrl: string): Promise<{
   churchesFixed: number;
 }> {
   console.log('🔧 Starting logo URL migration - converting relative URLs to absolute URLs');
+  console.log(`Using base URL: ${baseUrl}`);
   
   try {
     // First, fix user records with relative logo URLs
@@ -22,6 +23,7 @@ export async function fixLogoUrls(baseUrl: string): Promise<{
       WHERE 
         church_logo_url IS NOT NULL 
         AND church_logo_url LIKE '/logos/%'
+        AND church_logo_url NOT LIKE 'http%'
     `);
     
     // Then, fix churches table records with relative logo URLs
@@ -33,14 +35,17 @@ export async function fixLogoUrls(baseUrl: string): Promise<{
       WHERE 
         logo_url IS NOT NULL 
         AND logo_url LIKE '/logos/%'
+        AND logo_url NOT LIKE 'http%'
     `);
     
     // Count affected records
-    const usersFixed = Array.isArray(fixUsersResult) ? fixUsersResult.length : 
-                      'rowCount' in fixUsersResult ? fixUsersResult.rowCount : 0;
+    const usersFixed = typeof fixUsersResult === 'object' && 'rowCount' in fixUsersResult 
+                     ? fixUsersResult.rowCount 
+                     : Array.isArray(fixUsersResult) ? fixUsersResult.length : 0;
                       
-    const churchesFixed = Array.isArray(fixChurchesResult) ? fixChurchesResult.length : 
-                         'rowCount' in fixChurchesResult ? fixChurchesResult.rowCount : 0;
+    const churchesFixed = typeof fixChurchesResult === 'object' && 'rowCount' in fixChurchesResult 
+                        ? fixChurchesResult.rowCount 
+                        : Array.isArray(fixChurchesResult) ? fixChurchesResult.length : 0;
     
     console.log(`✅ Logo URL migration complete: Fixed ${usersFixed} user records and ${churchesFixed} church records`);
     
