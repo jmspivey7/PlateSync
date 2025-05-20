@@ -193,9 +193,18 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
     if (!isEdit && defaultServiceOption) {
       // Convert ID to string for select value
       const defaultValue = String(defaultServiceOption.id);
-      if (!form.getValues('service')) {
-        form.setValue('service', defaultValue);
-      }
+      
+      // Always set the service value when defaultServiceOption is available
+      // This ensures it's set on initial load
+      form.setValue('service', defaultValue);
+      
+      // Force a re-render of the component to ensure the select shows the value
+      setTimeout(() => {
+        const currentValue = form.getValues('service');
+        if (currentValue !== defaultValue) {
+          form.setValue('service', defaultValue, { shouldDirty: true });
+        }
+      }, 0);
     }
   }, [serviceOptions, defaultServiceOption, isEdit, form]);
   
