@@ -933,41 +933,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const checkTotal = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
       const total = cashTotal + checkTotal;
       
-      try {
-        // Import necessary modules dynamically for ESM compatibility
-        const PDFKit = await import('pdfkit');
-        const fs = await import('fs/promises');
-        const DateFns = await import('date-fns');
-        
-        // Set response headers
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="count-report-${batchId}.pdf"`);
-        
-        // Create PDF document with margins
-        const doc = new PDFKit.default({ margin: 50 });
+      // Import necessary modules dynamically for ESM compatibility
+      const PDFKit = await import('pdfkit');
+      const formatDate = (date: Date) => {
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric', 
+          minute: 'numeric'
+        });
+      };
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="count-report-${batchId}.pdf"`);
+      
+      // Create PDF document with margins
+      const doc = new PDFKit.default({ margin: 50 });
       
       // Pipe the PDF to the response
       doc.pipe(res);
       
-      // Add church logo if available
-      if (user.churchLogoUrl) {
-        const logoPath = `${process.cwd()}/public${user.churchLogoUrl}`;
-        try {
-          // Check if file exists and is accessible
-          await fs.access(logoPath);
-          doc.image(logoPath, {
-            fit: [200, 100],
-            align: 'center'
-          });
-        } catch (e) {
-          console.error('Church logo not found or not readable:', e);
-          // Continue without the logo
-        }
-      }
-      
       // Add church name and report title
       doc.fontSize(20).text(user.churchName || 'Church Count Report', { align: 'center' });
       doc.moveDown(0.5);
+      doc.fontSize(16).text(`Count Report: ${batch.name}`, { align: 'center' });
+      doc.moveDown(1);
+      
+      // Draw a separator line
+      doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke();
+      doc.moveDown(1);
+      
+      // Batch information
+      doc.fontSize(14).text('Count Information');
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Date: ${formatDate(new Date(batch.date))}`);
+      doc.text(`Status: ${batch.status}`);
+      if (batch.notes) {
+        doc.text(`Notes: ${batch.notes}`);
+      }
+      doc.moveDown(1);
+      
+      // Attestation information
+      doc.fontSize(14).text('Attestation Information');
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      
+      // Primary attestation
+      doc.text('Primary Attestation:');
+      if (batch.primaryAttestorName) {
+        doc.text(`Attestor: ${batch.primaryAttestorName}`);
+        if (batch.primaryAttestationDate) {
+          doc.text(`Date: ${formatDate(new Date(batch.primaryAttestationDate))}`);
+        }
+      } else {
+        doc.text('Not completed');
+      }
+      doc.moveDown(0.5);
+      
+      // Secondary attestation
+      doc.text('Secondary Attestation:');
+      if (batch.secondaryAttestorName) {
+        doc.text(`Attestor: ${batch.secondaryAttestorName}`);
+        if (batch.secondaryAttestationDate) {
+          doc.text(`Date: ${formatDate(new Date(batch.secondaryAttestationDate))}`);
+        }
+      } else {
+        doc.text('Not completed');
+      }
+      doc.moveDown(1);
+      
+      // Total information
+      doc.fontSize(14).text('Total Information');
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Cash Total: $${cashTotal.toFixed(2)}`);
+      doc.text(`Check Total: $${checkTotal.toFixed(2)}`);
+      doc.text(`Total Donations: ${batchDonations.length}`);
+      doc.fontSize(14).text(`TOTAL AMOUNT: $${total.toFixed(2)}`);
+      doc.moveDown(1);
+      
+      // Donations table
+      if (batchDonations.length > 0) {
+        doc.fontSize(14).text('Donation Details');
+        doc.moveDown(0.5);
+        
+        // Table header
+        doc.fontSize(11);
+        const tableTop = doc.y;
+        const colWidth = (doc.page.width - 100) / 5; // 5 columns
+        
+        doc.text('Type', 50, tableTop);
+        doc.text('Amount', 50 + colWidth, tableTop);
+        doc.text('Member', 50 + colWidth * 2, tableTop);
+        doc.text('Check #', 50 + colWidth * 3, tableTop);
+        doc.text('Notes', 50 + colWidth * 4, tableTop);
+        
+        // Underline
+        doc.moveTo(50, tableTop + 15)
+           .lineTo(doc.page.width - 50, tableTop + 15)
+           .stroke();
+        
+        let y = tableTop + 25;
+        
+        // Table rows
+        batchDonations.forEach((donation, i) => {
+          // Check if we need a new page
+          if (y > doc.page.height - 100) {
+            doc.addPage();
+            y = 50;
+            
+            // Repeat header on new page
+            doc.fontSize(11);
+            doc.text('Type', 50, y);
+            doc.text('Amount', 50 + colWidth, y);
+            doc.text('Member', 50 + colWidth * 2, y);
+            doc.text('Check #', 50 + colWidth * 3, y);
+            doc.text('Notes', 50 + colWidth * 4, y);
+            
+            // Underline
+            doc.moveTo(50, y + 15)
+               .lineTo(doc.page.width - 50, y + 15)
+               .stroke();
+            
+            y += 25;
+          }
+          
+          // Format the amount
+          const amount = parseFloat(donation.amount.toString()).toFixed(2);
+          
+          // Get the member's name if available
+          let memberName = 'Visitor';
+          if (donation.memberId) {
+            memberName = `Member #${donation.memberId}`;
+          }
+          
+          // Draw the row
+          doc.fontSize(10);
+          doc.text(donation.donationType, 50, y);
+          doc.text(`$${amount}`, 50 + colWidth, y);
+          doc.text(memberName, 50 + colWidth * 2, y);
+          doc.text(donation.checkNumber || '', 50 + colWidth * 3, y);
+          doc.text(donation.notes || '', 50 + colWidth * 4, y);
+          
+          // Draw a light gray line between rows (except after the last row)
+          if (i < batchDonations.length - 1) {
+            doc.strokeColor('#dddddd')
+               .moveTo(50, y + 15)
+               .lineTo(doc.page.width - 50, y + 15)
+               .stroke()
+               .strokeColor('#000000'); // Reset to black
+          }
+          
+          y += 20;
+        });
+      }
+      
+      // Footer with generation date
+      doc.fontSize(8)
+         .text(
+           `Generated on ${formatDate(new Date())} | ${user.churchName || 'Church'} Donation System`, 
+           50, 
+           doc.page.height - 50, 
+           { align: 'center' }
+         );
+      
+      // Finalize the PDF
+      doc.end();
       doc.fontSize(16).text(`Count Report: ${batch.name}`, { align: 'center' });
       doc.moveDown(1);
       
