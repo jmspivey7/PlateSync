@@ -3234,37 +3234,52 @@ Sincerely,
         // First get the user's church information to ensure logo is preserved
         const churchId = user.churchId;
         if (churchId) {
-          // Get church details including logo
-          const [churchDetails] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, churchId));
+          console.log("Finding church details with ID:", churchId);
+          
+          try {
+            // Get church details directly from the church record
+            const church = await storage.getChurch(churchId);
             
-          if (churchDetails) {
-            console.log("Found church details for logo sync:", churchDetails.churchName);
-            
-            // Update user with both verification and church logo details
-            await db.$client.query(
-              `UPDATE users 
-              SET 
-                password = $1,
-                is_verified = true, 
-                password_reset_token = NULL,
-                password_reset_expires = NULL,
-                church_logo_url = $3,
-                church_name = $4,
-                updated_at = NOW()
-              WHERE id = $2`,
-              [
-                hashedPassword, 
-                user.id, 
-                churchDetails.churchLogoUrl || null, 
-                churchDetails.churchName || null
-              ]
-            );
-          } else {
-            console.log("No church details found, proceeding with basic verification");
-            // Use direct SQL query to update the user to avoid ORM typing issues
+            if (church) {
+              console.log("Found church details for logo sync:", church.name);
+              
+              // Update user with both verification and church logo details
+              await db.$client.query(
+                `UPDATE users 
+                SET 
+                  password = $1,
+                  is_verified = true, 
+                  password_reset_token = NULL,
+                  password_reset_expires = NULL,
+                  church_logo_url = $3,
+                  church_name = $4,
+                  updated_at = NOW()
+                WHERE id = $2`,
+                [
+                  hashedPassword, 
+                  user.id, 
+                  church.logoUrl || null, 
+                  church.name || null
+                ]
+              );
+            } else {
+              console.log("No church details found, proceeding with basic verification");
+              // Use direct SQL query to update the user to avoid ORM typing issues
+              await db.$client.query(
+                `UPDATE users 
+                SET 
+                  password = $1,
+                  is_verified = true, 
+                  password_reset_token = NULL,
+                  password_reset_expires = NULL,
+                  updated_at = NOW()
+                WHERE id = $2`,
+                [hashedPassword, user.id]
+              );
+            }
+          } catch (churchError) {
+            console.error("Error fetching church details:", churchError);
+            // Fallback to basic verification if church fetch fails
             await db.$client.query(
               `UPDATE users 
               SET 
@@ -3278,7 +3293,7 @@ Sincerely,
             );
           }
         } else {
-          // Use direct SQL query to update the user to avoid ORM typing issues
+          // No church ID, just do basic verification
           await db.$client.query(
             `UPDATE users 
             SET 
