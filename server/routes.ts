@@ -3142,6 +3142,73 @@ Sincerely,
     }
   });
 
+  // Email verification endpoint (for setting password)
+  app.post('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      console.log("Verifying email with token:", token.substring(0, 10) + "...");
+      
+      // Find user with matching token, using SQL query to handle column name mismatch
+      const users_with_token = await db.execute(
+        sql`SELECT * FROM users WHERE password_reset_token = ${token}`
+      );
+      
+      const users = users_with_token.rows;
+      const user = users.length > 0 ? users[0] : null;
+      
+      if (!user) {
+        console.log("No user found with this token");
+        return res.status(404).json({ message: "Invalid or expired token" });
+      }
+      
+      // Check if token is expired
+      const now = new Date();
+      if (user.passwordResetExpires && now > user.passwordResetExpires) {
+        console.log("Token expired for user:", user.id);
+        return res.status(400).json({ message: "Verification token has expired" });
+      }
+      
+      // Validate password (at least 8 characters)
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+      
+      // Hash the password
+      const hashedPassword = await scryptHash(password);
+      
+      // Update the user record with the new password and mark as verified
+      await db
+        .update(users)
+        .set({
+          password: hashedPassword,
+          isVerified: true,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id));
+      
+      console.log("Email verified and password set for user:", user.id);
+      
+      res.status(200).json({ 
+        message: "Email verified and password set successfully",
+        userId: user.id 
+      });
+      
+    } catch (error) {
+      console.error("Error verifying email:", error);
+      res.status(500).json({ 
+        message: "An error occurred while verifying your email",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
