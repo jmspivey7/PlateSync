@@ -768,7 +768,8 @@ const BatchDetailPage = () => {
                               onClick={(e) => {
                                 e.preventDefault(); // Prevent edit from triggering
                                 e.stopPropagation(); // Prevent event bubbling
-                                confirmDeleteDonation(donation.id);
+                                // Direct delete without confirmation
+                                deleteDonationMutation.mutate(donation.id);
                               }}
                               aria-label="Delete donation"
                             />
