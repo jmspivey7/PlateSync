@@ -330,9 +330,16 @@ const BatchDetailPage = () => {
     }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
   };
 
+  // Add a helper to get friendly status display names
+  const getStatusDisplayName = (status: string): string => {
+    if (status === "PENDING_FINALIZATION") return "OPEN";
+    return status;
+  };
+
   const getBadgeClass = (status: string) => {
     const statusColors = {
       OPEN: "bg-primary/20 text-primary hover:bg-primary/30",
+      PENDING_FINALIZATION: "bg-primary/20 text-primary hover:bg-primary/30", // Same style as OPEN
       FINALIZED: "bg-accent/20 text-accent hover:bg-accent/30",
     };
     return statusColors[status as keyof typeof statusColors] || "bg-muted text-muted-foreground";
@@ -632,12 +639,12 @@ const BatchDetailPage = () => {
               <div className="flex-1">
                 <CardTitle className="text-xl md:text-2xl">Count Details</CardTitle>
                 <CardDescription className="mt-1">
-                  Status: <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                  Status: <Badge className={getBadgeClass(batch.status)}>{getStatusDisplayName(batch.status)}</Badge>
                 </CardDescription>
               </div>
               
-              {/* Three-dot menu - Only show for admins */}
-              {isAdmin && (
+              {/* Three-dot menu - Show for all users on non-finalized counts */}
+              {batch.status !== "FINALIZED" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
@@ -646,15 +653,13 @@ const BatchDetailPage = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
-                    {batch.status === "OPEN" && (
-                      <DropdownMenuItem 
-                        onClick={handleShowDeleteConfirm}
-                        className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Count
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem 
+                      onClick={handleShowDeleteConfirm}
+                      className="text-red-600 cursor-pointer bg-white hover:bg-gray-100"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Count
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
