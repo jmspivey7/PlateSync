@@ -1124,36 +1124,32 @@ const Settings = () => {
                               // Update the form value
                               form.setValue("emailNotificationsEnabled", newValue);
                               
-                              // Save the change immediately
-                              fetch("/api/settings", {
-                                method: "PATCH",
-                                headers: {
-                                  "Content-Type": "application/json",
+                              // Use updateSettingsMutation instead of direct fetch
+                              updateSettingsMutation.mutate(
+                                { 
+                                  churchName: form.getValues("churchName"),
+                                  emailNotificationsEnabled: newValue 
                                 },
-                                body: JSON.stringify({
-                                  emailNotificationsEnabled: newValue
-                                })
-                              })
-                              .then(response => {
-                                if (!response.ok) throw new Error("Failed to update settings");
-                                return response.json();
-                              })
-                              .then(() => {
-                                queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-                                toast({
-                                  title: "Notification Setting Updated",
-                                  description: `Email notifications have been turned ${newValue ? 'ON' : 'OFF'}.`,
-                                  className: "bg-[#69ad4c] text-white",
-                                });
-                              })
-                              .catch(error => {
-                                toast({
-                                  title: "Error",
-                                  description: `Failed to update setting: ${error.message}`,
-                                  variant: "destructive",
-                                  className: "bg-white border-red-600",
-                                });
-                              });
+                                {
+                                  onSuccess: () => {
+                                    toast({
+                                      title: "Notification Setting Updated",
+                                      description: `Email notifications have been turned ${newValue ? 'ON' : 'OFF'}.`,
+                                      className: "bg-[#69ad4c] text-white",
+                                    });
+                                  },
+                                  onError: (error) => {
+                                    // Revert the UI toggle if there's an error
+                                    form.setValue("emailNotificationsEnabled", !newValue);
+                                    toast({
+                                      title: "Error",
+                                      description: `Failed to update setting: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                                      variant: "destructive",
+                                      className: "bg-white border-red-600",
+                                    });
+                                  }
+                                }
+                              );
                             }}
                             className="focus:outline-none"
                             aria-label="Toggle email notifications"
