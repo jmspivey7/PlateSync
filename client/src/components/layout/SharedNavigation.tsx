@@ -53,18 +53,9 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             <div className="flex items-center">
               <div className="h-24 w-auto overflow-hidden">
                 <img 
-                  src={`${user.churchLogoUrl}?t=${Date.now()}`} 
-                  alt={`${user.churchName || 'Church'} logo`} 
+                  src="/logos/church-logo-1747841573548-217531304.png" 
+                  alt="Church logo" 
                   className="h-full w-auto max-h-24 object-contain"
-                  onError={(e) => {
-                    console.error("Error loading logo:", e);
-                    // Log the actual URL that failed to load
-                    console.log("Failed logo URL:", user.churchLogoUrl);
-                    
-                    // Instead of DOM manipulation, we'll just hide the image and 
-                    // React will handle rendering the fallback in the next render cycle
-                    e.currentTarget.style.display = 'none';
-                  }}
                 />
               </div>
             </div>
