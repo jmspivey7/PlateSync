@@ -280,13 +280,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       
-      toast({
-        title: "Success",
-        description: isEdit 
-          ? "Count updated successfully." 
-          : "Count created successfully.",
-        className: "bg-[#48BB78] text-white",
-      });
+      // Toast removed for better user experience
       
       onClose();
       
