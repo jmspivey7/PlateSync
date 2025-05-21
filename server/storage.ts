@@ -1728,10 +1728,47 @@ export class DatabaseStorage implements IStorage {
                 
                 // Get service option name
                 let serviceName = "Regular Service";
+                
+                // If the batch has a service field with an ID number, use that to lookup the service option
                 if (batchWithDonations.serviceOptionId) {
                   const serviceOption = await this.getServiceOption(batchWithDonations.serviceOptionId, churchId);
                   if (serviceOption) {
                     serviceName = serviceOption.name;
+                  }
+                } 
+                // Otherwise, if the batch has a service field, try to look up by value
+                else if (batchWithDonations.service) {
+                  try {
+                    // First see if service is a number (ID)
+                    const serviceId = parseInt(batchWithDonations.service);
+                    if (!isNaN(serviceId)) {
+                      const serviceOption = await this.getServiceOption(serviceId, churchId);
+                      if (serviceOption) {
+                        serviceName = serviceOption.name;
+                      }
+                    } else {
+                      // If not a number, try to find a service option with this value
+                      const options = await this.getServiceOptions(churchId);
+                      const matchingOption = options.find(opt => opt.value === batchWithDonations.service);
+                      if (matchingOption) {
+                        serviceName = matchingOption.name;
+                      } else {
+                        // If no match, but the service has a readable name format (e.g., "morning-service"), format it
+                        if (batchWithDonations.service.includes('-')) {
+                          const parts = batchWithDonations.service.split('-');
+                          const formattedParts = parts.map(part => 
+                            part.charAt(0).toUpperCase() + part.slice(1)
+                          );
+                          serviceName = formattedParts.join(' ');
+                        } else {
+                          // Last fallback - use the service value directly if it looks like a service name
+                          serviceName = batchWithDonations.service;
+                        }
+                      }
+                    }
+                  } catch (error) {
+                    console.error(`Error getting service name from batch.service: ${error}`);
+                    // If all else fails, keep the default "Regular Service"
                   }
                 }
                 
