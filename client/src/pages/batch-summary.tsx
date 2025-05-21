@@ -194,34 +194,31 @@ const BatchSummaryPage = () => {
     <div className="container mx-auto py-6 px-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">{batch.name}</h1>
       
-      {/* Count Finalized Message - Using the layout from batch-detail.tsx */}
+      {/* Count Finalized Message - Exactly matching the screenshot */}
       {batch.status === "FINALIZED" && (
-        <div className="mb-4 rounded-md border bg-card p-4">
-          <div className="flex items-start">
-            <Check className="h-5 w-5 mr-2 mt-0.5 text-green-600" />
-            <div>
+        <div className="mb-4 rounded-md border p-4">
+          <div className="flex flex-col">
+            <div className="flex items-center">
+              <Check className="h-5 w-5 mr-2 text-green-600" />
               <h3 className="font-semibold text-base">Count Finalized</h3>
-              <p>This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.</p>
-              
-              {/* Attestation Information */}
-              <div className="grid grid-cols-1 gap-y-1 mt-3 pt-3 border-t border-border">
-                <div className="text-sm">
-                  <span className="font-medium">Primary Attestor:</span>{" "}
-                  <span>{batch.primaryAttestorName || "Unknown"}</span>
-                </div>
-                <div className="text-sm">
-                  <span className="font-medium">Secondary Attestor:</span>{" "}
-                  <span>{batch.secondaryAttestorName || "Unknown"}</span>
-                </div>
-                <div className="text-sm mt-1">
-                  <span className="font-medium">Finalized on:</span>{" "}
-                  <span>
-                    {batch.attestationConfirmationDate ? 
-                      format(new Date(batch.attestationConfirmationDate), "MMMM d, yyyy 'at' h:mm a") : 
-                      "Unknown"}
-                  </span>
-                </div>
-              </div>
+            </div>
+            <p className="mt-1">This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.</p>
+            
+            <div className="mt-4 pt-3 border-t">
+              <p className="text-sm">
+                <span className="font-medium">Primary Attestor:</span>{" "}
+                {batch.primaryAttestorName || "Unknown"}
+              </p>
+              <p className="text-sm mt-1">
+                <span className="font-medium">Secondary Attestor:</span>{" "}
+                {batch.secondaryAttestorName || "Unknown"}
+              </p>
+              <p className="text-sm mt-1">
+                <span className="font-medium">Finalized on:</span>{" "}
+                {batch.attestationConfirmationDate ? 
+                  format(new Date(batch.attestationConfirmationDate), "MMMM d, yyyy 'at' h:mm a") : 
+                  "Unknown"}
+              </p>
             </div>
           </div>
         </div>
