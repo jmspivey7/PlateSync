@@ -1016,6 +1016,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Batch not found' });
       }
       
+      // Debug information about batch data
+      console.log('PDF Generation - Batch status:', batch.status);
+      console.log('PDF Generation - Attestation info:', {
+        primaryAttestorName: batch.primaryAttestorName,
+        secondaryAttestorName: batch.secondaryAttestorName,
+        attestationConfirmationDate: batch.attestationConfirmationDate
+      });
+      
       // Fetch all donations for this batch
       const batchDonations = await storage.getDonationsByBatch(batchId, churchId);
       
