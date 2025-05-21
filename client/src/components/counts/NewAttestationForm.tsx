@@ -169,10 +169,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Primary attestation complete",
-        description: "Please select a second attestor to continue.",
-      });
+      // Removed toast notification as requested
       refetchBatch();
       setStep('secondary');
     },
@@ -204,10 +201,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Secondary attestation complete",
-        description: "Please print a report for the money bag before finalizing.",
-      });
+      // Removed toast notification as requested
       refetchBatch();
       setStep('print');
     },
@@ -239,10 +233,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Count finalized",
-        description: "The count has been successfully finalized and attested.",
-      });
+      // Removed toast notification as requested
       
       // Invalidate all relevant queries to ensure fresh data on dashboard
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });

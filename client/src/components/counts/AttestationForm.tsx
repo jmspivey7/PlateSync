@@ -237,10 +237,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Count finalized",
-        description: "The count has been successfully finalized.",
-      });
+      // Removed toast notification as requested
       
       // Invalidate queries first to ensure data is fresh
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
