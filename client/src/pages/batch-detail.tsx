@@ -544,6 +544,26 @@ const BatchDetailPage = () => {
                 <AlertTitle className="text-base">Count Finalized</AlertTitle>
                 <AlertDescription>
                   This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.
+                  
+                  {/* Attestation Information */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 pt-3 border-t border-muted-foreground/20">
+                    <div className="text-sm">
+                      <span className="font-medium">Primary Attestor:</span>{" "}
+                      <span>{batch.primaryAttestorName || "Unknown"}</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">Secondary Attestor:</span>{" "}
+                      <span>{batch.secondaryAttestorName || "Unknown"}</span>
+                    </div>
+                    <div className="text-sm mt-1 col-span-1 sm:col-span-2">
+                      <span className="font-medium">Finalized on:</span>{" "}
+                      <span>
+                        {batch.attestationConfirmationDate ? 
+                          format(new Date(batch.attestationConfirmationDate), "MMMM d, yyyy 'at' h:mm a") : 
+                          "Unknown"}
+                      </span>
+                    </div>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
