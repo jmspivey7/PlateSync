@@ -289,7 +289,21 @@ export async function sendDonationNotification(params: DonationNotificationParam
         if (logoUrl.includes('s3.amazonaws.com')) {
           console.log(`📧 [Donation-${notificationId}] Using S3 logo URL: ${logoUrl}`);
         }
-        // Case 2: Relative URL, convert to absolute
+        // Case 2: URL with domain (non-S3), extract filename and convert to S3
+        else if (logoUrl.includes('plate-sync-jspivey.replit.app') || 
+                 logoUrl.includes('platesync.replit.app')) {
+          // Extract just the filename from the URL
+          let filename = '';
+          if (logoUrl.includes('/logos/')) {
+            filename = logoUrl.split('/logos/')[1];
+          }
+          
+          if (filename && process.env.AWS_S3_BUCKET) {
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 [Donation-${notificationId}] Converted domain URL to S3: ${logoUrl}`);
+          }
+        }
+        // Case 3: Relative URL, convert to absolute with S3
         else if (logoUrl.startsWith('/')) {
           // For email templates, we should use the S3 bucket if possible instead of our app domain
           // First try to extract the filename
