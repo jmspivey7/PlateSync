@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import { eq, desc, and, or, asc, isNull, not, inArray, gte, sql, sum, count, ne } from 'drizzle-orm';
+import { format } from 'date-fns';
 import {
   users,
   members,
@@ -1795,7 +1796,9 @@ export class DatabaseStorage implements IStorage {
                       checkAmount: checkAmount.toFixed(2),
                       donations: donations,
                       donationCount: donations.length,
-                      counterNames: counterNames,
+                      primaryAttestor: primaryAttestorName,
+                      secondaryAttestor: secondaryAttestorName,
+                      attestationTime: batchWithDonations.finalizedAt ? format(new Date(batchWithDonations.finalizedAt), 'MMM d, yyyy h:mm a') : undefined,
                       date: new Date(batchWithDonations.createdAt),
                       serviceOption: serviceName
                     });
