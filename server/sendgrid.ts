@@ -6,6 +6,18 @@ import { storage } from './storage';
 import { format } from 'date-fns';
 import { generateCountReportPDF } from './pdf-generator';
 
+// Helper function to format currency with proper commas and decimal places
+function formatCurrency(amount: string | number): string {
+  // Convert to number
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  
+  // Format with 2 decimal places and commas for thousands separators
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(numAmount);
+}
+
 // Check for SendGrid API key and log status
 console.log("\n📧 Initializing SendGrid email service...");
 
@@ -271,10 +283,13 @@ export async function sendDonationNotification(params: DonationNotificationParam
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
+      // Format amount with comma separators
+      const formattedAmount = formatCurrency(params.amount);
+      
       // Initialize replacements with standard parameters
       const replacements: Record<string, string> = {
         '{{donorName}}': params.donorName,
-        '{{amount}}': params.amount,
+        '{{amount}}': formattedAmount,
         '{{date}}': params.date,
         '{{churchName}}': params.churchName,
         '{{donationId}}': donationId,
@@ -356,14 +371,17 @@ export async function sendDonationNotification(params: DonationNotificationParam
       // Default subject if no template found
       const subject = `Thank You for Your Donation to ${params.churchName}`;
       
+      // Format amount with comma separators
+      const formattedAmount = formatCurrency(params.amount);
+      
       // Plain text version of the email (fallback)
       const text = `
 Dear ${params.donorName},
 
-Thank you for your donation of $${params.amount} on ${params.date} to ${params.churchName}.
+Thank you for your donation of $${formattedAmount} on ${params.date} to ${params.churchName}.
 
 Donation Details:
-- Amount: $${params.amount}
+- Amount: $${formattedAmount}
 - Date: ${params.date}
 - Donation ID: #${donationId}
 
@@ -477,7 +495,7 @@ please contact the church office directly.
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
           <td style="padding: 8px 0; width: 40%; color: #718096;">Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${params.amount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${formattedAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Date:</td>
