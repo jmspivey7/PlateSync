@@ -207,6 +207,37 @@ const BatchSummaryPage = () => {
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">{batch.name}</h1>
+      
+      {/* Prominent Count Finalized Message */}
+      {batch.status === "FINALIZED" && (
+        <div className="mb-4 rounded-md bg-green-50 border border-green-200 p-4 flex items-start">
+          <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-green-800">Count Finalized</h3>
+            <p className="text-green-700 mb-2">This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.</p>
+            
+            <div className="mt-3 pt-3 border-t border-green-200 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+              <div className="flex items-center">
+                <span className="text-green-700">Primary Attestor:</span>
+                <span className="ml-1.5 font-medium text-green-900">{batch.primaryAttestorName || "Unknown"}</span>
+              </div>
+              <div className="flex items-center">
+                <span className="text-green-700">Secondary Attestor:</span>
+                <span className="ml-1.5 font-medium text-green-900">{batch.secondaryAttestorName || "Unknown"}</span>
+              </div>
+              <div className="flex items-center col-span-1 sm:col-span-2 mt-1">
+                <span className="text-green-700">Finalized on:</span>
+                <span className="ml-1.5 font-medium text-green-900">
+                  {batch.attestationConfirmationDate ? 
+                    format(new Date(batch.attestationConfirmationDate), "MMMM d, yyyy 'at' h:mm a") : 
+                    "Unknown"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Card>
         <CardHeader className="pb-2">
           {/* Header with buttons in a row */}
