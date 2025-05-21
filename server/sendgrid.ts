@@ -1098,16 +1098,11 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
           // First try to get name from donation.memberName
           if (donation.memberName) {
             memberName = `"${donation.memberName.replace(/"/g, '""')}"`;
+            console.log(`Using memberName directly: ${memberName}`);
           }
-          // Then try to get it from donation.member object
-          else if (donation.member && donation.member.firstName && donation.member.lastName) {
-            const fullName = `${donation.member.firstName} ${donation.member.lastName}`;
-            memberName = `"${fullName.replace(/"/g, '""')}"`;
-          }
-          // Lastly, if we have memberId but no name, get the member info from storage
+          // If we have memberId but no name, use member ID
           else if (donation.memberId) {
-            console.log(`Getting member info for memberId: ${donation.memberId} to include in CSV`);
-            // We'll include member ID and the report recipients will know who it is
+            console.log(`Using member ID: ${donation.memberId}`);
             memberName = `Member #${donation.memberId}`;
           }
           

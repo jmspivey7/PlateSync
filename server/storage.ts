@@ -1842,6 +1842,28 @@ export class DatabaseStorage implements IStorage {
                 for (const recipient of recipients) {
                   if (recipient.email) {
                     const { sendCountReport } = await import('./sendgrid');
+                    // Add member names to donations before sending to email generator
+                    console.log(`Enhancing ${donations.length} donations with member names for CSV export`);
+                    const enhancedDonations = await Promise.all(donations.map(async (donation) => {
+                      // Only process donations with memberId but no memberName
+                      if (donation.memberId && !donation.memberName) {
+                        try {
+                          // Get full member record to include proper name in CSV
+                          const member = await this.getMember(donation.memberId, churchId);
+                          if (member && member.firstName && member.lastName) {
+                            console.log(`Added name "${member.firstName} ${member.lastName}" for member #${donation.memberId}`);
+                            return {
+                              ...donation,
+                              memberName: `${member.firstName} ${member.lastName}`
+                            };
+                          }
+                        } catch (err) {
+                          console.error(`Error getting member data for CSV:`, err);
+                        }
+                      }
+                      return donation;
+                    }));
+                    
                     await sendCountReport({
                       to: recipient.email,
                       recipientName: `${recipient.firstName} ${recipient.lastName}`,
@@ -1854,8 +1876,8 @@ export class DatabaseStorage implements IStorage {
                       totalAmount: totalAmount.toFixed(2),
                       cashAmount: cashAmount.toFixed(2),
                       checkAmount: checkAmount.toFixed(2),
-                      donations: donations,
-                      donationCount: donations.length,
+                      donations: enhancedDonations, // Use enhanced donations with proper member names
+                      donationCount: enhancedDonations.length,
                       primaryAttestor: primaryAttestorName,
                       secondaryAttestor: secondaryAttestorName,
                       attestationTime: batchWithDonations.finalizedAt ? format(new Date(batchWithDonations.finalizedAt), 'MMM d, yyyy h:mm a') : undefined,
