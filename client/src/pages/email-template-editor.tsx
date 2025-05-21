@@ -99,19 +99,28 @@ export default function EmailTemplateEditor() {
     );
   }
 
-  // Update template mutation
+  // Update template mutation - improved to handle HTML properly
   const updateTemplateMutation = useMutation({
     mutationFn: async (data: Partial<EmailTemplate>) => {
+      console.log('Saving template data with HTML length:', data.bodyHtml?.length);
+      
+      // Use PUT instead of PATCH to solve the HTML handling issue
       const response = await fetch(`/api/email-templates/${templateId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          subject: data.subject,
+          bodyHtml: data.bodyHtml,
+          bodyText: data.bodyText
+        })
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update email template');
+        const errorText = await response.text();
+        console.error('Template update failed:', errorText);
+        throw new Error(`Failed to update email template: ${response.status} ${response.statusText}`);
       }
       
       return await response.json();
@@ -128,6 +137,7 @@ export default function EmailTemplateEditor() {
       setIsFormDirty(false);
     },
     onError: (error) => {
+      console.error('Template update error:', error);
       toast({
         title: "Update failed",
         description: error instanceof Error ? error.message : "Failed to update template",
