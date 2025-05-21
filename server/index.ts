@@ -155,9 +155,11 @@ import { fixLogoUrls } from './migrations/fix-logo-urls';
     
     // Run database migrations after server starts
     try {
-      // Get the base URL - use the exact production domain for emails to work properly
-      // The domain must be plate-sync-jspivey.replit.app for logos to appear in emails
-      const baseUrl = 'https://plate-sync-jspivey.replit.app';
+      // CRITICAL: NEVER use Replit domain URLs for emails - they will not work!
+      // Use S3 bucket URLs directly instead
+      const baseUrl = process.env.AWS_S3_BUCKET ? 
+        `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com` : 
+        '';
       
       console.log(`🚀 Running database migrations with base URL: ${baseUrl}`);
       
