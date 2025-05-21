@@ -1211,6 +1211,14 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       const formattedCashAmount = formatCurrency(params.cashAmount);
       const formattedCheckAmount = formatCurrency(params.checkAmount);
       
+      // Log important values for debugging
+      console.log(`📧 [CountReport] Sending email with these values:`);
+      console.log(`📧 [CountReport] Primary Attestor: "${params.primaryAttestor}"`);
+      console.log(`📧 [CountReport] Secondary Attestor: "${params.secondaryAttestor}"`);
+      console.log(`📧 [CountReport] Cash Amount: $${formattedCashAmount}`);
+      console.log(`📧 [CountReport] Check Amount: $${formattedCheckAmount}`);
+      console.log(`📧 [CountReport] Total Amount: $${formattedTotalAmount}`);
+      
       // Create attestation information string if available
       let attestationInfo = '';
       if (params.primaryAttestor) {
