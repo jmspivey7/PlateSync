@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
+import fs from "fs";
 
 const app = express();
 app.use(express.json());
@@ -12,9 +13,7 @@ const logosDir = path.join(process.cwd(), 'public/logos');
 
 // Set permissions and verify writability for logos directory
 try {
-  const fs = require('fs');
-  
-  // Create the directory if it doesn't exist
+  // Create the logos directory if it doesn't exist
   if (!fs.existsSync(logosDir)) {
     fs.mkdirSync(logosDir, { recursive: true, mode: 0o777 });
     console.log(`Created logos directory: ${logosDir}`);
