@@ -43,13 +43,51 @@ app.use('/logos', express.static(logosDir, {
 }));
 console.log(`Serving logos from: ${logosDir}`);
 
-// Serve the avatars directory for profile pictures
-app.use('/avatars', express.static(path.join(process.cwd(), 'public/avatars')));
-console.log(`Serving avatars from: ${path.join(process.cwd(), 'public/avatars')}`);
+// Set up avatars directory with proper permissions
+const avatarsDir = path.join(process.cwd(), 'public/avatars');
+try {
+  // Create the avatars directory if it doesn't exist
+  if (!fs.existsSync(avatarsDir)) {
+    fs.mkdirSync(avatarsDir, { recursive: true, mode: 0o777 });
+    console.log(`Created avatars directory: ${avatarsDir}`);
+  }
+  
+  // Set permissions on the avatars directory
+  fs.chmodSync(avatarsDir, 0o777);
+  console.log(`Set permissions on avatars directory: ${avatarsDir}`);
+  
+  // Test write permissions by creating a test file
+  const testFile = path.join(avatarsDir, 'test-write-permissions.txt');
+  fs.writeFileSync(testFile, `Write permissions confirmed for: ${avatarsDir}`);
+  console.log(`Successfully wrote test file to: ${testFile}`);
+} catch (error) {
+  console.error(`❌ Error setting up avatars directory: ${error}`);
+}
 
-// Serve the entire public directory for direct access to logos and other assets
+// Serve the avatars directory for profile pictures
+app.use('/avatars', express.static(avatarsDir, {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true
+}));
+console.log(`Serving avatars from: ${avatarsDir}`);
+
+// Serve specific directories with custom configurations
+const assetsDir = path.join(process.cwd(), 'public/assets');
+app.use('/assets', express.static(assetsDir, { maxAge: '7d' }));
+console.log(`Serving application assets from: ${assetsDir}`);
+
+const emailTemplatesDir = path.join(process.cwd(), 'public/email-templates');
+app.use('/email-templates', express.static(emailTemplatesDir));
+console.log(`Serving email template assets from: ${emailTemplatesDir}`);
+
+const imagesDir = path.join(process.cwd(), 'public/images');
+app.use('/images', express.static(imagesDir, { maxAge: '7d' }));
+console.log(`Serving images from: ${imagesDir}`);
+
+// Serve the entire public directory for direct access to all assets
 app.use(express.static(path.join(process.cwd(), 'public')));
-console.log(`Serving static files from: ${path.join(process.cwd(), 'public')}`);
+console.log(`Serving all static files from: ${path.join(process.cwd(), 'public')}`);
 
 app.use((req, res, next) => {
   const start = Date.now();
