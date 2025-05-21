@@ -282,11 +282,19 @@ export async function sendDonationNotification(params: DonationNotificationParam
       
       // Handle churchLogoUrl separately to ensure it's properly used from the proper source
       if (params.churchLogoUrl) {
+        // Convert relative URLs to absolute URLs for emails
+        let logoUrl = params.churchLogoUrl;
+        if (logoUrl.startsWith('/')) {
+          const baseUrl = 'https://plate-sync-jspivey.replit.app';
+          logoUrl = `${baseUrl}${logoUrl}`;
+          console.log(`📧 [Donation-${notificationId}] Converted relative logo URL to absolute: ${logoUrl}`);
+        }
+        
         // Log the actual church logo URL being used
-        console.log(`📧 [Donation-${notificationId}] Using church logo URL: ${params.churchLogoUrl}`);
+        console.log(`📧 [Donation-${notificationId}] Using church logo URL: ${logoUrl}`);
         
         // Include the church logo
-        replacements['{{churchLogoUrl}}'] = params.churchLogoUrl;
+        replacements['{{churchLogoUrl}}'] = logoUrl;
       } else {
         // If no logo, use a generic transparent 1px image
         console.log(`📧 [Donation-${notificationId}] No church logo URL provided, using fallback`);
@@ -981,8 +989,14 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       
       // Fix the church logo URL to ensure it uses the production domain
       let logoUrl = params.churchLogoUrl || '';
-      if (logoUrl && !logoUrl.includes('plate-sync-jspivey.replit.app')) {
-        // Extract the filename from the URL
+      
+      // Convert relative URLs to absolute URLs for emails
+      if (logoUrl && logoUrl.startsWith('/')) {
+        const baseUrl = 'https://plate-sync-jspivey.replit.app';
+        logoUrl = `${baseUrl}${logoUrl}`;
+        console.log(`📧 Converted relative logo URL to absolute for count report: ${logoUrl}`);
+      } else if (logoUrl && !logoUrl.includes('plate-sync-jspivey.replit.app')) {
+        // Handle older URL formats by extracting the filename
         const urlParts = logoUrl.split('/');
         const filename = urlParts[urlParts.length - 1];
         // Create a new URL with the production domain
@@ -1004,9 +1018,9 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       };
       
       // Special handling for churchLogoUrl
-      if (params.churchLogoUrl) {
+      if (logoUrl) {
         // Include the church logo if available
-        html = html.replace(/{{churchLogoUrl}}/g, params.churchLogoUrl);
+        html = html.replace(/{{churchLogoUrl}}/g, logoUrl);
       } else {
         // If no logo, replace with a generic transparent 1px image to avoid broken image
         const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
