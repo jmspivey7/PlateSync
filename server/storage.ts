@@ -1749,8 +1749,22 @@ export class DatabaseStorage implements IStorage {
                 
                 // Use the attester names directly from the batch record (more reliable)
                 // This ensures we use the correct names that are stored with the batch
+                // Debug the attester names we're getting from the database
+                console.log(`📧 [CountReport] Batch data:`, JSON.stringify({
+                  id: batchWithDonations.id,
+                  name: batchWithDonations.name,
+                  primaryAttestorId: batchWithDonations.primaryAttestorId,
+                  primaryAttestorName: batchWithDonations.primaryAttestorName,
+                  secondaryAttestorId: batchWithDonations.secondaryAttestorId,
+                  secondaryAttestorName: batchWithDonations.secondaryAttestorName
+                }));
+                
                 const primaryAttestorName = batchWithDonations.primaryAttestorName || 'Unknown';
                 const secondaryAttestorName = batchWithDonations.secondaryAttestorName || '';
+                
+                console.log(`📧 [CountReport] Using attestor names for email:`);
+                console.log(`📧 [CountReport] Primary: "${primaryAttestorName}"`);
+                console.log(`📧 [CountReport] Secondary: "${secondaryAttestorName}"`);
                   
                 // CRITICAL: For emails, ONLY use S3 URLs - REMOVE this conversion code
                 // The previous code was FORCING Replit domain URLs which don't work in emails
