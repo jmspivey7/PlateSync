@@ -251,11 +251,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       // Set step to complete to update the UI
       setStep('complete');
       
-      // Add a small delay to ensure the queries are properly invalidated
-      setTimeout(() => {
-        // Redirect to dashboard to show the latest finalized count
-        setLocation("/dashboard?refresh=" + new Date().getTime());
-      }, 500);
+      // Force navigation to the dedicated summary page with a flag to indicate this is a fresh finalization
+      window.location.href = `/batch-summary/${batchId}?finalized=true`;
       
       if (onComplete) {
         onComplete();
