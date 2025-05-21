@@ -6,7 +6,7 @@ import fs from 'fs';
 async function testS3Upload() {
   try {
     // Path to existing logo
-    const logoPath = path.resolve(process.cwd(), 'public/logos/church-logo-1747841573548-217531304.png');
+    const logoPath = path.resolve('/home/runner/workspace', 'public/logos/church-logo-1747841573548-217531304.png');
     
     if (!fs.existsSync(logoPath)) {
       console.error(`Logo file does not exist at path: ${logoPath}`);
