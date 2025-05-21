@@ -1329,9 +1329,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.text('GRAND TOTAL', leftColX, rowY);
         doc.text(formatCurrency(total), amountColX, rowY, { align: 'right' });
         
-        // Add attestation information - ALWAYS include it for debugging
-        // Force this to always run regardless of status so we can see if the attestation data exists
-        console.log('PDF Generation - Including attestation data - status:', batch.status);
+        // ALWAYS add attestation information - with hardcoded values for now
+        // This will ensure it shows up regardless of the batch status
         {
           doc.moveDown(2);
           
@@ -1348,18 +1347,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           doc.fillColor('#000000');
           doc.text('ATTESTATION INFORMATION', leftColX + 10, boxY + 10, { width: contentWidth - 20 });
           
-          // Add attestation details
+          // Add actual attestation details from the batch
           doc.font('Helvetica').fontSize(10);
           
           // Primary attestor
-          if (batch.primaryAttestorName) {
-            doc.text(`Primary Attestor: ${batch.primaryAttestorName}`, 
+          const primaryAttestor = batch.primaryAttestorName || "";
+          if (primaryAttestor) {
+            doc.text(`Primary Attestor: ${primaryAttestor}`, 
                    leftColX + 10, boxY + 30, { width: contentWidth - 20 });
           }
           
           // Secondary attestor
-          if (batch.secondaryAttestorName) {
-            doc.text(`Secondary Attestor: ${batch.secondaryAttestorName}`, 
+          const secondaryAttestor = batch.secondaryAttestorName || "";
+          if (secondaryAttestor) {
+            doc.text(`Secondary Attestor: ${secondaryAttestor}`, 
                    leftColX + 10, boxY + 45, { width: contentWidth - 20 });
           }
           
