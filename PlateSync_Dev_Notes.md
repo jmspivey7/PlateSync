@@ -306,7 +306,8 @@ Proper handling of church logos is essential to ensure all users within a church
    - **Issue:** Different users see different logos
      - **Solution:** Run a synchronization query to update all users in the church
    - **Issue:** Logo appears in web app but not in emails
-     - **Solution:** Verify S3 upload was successful and the S3 URL is being used in email templates
+     - **Solution:** Verify S3 upload was successful and ONLY the S3 URL is being used in email templates
+     - **Critical:** Emails must exclusively use S3 URLs for logos (not Replit domain URLs)
    - **Issue:** Logo fails to load in certain browsers
      - **Solution:** Use cache-busting query parameters and check image content type headers
 
@@ -315,6 +316,21 @@ Proper handling of church logos is essential to ensure all users within a church
    - The s3.ts service handles upload to AWS with proper error handling and region configuration
    - The settingsRoutes.ts handles the multi-destination storage approach
    - The sendgrid.ts email service prioritizes S3 URLs for reliable email image display
+
+8. **Email Logo URL Guidelines (CRITICAL):**
+   - **NEVER use Replit domain URLs in emails** - they will not display properly in most email clients
+   - **ALWAYS use AWS S3 URLs for any images in email templates** - this is non-negotiable for reliable delivery
+   - The correct URL format is: `https://{AWS_S3_BUCKET}.s3.amazonaws.com/logos/{filename}.png`
+   - Features to maintain email logo integrity:
+     - Strict validation of logo URLs before including in emails (must contain 's3.amazonaws.com')
+     - Direct database querying for logo URLs to bypass any code-level URL rewriting
+     - Clear fallback to text-only display if valid S3 URL isn't available
+     - Database logo URLs should already contain absolute S3 URLs - never try to rewrite them
+   - Code locations to check if logo issues recur:
+     - server/sendgrid.ts: Contains email generation with logo URL handling
+     - server/index.ts: Defines base URL used for database migrations
+     - server/storage.ts: Contains critical email template generation code
+     - server/upload-platesync-logo.ts: Updates image URLs in email templates
 
 ---
 
