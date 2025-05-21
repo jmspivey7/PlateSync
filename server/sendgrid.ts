@@ -1404,15 +1404,15 @@ PlateSync Reporting System
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #000000;">$${formattedTotalAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #22c55e;">$${formattedTotalAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Cash:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #000000;">$${formattedCashAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #22c55e;">$${formattedCashAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Checks:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #000000;">$${formattedCheckAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #22c55e;">$${formattedCheckAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
