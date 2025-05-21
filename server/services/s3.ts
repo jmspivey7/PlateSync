@@ -35,8 +35,7 @@ export async function uploadFileToS3(
       Bucket: bucketName,
       Key: s3Key,
       Body: fileContent,
-      ContentType: contentType,
-      ACL: 'public-read' // Make the file publicly accessible
+      ContentType: contentType
     };
     
     await s3Client.send(new PutObjectCommand(params));

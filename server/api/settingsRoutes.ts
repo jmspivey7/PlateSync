@@ -4,9 +4,10 @@ import path from 'path';
 import fs from 'fs';
 import { db } from '../db';
 import { users, churches } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql, not, like } from 'drizzle-orm';
 import { syncChurchInfoToMembers } from '../storage';
 import { isAuthenticated } from '../middleware/auth';
+import * as s3Service from '../services/s3';
 
 const router = express.Router();
 
@@ -96,9 +97,32 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
       // Get church ID - either the user's own ID or their churchId
       const churchId = user.churchId || userId;
       
-      // Create the full absolute URL for the uploaded logo (for email templates)
+      // Create the full absolute URL for the local logo (for web app)
       const baseUrl = req.protocol + '://' + req.get('host');
-      const logoUrl = `${baseUrl}/logos/${req.file.filename}`;
+      const localLogoUrl = `${baseUrl}/logos/${req.file.filename}`;
+      
+      // 1. First, upload the logo to S3 for email templates
+      let s3LogoUrl;
+      try {
+        // Create S3 key from the filename
+        const s3Key = s3Service.getS3KeyFromFilename(req.file.filename);
+        
+        // Upload the file to S3
+        s3LogoUrl = await s3Service.uploadFileToS3(
+          req.file.path, 
+          s3Key,
+          req.file.mimetype || 'image/png'
+        );
+        
+        console.log(`Logo successfully uploaded to S3: ${s3LogoUrl}`);
+      } catch (s3Error) {
+        console.error('Error uploading to S3:', s3Error);
+        // Continue anyway - we'll use the local URL as fallback
+        s3LogoUrl = localLogoUrl;
+      }
+      
+      // We'll use the S3 URL for emails since it's more reliable
+      const logoUrl = s3LogoUrl || localLogoUrl;
       console.log(`Setting logo URL: ${logoUrl} for church ${churchId}`);
       
       // Update the user's record first (always update the user who uploaded)
@@ -135,10 +159,12 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
       const syncResult = await syncChurchInfoToMembers(db, churchId);
       console.log(`Church logo synchronization result: ${syncResult ? 'Success' : 'Failed'}`);
       
-      // Return success
+      // Return success with both URLs
       res.status(200).json({
         message: 'Logo uploaded successfully',
-        logoUrl: logoUrl
+        logoUrl: logoUrl,
+        s3LogoUrl: s3LogoUrl,
+        localLogoUrl: localLogoUrl
       });
     } catch (error) {
       console.error('Logo processing error:', error);
@@ -181,7 +207,7 @@ router.delete('/logo', isAuthenticated, async (req: any, res) => {
     
     console.log(`Removing logo ${currentLogoUrl} for church ${churchId}`);
     
-    // Try to delete the physical file if it exists
+    // 1. Try to delete the physical file from local storage if it exists
     try {
       // Extract filename from URL and build full path
       const filename = currentLogoUrl.split('/').pop();
@@ -190,11 +216,38 @@ router.delete('/logo', isAuthenticated, async (req: any, res) => {
         
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
-          console.log(`Deleted logo file: ${filePath}`);
+          console.log(`Deleted local logo file: ${filePath}`);
         }
       }
     } catch (fileError) {
-      console.error('Error deleting logo file:', fileError);
+      console.error('Error deleting local logo file:', fileError);
+      // Continue anyway - we'll still update the database records
+    }
+    
+    // 2. Try to delete the logo from S3 if it's stored there
+    try {
+      // Check if this is an S3 URL
+      if (currentLogoUrl.includes('s3.amazonaws.com')) {
+        const s3Key = s3Service.getKeyFromS3Url(currentLogoUrl);
+        if (s3Key) {
+          await s3Service.deleteFileFromS3(s3Key);
+          console.log(`Deleted logo from S3: ${s3Key}`);
+        }
+      } else {
+        // Try to extract the filename and create an S3 key
+        const filename = currentLogoUrl.split('/').pop();
+        if (filename) {
+          const s3Key = s3Service.getS3KeyFromFilename(filename);
+          // Check if this file exists in S3 before trying to delete
+          const exists = await s3Service.fileExistsInS3(s3Key);
+          if (exists) {
+            await s3Service.deleteFileFromS3(s3Key);
+            console.log(`Deleted logo from S3: ${s3Key}`);
+          }
+        }
+      }
+    } catch (s3Error) {
+      console.error('Error deleting logo from S3:', s3Error);
       // Continue anyway - we'll still update the database records
     }
     

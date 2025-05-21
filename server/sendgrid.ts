@@ -282,12 +282,27 @@ export async function sendDonationNotification(params: DonationNotificationParam
       
       // Handle churchLogoUrl separately to ensure it's properly used from the proper source
       if (params.churchLogoUrl) {
-        // Convert relative URLs to absolute URLs for emails
+        // For email templates, we prioritize S3 URLs that are more reliable
         let logoUrl = params.churchLogoUrl;
-        if (logoUrl.startsWith('/')) {
-          const baseUrl = 'https://plate-sync-jspivey.replit.app';
-          logoUrl = `${baseUrl}${logoUrl}`;
-          console.log(`📧 [Donation-${notificationId}] Converted relative logo URL to absolute: ${logoUrl}`);
+        
+        // Case 1: Already an S3 URL, use as is
+        if (logoUrl.includes('s3.amazonaws.com')) {
+          console.log(`📧 [Donation-${notificationId}] Using S3 logo URL: ${logoUrl}`);
+        }
+        // Case 2: Relative URL, convert to absolute
+        else if (logoUrl.startsWith('/')) {
+          // For email templates, we should use the S3 bucket if possible instead of our app domain
+          // First try to extract the filename
+          const filename = logoUrl.split('/').pop();
+          if (filename && process.env.AWS_S3_BUCKET) {
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 [Donation-${notificationId}] Converted to S3 URL: ${logoUrl}`);
+          } else {
+            // Fallback to the app domain if S3 info not available
+            const baseUrl = 'https://plate-sync-jspivey.replit.app';
+            logoUrl = `${baseUrl}${logoUrl}`;
+            console.log(`📧 [Donation-${notificationId}] Converted relative logo URL to absolute: ${logoUrl}`);
+          }
         }
         
         // Log the actual church logo URL being used
