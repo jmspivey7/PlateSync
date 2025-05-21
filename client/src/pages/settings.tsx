@@ -928,10 +928,14 @@ const Settings = () => {
                     {user?.churchLogoUrl ? (
                       <div className="mb-6 flex flex-col items-center">
                         <img 
-                          src={user.churchLogoUrl} 
+                          src={`${user.churchLogoUrl}?t=${Date.now()}`} 
                           alt={`${user.churchName || 'Church'} logo`} 
                           className="max-width-[380px] max-h-[80px] object-contain"
                           style={{ maxWidth: "380px", height: "auto" }}
+                          onError={(e) => {
+                            console.error("Error loading logo in settings:", e);
+                            console.log("Failed logo URL:", user.churchLogoUrl);
+                          }}
                         />
                       </div>
                     ) : (

@@ -97,9 +97,13 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
       // Get church ID - either the user's own ID or their churchId
       const churchId = user.churchId || userId;
       
-      // Create the full absolute URL for the local logo (for web app)
+      // Create the simpler logo URL that points directly to our local file system
+      // We'll use the relative URL for the web app, which is more reliable for the UI
+      const logoUrl = `/logos/${req.file.filename}`;
+      
+      // Full URL for external references (like emails)
       const baseUrl = req.protocol + '://' + req.get('host');
-      const localLogoUrl = `${baseUrl}/logos/${req.file.filename}`;
+      const absoluteLogoUrl = `${baseUrl}${logoUrl}`;
       
       // 1. First, upload the logo to S3 for email templates
       let s3LogoUrl;
@@ -117,12 +121,12 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
         console.log(`Logo successfully uploaded to S3: ${s3LogoUrl}`);
       } catch (s3Error) {
         console.error('Error uploading to S3:', s3Error);
-        // Continue anyway - we'll use the local URL as fallback
-        s3LogoUrl = localLogoUrl;
+        // Continue anyway - we'll use the absolute URL as fallback
+        s3LogoUrl = absoluteLogoUrl;
       }
       
-      // We'll use the S3 URL for emails since it's more reliable
-      const logoUrl = s3LogoUrl || localLogoUrl;
+      // We'll use the local URL for the web app since it's more reliable
+      // Later, we can use the S3 URL for emails
       console.log(`Setting logo URL: ${logoUrl} for church ${churchId}`);
       
       // Update the user's record first (always update the user who uploaded)

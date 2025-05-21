@@ -53,27 +53,17 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             <div className="flex items-center">
               <div className="h-24 w-auto overflow-hidden">
                 <img 
-                  src={user.churchLogoUrl} 
+                  src={`${user.churchLogoUrl}?t=${Date.now()}`} 
                   alt={`${user.churchName || 'Church'} logo`} 
                   className="h-full w-auto max-h-24 object-contain"
                   onError={(e) => {
                     console.error("Error loading logo:", e);
-                    // Fallback to church name if image fails to load
+                    // Log the actual URL that failed to load
+                    console.log("Failed logo URL:", user.churchLogoUrl);
+                    
+                    // Instead of DOM manipulation, we'll just hide the image and 
+                    // React will handle rendering the fallback in the next render cycle
                     e.currentTarget.style.display = 'none';
-                    // Get parent container
-                    const container = e.currentTarget.closest('.flex.items-center');
-                    if (container && user?.churchName) {
-                      // Create church name element
-                      const nameElement = document.createElement('div');
-                      nameElement.className = "flex items-center";
-                      nameElement.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 mr-2 text-[#69ad4c]"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                        <span class="text-xl font-bold">${user.churchName}</span>
-                      `;
-                      // Replace the current container content
-                      container.innerHTML = '';
-                      container.appendChild(nameElement);
-                    }
                   }}
                 />
               </div>
