@@ -3,9 +3,33 @@ import fs from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
 
+// Extract region code from AWS_REGION, which might include descriptive text
+function extractRegionCode(regionString?: string): string {
+  if (!regionString) return 'us-east-1'; // Default region if not set
+  
+  // Check if the string contains a region code pattern (e.g., us-east-2)
+  const regionCodeMatch = regionString.match(/([a-z]{2}-[a-z]+-\d+)/);
+  if (regionCodeMatch) {
+    return regionCodeMatch[1];
+  }
+  
+  // If no standard pattern found but is short enough, use as is
+  if (regionString.length < 15 && !regionString.includes(' ')) {
+    return regionString;
+  }
+  
+  // Default to us-east-1 if we can't extract a valid region
+  console.warn(`Could not extract valid region code from "${regionString}", using us-east-1 as default`);
+  return 'us-east-1';
+}
+
+// Get the region code
+const regionCode = extractRegionCode(process.env.AWS_REGION);
+console.log(`Using AWS region: ${regionCode}`);
+
 // Initialize the S3 client
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',  // Default to us-east-1 if not specified
+  region: regionCode,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!

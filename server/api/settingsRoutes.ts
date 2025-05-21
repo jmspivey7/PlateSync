@@ -401,4 +401,79 @@ router.post('/fix-logo-urls', isAuthenticated, async (req: any, res) => {
   }
 });
 
+// General settings update endpoint
+router.patch('/', isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id || (req.user.claims && req.user.claims.sub);
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found in session' });
+    }
+    
+    // Get user from database
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get the settings data from the request body
+    const { churchName, emailNotificationsEnabled } = req.body;
+    
+    // Update user settings
+    await db
+      .update(users)
+      .set({ 
+        churchName: churchName,
+        emailNotificationsEnabled: emailNotificationsEnabled,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+    
+    // If this is a church owner, update all members with the same churchId
+    if (user.role === 'ACCOUNT_OWNER' || user.role === 'ADMINISTRATOR') {
+      const churchId = user.churchId || userId;
+      
+      // Update all users with this churchId
+      await db
+        .update(users)
+        .set({ 
+          churchName: churchName,
+          updatedAt: new Date()
+        })
+        .where(eq(users.churchId, churchId));
+      
+      // Also update the church record if it exists
+      const [church] = await db
+        .select()
+        .from(churches)
+        .where(eq(churches.id, churchId));
+      
+      if (church) {
+        await db
+          .update(churches)
+          .set({
+            name: churchName,
+            updatedAt: new Date()
+          })
+          .where(eq(churches.id, churchId));
+      }
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Settings updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update settings',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 export default router;
