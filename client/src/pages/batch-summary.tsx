@@ -67,6 +67,11 @@ const BatchSummaryPage = () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('finalized') === 'true') {
       setJustFinalized(true);
+      
+      // Clean up the URL to prevent state persistence on refresh
+      // This preserves "Back to Dashboard" behavior but allows normal navigation later
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
     }
   }, []);
   
