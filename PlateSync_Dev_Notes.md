@@ -264,37 +264,57 @@ Proper handling of church logos is essential to ensure all users within a church
 
 ### Logo Storage and Synchronization
 
-1. **Storage Structure:**
-   - Church logos are stored as files in the `/public/logos` directory
-   - The file path is saved in the `church_logo_url` column in the `users` table
-   - Every user associated with a church must have the same logo URL in their user record
+1. **Dual Storage Strategy:**
+   - **Local Storage:** Church logos are stored in the `/public/logos` directory on the server filesystem
+   - **Cloud Storage:** Logos are also uploaded to AWS S3 bucket (`repl-plates-image-repo`) for reliable email delivery
+   - **Database Reference:** The relative path to the logo (e.g., `/logos/church-logo-123456789.png`) is stored in the `church_logo_url` column in the `users` table
+   - **Consistency:** Every user associated with a church must have the same logo URL in their user record
 
-2. **Logo Update Flow:**
+2. **Logo Upload and Storage Flow:**
    - When an Account Owner uploads a new church logo:
-     - The logo file is saved to the server
-     - The logo URL is updated in the Account Owner's user record
-     - The same logo URL must be propagated to all other users who belong to the same church
+     - Logo is saved locally to `/public/logos/{timestamp}-{random}.png`
+     - Same logo is uploaded to AWS S3 bucket with a matching key
+     - The logo URL in the database uses a relative path (`/logos/filename.png`) for web display
+     - S3 URL is used for email templates to ensure consistent display across email clients
+     - The same logo URL is propagated to all users with the same `church_id`
 
-3. **Implementation Details:**
+3. **S3 Integration Details:**
+   - AWS Region is automatically extracted from environment variables
+   - S3 bucket name is defined in AWS_S3_BUCKET environment variable
+   - S3 keys follow the same naming convention as local files for consistency
+   - S3 service provides fallback to local URL if S3 upload fails
+
+4. **Implementation Details:**
    ```sql
    -- SQL query to synchronize logo URL across all users in a church
    UPDATE users 
    SET church_logo_url = '/logos/church-logo-example.png' 
-   WHERE church_id = '12345' AND (church_logo_url IS NULL OR church_logo_url = '');
+   WHERE church_id = '12345';
    ```
 
-4. **Common Issues and Solutions:**
+5. **Display Optimization:**
+   - **Cache Busting:** Logo URLs include timestamp query parameters to prevent browser caching issues
+   - **Error Handling:** Robust error handling for logo loading failures with clean fallback to church name
+   - **Relative Paths:** Web app displays use relative paths for more reliable internal routing
+   - **Absolute URLs:** Email templates use S3 URLs for better cross-client compatibility
+
+6. **Common Issues and Solutions:**
    - **Issue:** Logo appears for Account Owner but not for other users
      - **Solution:** Ensure the logo URL is copied to all users with the same `church_id`
    - **Issue:** Logo disappears after user profile updates
      - **Solution:** Preserve the `church_logo_url` field during any user record updates
    - **Issue:** Different users see different logos
      - **Solution:** Run a synchronization query to update all users in the church
+   - **Issue:** Logo appears in web app but not in emails
+     - **Solution:** Verify S3 upload was successful and the S3 URL is being used in email templates
+   - **Issue:** Logo fails to load in certain browsers
+     - **Solution:** Use cache-busting query parameters and check image content type headers
 
-5. **Technical Implementation:**
-   - The logo URL should be maintained in the SharedNavigation component that displays the header
-   - Whenever a logo is uploaded, all users with matching `church_id` should have their `church_logo_url` field updated
-   - This ensures consistent branding across all user accounts in the same church
+7. **Technical Implementation:**
+   - The SharedNavigation component uses cache-busting query parameters to display the current logo
+   - The s3.ts service handles upload to AWS with proper error handling and region configuration
+   - The settingsRoutes.ts handles the multi-destination storage approach
+   - The sendgrid.ts email service prioritizes S3 URLs for reliable email image display
 
 ---
 
