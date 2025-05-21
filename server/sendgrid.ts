@@ -859,9 +859,33 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       let churchLogoPath: string | undefined;
       if (params.churchLogoUrl) {
         try {
-          // Convert relative URL to absolute file path
-          const urlParts = params.churchLogoUrl.split('/');
-          const filename = urlParts[urlParts.length - 1];
+          let filename = '';
+          
+          // Handle different URL formats to extract the correct filename
+          if (params.churchLogoUrl.includes('/logos/')) {
+            if (params.churchLogoUrl.includes('s3.amazonaws.com')) {
+              // Already an S3 URL, extract filename
+              const s3Parts = params.churchLogoUrl.split('/logos/');
+              if (s3Parts.length > 1) {
+                filename = s3Parts[1];
+              }
+            } else if (params.churchLogoUrl.includes('plate-sync-jspivey.replit.app') ||
+                      params.churchLogoUrl.includes('platesync.replit.app')) {
+              // Extract from domain URL
+              const domainParts = params.churchLogoUrl.split('/logos/');
+              if (domainParts.length > 1) {
+                filename = domainParts[1];
+              }
+            } else {
+              // Handle relative paths
+              const urlParts = params.churchLogoUrl.split('/');
+              filename = urlParts[urlParts.length - 1];
+            }
+          } else {
+            // Fallback to simple path extraction
+            const urlParts = params.churchLogoUrl.split('/');
+            filename = urlParts[urlParts.length - 1];
+          }
           
           // Assuming public logos are stored in public/logos
           churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
@@ -1025,7 +1049,23 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
         if (logoUrl.includes('s3.amazonaws.com')) {
           console.log(`📧 Using S3 logo URL for count report: ${logoUrl}`);
         }
-        // Case 2: Relative URL, convert to S3 URL if possible
+        // Case 2: URL with our domain (like plate-sync-jspivey.replit.app), extract and convert to S3
+        else if (logoUrl.includes('plate-sync-jspivey.replit.app') || logoUrl.includes('platesync.replit.app')) {
+          // Extract just the filename from the URL
+          let filename = '';
+          if (logoUrl.includes('/logos/')) {
+            filename = logoUrl.split('/logos/')[1];
+          } else {
+            const urlParts = logoUrl.split('/');
+            filename = urlParts[urlParts.length - 1];
+          }
+          
+          if (filename && process.env.AWS_S3_BUCKET) {
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 Converted domain URL to S3 for count report: ${logoUrl}`);
+          }
+        }
+        // Case 3: Relative URL, convert to S3 URL if possible
         else if (logoUrl.startsWith('/')) {
           // For email templates, we should use the S3 bucket if possible
           const filename = logoUrl.split('/').pop();
@@ -1039,8 +1079,8 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
             console.log(`📧 Converted relative logo URL to absolute for count report: ${logoUrl}`);
           }
         } 
-        // Case 3: Absolute URL but not S3 and not on our domain
-        else if (!logoUrl.includes('plate-sync-jspivey.replit.app')) {
+        // Case 4: Any other URL format
+        else {
           // Extract the filename and create S3 URL
           const urlParts = logoUrl.split('/');
           const filename = urlParts[urlParts.length - 1];
