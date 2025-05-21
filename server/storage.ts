@@ -1672,19 +1672,18 @@ export class DatabaseStorage implements IStorage {
               
               const churchName = churchData.name || 'Your Church';
               
-              // Ensure the church logo URL uses the correct production domain
-              // This is critical for emails to properly display the logo
-              let churchLogoUrl = churchData.logoUrl;
+              // CRITICAL: For email templates, ONLY use S3 URLs for logos
+              // These are guaranteed to work in emails, unlike Replit domain URLs
+              let churchLogoUrl = '';
               
-              // Fix logo URL if it's using a different domain than our production one
-              if (churchLogoUrl && !churchLogoUrl.includes('plate-sync-jspivey.replit.app')) {
-                // Extract just the filename from the current URL 
-                const urlParts = churchLogoUrl.split('/');
-                const filename = urlParts[urlParts.length - 1];
-                
-                // Rebuild using the production domain that works in emails
-                churchLogoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
-                console.log(`Converted church logo URL for email: ${churchLogoUrl}`);
+              // If we have a logo URL in the database, make sure it's an S3 URL
+              if (churchData.logoUrl && churchData.logoUrl.includes('s3.amazonaws.com')) {
+                // Use the S3 URL directly - this is the only reliable approach for emails
+                churchLogoUrl = churchData.logoUrl;
+                console.log(`Using S3 logo URL for emails: ${churchLogoUrl}`);
+              } else {
+                // If we don't have an S3 URL, don't use any logo URL (fallback to text)
+                console.log(`No valid S3 logo URL available for emails - using church name only`);
               }
               
               console.log(`Using church name: ${churchName} for emails`);
@@ -1762,15 +1761,16 @@ export class DatabaseStorage implements IStorage {
                   ? `${secondaryAttestor.firstName || ''} ${secondaryAttestor.lastName || ''}`.trim() || secondaryAttestor.email 
                   : '';
                   
-                // Ensure the church logo URL uses the correct production domain for emails
-                if (churchLogoUrl && !churchLogoUrl.includes('plate-sync-jspivey.replit.app')) {
-                  // Extract just the filename from the current URL 
-                  const urlParts = churchLogoUrl.split('/');
-                  const filename = urlParts[urlParts.length - 1];
-                  
-                  // Rebuild using the production domain that works in emails
-                  churchLogoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
-                  console.log(`Converted church logo URL for count report email: ${churchLogoUrl}`);
+                // CRITICAL: For emails, ONLY use S3 URLs - REMOVE this conversion code
+                // The previous code was FORCING Replit domain URLs which don't work in emails
+                
+                // Reset churchLogoUrl unless it's already a valid S3 URL
+                if (!churchLogoUrl || !churchLogoUrl.includes('s3.amazonaws.com')) {
+                  // Clear any non-S3 URLs to ensure they don't get used in emails
+                  console.log(`⚠️ Invalid logo URL detected - not using S3. Removing logo from email.`);
+                  churchLogoUrl = '';
+                } else {
+                  console.log(`✅ Using valid S3 logo URL in count report email: ${churchLogoUrl}`);
                 }
                 
                 const counterNames = secondaryAttestorName 
