@@ -435,6 +435,12 @@ please contact the church office directly.
           if (filename && process.env.AWS_S3_BUCKET) {
             logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
             console.log(`📧 [DonationReceipt] Created S3 URL from filename: ${logoUrl}`);
+          } else {
+            // Just log the issue but keep using S3 URL even if S3 bucket env var isn't available
+            // This ensures we maintain consistency in URL format for email clients
+            console.log(`📧 [DonationReceipt] Warning: AWS_S3_BUCKET not available, using fallback S3 format`);
+            logoUrl = `https://s3.amazonaws.com/platesync/logos/${filename}`;
+            console.log(`📧 [DonationReceipt] Created fallback S3-style URL: ${logoUrl}`);
           }
         }
         
@@ -1134,10 +1140,11 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
             logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
             console.log(`📧 Converted to S3 URL for count report: ${logoUrl}`);
           } else {
-            // Fallback to the app domain if S3 info not available
-            const baseUrl = 'https://plate-sync-jspivey.replit.app';
-            logoUrl = `${baseUrl}${logoUrl}`;
-            console.log(`📧 Converted relative logo URL to absolute for count report: ${logoUrl}`);
+            // Just log the issue but keep using S3 URL even if S3 bucket env var isn't available
+            // This ensures we maintain consistency in URL format for email clients
+            console.log(`📧 Warning: AWS_S3_BUCKET not available for count report, using fallback S3 format`);
+            logoUrl = `https://s3.amazonaws.com/platesync/logos/${filename}`;
+            console.log(`📧 Created fallback S3-style URL for count report: ${logoUrl}`);
           }
         } 
         // Case 4: Any other URL format
@@ -1151,9 +1158,11 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
             logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
             console.log(`📧 Converted to S3 URL for count report: ${logoUrl}`);
           } else {
-            // Fall back to our domain
-            logoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
-            console.log(`📧 Fixed logo URL for email: ${logoUrl}`);
+            // Just log the issue but keep using S3 URL even if S3 bucket env var isn't available
+            // This ensures we maintain consistency in URL format
+            console.log(`📧 Warning: AWS_S3_BUCKET not available, but still using S3 format URL`);
+            logoUrl = `https://s3.amazonaws.com/platesync/logos/${filename}`;
+            console.log(`📧 Created fallback S3-style URL for count report: ${logoUrl}`);
           }
         }
       }
