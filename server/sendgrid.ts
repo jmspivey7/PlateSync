@@ -968,12 +968,24 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
+      // Fix the church logo URL to ensure it uses the production domain
+      let logoUrl = params.churchLogoUrl || '';
+      if (logoUrl && !logoUrl.includes('plate-sync-jspivey.replit.app')) {
+        // Extract the filename from the URL
+        const urlParts = logoUrl.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        // Create a new URL with the production domain
+        logoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
+        console.log(`Fixed logo URL for email: ${logoUrl}`);
+      }
+      
       // Replace template variables
       const replacements: Record<string, string> = {
         '{{recipientName}}': params.recipientName,
         '{{churchName}}': params.churchName,
         '{{batchName}}': params.batchName,
         '{{batchDate}}': params.batchDate,
+        '{{churchLogoUrl}}': logoUrl,
         '{{totalAmount}}': params.totalAmount,
         '{{cashAmount}}': params.cashAmount,
         '{{checkAmount}}': params.checkAmount,
