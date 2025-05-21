@@ -1096,22 +1096,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let logoHeight = 0;
         
         try {
-          if (user.churchLogoUrl) {
-            const logoPath = `${process.cwd()}/public${user.churchLogoUrl}`;
+          // Get the church logo URL - try both from user and directly from church table 
+          let churchLogoUrl = user.churchLogoUrl;
+          
+          // If we don't have a logo URL from the user object, try to get it from the church table
+          if (!churchLogoUrl) {
+            const church = await storage.getChurch(churchId);
+            if (church && church.logoUrl) {
+              churchLogoUrl = church.logoUrl;
+            }
+          }
+          
+          if (churchLogoUrl) {
+            console.log(`Using church logo URL: ${churchLogoUrl}`);
             
-            if (fs.existsSync(logoPath)) {
-              // Position logo horizontally in the center
-              const logoWidth = 312.5;
-              const centerX = (pageWidth - logoWidth) / 2;
+            // Check if this is an S3 URL or local URL
+            if (churchLogoUrl.includes('s3.amazonaws.com')) {
+              // This is an S3 URL - attempt to find the local version
+              let filename = '';
+              if (churchLogoUrl.includes('/logos/')) {
+                const parts = churchLogoUrl.split('/logos/');
+                if (parts.length > 1) {
+                  filename = parts[1];
+                }
+              } else {
+                const urlParts = churchLogoUrl.split('/');
+                filename = urlParts[urlParts.length - 1];
+              }
               
-              // Draw the logo
-              doc.image(logoPath, centerX, headerY, { 
-                fit: [logoWidth, 125],
-                align: 'center'
-              });
+              if (filename) {
+                const localLogoPath = `${process.cwd()}/public/logos/${filename}`;
+                console.log(`PDF: Looking for logo file at local path: ${localLogoPath}`);
+                
+                if (fs.existsSync(localLogoPath)) {
+                  console.log(`PDF: Found local logo file at: ${localLogoPath}`);
+                  
+                  // Position logo horizontally in the center
+                  const logoWidth = 312.5;
+                  const centerX = (pageWidth - logoWidth) / 2;
+                  
+                  // Draw the logo
+                  doc.image(localLogoPath, centerX, headerY, { 
+                    fit: [logoWidth, 125],
+                    align: 'center'
+                  });
+                  
+                  // Update the vertical position - give more space for the logo
+                  logoHeight = 125; // estimated logo height
+                } else {
+                  console.log(`PDF: Local logo file not found at: ${localLogoPath}`);
+                }
+              }
+            } else {
+              // This is a local URL - use the relative path
+              const logoPath = `${process.cwd()}/public${churchLogoUrl}`;
+              console.log(`PDF: Using local logo file at: ${logoPath}`);
               
-              // Update the vertical position - give more space for the logo
-              logoHeight = 125; // estimated logo height
+              if (fs.existsSync(logoPath)) {
+                // Position logo horizontally in the center
+                const logoWidth = 312.5;
+                const centerX = (pageWidth - logoWidth) / 2;
+                
+                // Draw the logo
+                doc.image(logoPath, centerX, headerY, { 
+                  fit: [logoWidth, 125],
+                  align: 'center'
+                });
+                
+                // Update the vertical position - give more space for the logo
+                logoHeight = 125; // estimated logo height
+              }
               headerY = margin + logoHeight + 20; // add extra padding after logo
             } else {
               // If no logo file exists, use church name in large font
