@@ -1024,6 +1024,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attestationConfirmationDate: batch.attestationConfirmationDate
       });
       
+      // Log all available fields on the batch object
+      console.log('PDF Generation - ALL BATCH FIELDS:', JSON.stringify(batch, null, 2));
+      
       // Fetch all donations for this batch
       const batchDonations = await storage.getDonationsByBatch(batchId, churchId);
       
@@ -1326,8 +1329,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.text('GRAND TOTAL', leftColX, rowY);
         doc.text(formatCurrency(total), amountColX, rowY, { align: 'right' });
         
-        // Add attestation information - if batch has been finalized
-        if (batch.status === 'FINALIZED') {
+        // Add attestation information - ALWAYS include it for debugging
+        // Force this to always run regardless of status so we can see if the attestation data exists
+        console.log('PDF Generation - Including attestation data - status:', batch.status);
+        {
           doc.moveDown(2);
           
           // Add a box for attestation details
