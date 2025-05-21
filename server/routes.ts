@@ -1016,16 +1016,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Batch not found' });
       }
       
-      // Debug information about batch data
-      console.log('PDF Generation - Batch status:', batch.status);
-      console.log('PDF Generation - Attestation info:', {
-        primaryAttestorName: batch.primaryAttestorName,
-        secondaryAttestorName: batch.secondaryAttestorName,
-        attestationConfirmationDate: batch.attestationConfirmationDate
-      });
-      
-      // Log all available fields on the batch object
-      console.log('PDF Generation - ALL BATCH FIELDS:', JSON.stringify(batch, null, 2));
+      // Debug information about batch data with better visibility
+      console.log('+++++++++++++++++++++++++++++++++++++++++++++++++++');
+      console.log('PDF GENERATION DEBUG INFO');
+      console.log('Batch status:', batch.status);
+      console.log('Attestation info:');
+      console.log('  - Primary Attestor:', batch.primaryAttestorName);
+      console.log('  - Secondary Attestor:', batch.secondaryAttestorName);
+      console.log('  - Attestation Date:', batch.attestationConfirmationDate);
+      console.log('  - Has primaryAttestorName:', !!batch.primaryAttestorName);
+      console.log('  - Has secondaryAttestorName:', !!batch.secondaryAttestorName);
+      console.log('  - Has attestationConfirmationDate:', !!batch.attestationConfirmationDate);
+      console.log('+++++++++++++++++++++++++++++++++++++++++++++++++++');
       
       // Fetch all donations for this batch
       const batchDonations = await storage.getDonationsByBatch(batchId, churchId);
