@@ -13,6 +13,12 @@ function extractRegionCode(regionString?: string): string {
     return regionCodeMatch[1];
   }
   
+  // Special case for our specific AWS_REGION format "US East (Ohio) us-east-2"
+  if (regionString.includes('US East (Ohio)') || regionString.toLowerCase().includes('us-east-2')) {
+    console.log('Detected Ohio region, using us-east-2');
+    return 'us-east-2';
+  }
+  
   // If no standard pattern found but is short enough, use as is
   if (regionString.length < 15 && !regionString.includes(' ')) {
     return regionString;
@@ -53,6 +59,23 @@ export async function uploadFileToS3(
   contentType: string = 'image/png'
 ): Promise<string> {
   try {
+    // Verify the file exists before attempting to read it
+    if (!fs.existsSync(localFilePath)) {
+      throw new Error(`Local file does not exist: ${localFilePath}`);
+    }
+    
+    // Log detailed information about the file
+    const fileStats = fs.statSync(localFilePath);
+    console.log(`Uploading file to S3: ${localFilePath}`);
+    console.log(`File size: ${fileStats.size} bytes`);
+    console.log(`Content type: ${contentType}`);
+    
+    // Log AWS configuration (without sensitive data)
+    console.log(`AWS S3 Bucket: ${bucketName}`);
+    console.log(`AWS Region: ${regionCode}`);
+    console.log(`S3 Key: ${s3Key}`);
+    console.log(`Access Key ID: ${process.env.AWS_ACCESS_KEY_ID?.substring(0, 5)}...`);
+    
     const fileContent = fs.readFileSync(localFilePath);
     
     const params = {
@@ -60,16 +83,34 @@ export async function uploadFileToS3(
       Key: s3Key,
       Body: fileContent,
       ContentType: contentType
+      // ACL: 'public-read' - Removed due to bucket policy restriction
     };
     
-    await s3Client.send(new PutObjectCommand(params));
+    console.log('Sending PutObjectCommand to S3...');
+    const response = await s3Client.send(new PutObjectCommand(params));
+    console.log('S3 PutObjectCommand response:', response);
     
     // Return the public URL to the uploaded file
     const s3Url = `https://${bucketName}.s3.amazonaws.com/${s3Key}`;
     console.log(`✅ File successfully uploaded to S3: ${s3Url}`);
     return s3Url;
   } catch (error) {
-    console.error(`❌ Error uploading file to S3: ${error}`);
+    console.error(`❌ Error uploading file to S3:`, error);
+    
+    // Provide more detailed error information
+    if (error instanceof Error) {
+      console.error(`Error name: ${error.name}`);
+      console.error(`Error message: ${error.message}`);
+      console.error(`Error stack: ${error.stack}`);
+      
+      // Check for specific error types
+      if (error.name === 'AccessDenied') {
+        console.error('S3 access denied - check IAM permissions');
+      } else if (error.name === 'NoSuchBucket') {
+        console.error(`Bucket "${bucketName}" does not exist or is not accessible`);
+      }
+    }
+    
     throw error;
   }
 }

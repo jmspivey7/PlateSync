@@ -168,7 +168,7 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
         message: 'Logo uploaded successfully',
         logoUrl: logoUrl,
         s3LogoUrl: s3LogoUrl,
-        localLogoUrl: localLogoUrl
+        absoluteLogoUrl: absoluteLogoUrl
       });
     } catch (error) {
       console.error('Logo processing error:', error);
