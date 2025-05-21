@@ -635,10 +635,13 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               This count has been finalized and is now locked.
             </p>
             <Button
-              onClick={onComplete}
+              onClick={() => {
+                // Direct the user to the batch summary page instead of going back to counts list
+                window.location.href = `/batch-summary/${batchId}?finalized=true`;
+              }}
               className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
             >
-              Return to Count List
+              View Count Summary
             </Button>
           </div>
         </CardContent>
