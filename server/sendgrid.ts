@@ -1103,65 +1103,56 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
-      // Fix the church logo URL to ensure it uses the production domain or S3
-      let logoUrl = params.churchLogoUrl || '';
+      // Use ONLY the S3 URL for logos in emails to avoid encoding/display issues
+      let logoUrl = '';
       
-      // For email templates, prioritize S3 URLs that are more reliable
-      if (logoUrl) {
-        // Case 1: Already an S3 URL, use as is
-        if (logoUrl.includes('s3.amazonaws.com')) {
-          console.log(`📧 Using S3 logo URL for count report: ${logoUrl}`);
-        }
-        // Case 2: URL with our domain (like plate-sync-jspivey.replit.app), extract and convert to S3
-        else if (logoUrl.includes('plate-sync-jspivey.replit.app') || logoUrl.includes('platesync.replit.app')) {
-          // Extract just the filename from the URL
-          let filename = '';
-          if (logoUrl.includes('/logos/')) {
-            filename = logoUrl.split('/logos/')[1];
-          } else {
-            const urlParts = logoUrl.split('/');
-            filename = urlParts[urlParts.length - 1];
-          }
-          
-          if (filename && process.env.AWS_S3_BUCKET) {
-            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
-            console.log(`📧 Converted domain URL to S3 for count report: ${logoUrl}`);
-          }
-        }
-        // Case 3: Relative URL, convert to S3 URL if possible
-        else if (logoUrl.startsWith('/')) {
-          // For email templates, we should use the S3 bucket if possible
-          const filename = logoUrl.split('/').pop();
-          if (filename && process.env.AWS_S3_BUCKET) {
-            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
-            console.log(`📧 Converted to S3 URL for count report: ${logoUrl}`);
-          } else {
-            // Just log the issue but keep using S3 URL even if S3 bucket env var isn't available
-            // This ensures we maintain consistency in URL format for email clients
-            console.log(`📧 Warning: AWS_S3_BUCKET not available for count report, using fallback S3 format`);
-            logoUrl = `https://s3.amazonaws.com/platesync/logos/${filename}`;
-            console.log(`📧 Created fallback S3-style URL for count report: ${logoUrl}`);
-          }
-        } 
-        // Case 4: Any other URL format
-        else {
-          // Extract the filename and create S3 URL
-          const urlParts = logoUrl.split('/');
-          const filename = urlParts[urlParts.length - 1];
-          
-          if (filename && process.env.AWS_S3_BUCKET) {
-            // First try S3
-            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
-            console.log(`📧 Converted to S3 URL for count report: ${logoUrl}`);
-          } else {
-            // Just log the issue but keep using S3 URL even if S3 bucket env var isn't available
-            // This ensures we maintain consistency in URL format
-            console.log(`📧 Warning: AWS_S3_BUCKET not available, but still using S3 format URL`);
-            logoUrl = `https://s3.amazonaws.com/platesync/logos/${filename}`;
-            console.log(`📧 Created fallback S3-style URL for count report: ${logoUrl}`);
+      // Force use of S3 URL if available, no conversions or manipulations
+      if (params.churchLogoUrl) {
+        if (params.churchLogoUrl.includes('s3.amazonaws.com')) {
+          // Use the S3 URL directly - no string manipulation needed
+          logoUrl = params.churchLogoUrl;
+          console.log(`📧 [CountReport] Using clean S3 logo URL: ${logoUrl}`);
+        } else {
+          // We need to fetch the correct S3 URL from storage for this church
+          try {
+            // Extract church ID directly from params
+            const churchId = params.churchId || '';
+            
+            if (churchId) {
+              console.log(`📧 [CountReport] Looking up correct S3 logo URL for church ${churchId}`);
+              
+              // Import here to avoid circular dependencies
+              const { db } = await import('./db');
+              const { churches } = await import('@shared/schema');
+              const { eq } = await import('drizzle-orm');
+              
+              // Get the church record directly from the database to get the correct URL
+              const [church] = await db.select().from(churches).where(eq(churches.id, churchId));
+              
+              if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+                logoUrl = church.logoUrl;
+                console.log(`📧 [CountReport] Found S3 logo URL in database: ${logoUrl}`);
+              } else {
+                console.log(`📧 [CountReport] Could not find S3 URL in database, using fallback`);
+                logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+              }
+            } else {
+              console.log(`📧 [CountReport] No church ID available to look up correct logo URL`);
+              logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+            }
+          } catch (error) {
+            console.error('📧 [CountReport] Error looking up S3 logo URL:', error);
+            // Use a default logo in case of error
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
           }
         }
+      } else {
+        // No logo URL provided, use default
+        logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+        console.log(`📧 [CountReport] No logo URL provided, using default PlateSync logo`);
       }
+      
+      console.log(`📧 [CountReport] Final logo URL for email: ${logoUrl}`);
       
       // Replace template variables
       const replacements: Record<string, string> = {
