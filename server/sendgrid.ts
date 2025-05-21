@@ -280,41 +280,45 @@ export async function sendDonationNotification(params: DonationNotificationParam
         '{{donationId}}': donationId,
       };
       
-      // CRITICAL: Get the proper S3 logo URL for emails
+      // CRITICAL: ONLY use S3 URLs for logos in emails - NO EXCEPTIONS!
       let logoUrl = '';
       
       try {
+        // Get the church logo URL directly from the database - this is the ONLY trusted source
         if (params.churchId) {
-          console.log(`📧 [Donation-${notificationId}] Fetching logo from database for church ID: ${params.churchId}`);
+          console.log(`📧 [Donation-${notificationId}] STRICT: Getting S3 logo URL directly from database`);
           
           // Import here to avoid circular dependencies
           const { db } = await import('./db');
           const { churches } = await import('@shared/schema');
           const { eq } = await import('drizzle-orm');
           
-          // Get the church record directly to access the S3 URL
+          // Query the database directly for the S3 URL
           const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
           
           if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
-            // Use the S3 URL directly from the database
+            // ONLY use the S3 URL from the database - no conversions
             logoUrl = church.logoUrl;
-            console.log(`📧 [Donation-${notificationId}] Using S3 URL from database: ${logoUrl}`);
+            console.log(`📧 [Donation-${notificationId}] SUCCESS: Using S3 URL from database: ${logoUrl}`);
           } else {
-            console.log(`📧 [Donation-${notificationId}] No valid S3 URL in database, using default logo`);
-            logoUrl = 'https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png';
+            // If no valid S3 URL in database, use NO LOGO (empty string)
+            console.log(`📧 [Donation-${notificationId}] WARNING: No valid S3 URL in database, using NO LOGO`);
+            logoUrl = '';
           }
-        } else if (params.churchLogoUrl && params.churchLogoUrl.includes('s3.amazonaws.com')) {
-          // If we have an S3 URL already, use it directly
-          logoUrl = params.churchLogoUrl;
-          console.log(`📧 [Donation-${notificationId}] Using provided S3 URL: ${logoUrl}`);
         } else {
-          // No valid logo URL, use default
-          logoUrl = 'https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png';
-          console.log(`📧 [Donation-${notificationId}] Using default PlateSync logo`);
+          // If no church ID, use NO LOGO (empty string)
+          console.log(`📧 [Donation-${notificationId}] WARNING: No church ID provided, using NO LOGO`);
+          logoUrl = '';
+        }
+        
+        // CRITICAL: Never use Replit domain URLs in emails - they won't work
+        if (logoUrl.includes('replit.app')) {
+          console.log(`📧 [Donation-${notificationId}] ERROR: Found Replit domain URL - replacing with empty string`);
+          logoUrl = '';
         }
       } catch (error) {
-        console.error(`📧 [Donation-${notificationId}] Error getting logo:`, error);
-        logoUrl = 'https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png';
+        console.error(`📧 [Donation-${notificationId}] ERROR getting logo from database:`, error);
+        logoUrl = '';
       }
       
       // Add the logo URL to replacements
