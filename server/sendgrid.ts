@@ -600,12 +600,23 @@ Sincerely,
 ${params.churchName} Admin Team
       `;
       
-      // HTML version that matches the app's UI - using green header
+      // HTML version that matches the app's UI - using green header with logo
+      // Check if AWS S3 bucket is configured to use logo from there
+      let plateSyncLogoUrl = '';
+      if (process.env.AWS_S3_BUCKET) {
+        plateSyncLogoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+        console.log(`📧 Using PlateSync logo from S3: ${plateSyncLogoUrl}`);
+      } else {
+        console.log('📧 AWS S3 bucket not configured for PlateSync logo');
+      }
+      
       const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    ${plateSyncLogoUrl ? 
+      `<img src="${plateSyncLogoUrl}" alt="PlateSync" style="max-width: 200px; height: auto; margin-bottom: 15px;" />` : 
+      `<h1 style="margin: 0; font-size: 24px;">PlateSync</h1>`}
     <p style="margin: 10px 0 0; font-size: 18px;">Welcome to ${params.churchName}</p>
   </div>
   
@@ -765,10 +776,21 @@ The PlateSync Team
     `;
     
     // HTML version of the email with PlateSync branding (logo and green color scheme)
+    // Check if AWS S3 bucket is configured to use logo from there
+    let plateSyncLogoUrl = '';
+    if (process.env.AWS_S3_BUCKET) {
+      plateSyncLogoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+      console.log(`📧 Using PlateSync logo from S3: ${plateSyncLogoUrl}`);
+    } else {
+      // Fallback to the app domain if S3 info not available
+      plateSyncLogoUrl = 'https://plate-sync-jspivey.replit.app/assets/platesync-logo.png';
+      console.log(`📧 Using PlateSync logo from app domain: ${plateSyncLogoUrl}`);
+    }
+    
     const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
   <div style="padding: 20px; text-align: center;">
-    <img src="https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/739cc76d-9a1c-49b8-81d4-debf5f1bb208/PlateSync+Logo.png" alt="PlateSync Logo" style="width: 270px; margin: 0 auto;">
+    <img src="${plateSyncLogoUrl}" alt="PlateSync Logo" style="width: 270px; margin: 0 auto;">
   </div>
   
   <!-- Main Content -->
