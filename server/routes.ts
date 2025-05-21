@@ -1166,8 +1166,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Update the vertical position - give more space for the logo
                 logoHeight = 125; // estimated logo height
               }
-              headerY = margin + logoHeight + 20; // add extra padding after logo
-            } else {
+            }
+            
+            headerY = margin + logoHeight + 20; // add extra padding after logo
+          } else {
               // If no logo file exists, use church name in large font
               doc.font('Helvetica-Bold').fontSize(24);
               doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
