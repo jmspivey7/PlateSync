@@ -913,52 +913,80 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
     if (params.donations && params.donations.length > 0) {
       console.log('Generating PDF attachment for count report...');
       
-      // Extract logo path from URL if available
+      // CRITICAL: Get the church logo directly from the database for PDF generation
       let churchLogoPath: string | undefined;
-      if (params.churchLogoUrl) {
+      let s3LogoUrl: string | undefined;
+      
+      // First try to get the logo directly from database if churchId is available
+      if (params.churchId) {
         try {
-          let filename = '';
+          console.log(`📊 [CountReport] Fetching logo directly from database for church ID: ${params.churchId}`);
           
-          // Handle different URL formats to extract the correct filename
+          // Import here to avoid circular dependencies
+          const { db } = await import('./db');
+          const { churches } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          // Get the church record directly to access the proper S3 URL
+          const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
+          
+          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+            // Store the S3 URL for email template
+            s3LogoUrl = church.logoUrl;
+            console.log(`📊 [CountReport] Using S3 URL from database: ${s3LogoUrl}`);
+            
+            // Also extract filename for local PDF generation
+            const parts = church.logoUrl.split('/logos/');
+            if (parts.length > 1) {
+              const filename = parts[1];
+              churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
+              
+              // Verify file exists locally
+              if (fs.existsSync(churchLogoPath)) {
+                console.log(`📊 [CountReport] Found local logo file at: ${churchLogoPath}`);
+              } else {
+                console.log(`📊 [CountReport] Local logo file not found at: ${churchLogoPath}`);
+                churchLogoPath = undefined;
+              }
+            }
+          }
+        } catch (dbError) {
+          console.error('📊 [CountReport] Error fetching logo from database:', dbError);
+        }
+      } 
+      // Fallback to using provided URL if database fetch failed
+      else if (params.churchLogoUrl) {
+        try {
+          // Store S3 URL for email template if it's already in S3 format
+          if (params.churchLogoUrl.includes('s3.amazonaws.com')) {
+            s3LogoUrl = params.churchLogoUrl;
+            console.log(`📊 [CountReport] Using provided S3 URL: ${s3LogoUrl}`);
+          }
+          
+          // Extract filename for local PDF generation
+          let filename = '';
           if (params.churchLogoUrl.includes('/logos/')) {
-            if (params.churchLogoUrl.includes('s3.amazonaws.com')) {
-              // Already an S3 URL, extract filename
-              const s3Parts = params.churchLogoUrl.split('/logos/');
-              if (s3Parts.length > 1) {
-                filename = s3Parts[1];
-              }
-            } else if (params.churchLogoUrl.includes('plate-sync-jspivey.replit.app') ||
-                      params.churchLogoUrl.includes('platesync.replit.app')) {
-              // Extract from domain URL
-              const domainParts = params.churchLogoUrl.split('/logos/');
-              if (domainParts.length > 1) {
-                filename = domainParts[1];
-              }
-            } else {
-              // Handle relative paths
-              const urlParts = params.churchLogoUrl.split('/');
-              filename = urlParts[urlParts.length - 1];
+            const parts = params.churchLogoUrl.split('/logos/');
+            if (parts.length > 1) {
+              filename = parts[1];
             }
           } else {
-            // Fallback to simple path extraction
             const urlParts = params.churchLogoUrl.split('/');
             filename = urlParts[urlParts.length - 1];
           }
           
-          // Assuming public logos are stored in public/logos
-          churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
-          
-          console.log(`Looking for church logo at: ${churchLogoPath}`);
-          
-          // Check if the file exists
-          if (!fs.existsSync(churchLogoPath)) {
-            console.log(`Church logo file not found at: ${churchLogoPath}`);
-            churchLogoPath = undefined;
-          } else {
-            console.log(`Found church logo at: ${churchLogoPath}`);
+          // Look for the file locally
+          if (filename) {
+            churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
+            if (fs.existsSync(churchLogoPath)) {
+              console.log(`📊 [CountReport] Found local logo file at: ${churchLogoPath}`);
+            } else {
+              console.log(`📊 [CountReport] Local logo file not found at: ${churchLogoPath}`);
+              churchLogoPath = undefined;
+            }
           }
         } catch (logoError) {
-          console.error('Error processing logo URL:', logoError);
+          console.error('📊 [CountReport] Error processing logo URL:', logoError);
           churchLogoPath = undefined;
         }
       }
