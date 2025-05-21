@@ -7,9 +7,42 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Serve the logos directory for uploaded church logos
-app.use('/logos', express.static(path.join(process.cwd(), 'public/logos')));
-console.log(`Serving logos from: ${path.join(process.cwd(), 'public/logos')}`);
+// Serve the logos directory for uploaded church logos with proper permissions
+const logosDir = path.join(process.cwd(), 'public/logos');
+
+// Set permissions and verify writability for logos directory
+try {
+  const fs = require('fs');
+  
+  // Create the directory if it doesn't exist
+  if (!fs.existsSync(logosDir)) {
+    fs.mkdirSync(logosDir, { recursive: true, mode: 0o777 });
+    console.log(`Created logos directory: ${logosDir}`);
+  }
+  
+  // Set permissions on the logos directory
+  fs.chmodSync(logosDir, 0o777);
+  console.log(`Set permissions on logos directory: ${logosDir}`);
+  
+  // Test write permissions by creating a test file
+  const testFile = path.join(logosDir, 'test-write-permissions.txt');
+  fs.writeFileSync(testFile, 'Write permissions confirmed!');
+  console.log(`Successfully wrote test file to: ${testFile}`);
+} catch (error) {
+  console.error(`❌ Error setting up logos directory: ${error}`);
+}
+
+// Serve logo files with proper cache headers and public access
+app.use('/logos', express.static(logosDir, {
+  maxAge: '1d',           // Cache for 1 day
+  etag: true,             // Enable ETag for caching
+  lastModified: true,     // Send Last-Modified header
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+}));
+console.log(`Serving logos from: ${logosDir}`);
 
 // Serve the avatars directory for profile pictures
 app.use('/avatars', express.static(path.join(process.cwd(), 'public/avatars')));
