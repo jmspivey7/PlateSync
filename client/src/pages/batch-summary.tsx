@@ -18,36 +18,49 @@ import {
 import { 
   Calendar,
   DollarSign, 
-  FileCheck, 
-  Hash, 
-  Printer, 
-  AlertTriangle,
+  FileText, 
+  PlusCircle, 
+  CheckCircle, 
   ArrowLeft,
-  Check,
-  CreditCard,
-  MoreVertical,
-  Users,
+  Printer,
+  Edit,
+  AlertTriangle,
+  Loader2,
   X,
-  Loader2
+  UserCheck,
+  Trash2,
+  MoreVertical
 } from "lucide-react";
 import { format } from "date-fns";
-import { useParams, useLocation } from "wouter";
+import DonationForm from "../components/donations/DonationForm";
+import AttestationForm from "../components/counts/AttestationForm";
+import { Batch, BatchWithDonations, Donation, DonationWithMember, batchStatusEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Donation, Member, Batch } from "@shared/schema";
-import { apiRequest, queryClient as queryClientExport } from "@/lib/queryClient";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  MobileDialog, 
+  MobileDialogContent,
+
+  MobileDialogHeader, 
+  MobileDialogTitle 
+} from "@/components/ui/mobile-dialog";
+import { apiRequest } from "@/lib/queryClient";
+import { useLocation, useParams } from "wouter";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import PageLayout from "@/components/layout/PageLayout";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
 
-// Define types to include member details with donations
-interface DonationWithMember extends Donation {
-  member?: Member;
-}
-
-// Define type for batch with donations
-interface BatchWithDonations extends Batch {
-  donations: DonationWithMember[];
-}
-
-// BatchSummary is a dedicated component for showing finalized batch in summary view
 const BatchSummaryPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -56,18 +69,18 @@ const BatchSummaryPage = () => {
   const batchId = params.id ? parseInt(params.id) : 0;
   const { isAdmin, isAccountOwner } = useAuth();
   
-  // State for delete confirmation dialog
+  // For summary page, we always treat it as finalized
+  const [showSummary, setShowSummary] = useState(true);
+  const [isFinalized, setIsFinalized] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  // Clean up URL parameters when component mounts
+  // Debug delete confirmation dialog state
   useEffect(() => {
-    // Clean up any URL parameters to prevent state persistence on refresh
-    const cleanUrl = window.location.pathname;
-    window.history.replaceState({}, document.title, cleanUrl);
-  }, []);
-  
-  // Fetch batch details
-  const { data: batch, isLoading, error } = useQuery<BatchWithDonations>({
+    console.log("showDeleteConfirm state changed to:", showDeleteConfirm);
+  }, [showDeleteConfirm]);
+
+  // Fetch batch data with donations
+  const { data: batch, isLoading } = useQuery<BatchWithDonations>({
     queryKey: ["/api/batches", batchId, "details"],
     queryFn: async () => {
       const response = await fetch(`/api/batches/${batchId}`);
@@ -75,10 +88,23 @@ const BatchSummaryPage = () => {
         throw new Error("Failed to fetch count details");
       }
       const data = await response.json();
-      return data;
+      return {
+        ...data,
+        donations: data.donations.map((donation: any) => ({
+          ...donation,
+          member: donation.member || undefined
+        }))
+      } as BatchWithDonations;
     },
     refetchInterval: 5000, // Poll for updates every 5 seconds
   });
+
+  // Calculate totals for cash and check donations
+  const cashTotal = batch?.donations?.filter(d => d.donationType === "CASH")
+    .reduce((sum, donation) => sum + parseFloat(donation.amount.toString()), 0) || 0;
+  
+  const checkTotal = batch?.donations?.filter(d => d.donationType === "CHECK")
+    .reduce((sum, donation) => sum + parseFloat(donation.amount.toString()), 0) || 0;
 
   // Mutation to delete batch
   const deleteBatchMutation = useMutation({
@@ -95,15 +121,21 @@ const BatchSummaryPage = () => {
       return { success: true };
     },
     onSuccess: () => {
+      // Invalidate all relevant queries to ensure full UI refresh
       queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/batches/latest-finalized"] });
+      
+      // Also invalidate any dashboard-related data
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
       toast({
         title: "Success",
         description: "Count has been deleted successfully.",
       });
       
-      // Navigate back to the counts page
-      handleBackToCounts();
+      // Navigate back to the dashboard
+      handleBackToDashboard();
     },
     onError: (error) => {
       toast({
@@ -113,13 +145,6 @@ const BatchSummaryPage = () => {
       });
     }
   });
-
-  // Calculate totals for cash and check donations
-  const cashTotal = batch?.donations?.filter(d => d.donationType === "CASH")
-    .reduce((sum, donation) => sum + parseFloat(donation.amount.toString()), 0) || 0;
-  
-  const checkTotal = batch?.donations?.filter(d => d.donationType === "CHECK")
-    .reduce((sum, donation) => sum + parseFloat(donation.amount.toString()), 0) || 0;
 
   const handlePrint = () => {
     // Open the PDF report in a new tab, ensuring we have the correct batch ID
@@ -143,23 +168,29 @@ const BatchSummaryPage = () => {
     }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
   };
 
+  // Add a helper to get friendly status display names
+  const getStatusDisplayName = (status: string): string => {
+    if (status === "PENDING_FINALIZATION") return "OPEN";
+    return status;
+  };
+
   const getBadgeClass = (status: string) => {
     const statusColors = {
       OPEN: "bg-primary/20 text-primary hover:bg-primary/30",
+      PENDING_FINALIZATION: "bg-primary/20 text-primary hover:bg-primary/30", // Same style as OPEN
       FINALIZED: "bg-accent/20 text-accent hover:bg-accent/30",
     };
     return statusColors[status as keyof typeof statusColors] || "bg-muted text-muted-foreground";
   };
 
-  const handleBackToCounts = () => {
-    // Always go to dashboard with a hard refresh
+  // Changed to hard refresh navigation
+  const handleBackToDashboard = () => {
     window.location.href = "/dashboard";
   };
   
+  // Show delete confirmation dialog when the three-dot menu delete option is clicked
   const handleShowDeleteConfirm = () => {
-    console.log("Delete button clicked, setting showDeleteConfirm to true");
     setShowDeleteConfirm(true);
-    console.log("Current showDeleteConfirm value:", showDeleteConfirm);
   };
   
   const handleDeleteBatch = () => {
@@ -169,68 +200,38 @@ const BatchSummaryPage = () => {
   // View handling
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-4 max-w-7xl">
+      <PageLayout title="Loading...">
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   if (!batch) {
     return (
-      <div className="container mx-auto py-6 px-4 max-w-7xl">
+      <PageLayout title="Count Not Found">
         <div className="text-center py-12">
           <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Count Not Found</h2>
           <p className="text-muted-foreground mb-6">The requested count could not be found.</p>
-          <Button onClick={handleBackToCounts}>Back to Counts</Button>
+          <Button onClick={handleBackToDashboard}>Back to Dashboard</Button>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">{batch.name}</h1>
-      
-      {/* Count Finalized Message - Exactly matching the screenshot */}
-      {batch.status === "FINALIZED" && (
-        <div className="mb-4 rounded-md border p-4">
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <Check className="h-5 w-5 mr-2 text-green-600" />
-              <h3 className="font-semibold text-base">Count Finalized</h3>
-            </div>
-            <p className="mt-1">This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.</p>
-            
-            <div className="mt-4 pt-3 border-t">
-              <p className="text-sm">
-                <span className="font-medium">Primary Attestor:</span>{" "}
-                {batch.primaryAttestorName || "Unknown"}
-              </p>
-              <p className="text-sm mt-1">
-                <span className="font-medium">Secondary Attestor:</span>{" "}
-                {batch.secondaryAttestorName || "Unknown"}
-              </p>
-              <p className="text-sm mt-1">
-                <span className="font-medium">Finalized on:</span>{" "}
-                {batch.attestationConfirmationDate ? 
-                  format(new Date(batch.attestationConfirmationDate), "MMMM d, yyyy 'at' h:mm a") : 
-                  "Unknown"}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      
+    <PageLayout 
+      title={batch.name}
+    >
       <Card>
         <CardHeader className="pb-2">
           {/* Header with buttons in a row */}
           <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
             {/* Left side - Back button - Stack vertically on mobile */}
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button variant="outline" onClick={handleBackToCounts} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={handleBackToDashboard} className="w-full sm:w-auto">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
@@ -239,33 +240,43 @@ const BatchSummaryPage = () => {
                 View PDF Report
               </Button>
 
-              {/* Inline confirmation buttons that replace the Delete button when clicked */}
-              {isAccountOwner && showDeleteConfirm && (
-                <div className="ml-2 flex gap-2 items-center border border-gray-200 rounded-md p-1.5">
-                  <span className="text-sm font-medium text-gray-700 mr-1">Confirm deletion?</span>
-                  <Button 
-                    size="sm"
-                    variant="outline" 
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="border-gray-300 text-gray-600"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleDeleteBatch}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                    disabled={deleteBatchMutation.isPending}
-                  >
-                    {deleteBatchMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        Deleting...
-                      </>
-                    ) : (
-                      "Confirm Delete"
-                    )}
-                  </Button>
+              {/* Delete confirmation dialog with warning */}
+              {showDeleteConfirm && (
+                <div className="ml-2 flex flex-col border border-red-200 bg-red-50 rounded-md p-3">
+                  <div className="mb-2">
+                    <h4 className="text-sm font-semibold text-red-700 flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Warning: This action cannot be undone
+                    </h4>
+                    <p className="text-xs text-gray-700 mt-1">
+                      Deleting this count will permanently remove all associated donation records and reports.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button 
+                      size="sm"
+                      variant="outline" 
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="border-gray-300 text-gray-600"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleDeleteBatch}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={deleteBatchMutation.isPending}
+                    >
+                      {deleteBatchMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Delete Permanently"
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -283,7 +294,7 @@ const BatchSummaryPage = () => {
               {isAccountOwner && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">
+                    <Button variant="ghost" className="h-8 w-8 p-0 ml-2">
                       <span className="sr-only">Open menu</span>
                       <MoreVertical className="h-4 w-4" />
                     </Button>
@@ -291,6 +302,7 @@ const BatchSummaryPage = () => {
                   <DropdownMenuContent align="end">
                     {!showDeleteConfirm && (
                       <DropdownMenuItem onClick={handleShowDeleteConfirm} className="text-red-600 cursor-pointer">
+                        <Trash2 className="mr-2 h-4 w-4" />
                         Delete Count
                       </DropdownMenuItem>
                     )}
@@ -299,172 +311,114 @@ const BatchSummaryPage = () => {
               )}
             </div>
           </div>
-          
-          {/* Batch information */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+        </CardHeader>
+        
+        <CardContent className="pt-2">
+          {isFinalized && (
+            <Alert className="mb-3 py-2 bg-muted">
+              <CheckCircle className="h-4 w-4" />
+              <AlertTitle className="text-base">Count Finalized</AlertTitle>
+              <AlertDescription>
+                This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.
+                
+                {/* Attestation Information */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 pt-3 border-t border-muted-foreground/20">
+                  <div className="text-sm">
+                    <span className="font-medium">Primary Attestor:</span>{" "}
+                    <span>{batch.primaryAttestorName || "Unknown"}</span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Secondary Attestor:</span>{" "}
+                    <span>{batch.secondaryAttestorName || "Unknown"}</span>
+                  </div>
+                  <div className="text-sm mt-1 col-span-1 sm:col-span-2">
+                    <span className="font-medium">Finalized on:</span>{" "}
+                    <span>
+                      {batch.attestationConfirmationDate ?
+                        format(new Date(batch.attestationConfirmationDate), "MMMM d, yyyy 'at' h:mm a") : 
+                        "Unknown"}
+                    </span>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
             <div className="flex items-center">
-              <Calendar className="h-5 w-5 text-muted-foreground mr-2" />
+              <DollarSign className="mr-2 h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Date</p>
-                <p className="font-medium">
-                  {format(new Date(batch.date), "MM/dd/yyyy")}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Cash Total</p>
+                <p className="text-2xl font-bold">{formatCurrency(cashTotal)}</p>
               </div>
             </div>
             
             <div className="flex items-center">
-              <Hash className="h-5 w-5 text-muted-foreground mr-2" />
+              <FileText className="mr-2 h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Count #</p>
-                <p className="font-medium">{batch.id}</p>
+                <p className="text-sm font-medium text-muted-foreground">Check Total</p>
+                <p className="text-2xl font-bold">{formatCurrency(checkTotal)}</p>
               </div>
             </div>
             
             <div className="flex items-center">
-              <FileCheck className="h-5 w-5 text-muted-foreground mr-2" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Status</p>
-                <Badge variant="outline" className={getBadgeClass(batch.status)}>
-                  {batch.status}
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <DollarSign className="h-5 w-5 text-muted-foreground mr-2" />
+              <Calendar className="mr-2 h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
-                <p className="font-medium text-green-600">
-                  {formatCurrency(batch.totalAmount || 0)}
-                </p>
+                <p className="text-2xl font-bold text-green-600">{formatCurrency(batch.totalAmount)}</p>
               </div>
             </div>
           </div>
 
-          {/* Attestation information */}
-          {batch.status === "FINALIZED" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 border-t pt-4">
-              <div className="flex items-start">
-                <Users className="h-5 w-5 text-muted-foreground mr-2 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Attestation</p>
-                  <div className="space-y-1 mt-1">
-                    <div className="flex items-center text-sm">
-                      <Check className="h-3.5 w-3.5 text-green-500 mr-1" />
-                      <span className="font-medium">Primary:</span>
-                      <span className="ml-1">{batch.primaryAttestorName || "Unknown"}</span>
+          <h3 className="text-lg font-bold mt-2 mb-4">Donations in this Count</h3>
+          <div className="space-y-2">
+            {batch.donations && batch.donations.map((donation) => (
+              <div key={donation.id} className="bg-muted/40 p-4 rounded-md">
+                <div className="flex flex-col sm:flex-row justify-between">
+                  <div>
+                    <h4 className="font-semibold">
+                      {donation.member?.firstName && donation.member?.lastName
+                        ? `${donation.member.firstName} ${donation.member.lastName}`
+                        : "Cash Donation"}
+                    </h4>
+                    <div className="text-sm text-muted-foreground flex items-center mt-1">
+                      <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                      {format(new Date(donation.date), "MMMM d, yyyy")}
+                      
+                      {donation.donationType === "CHECK" && donation.checkNumber && (
+                        <>
+                          <span className="mx-1.5">•</span>
+                          <span>Check #{donation.checkNumber}</span>
+                        </>
+                      )}
+                      
+                      {donation.donationType === "CASH" && (
+                        <>
+                          <span className="mx-1.5">•</span>
+                          <span>Cash</span>
+                        </>
+                      )}
                     </div>
-                    <div className="flex items-center text-sm">
-                      <Check className="h-3.5 w-3.5 text-green-500 mr-1" />
-                      <span className="font-medium">Secondary:</span>
-                      <span className="ml-1">{batch.secondaryAttestorName || "Unknown"}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Check className="h-3.5 w-3.5 text-green-500 mr-1" />
-                      <span className="font-medium">Date:</span>
-                      <span className="ml-1">
-                        {batch.attestationConfirmationDate ? 
-                          format(new Date(batch.attestationConfirmationDate), "MM/dd/yyyy hh:mm a") : 
-                          "Unknown"}
-                      </span>
+                  </div>
+                  <div className="mt-2 sm:mt-0 text-right">
+                    <div className="text-xl font-bold">
+                      {formatCurrency(donation.amount)}
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="flex items-start">
-                <DollarSign className="h-5 w-5 text-muted-foreground mr-2 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Breakdown</p>
-                  <div className="space-y-1 mt-1">
-                    <div className="flex items-center text-sm">
-                      <CreditCard className="h-3.5 w-3.5 text-blue-500 mr-1" />
-                      <span className="font-medium">Check:</span>
-                      <span className="ml-1">{formatCurrency(checkTotal)}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <DollarSign className="h-3.5 w-3.5 text-green-500 mr-1" />
-                      <span className="font-medium">Cash:</span>
-                      <span className="ml-1">{formatCurrency(cashTotal)}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="font-medium ml-5">Total:</span>
-                      <span className="ml-1 text-green-600 font-bold">{formatCurrency(parseFloat(batch.totalAmount) || 0)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardHeader>
-        
-        {/* Main content */}
-        <CardContent>
-          {/* Content based on view state */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Donation List</h3>
-            
-            {batch.donations && batch.donations.length > 0 ? (
-              <div className="overflow-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="p-2 font-semibold">Donor</th>
-                      <th className="p-2 font-semibold">Date</th>
-                      <th className="p-2 font-semibold">Type</th>
-                      <th className="p-2 font-semibold">Check #</th>
-                      <th className="p-2 font-semibold text-right">Amount</th>
-                      <th className="p-2 font-semibold">Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {batch.donations.map((donation) => (
-                      <tr key={donation.id} className="border-b hover:bg-gray-50">
-                        <td className="p-2">
-                          {donation.member ? (
-                            <span className="font-medium">
-                              {donation.member.lastName}, {donation.member.firstName}
-                            </span>
-                          ) : (
-                            <span className="text-gray-500 italic">Anonymous</span>
-                          )}
-                        </td>
-                        <td className="p-2">{format(new Date(donation.date), "MM/dd/yyyy")}</td>
-                        <td className="p-2">
-                          <Badge variant="outline" className={
-                            donation.donationType === "CASH" 
-                              ? "bg-green-50 text-green-600" 
-                              : "bg-blue-50 text-blue-600"
-                          }>
-                            {donation.donationType}
-                          </Badge>
-                        </td>
-                        <td className="p-2">{donation.checkNumber || "—"}</td>
-                        <td className="p-2 text-right font-medium">{formatCurrency(donation.amount)}</td>
-                        <td className="p-2 max-w-[200px] truncate">{donation.notes || "—"}</td>
-                      </tr>
-                    ))}
-                    
-                    {/* Summary row */}
-                    <tr className="bg-gray-50 font-semibold">
-                      <td colSpan={4} className="p-2 text-right">Total:</td>
-                      <td className="p-2 text-right text-green-600">{formatCurrency(parseFloat(batch.totalAmount))}</td>
-                      <td className="p-2"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="bg-gray-50 p-6 text-center rounded-md">
-                <p className="text-gray-500">No donations have been added to this count yet.</p>
+            ))}
+
+            {(!batch.donations || batch.donations.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No donations have been added to this count yet.</p>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 };
 
-// Export the BatchSummaryPage component
 export default BatchSummaryPage;
