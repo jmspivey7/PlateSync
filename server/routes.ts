@@ -1318,6 +1318,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.text('GRAND TOTAL', leftColX, rowY);
         doc.text(formatCurrency(total), amountColX, rowY, { align: 'right' });
         
+        // Add attestation information - if batch has been finalized
+        if (batch.status === 'FINALIZED') {
+          doc.moveDown(2);
+          
+          // Add a box for attestation details
+          const boxY = doc.y;
+          const boxHeight = 75; // Adjust based on content
+          
+          // Draw a light gray box
+          doc.rect(leftColX, boxY, contentWidth, boxHeight)
+             .fillAndStroke('#f5f5f5', '#d9d9d9');
+          
+          // Add title for attestation section
+          doc.font('Helvetica-Bold').fontSize(12);
+          doc.fillColor('#000000');
+          doc.text('ATTESTATION INFORMATION', leftColX + 10, boxY + 10, { width: contentWidth - 20 });
+          
+          // Add attestation details
+          doc.font('Helvetica').fontSize(10);
+          
+          // Primary attestor
+          if (batch.primaryAttestorName) {
+            doc.text(`Primary Attestor: ${batch.primaryAttestorName}`, 
+                   leftColX + 10, boxY + 30, { width: contentWidth - 20 });
+          }
+          
+          // Secondary attestor
+          if (batch.secondaryAttestorName) {
+            doc.text(`Secondary Attestor: ${batch.secondaryAttestorName}`, 
+                   leftColX + 10, boxY + 45, { width: contentWidth - 20 });
+          }
+          
+          // Finalization date/time
+          if (batch.attestationConfirmationDate) {
+            const confirmDate = new Date(batch.attestationConfirmationDate);
+            const formattedConfirmDate = confirmDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            const formattedConfirmTime = confirmDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit'
+            });
+            
+            doc.text(`Finalized on: ${formattedConfirmDate} at ${formattedConfirmTime}`, 
+                   leftColX + 10, boxY + 60, { width: contentWidth - 20 });
+          }
+        }
+        
         // Finalize the PDF
         doc.end();
       } catch (pdfError) {
