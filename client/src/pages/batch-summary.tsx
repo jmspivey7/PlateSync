@@ -56,7 +56,19 @@ const BatchSummaryPage = () => {
   const batchId = params.id ? parseInt(params.id) : 0;
   const { isAdmin, isMasterAdmin } = useAuth();
   
+  // Check if this page was loaded immediately after finalization
+  // This will be used to determine if we should show "Back to Dashboard" instead of "Back to Counts"
+  const [justFinalized, setJustFinalized] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Check if we came directly from the attestation flow
+  useEffect(() => {
+    // Check for URL param that indicates we just finalized the count
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('finalized') === 'true') {
+      setJustFinalized(true);
+    }
+  }, []);
   
   // Fetch batch details
   const { data: batch, isLoading, error } = useQuery<BatchWithDonations>({
@@ -144,7 +156,13 @@ const BatchSummaryPage = () => {
   };
 
   const handleBackToCounts = () => {
-    setLocation("/counts");
+    // If we just finalized, go to dashboard instead of counts page
+    if (justFinalized) {
+      // Redirect to dashboard to show the latest data
+      setLocation("/dashboard");
+    } else {
+      setLocation("/counts");
+    }
   };
   
   const handleShowDeleteConfirm = () => {
