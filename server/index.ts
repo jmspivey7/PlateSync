@@ -47,6 +47,10 @@ console.log(`Serving logos from: ${logosDir}`);
 app.use('/avatars', express.static(path.join(process.cwd(), 'public/avatars')));
 console.log(`Serving avatars from: ${path.join(process.cwd(), 'public/avatars')}`);
 
+// Serve the entire public directory for direct access to logos and other assets
+app.use(express.static(path.join(process.cwd(), 'public')));
+console.log(`Serving static files from: ${path.join(process.cwd(), 'public')}`);
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
