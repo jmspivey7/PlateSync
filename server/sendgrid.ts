@@ -913,6 +913,9 @@ interface CountReportParams {
   donationCount: number;
   churchId?: string;
   churchLogoUrl?: string;
+  primaryAttestor?: string;
+  secondaryAttestor?: string;
+  attestationTime?: string;
   donations?: Array<{
     memberId: number | null;
     memberName: string;

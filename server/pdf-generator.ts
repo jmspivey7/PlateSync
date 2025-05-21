@@ -25,6 +25,9 @@ interface CountReportPDFParams {
   totalAmount: string;
   cashAmount: string;
   checkAmount: string;
+  primaryAttestor?: string; 
+  secondaryAttestor?: string;
+  confirmationTime?: string;
   donations: Array<{
     memberId: number | null;
     memberName: string;
@@ -41,7 +44,18 @@ interface CountReportPDFParams {
  * @returns The path to the generated PDF file
  */
 export async function generateCountReportPDF(params: CountReportPDFParams): Promise<string> {
-  const { churchName, churchLogoPath, date, totalAmount, cashAmount, checkAmount, donations } = params;
+  const { 
+    churchName, 
+    churchLogoPath, 
+    date, 
+    totalAmount, 
+    cashAmount, 
+    checkAmount, 
+    primaryAttestor, 
+    secondaryAttestor, 
+    confirmationTime,
+    donations 
+  } = params;
   
   // Create the output directory if it doesn't exist
   const outputDir = path.join(process.cwd(), 'temp-files');
@@ -322,6 +336,34 @@ export async function generateCountReportPDF(params: CountReportPDFParams): Prom
   
   // Add double line after grand total
   addLine(doc.y + 5, true);
+  
+  // Add attestation information if available
+  if (primaryAttestor || secondaryAttestor) {
+    doc.moveDown(2);
+    doc.font('Helvetica').fontSize(11);
+    doc.text('ATTESTATION INFORMATION:', leftColX, doc.y);
+    doc.moveDown(0.5);
+    
+    // Add primary attestor if available
+    if (primaryAttestor) {
+      doc.font('Helvetica').fontSize(10);
+      doc.text(`Primary Attestor: ${primaryAttestor}`, leftColX, doc.y);
+    }
+    
+    // Add secondary attestor if available
+    if (secondaryAttestor) {
+      doc.moveDown(0.3);
+      doc.font('Helvetica').fontSize(10);
+      doc.text(`Secondary Attestor: ${secondaryAttestor}`, leftColX, doc.y);
+    }
+    
+    // Add confirmation time if available
+    if (confirmationTime) {
+      doc.moveDown(0.3);
+      doc.font('Helvetica').fontSize(10);
+      doc.text(`Finalized on: ${confirmationTime}`, leftColX, doc.y);
+    }
+  }
   
   // Now draw all the lines AFTER all text has been placed
   // This ensures text positioning doesn't get affected by line drawing operations
