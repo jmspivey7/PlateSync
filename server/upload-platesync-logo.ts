@@ -44,13 +44,13 @@ async function uploadPlateSyncLogo() {
     
     console.log(`Successfully uploaded PlateSync logo to S3: ${s3Url}`);
     
-    // Update email templates that use PlateSync logo
+    // Update email templates that use outdated PlateSync logo URLs
     const templates = await db
       .select()
       .from(emailTemplates)
       .where(
-        sql`${emailTemplates.bodyHtml} LIKE '%platesync.replit.app/logo-with-text.png%' OR 
-            ${emailTemplates.bodyHtml} LIKE '%plate-sync-jspivey.replit.app/logo-with-text.png%'`
+        sql`${emailTemplates.bodyHtml} LIKE '%logo-with-text.png%' OR 
+            ${emailTemplates.bodyHtml} LIKE '%platesync-logo.png%'`
       );
     
     console.log(`Found ${templates.length} templates with PlateSync logo references`);
@@ -60,13 +60,14 @@ async function uploadPlateSyncLogo() {
         // Replace all instances of the logo URL with the S3 URL
         let updatedHtml = template.bodyHtml;
         
-        // Replace all variations of the URL
+        // Replace all logo URL variations with S3 URL
         const patterns = [
-          'https://platesync.replit.app/logo-with-text.png',
-          'https://plate-sync-jspivey.replit.app/logo-with-text.png',
-          'https://plate-sync-jspivey.replit.app/assets/logo-with-text.png',
+          // Remove all hardcoded Replit domain URLs
           '/logo-with-text.png',
-          '/assets/logo-with-text.png'
+          '/assets/logo-with-text.png',
+          '/logos/logo-with-text.png',
+          '/assets/platesync-logo.png',
+          '/logos/platesync-logo.png'
         ];
         
         for (const pattern of patterns) {
