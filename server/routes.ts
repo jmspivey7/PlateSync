@@ -1558,7 +1558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update email template
+  // Update email template (PUT method)
   app.put('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -1586,6 +1586,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating email template:', error);
+      res.status(500).json({ message: 'Failed to update email template' });
+    }
+  });
+  
+  // Update email template (PATCH method)
+  app.patch('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const churchId = req.user.churchId || userId;
+      const templateId = parseInt(req.params.id);
+      
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'Invalid template ID' });
+      }
+      
+      // For PATCH, we need to handle HTML content properly
+      // Instead of using JSON.parse/stringify, use raw text processing
+      let rawBody = '';
+      req.on('data', (chunk) => {
+        rawBody += chunk.toString();
+      });
+      
+      req.on('end', async () => {
+        try {
+          // Parse the raw body, handling HTML content properly
+          const data = JSON.parse(rawBody);
+          const { subject, bodyHtml, bodyText } = data;
+          
+          if (!subject || !bodyHtml || !bodyText) {
+            return res.status(400).json({ message: 'Missing required fields' });
+          }
+          
+          const updatedTemplate = await storage.updateEmailTemplate(templateId, {
+            subject,
+            bodyHtml,
+            bodyText
+          }, churchId);
+          
+          if (!updatedTemplate) {
+            return res.status(404).json({ message: 'Email template not found' });
+          }
+          
+          res.json(updatedTemplate);
+        } catch (parseError) {
+          console.error('Error parsing template data:', parseError);
+          res.status(400).json({ message: 'Invalid template data format' });
+        }
+      });
     } catch (error) {
       console.error('Error updating email template:', error);
       res.status(500).json({ message: 'Failed to update email template' });
