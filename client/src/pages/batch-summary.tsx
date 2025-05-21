@@ -56,23 +56,14 @@ const BatchSummaryPage = () => {
   const batchId = params.id ? parseInt(params.id) : 0;
   const { isAdmin, isAccountOwner } = useAuth();
   
-  // Check if this page was loaded immediately after finalization
-  // This will be used to determine if we should show "Back to Dashboard" instead of "Back to Counts"
-  const [justFinalized, setJustFinalized] = useState(false);
+  // State for delete confirmation dialog
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  // Check if we came directly from the attestation flow
+  // Clean up URL parameters when component mounts
   useEffect(() => {
-    // Check for URL param that indicates we just finalized the count
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('finalized') === 'true') {
-      setJustFinalized(true);
-      
-      // Clean up the URL to prevent state persistence on refresh
-      // This preserves "Back to Dashboard" behavior but allows normal navigation later
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    }
+    // Clean up any URL parameters to prevent state persistence on refresh
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
   }, []);
   
   // Fetch batch details
@@ -161,13 +152,8 @@ const BatchSummaryPage = () => {
   };
 
   const handleBackToCounts = () => {
-    // If we just finalized, go to dashboard with a hard refresh instead of counts page
-    if (justFinalized) {
-      // Redirect to dashboard with a full page refresh to ensure latest data
-      window.location.href = "/dashboard";
-    } else {
-      setLocation("/counts");
-    }
+    // Always go to dashboard with a hard refresh
+    window.location.href = "/dashboard";
   };
   
   const handleShowDeleteConfirm = () => {
@@ -249,7 +235,7 @@ const BatchSummaryPage = () => {
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button variant="outline" onClick={handleBackToCounts} className="w-full sm:w-auto">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                {justFinalized ? 'Back to Dashboard' : 'Back to Counts'}
+                Back to Dashboard
               </Button>
               <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
                 <Printer className="mr-2 h-4 w-4" />
