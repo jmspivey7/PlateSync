@@ -271,7 +271,7 @@ export async function sendDonationNotification(params: DonationNotificationParam
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
-      // Replace template variables but without the churchLogoUrl yet
+      // Initialize replacements with standard parameters
       const replacements: Record<string, string> = {
         '{{donorName}}': params.donorName,
         '{{amount}}': params.amount,
@@ -280,67 +280,63 @@ export async function sendDonationNotification(params: DonationNotificationParam
         '{{donationId}}': donationId,
       };
       
-      // CRITICAL: Get the S3 URL directly from database - don't try to manipulate URLs
-      let churchLogoUrl = '';
+      // CRITICAL: Get the proper S3 logo URL for emails
+      let logoUrl = '';
       
       try {
         if (params.churchId) {
-          console.log(`📧 [Donation-${notificationId}] Fetching logo directly from database for church: ${params.churchId}`);
+          console.log(`📧 [Donation-${notificationId}] Fetching logo from database for church ID: ${params.churchId}`);
           
           // Import here to avoid circular dependencies
           const { db } = await import('./db');
           const { churches } = await import('@shared/schema');
           const { eq } = await import('drizzle-orm');
           
-          // Get the church record directly from database to access the proper S3 URL
+          // Get the church record directly to access the S3 URL
           const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
           
           if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
-            // Use the S3 URL directly from the database record
-            churchLogoUrl = church.logoUrl;
-            console.log(`📧 [Donation-${notificationId}] Found S3 logo URL in database: ${churchLogoUrl}`);
+            // Use the S3 URL directly from the database
+            logoUrl = church.logoUrl;
+            console.log(`📧 [Donation-${notificationId}] Using S3 URL from database: ${logoUrl}`);
           } else {
-            console.log(`📧 [Donation-${notificationId}] No S3 URL found in database, using fallback`);
-            churchLogoUrl = `https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png`;
+            console.log(`📧 [Donation-${notificationId}] No valid S3 URL in database, using default logo`);
+            logoUrl = 'https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png';
           }
         } else if (params.churchLogoUrl && params.churchLogoUrl.includes('s3.amazonaws.com')) {
           // If we have an S3 URL already, use it directly
-          churchLogoUrl = params.churchLogoUrl;
-          console.log(`📧 [Donation-${notificationId}] Using provided S3 logo URL: ${churchLogoUrl}`);
+          logoUrl = params.churchLogoUrl;
+          console.log(`📧 [Donation-${notificationId}] Using provided S3 URL: ${logoUrl}`);
         } else {
-          // Fallback to default PlateSync logo
-          churchLogoUrl = `https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png`;
+          // No valid logo URL, use default
+          logoUrl = 'https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png';
           console.log(`📧 [Donation-${notificationId}] Using default PlateSync logo`);
         }
       } catch (error) {
-        console.error(`📧 [Donation-${notificationId}] Error fetching logo:`, error);
-        churchLogoUrl = `https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png`;
+        console.error(`📧 [Donation-${notificationId}] Error getting logo:`, error);
+        logoUrl = 'https://repl-plates-image-repo.s3.amazonaws.com/logos/platesync-logo.png';
       }
       
-      // Display the final URL being used in the email
-      console.log(`📧 [Donation-${notificationId}] FINAL LOGO URL FOR EMAIL: ${churchLogoUrl}`);
+      // Add the logo URL to replacements
+      replacements['{{churchLogoUrl}}'] = logoUrl;
+      console.log(`📧 [Donation-${notificationId}] FINAL LOGO URL: ${logoUrl}`);
       
-      // Include the S3 logo URL in the template replacements
-      replacements['{{churchLogoUrl}}'] = churchLogoUrl;
-      } else {
-        // If no logo, use a generic transparent 1px image
-        console.log(`📧 [Donation-${notificationId}] No church logo URL provided, using fallback`);
-        const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        replacements['{{churchLogoUrl}}'] = fallbackImgSrc;
-        
-        // Modify the HTML template to handle the case with no logo
+      // If we're using the default logo, modify the template to emphasize church name
+      if (logoUrl.includes('platesync-logo.png')) {
+        // Hide the logo if using default
         html = html.replace('<img src="{{churchLogoUrl}}"', '<img src="{{churchLogoUrl}}" style="display:none;"');
         
-        // Add the church name as text for cases with no logo
+        // Add the church name prominently
         html = html.replace('<p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>', 
           `<h1 style="margin: 0; font-size: 28px; color: #2D3748;">${params.churchName}</h1>
            <p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>`);
       }
       
+      // Apply all replacements to the template
       Object.entries(replacements).forEach(([key, value]) => {
-        subject = subject.replace(new RegExp(key, 'g'), value);
-        text = text.replace(new RegExp(key, 'g'), value);
-        html = html.replace(new RegExp(key, 'g'), value);
+        subject = subject.replace(new RegExp(key, 'g'), value || '');
+        text = text.replace(new RegExp(key, 'g'), value || '');
+        html = html.replace(new RegExp(key, 'g'), value || '');
       });
       
       return await sendEmail({
