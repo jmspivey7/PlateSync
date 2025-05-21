@@ -349,41 +349,34 @@ const BatchSummaryPage = () => {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-            <div className="flex items-center">
-              <DollarSign className="mr-2 h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Cash Total</p>
+          <div className="mb-8">
+            <div className="flex flex-col space-y-3">
+              <div className="flex">
+                <p className="w-[120px] font-medium">Cash Total</p>
                 <p className="text-2xl font-bold">{formatCurrency(cashTotal)}</p>
               </div>
-            </div>
-            
-            <div className="flex items-center">
-              <FileText className="mr-2 h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Check Total</p>
+              
+              <div className="flex">
+                <p className="w-[120px] font-medium">Check Total</p>
                 <p className="text-2xl font-bold">{formatCurrency(checkTotal)}</p>
               </div>
-            </div>
-            
-            <div className="flex items-center">
-              <Calendar className="mr-2 h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(batch.totalAmount)}</p>
+              
+              <div className="flex">
+                <p className="w-[120px] font-medium">Total Amount</p>
+                <p className="text-2xl font-bold">{formatCurrency(batch.totalAmount)}</p>
               </div>
             </div>
           </div>
 
           <h3 className="text-lg font-bold mt-2 mb-4">Donations in this Count</h3>
-          <div className="space-y-2">
-            {batch.donations && batch.donations.map((donation) => (
-              <div key={donation.id} className="bg-muted/40 p-4 rounded-md">
+          <div className="border rounded-md">
+            {batch.donations && batch.donations.map((donation, index) => (
+              <div key={donation.id} className={`p-4 ${index !== 0 ? 'border-t' : ''}`}>
                 <div className="flex flex-col sm:flex-row justify-between">
                   <div>
                     <h4 className="font-semibold">
                       {donation.member?.firstName && donation.member?.lastName
-                        ? `${donation.member.firstName} ${donation.member.lastName}`
+                        ? `${donation.member.lastName}, ${donation.member.firstName}`
                         : "Cash Donation"}
                     </h4>
                     <div className="text-sm text-muted-foreground flex items-center mt-1">
