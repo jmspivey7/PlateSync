@@ -1737,10 +1737,15 @@ export class DatabaseStorage implements IStorage {
                 
                 // Calculate totals
                 const totalAmount = donations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
-                const cashDonations = donations.filter(d => d.type === 'CASH');
-                const checkDonations = donations.filter(d => d.type === 'CHECK');
+                const cashDonations = donations.filter(d => d.donationType === 'CASH');
+                const checkDonations = donations.filter(d => d.donationType === 'CHECK');
                 const cashAmount = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
                 const checkAmount = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                
+                // Log the totals for debugging
+                console.log(`📧 [CountReport] Cash amount: $${cashAmount.toFixed(2)}`);
+                console.log(`📧 [CountReport] Check amount: $${checkAmount.toFixed(2)}`);
+                console.log(`📧 [CountReport] Total amount: $${totalAmount.toFixed(2)}`);
                 
                 // Format date
                 const batchDate = batchWithDonations.createdAt 

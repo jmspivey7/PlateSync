@@ -350,20 +350,24 @@ const BatchSummaryPage = () => {
           )}
 
           <div className="mb-8">
-            <div className="flex flex-col space-y-3">
-              <div className="flex">
-                <p className="w-[120px] font-medium">Cash Total</p>
-                <p className="text-2xl font-bold">{formatCurrency(cashTotal)}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div className="bg-muted p-3 rounded-lg">
+                <div className="text-sm text-muted-foreground">Cash Total</div>
+                <div className="text-xl font-bold text-secondary-foreground">
+                  {formatCurrency(cashTotal)}
+                </div>
               </div>
-              
-              <div className="flex">
-                <p className="w-[120px] font-medium">Check Total</p>
-                <p className="text-2xl font-bold">{formatCurrency(checkTotal)}</p>
+              <div className="bg-muted p-3 rounded-lg">
+                <div className="text-sm text-muted-foreground">Check Total</div>
+                <div className="text-xl font-bold text-secondary-foreground">
+                  {formatCurrency(checkTotal)}
+                </div>
               </div>
-              
-              <div className="flex">
-                <p className="w-[120px] font-medium">Total Amount</p>
-                <p className="text-2xl font-bold">{formatCurrency(batch.totalAmount)}</p>
+              <div className="bg-muted p-3 rounded-lg">
+                <div className="text-sm text-muted-foreground">Total Amount</div>
+                <div className="text-xl font-bold text-secondary-foreground">
+                  {formatCurrency(batch.totalAmount)}
+                </div>
               </div>
             </div>
           </div>
