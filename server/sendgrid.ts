@@ -354,13 +354,24 @@ please contact the church office directly.
       // HTML version with template that properly handles church logo
       let html = '';
       
+      // Fix the church logo URL to ensure it uses the production domain for emails
+      let logoUrl = params.churchLogoUrl || '';
+      if (logoUrl && !logoUrl.includes('plate-sync-jspivey.replit.app')) {
+        // Extract just the filename from the URL
+        const urlParts = logoUrl.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        // Create a proper production URL that works in emails
+        logoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
+        console.log(`Fixed church logo URL for donation receipt: ${logoUrl}`);
+      }
+      
       if (params.churchLogoUrl) {
         // Version with church logo
         html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
   <!-- Header with Church Logo -->
   <div style="padding: 25px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
+    <img src="${logoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
     <p style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: 500;">Donation Receipt</p>
   </div>
         `;
