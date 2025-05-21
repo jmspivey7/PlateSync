@@ -280,50 +280,49 @@ export async function sendDonationNotification(params: DonationNotificationParam
         '{{donationId}}': donationId,
       };
       
-      // Handle churchLogoUrl separately to ensure it's properly used from the proper source
-      if (params.churchLogoUrl) {
-        // For email templates, we prioritize S3 URLs that are more reliable
-        let logoUrl = params.churchLogoUrl;
-        
-        // Case 1: Already an S3 URL, use as is
-        if (logoUrl.includes('s3.amazonaws.com')) {
-          console.log(`📧 [Donation-${notificationId}] Using S3 logo URL: ${logoUrl}`);
-        }
-        // Case 2: URL with domain (non-S3), extract filename and convert to S3
-        else if (logoUrl.includes('plate-sync-jspivey.replit.app') || 
-                 logoUrl.includes('platesync.replit.app')) {
-          // Extract just the filename from the URL
-          let filename = '';
-          if (logoUrl.includes('/logos/')) {
-            filename = logoUrl.split('/logos/')[1];
-          }
+      // CRITICAL: Handle churchLogoUrl by fetching directly from the database
+      // to avoid URL manipulation errors and ensure we use S3 URLs
+      let logoUrl = '';
+      
+      if (params.churchId) {
+        try {
+          console.log(`📧 [Donation-${notificationId}] Getting correct S3 logo URL from database for church ID: ${params.churchId}`);
           
-          if (filename && process.env.AWS_S3_BUCKET) {
-            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
-            console.log(`📧 [Donation-${notificationId}] Converted domain URL to S3: ${logoUrl}`);
-          }
-        }
-        // Case 3: Relative URL, convert to absolute with S3
-        else if (logoUrl.startsWith('/')) {
-          // For email templates, we should use the S3 bucket if possible instead of our app domain
-          // First try to extract the filename
-          const filename = logoUrl.split('/').pop();
-          if (filename && process.env.AWS_S3_BUCKET) {
-            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
-            console.log(`📧 [Donation-${notificationId}] Converted to S3 URL: ${logoUrl}`);
+          // Import here to avoid circular dependencies
+          const { db } = await import('./db');
+          const { churches } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          // Get the church record directly to access the S3 logo URL
+          const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
+          
+          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+            // Use the S3 URL directly from the database
+            logoUrl = church.logoUrl;
+            console.log(`📧 [Donation-${notificationId}] Found S3 logo URL in database: ${logoUrl}`);
           } else {
-            // Fallback to the app domain if S3 info not available
-            const baseUrl = 'https://plate-sync-jspivey.replit.app';
-            logoUrl = `${baseUrl}${logoUrl}`;
-            console.log(`📧 [Donation-${notificationId}] Converted relative logo URL to absolute: ${logoUrl}`);
+            console.log(`📧 [Donation-${notificationId}] No S3 URL found in database, using fallback PlateSync logo`);
+            logoUrl = `https://${process.env.AWS_S3_BUCKET || 'repl-plates-image-repo'}.s3.amazonaws.com/logos/platesync-logo.png`;
           }
+        } catch (error) {
+          console.error(`📧 [Donation-${notificationId}] Error fetching church logo from database:`, error);
+          logoUrl = `https://${process.env.AWS_S3_BUCKET || 'repl-plates-image-repo'}.s3.amazonaws.com/logos/platesync-logo.png`;
         }
-        
-        // Log the actual church logo URL being used
-        console.log(`📧 [Donation-${notificationId}] Using church logo URL: ${logoUrl}`);
-        
-        // Include the church logo
-        replacements['{{churchLogoUrl}}'] = logoUrl;
+      } else if (params.churchLogoUrl && params.churchLogoUrl.includes('s3.amazonaws.com')) {
+        // If we have an S3 URL already, use it directly 
+        logoUrl = params.churchLogoUrl;
+        console.log(`📧 [Donation-${notificationId}] Using provided S3 logo URL: ${logoUrl}`);
+      } else {
+        // Fallback to default PlateSync logo
+        logoUrl = `https://${process.env.AWS_S3_BUCKET || 'repl-plates-image-repo'}.s3.amazonaws.com/logos/platesync-logo.png`;
+        console.log(`📧 [Donation-${notificationId}] Using default PlateSync logo`);
+      }
+      
+      // Display the final URL being used in the email - this should show up in the logs
+      console.log(`📧 [Donation-${notificationId}] FINAL LOGO URL FOR EMAIL: ${logoUrl}`);
+      
+      // Include the church logo 
+      replacements['{{churchLogoUrl}}'] = logoUrl;
       } else {
         // If no logo, use a generic transparent 1px image
         console.log(`📧 [Donation-${notificationId}] No church logo URL provided, using fallback`);
