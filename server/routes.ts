@@ -1096,90 +1096,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let logoHeight = 0;
         
         try {
-          // Get the church logo URL - try both from user and directly from church table 
-          let churchLogoUrl = user.churchLogoUrl;
+          // Get the church info for the logo
+          const church = await storage.getChurch(churchId);
+          let logoPath = null;
           
-          // If we don't have a logo URL from the user object, try to get it from the church table
-          if (!churchLogoUrl) {
-            const church = await storage.getChurch(churchId);
-            if (church && church.logoUrl) {
-              churchLogoUrl = church.logoUrl;
+          // First try to find a local file based on the S3 URL
+          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+            // Extract filename from S3 URL
+            const urlParts = church.logoUrl.split('/');
+            const filename = urlParts[urlParts.length - 1];
+            const localPath = `${process.cwd()}/public/logos/${filename}`;
+            
+            console.log(`Checking for logo at: ${localPath}`);
+            if (fs.existsSync(localPath)) {
+              logoPath = localPath;
+              console.log(`Found logo at: ${logoPath}`);
             }
           }
           
-          if (churchLogoUrl) {
-            console.log(`Using church logo URL: ${churchLogoUrl}`);
-            
-            // Check if this is an S3 URL or local URL
-            if (churchLogoUrl.includes('s3.amazonaws.com')) {
-              // This is an S3 URL - attempt to find the local version
-              let filename = '';
-              if (churchLogoUrl.includes('/logos/')) {
-                const parts = churchLogoUrl.split('/logos/');
-                if (parts.length > 1) {
-                  filename = parts[1];
-                }
-              } else {
-                const urlParts = churchLogoUrl.split('/');
-                filename = urlParts[urlParts.length - 1];
-              }
-              
-              if (filename) {
-                const localLogoPath = `${process.cwd()}/public/logos/${filename}`;
-                console.log(`PDF: Looking for logo file at local path: ${localLogoPath}`);
-                
-                if (fs.existsSync(localLogoPath)) {
-                  console.log(`PDF: Found local logo file at: ${localLogoPath}`);
-                  
-                  // Position logo horizontally in the center
-                  const logoWidth = 312.5;
-                  const centerX = (pageWidth - logoWidth) / 2;
-                  
-                  // Draw the logo
-                  doc.image(localLogoPath, centerX, headerY, { 
-                    fit: [logoWidth, 125],
-                    align: 'center'
-                  });
-                  
-                  // Update the vertical position - give more space for the logo
-                  logoHeight = 125; // estimated logo height
-                } else {
-                  console.log(`PDF: Local logo file not found at: ${localLogoPath}`);
-                }
-              }
-            } else {
-              // This is a local URL - use the relative path
-              const logoPath = `${process.cwd()}/public${churchLogoUrl}`;
-              console.log(`PDF: Using local logo file at: ${logoPath}`);
-              
-              if (fs.existsSync(logoPath)) {
-                // Position logo horizontally in the center
-                const logoWidth = 312.5;
-                const centerX = (pageWidth - logoWidth) / 2;
-                
-                // Draw the logo
-                doc.image(logoPath, centerX, headerY, { 
-                  fit: [logoWidth, 125],
-                  align: 'center'
-                });
-                
-                // Update the vertical position - give more space for the logo
-                logoHeight = 125; // estimated logo height
-              }
+          // If no S3-based logo found, try the user's churchLogoUrl (local path)
+          if (!logoPath && user.churchLogoUrl) {
+            const userLogoPath = `${process.cwd()}/public${user.churchLogoUrl}`;
+            if (fs.existsSync(userLogoPath)) {
+              logoPath = userLogoPath;
+              console.log(`Found logo from user settings: ${logoPath}`);
             }
+          }
+          
+          // If we found a logo, add it to the PDF
+          if (logoPath) {
+            // Position logo horizontally in the center
+            const logoWidth = 312.5;
+            const centerX = (pageWidth - logoWidth) / 2;
             
+            // Draw the logo
+            doc.image(logoPath, centerX, headerY, { 
+              fit: [logoWidth, 125],
+              align: 'center'
+            });
+            
+            // Update the vertical position - give more space for the logo
+            logoHeight = 125; // estimated logo height
             headerY = margin + logoHeight + 20; // add extra padding after logo
           } else {
-              // If no logo file exists, use church name in large font
-              doc.font('Helvetica-Bold').fontSize(24);
-              doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
-                align: 'center',
-                width: contentWidth
-              });
-              headerY += 30; // Move down after the church name
-            }
-          } else {
-            // If no logo URL, use church name in large font
+            // If no logo file exists, use church name in large font
             doc.font('Helvetica-Bold').fontSize(24);
             doc.text(user.churchName || 'Church Count Report', margin, headerY, { 
               align: 'center',
