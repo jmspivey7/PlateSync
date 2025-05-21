@@ -10,9 +10,9 @@ async function uploadPlateSyncLogo() {
   
   // Define logo paths to check
   const possibleLogoPaths = [
-    'public/assets/logo-with-text.png',
-    'public/email-templates/logo-with-text.png',
-    'public/assets/platesync-logo.png'
+    '/home/runner/workspace/public/assets/logo-with-text.png',
+    '/home/runner/workspace/public/email-templates/logo-with-text.png',
+    '/home/runner/workspace/public/assets/platesync-logo.png'
   ];
   
   // Find the first logo that exists
