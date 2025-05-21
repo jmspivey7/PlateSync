@@ -161,10 +161,10 @@ const BatchSummaryPage = () => {
   };
 
   const handleBackToCounts = () => {
-    // If we just finalized, go to dashboard instead of counts page
+    // If we just finalized, go to dashboard with a hard refresh instead of counts page
     if (justFinalized) {
-      // Redirect to dashboard to show the latest data
-      setLocation("/dashboard");
+      // Redirect to dashboard with a full page refresh to ensure latest data
+      window.location.href = "/dashboard";
     } else {
       setLocation("/counts");
     }
@@ -208,17 +208,17 @@ const BatchSummaryPage = () => {
     <div className="container mx-auto py-6 px-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6">{batch.name}</h1>
       
-      {/* Count Finalized Message */}
+      {/* Count Finalized Message - Using the layout from batch-detail.tsx */}
       {batch.status === "FINALIZED" && (
-        <div className="mb-4 rounded-md border bg-muted p-4">
+        <div className="mb-4 rounded-md border bg-card p-4">
           <div className="flex items-start">
-            <Check className="h-5 w-5 mr-2 mt-0.5" />
+            <Check className="h-5 w-5 mr-2 mt-0.5 text-green-600" />
             <div>
               <h3 className="font-semibold text-base">Count Finalized</h3>
               <p>This count has been finalized and can no longer be edited. You can view and print a PDF report for your records.</p>
               
               {/* Attestation Information */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 pt-3 border-t border-muted-foreground/20">
+              <div className="grid grid-cols-1 gap-y-1 mt-3 pt-3 border-t border-border">
                 <div className="text-sm">
                   <span className="font-medium">Primary Attestor:</span>{" "}
                   <span>{batch.primaryAttestorName || "Unknown"}</span>
@@ -227,7 +227,7 @@ const BatchSummaryPage = () => {
                   <span className="font-medium">Secondary Attestor:</span>{" "}
                   <span>{batch.secondaryAttestorName || "Unknown"}</span>
                 </div>
-                <div className="text-sm mt-1 col-span-1 sm:col-span-2">
+                <div className="text-sm mt-1">
                   <span className="font-medium">Finalized on:</span>{" "}
                   <span>
                     {batch.attestationConfirmationDate ? 
