@@ -1671,7 +1671,21 @@ export class DatabaseStorage implements IStorage {
               }
               
               const churchName = churchData.name || 'Your Church';
-              const churchLogoUrl = churchData.logoUrl;
+              
+              // Ensure the church logo URL uses the correct production domain
+              // This is critical for emails to properly display the logo
+              let churchLogoUrl = churchData.logoUrl;
+              
+              // Fix logo URL if it's using a different domain than our production one
+              if (churchLogoUrl && !churchLogoUrl.includes('plate-sync-jspivey.replit.app')) {
+                // Extract just the filename from the current URL 
+                const urlParts = churchLogoUrl.split('/');
+                const filename = urlParts[urlParts.length - 1];
+                
+                // Rebuild using the production domain that works in emails
+                churchLogoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
+                console.log(`Converted church logo URL for email: ${churchLogoUrl}`);
+              }
               
               console.log(`Using church name: ${churchName} for emails`);
               
@@ -1747,6 +1761,17 @@ export class DatabaseStorage implements IStorage {
                 const secondaryAttestorName = secondaryAttestor 
                   ? `${secondaryAttestor.firstName || ''} ${secondaryAttestor.lastName || ''}`.trim() || secondaryAttestor.email 
                   : '';
+                  
+                // Ensure the church logo URL uses the correct production domain for emails
+                if (churchLogoUrl && !churchLogoUrl.includes('plate-sync-jspivey.replit.app')) {
+                  // Extract just the filename from the current URL 
+                  const urlParts = churchLogoUrl.split('/');
+                  const filename = urlParts[urlParts.length - 1];
+                  
+                  // Rebuild using the production domain that works in emails
+                  churchLogoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
+                  console.log(`Converted church logo URL for count report email: ${churchLogoUrl}`);
+                }
                 
                 const counterNames = secondaryAttestorName 
                   ? `${primaryAttestorName} and ${secondaryAttestorName}` 

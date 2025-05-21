@@ -81,10 +81,9 @@ import { fixLogoUrls } from './migrations/fix-logo-urls';
     
     // Run database migrations after server starts
     try {
-      // Get the base URL 
-      const hostname = process.env.REPL_SLUG ? `${process.env.REPL_SLUG}.replit.app` : 'localhost:5000';
-      const protocol = process.env.REPL_SLUG ? 'https' : 'http';
-      const baseUrl = `${protocol}://${hostname}`;
+      // Get the base URL - use the exact production domain for emails to work properly
+      // The domain must be plate-sync-jspivey.replit.app for logos to appear in emails
+      const baseUrl = 'https://plate-sync-jspivey.replit.app';
       
       console.log(`🚀 Running database migrations with base URL: ${baseUrl}`);
       
