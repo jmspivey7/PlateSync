@@ -391,15 +391,54 @@ please contact the church office directly.
       // HTML version with template that properly handles church logo
       let html = '';
       
-      // Fix the church logo URL to ensure it uses the production domain for emails
+      // Fix the church logo URL to ensure it uses S3 for better email compatibility
       let logoUrl = params.churchLogoUrl || '';
-      if (logoUrl && !logoUrl.includes('plate-sync-jspivey.replit.app')) {
-        // Extract just the filename from the URL
-        const urlParts = logoUrl.split('/');
-        const filename = urlParts[urlParts.length - 1];
-        // Create a proper production URL that works in emails
-        logoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
-        console.log(`Fixed church logo URL for donation receipt: ${logoUrl}`);
+      
+      if (logoUrl) {
+        // Case 1: Already an S3 URL, use as is
+        if (logoUrl.includes('s3.amazonaws.com')) {
+          console.log(`📧 [DonationReceipt] Using S3 logo URL: ${logoUrl}`);
+        }
+        // Case 2: URL with domain (like plate-sync-jspivey.replit.app), extract and convert to S3
+        else if (logoUrl.includes('plate-sync-jspivey.replit.app') || logoUrl.includes('platesync.replit.app')) {
+          // Extract just the filename from the URL
+          let filename = '';
+          if (logoUrl.includes('/logos/')) {
+            filename = logoUrl.split('/logos/')[1];
+          } else {
+            const urlParts = logoUrl.split('/');
+            filename = urlParts[urlParts.length - 1];
+          }
+          
+          if (filename && process.env.AWS_S3_BUCKET) {
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 [DonationReceipt] Converted domain URL to S3: ${logoUrl}`);
+          }
+        }
+        // Case 3: Relative URL (starts with /), convert to S3 URL
+        else if (logoUrl.startsWith('/')) {
+          const filename = logoUrl.split('/').pop();
+          if (filename && process.env.AWS_S3_BUCKET) {
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 [DonationReceipt] Converted relative URL to S3: ${logoUrl}`);
+          } else {
+            // Fallback to app domain if S3 info not available
+            logoUrl = `https://plate-sync-jspivey.replit.app${logoUrl}`;
+            console.log(`📧 [DonationReceipt] Converted to absolute URL: ${logoUrl}`);
+          }
+        }
+        // Case 4: Any other format, try to extract filename and create S3 URL
+        else {
+          const urlParts = logoUrl.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          if (filename && process.env.AWS_S3_BUCKET) {
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 [DonationReceipt] Created S3 URL from filename: ${logoUrl}`);
+          }
+        }
+        
+        console.log(`📧 [DonationReceipt] Final logo URL: ${logoUrl}`);
       }
       
       if (params.churchLogoUrl) {
