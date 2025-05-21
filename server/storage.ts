@@ -1747,20 +1747,10 @@ export class DatabaseStorage implements IStorage {
                   ? format(new Date(batchWithDonations.createdAt), 'MMMM d, yyyy')
                   : format(new Date(), 'MMMM d, yyyy');
                 
-                // Get counter names
-                const primaryAttestor = await this.getUser(batchWithDonations.attestorId);
-                const secondaryAttestor = batchWithDonations.secondaryAttestorId 
-                  ? await this.getUser(batchWithDonations.secondaryAttestorId) 
-                  : null;
-                
-                // Format counter names
-                const primaryAttestorName = primaryAttestor 
-                  ? `${primaryAttestor.firstName || ''} ${primaryAttestor.lastName || ''}`.trim() || primaryAttestor.email 
-                  : 'Unknown';
-                
-                const secondaryAttestorName = secondaryAttestor 
-                  ? `${secondaryAttestor.firstName || ''} ${secondaryAttestor.lastName || ''}`.trim() || secondaryAttestor.email 
-                  : '';
+                // Use the attester names directly from the batch record (more reliable)
+                // This ensures we use the correct names that are stored with the batch
+                const primaryAttestorName = batchWithDonations.primaryAttestorName || 'Unknown';
+                const secondaryAttestorName = batchWithDonations.secondaryAttestorName || '';
                   
                 // CRITICAL: For emails, ONLY use S3 URLs - REMOVE this conversion code
                 // The previous code was FORCING Replit domain URLs which don't work in emails

@@ -1390,15 +1390,15 @@ PlateSync Reporting System
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${formattedTotalAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #000000;">$${formattedTotalAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Cash:</td>
-          <td style="padding: 8px 0;">$${formattedCashAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #000000;">$${formattedCashAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Checks:</td>
-          <td style="padding: 8px 0;">$${formattedCheckAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #000000;">$${formattedCheckAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
