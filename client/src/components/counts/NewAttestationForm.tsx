@@ -233,8 +233,6 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      // Removed toast notification as requested
-      
       // Invalidate all relevant queries to ensure fresh data on dashboard
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       queryClient.invalidateQueries({ queryKey: ['/api/batches/latest-finalized'] });
@@ -242,12 +240,10 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       // Set step to complete to update the UI
       setStep('complete');
       
-      // Force navigation to the dedicated summary page with a flag to indicate this is a fresh finalization
-      window.location.href = `/batch-summary/${batchId}?finalized=true`;
+      // Use direct navigation without reloading the page
+      setLocation(`/batch-summary/${batchId}?finalized=true`);
       
-      if (onComplete) {
-        onComplete();
-      }
+      // No need to call onComplete since we're directly navigating
     },
     onError: (error) => {
       // Check for database connection issues
