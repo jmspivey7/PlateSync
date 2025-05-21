@@ -183,9 +183,14 @@ const BatchSummaryPage = () => {
     return statusColors[status as keyof typeof statusColors] || "bg-muted text-muted-foreground";
   };
 
-  // Changed to hard refresh navigation
+  // Optimized navigation using hybrid approach
   const handleBackToDashboard = () => {
-    window.location.href = "/dashboard";
+    // First invalidate the queries to ensure fresh data
+    queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/batches/latest-finalized'] });
+    
+    // Then use client-side navigation for better performance
+    setLocation("/dashboard");
   };
   
   // Show delete confirmation dialog when the three-dot menu delete option is clicked
