@@ -1408,11 +1408,11 @@ PlateSync Reporting System
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Cash:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #22c55e;">$${formattedCashAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold;">$${formattedCashAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Checks:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #22c55e;">$${formattedCheckAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold;">$${formattedCheckAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
