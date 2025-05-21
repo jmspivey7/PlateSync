@@ -1002,21 +1002,45 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
-      // Fix the church logo URL to ensure it uses the production domain
+      // Fix the church logo URL to ensure it uses the production domain or S3
       let logoUrl = params.churchLogoUrl || '';
       
-      // Convert relative URLs to absolute URLs for emails
-      if (logoUrl && logoUrl.startsWith('/')) {
-        const baseUrl = 'https://plate-sync-jspivey.replit.app';
-        logoUrl = `${baseUrl}${logoUrl}`;
-        console.log(`📧 Converted relative logo URL to absolute for count report: ${logoUrl}`);
-      } else if (logoUrl && !logoUrl.includes('plate-sync-jspivey.replit.app')) {
-        // Handle older URL formats by extracting the filename
-        const urlParts = logoUrl.split('/');
-        const filename = urlParts[urlParts.length - 1];
-        // Create a new URL with the production domain
-        logoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
-        console.log(`Fixed logo URL for email: ${logoUrl}`);
+      // For email templates, prioritize S3 URLs that are more reliable
+      if (logoUrl) {
+        // Case 1: Already an S3 URL, use as is
+        if (logoUrl.includes('s3.amazonaws.com')) {
+          console.log(`📧 Using S3 logo URL for count report: ${logoUrl}`);
+        }
+        // Case 2: Relative URL, convert to S3 URL if possible
+        else if (logoUrl.startsWith('/')) {
+          // For email templates, we should use the S3 bucket if possible
+          const filename = logoUrl.split('/').pop();
+          if (filename && process.env.AWS_S3_BUCKET) {
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 Converted to S3 URL for count report: ${logoUrl}`);
+          } else {
+            // Fallback to the app domain if S3 info not available
+            const baseUrl = 'https://plate-sync-jspivey.replit.app';
+            logoUrl = `${baseUrl}${logoUrl}`;
+            console.log(`📧 Converted relative logo URL to absolute for count report: ${logoUrl}`);
+          }
+        } 
+        // Case 3: Absolute URL but not S3 and not on our domain
+        else if (!logoUrl.includes('plate-sync-jspivey.replit.app')) {
+          // Extract the filename and create S3 URL
+          const urlParts = logoUrl.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          if (filename && process.env.AWS_S3_BUCKET) {
+            // First try S3
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/${filename}`;
+            console.log(`📧 Converted to S3 URL for count report: ${logoUrl}`);
+          } else {
+            // Fall back to our domain
+            logoUrl = `https://plate-sync-jspivey.replit.app/logos/${filename}`;
+            console.log(`📧 Fixed logo URL for email: ${logoUrl}`);
+          }
+        }
       }
       
       // Replace template variables
