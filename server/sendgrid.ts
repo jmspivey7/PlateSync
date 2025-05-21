@@ -325,12 +325,12 @@ export async function sendDonationNotification(params: DonationNotificationParam
       replacements['{{churchLogoUrl}}'] = logoUrl;
       console.log(`📧 [Donation-${notificationId}] FINAL LOGO URL: ${logoUrl}`);
       
-      // If we're using the default logo, modify the template to emphasize church name
-      if (logoUrl.includes('platesync-logo.png')) {
-        // Hide the logo if using default
-        html = html.replace('<img src="{{churchLogoUrl}}"', '<img src="{{churchLogoUrl}}" style="display:none;"');
+      // CRITICAL: Handle empty logo URL or ensure we show church name appropriately
+      if (!logoUrl || logoUrl === '') {
+        // Remove the image tag completely if no logo URL
+        html = html.replace(/<img src="{{churchLogoUrl}}".*?>/g, '');
         
-        // Add the church name prominently
+        // Add the church name prominently since we have no logo
         html = html.replace('<p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>', 
           `<h1 style="margin: 0; font-size: 28px; color: #2D3748;">${params.churchName}</h1>
            <p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>`);
@@ -1261,13 +1261,43 @@ PlateSync Reporting System
       // HTML version with template that properly handles church logo
       let html = '';
       
-      if (params.churchLogoUrl) {
+      // CRITICAL: Get S3 URL directly from database for final count report email
+      let s3LogoUrl = '';
+      
+      // Try to get church logo S3 URL from database (the ONLY reliable source)
+      if (params.churchId) {
+        try {
+          console.log(`📊 [FinalCountReport] Getting S3 logo URL directly from database for church: ${params.churchId}`);
+          
+          // Import required modules
+          const { db } = await import('./db');
+          const { churches } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          // Get church record to access correct S3 URL
+          const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
+          
+          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+            // ONLY use S3 URL from database
+            s3LogoUrl = church.logoUrl;
+            console.log(`📊 [FinalCountReport] SUCCESS: Using S3 URL from database: ${s3LogoUrl}`);
+          } else {
+            console.log(`📊 [FinalCountReport] WARNING: No valid S3 URL in database`);
+          }
+        } catch (error) {
+          console.error(`📊 [FinalCountReport] ERROR: Failed to get logo from database:`, error);
+        }
+      }
+      
+      // Check if we have a valid S3 URL (ignore any non-S3 URLs completely)
+      if (s3LogoUrl && s3LogoUrl.includes('s3.amazonaws.com')) {
+        console.log(`📊 [FinalCountReport] Using S3 logo URL in email: ${s3LogoUrl}`);
         // Version with church logo - matching Donation Receipt clean style
         html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Church Logo (clean white style) -->
   <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
+    <img src="${s3LogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
     <h2 style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Final Count Report</h2>
   </div>
         `;
