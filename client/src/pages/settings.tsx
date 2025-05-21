@@ -928,13 +928,17 @@ const Settings = () => {
                     {user?.churchLogoUrl ? (
                       <div className="mb-6 flex flex-col items-center">
                         <img 
-                          src={`${user.churchLogoUrl}?t=${Date.now()}`} 
+                          src={user.churchLogoUrl.startsWith('/') 
+                            ? user.churchLogoUrl
+                            : `/${user.churchLogoUrl.split('/').slice(3).join('/')}`}
                           alt={`${user.churchName || 'Church'} logo`} 
                           className="max-width-[380px] max-h-[80px] object-contain"
                           style={{ maxWidth: "380px", height: "auto" }}
                           onError={(e) => {
-                            console.error("Error loading logo in settings:", e);
-                            console.log("Failed logo URL:", user.churchLogoUrl);
+                            // If the first attempt fails, try without modifying the URL
+                            if (e.currentTarget.src !== user.churchLogoUrl) {
+                              e.currentTarget.src = user.churchLogoUrl;
+                            }
                           }}
                         />
                       </div>

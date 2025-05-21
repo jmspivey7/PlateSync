@@ -53,9 +53,17 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             <div className="flex items-center">
               <div className="h-24 w-auto overflow-hidden">
                 <img 
-                  src="/logos/church-logo-1747841573548-217531304.png" 
-                  alt="Church logo" 
+                  src={user.churchLogoUrl.startsWith('/') 
+                    ? user.churchLogoUrl
+                    : `/${user.churchLogoUrl.split('/').slice(3).join('/')}`} 
+                  alt={`${user.churchName || 'Church'} logo`} 
                   className="h-full w-auto max-h-24 object-contain"
+                  onError={(e) => {
+                    // If the first attempt fails, try without modifying the URL
+                    if (e.currentTarget.src !== user.churchLogoUrl) {
+                      e.currentTarget.src = user.churchLogoUrl;
+                    }
+                  }}
                 />
               </div>
             </div>
