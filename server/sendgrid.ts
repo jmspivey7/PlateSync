@@ -1211,21 +1211,25 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       const formattedCashAmount = formatCurrency(params.cashAmount);
       const formattedCheckAmount = formatCurrency(params.checkAmount);
       
+      // Fix issue with the primary attestor name, using a safe default if undefined
+      const safelyFormattedPrimaryAttestor = params.primaryAttestor || "Unknown";
+      const safelyFormattedSecondaryAttestor = params.secondaryAttestor || "";
+      
       // Log important values for debugging
       console.log(`📧 [CountReport] Sending email with these values:`);
-      console.log(`📧 [CountReport] Primary Attestor: "${params.primaryAttestor}"`);
-      console.log(`📧 [CountReport] Secondary Attestor: "${params.secondaryAttestor}"`);
+      console.log(`📧 [CountReport] Primary Attestor: "${safelyFormattedPrimaryAttestor}"`);
+      console.log(`📧 [CountReport] Secondary Attestor: "${safelyFormattedSecondaryAttestor}"`);
       console.log(`📧 [CountReport] Cash Amount: $${formattedCashAmount}`);
       console.log(`📧 [CountReport] Check Amount: $${formattedCheckAmount}`);
       console.log(`📧 [CountReport] Total Amount: $${formattedTotalAmount}`);
       
       // Create attestation information string if available
       let attestationInfo = '';
-      if (params.primaryAttestor) {
-        attestationInfo = `Primary Attestor: ${params.primaryAttestor}`;
+      if (safelyFormattedPrimaryAttestor) {
+        attestationInfo = `Primary Attestor: ${safelyFormattedPrimaryAttestor}`;
         
-        if (params.secondaryAttestor) {
-          attestationInfo += `\nSecondary Attestor: ${params.secondaryAttestor}`;
+        if (safelyFormattedSecondaryAttestor) {
+          attestationInfo += `\nSecondary Attestor: ${safelyFormattedSecondaryAttestor}`;
         }
         
         if (params.attestationTime) {
@@ -1244,6 +1248,8 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
         '{{cashAmount}}': formattedCashAmount,
         '{{checkAmount}}': formattedCheckAmount,
         '{{donationCount}}': params.donationCount.toString(),
+        '{{primaryAttestor}}': safelyFormattedPrimaryAttestor,
+        '{{secondaryAttestor}}': safelyFormattedSecondaryAttestor,
         '{{attestationInfo}}': attestationInfo || 'No attestation information available',
       };
       
@@ -1422,7 +1428,7 @@ PlateSync Reporting System
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
           <td style="padding: 8px 0; width: 40%; color: #718096;">Primary Attestor:</td>
-          <td style="padding: 8px 0;">${params.primaryAttestor}</td>
+          <td style="padding: 8px 0;">${params.primaryAttestor || 'Unknown'}</td>
         </tr>
         ${params.secondaryAttestor ? `
         <tr>
