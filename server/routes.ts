@@ -1592,9 +1592,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update email template (PATCH method)
+  // Update email template (PATCH method) - Fixed version with body parser
   app.patch('/api/email-templates/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
+      console.log('PATCH request received for template ID:', req.params.id);
+      
       const userId = req.user.id;
       const churchId = req.user.churchId || userId;
       const templateId = parseInt(req.params.id);
@@ -1603,42 +1605,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid template ID' });
       }
       
-      // For PATCH, we need to handle HTML content properly
-      // Instead of using JSON.parse/stringify, use raw text processing
-      let rawBody = '';
-      req.on('data', (chunk) => {
-        rawBody += chunk.toString();
-      });
+      // Express should already have parsed the body, but let's check it
+      console.log('Request body type:', typeof req.body);
+      console.log('Request body keys:', Object.keys(req.body));
       
-      req.on('end', async () => {
-        try {
-          // Parse the raw body, handling HTML content properly
-          const data = JSON.parse(rawBody);
-          const { subject, bodyHtml, bodyText } = data;
-          
-          if (!subject || !bodyHtml || !bodyText) {
-            return res.status(400).json({ message: 'Missing required fields' });
-          }
-          
-          const updatedTemplate = await storage.updateEmailTemplate(templateId, {
-            subject,
-            bodyHtml,
-            bodyText
-          }, churchId);
-          
-          if (!updatedTemplate) {
-            return res.status(404).json({ message: 'Email template not found' });
-          }
-          
-          res.json(updatedTemplate);
-        } catch (parseError) {
-          console.error('Error parsing template data:', parseError);
-          res.status(400).json({ message: 'Invalid template data format' });
-        }
-      });
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({ message: 'Invalid request body' });
+      }
+      
+      const { subject, bodyHtml, bodyText } = req.body;
+      
+      if (!subject) {
+        console.log('Subject is missing');
+        return res.status(400).json({ message: 'Subject is required' });
+      }
+      
+      if (!bodyHtml) {
+        console.log('HTML body is missing');
+        return res.status(400).json({ message: 'HTML body is required' });
+      }
+      
+      if (!bodyText) {
+        console.log('Text body is missing');
+        return res.status(400).json({ message: 'Text body is required' });
+      }
+      
+      console.log('Updating template with ID:', templateId);
+      console.log('Subject:', subject.substring(0, 30) + '...');
+      console.log('HTML body length:', bodyHtml.length);
+      console.log('Text body length:', bodyText.length);
+      
+      const updatedTemplate = await storage.updateEmailTemplate(templateId, {
+        subject,
+        bodyHtml,
+        bodyText
+      }, churchId);
+      
+      if (!updatedTemplate) {
+        console.log('Template not found for ID:', templateId, 'Church ID:', churchId);
+        return res.status(404).json({ message: 'Email template not found' });
+      }
+      
+      console.log('Template updated successfully');
+      return res.status(200).json(updatedTemplate);
     } catch (error) {
       console.error('Error updating email template:', error);
-      res.status(500).json({ message: 'Failed to update email template' });
+      return res.status(500).json({ message: 'Failed to update email template', error: error.message });
     }
   });
   
