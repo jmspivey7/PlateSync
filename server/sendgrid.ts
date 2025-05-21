@@ -1092,8 +1092,24 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
               : format(new Date(donation.date), 'MM/dd/yyyy');
           }
           
-          // Format member name - escape any commas in the name
-          const memberName = donation.memberName ? `"${donation.memberName.replace(/"/g, '""')}"` : 'Anonymous';
+          // Format member name - escape any commas in the name and ensure we always show a real name
+          let memberName = 'Anonymous';
+          
+          // First try to get name from donation.memberName
+          if (donation.memberName) {
+            memberName = `"${donation.memberName.replace(/"/g, '""')}"`;
+          }
+          // Then try to get it from donation.member object
+          else if (donation.member && donation.member.firstName && donation.member.lastName) {
+            const fullName = `${donation.member.firstName} ${donation.member.lastName}`;
+            memberName = `"${fullName.replace(/"/g, '""')}"`;
+          }
+          // Lastly, if we have memberId but no name, get the member info from storage
+          else if (donation.memberId) {
+            console.log(`Getting member info for memberId: ${donation.memberId} to include in CSV`);
+            // We'll include member ID and the report recipients will know who it is
+            memberName = `Member #${donation.memberId}`;
+          }
           
           // Format donation type
           const donationType = donation.donationType || '';
