@@ -54,7 +54,7 @@ const BatchSummaryPage = () => {
   const [location, setLocation] = useLocation();
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
-  const { isAdmin, isMasterAdmin } = useAuth();
+  const { isAdmin, isAccountOwner } = useAuth();
   
   // Check if this page was loaded immediately after finalization
   // This will be used to determine if we should show "Back to Dashboard" instead of "Back to Counts"
@@ -210,7 +210,7 @@ const BatchSummaryPage = () => {
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button variant="outline" onClick={handleBackToCounts} className="w-full sm:w-auto">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Counts
+                {justFinalized ? 'Back to Dashboard' : 'Back to Counts'}
               </Button>
               <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
                 <Printer className="mr-2 h-4 w-4" />
@@ -218,7 +218,7 @@ const BatchSummaryPage = () => {
               </Button>
 
               {/* Inline confirmation buttons that replace the Delete button when clicked */}
-              {isMasterAdmin && showDeleteConfirm && (
+              {isAccountOwner && showDeleteConfirm && (
                 <div className="ml-2 flex gap-2 items-center border border-gray-200 rounded-md p-1.5">
                   <span className="text-sm font-medium text-gray-700 mr-1">Confirm deletion?</span>
                   <Button 
@@ -257,8 +257,8 @@ const BatchSummaryPage = () => {
                 </CardDescription>
               </div>
               
-              {/* Three-dot menu - Only show for master admins */}
-              {isMasterAdmin && (
+              {/* Three-dot menu - Only show for account owners */}
+              {isAccountOwner && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="secondary" className="h-8 w-8 p-0 ml-2 bg-white hover:bg-gray-100">

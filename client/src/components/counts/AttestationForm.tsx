@@ -249,8 +249,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       // Set step to complete
       setStep('complete');
       
-      // Force navigation to the dedicated summary page
-      window.location.href = `/batch-summary/${batchId}`;
+      // Force navigation to the dedicated summary page with a flag to indicate this is a fresh finalization
+      window.location.href = `/batch-summary/${batchId}?finalized=true`;
       
       // Only call onComplete if we don't navigate (as a backup)
       if (onComplete) {
