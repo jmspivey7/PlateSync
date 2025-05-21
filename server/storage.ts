@@ -1726,14 +1726,16 @@ export class DatabaseStorage implements IStorage {
               if (recipients && recipients.length > 0) {
                 console.log(`Sending count report to ${recipients.length} recipients...`);
                 
-                // Get service option name
-                let serviceName = "Regular Service";
+                // Get service option name - MORE RELIABLE VERSION
+                // Start with batch name as the default value to avoid "Regular Service"
+                let serviceName = batchWithDonations.name || "Service";
                 
                 // If the batch has a service field with an ID number, use that to lookup the service option
                 if (batchWithDonations.serviceOptionId) {
                   const serviceOption = await this.getServiceOption(batchWithDonations.serviceOptionId, churchId);
                   if (serviceOption) {
                     serviceName = serviceOption.name;
+                    console.log(`Using service option name from serviceOptionId: ${serviceName}`);
                   }
                 } 
                 // Otherwise, if the batch has a service field, try to look up by value
@@ -1745,6 +1747,7 @@ export class DatabaseStorage implements IStorage {
                       const serviceOption = await this.getServiceOption(serviceId, churchId);
                       if (serviceOption) {
                         serviceName = serviceOption.name;
+                        console.log(`Using service option name from service ID: ${serviceName}`);
                       }
                     } else {
                       // If not a number, try to find a service option with this value
@@ -1752,6 +1755,7 @@ export class DatabaseStorage implements IStorage {
                       const matchingOption = options.find(opt => opt.value === batchWithDonations.service);
                       if (matchingOption) {
                         serviceName = matchingOption.name;
+                        console.log(`Using service option name from matched option: ${serviceName}`);
                       } else {
                         // If no match, but the service has a readable name format (e.g., "morning-service"), format it
                         if (batchWithDonations.service.includes('-')) {
@@ -1760,16 +1764,26 @@ export class DatabaseStorage implements IStorage {
                             part.charAt(0).toUpperCase() + part.slice(1)
                           );
                           serviceName = formattedParts.join(' ');
+                          console.log(`Using formatted service name: ${serviceName}`);
                         } else {
-                          // Last fallback - use the service value directly if it looks like a service name
+                          // Use the service value directly if it looks like a service name
                           serviceName = batchWithDonations.service;
+                          console.log(`Using service value directly: ${serviceName}`);
                         }
                       }
                     }
                   } catch (error) {
                     console.error(`Error getting service name from batch.service: ${error}`);
-                    // If all else fails, keep the default "Regular Service"
+                    // Fall back to batch name instead of hardcoded "Regular Service"
+                    console.log(`Falling back to batch name: ${batchWithDonations.name}`);
                   }
+                }
+                
+                // Final verification - NEVER use hardcoded "Regular Service"
+                if (serviceName === "Regular Service") {
+                  // Fallback to batch name which should be more accurate
+                  serviceName = batchWithDonations.name || "Service";
+                  console.log(`Replaced "Regular Service" with batch name: ${serviceName}`);
                 }
                 
                 // Calculate totals
