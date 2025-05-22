@@ -328,6 +328,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Add report recipient endpoint
+  app.post('/api/report-recipients', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      const { firstName, lastName, email } = req.body;
+      
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ message: 'First name, last name, and email are required' });
+      }
+      
+      console.log(`Creating report recipient for church ID: ${churchId}`);
+      
+      const newRecipient = await storage.createReportRecipient({
+        firstName,
+        lastName,
+        email,
+        churchId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      console.log(`Created report recipient with ID: ${newRecipient.id}`);
+      res.status(201).json(newRecipient);
+    } catch (error) {
+      console.error('Error creating report recipient:', error);
+      res.status(500).json({ message: 'Failed to create report recipient' });
+    }
+  });
+  
+  // Update report recipient endpoint
+  app.patch('/api/report-recipients/:id', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      const recipientId = parseInt(req.params.id);
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: 'Invalid recipient ID' });
+      }
+      
+      const { firstName, lastName, email } = req.body;
+      
+      console.log(`Updating report recipient ${recipientId} for church ID: ${churchId}`);
+      
+      const updatedRecipient = await storage.updateReportRecipient(recipientId, {
+        firstName,
+        lastName,
+        email
+      }, churchId);
+      
+      if (!updatedRecipient) {
+        return res.status(404).json({ message: 'Report recipient not found' });
+      }
+      
+      console.log(`Updated report recipient with ID: ${updatedRecipient.id}`);
+      res.json(updatedRecipient);
+    } catch (error) {
+      console.error('Error updating report recipient:', error);
+      res.status(500).json({ message: 'Failed to update report recipient' });
+    }
+  });
+  
+  // Delete report recipient endpoint
+  app.delete('/api/report-recipients/:id', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      const recipientId = parseInt(req.params.id);
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      if (isNaN(recipientId)) {
+        return res.status(400).json({ message: 'Invalid recipient ID' });
+      }
+      
+      console.log(`Deleting report recipient ${recipientId} for church ID: ${churchId}`);
+      
+      await storage.deleteReportRecipient(recipientId, churchId);
+      
+      console.log(`Deleted report recipient with ID: ${recipientId}`);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting report recipient:', error);
+      res.status(500).json({ message: 'Failed to delete report recipient' });
+    }
+  });
+  
   // Planning Center connection status endpoint
   app.get('/api/planning-center/status', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
