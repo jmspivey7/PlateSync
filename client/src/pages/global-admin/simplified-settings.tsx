@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +24,18 @@ interface EmailTemplate {
 export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("email-templates");
+
+  // Check URL parameters for tab switching
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab === 'integrations') {
+      setActiveTab('integrations');
+    } else {
+      setActiveTab('email-templates');
+    }
+  }, []);
 
   // For now, use hardcoded template IDs that we know work
   const templates = [
