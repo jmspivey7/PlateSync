@@ -26,6 +26,8 @@ const CsvImporter = () => {
   const [progress, setProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   const [showPlanningCenterWarning, setShowPlanningCenterWarning] = useState(false);
+  const [showImportModeDialog, setShowImportModeDialog] = useState(false);
+  const [existingMemberCount, setExistingMemberCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -117,12 +119,33 @@ const CsvImporter = () => {
     }
   };
 
-  const processFile = (selectedFile: File) => {
+  const processFile = async (selectedFile: File) => {
     // Check if Planning Center is connected before processing CSV
     if (isPlanningCenterConnected) {
       setShowPlanningCenterWarning(true);
       return;
     }
+
+    // Check if there are existing members
+    try {
+      const membersResponse = await apiRequest('GET', '/api/members');
+      const membersData = await membersResponse.json();
+      
+      if (membersData.length > 0) {
+        setExistingMemberCount(membersData.length);
+        setSelectedFile(selectedFile);
+        setShowImportModeDialog(true);
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking existing members:', error);
+    }
+
+    // If no existing members, proceed directly with import
+    performImport(selectedFile, false);
+  };
+
+  const performImport = (selectedFile: File, replaceAll: boolean) => {
     if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
       setImportStatus('error');
       setStatusMessage('Please upload a valid CSV file');
