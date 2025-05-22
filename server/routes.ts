@@ -2185,39 +2185,12 @@ The PlateSync Team
       // System templates use the special SYSTEM_TEMPLATES churchId
       const systemChurchId = 'SYSTEM_TEMPLATES';
       
-      // Make sure templates exist
-      await initializeSystemTemplates();
-      
-      // Get templates after initialization
+      // Get the correct system templates (IDs 30 and 31)
       let templates = await storage.getEmailTemplates(systemChurchId);
       console.log(`Found ${templates.length} system templates`);
       
-      // If we still don't have templates, use fallback defaults for display
-      if (templates.length === 0) {
-        console.log('Using fallback template data for display');
-        templates = [
-          {
-            id: 1,
-            templateType: 'WELCOME_EMAIL',
-            subject: 'Welcome to PlateSync',
-            bodyHtml: 'Welcome to PlateSync!',
-            bodyText: 'Welcome to PlateSync!',
-            churchId: systemChurchId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 2,
-            templateType: 'PASSWORD_RESET',
-            subject: 'Password Reset Request',
-            bodyHtml: 'Reset your password',
-            bodyText: 'Reset your password',
-            churchId: systemChurchId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ];
-      }
+      // Filter to only get the correct templates (should be IDs 30 and 31)
+      templates = templates.filter(t => t.churchId === 'SYSTEM_TEMPLATES');
       
       res.json(templates);
     } catch (error) {
