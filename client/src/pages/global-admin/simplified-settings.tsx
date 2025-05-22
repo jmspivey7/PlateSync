@@ -12,6 +12,7 @@ import { ArrowLeft, Settings as SettingsIcon, Mail, Network, Edit } from "lucide
 import sendgridLogo from "../../assets/integrations/sendgrid-logo.png";
 import stripeLogo from "../../assets/integrations/stripe-logo.png";
 import planningCenterLogo from "../../assets/integrations/planning-center-logo.png";
+const awsS3Logo = "/images/aws-s3-logo.png";
 
 interface EmailTemplate {
   id: number;
@@ -156,6 +157,23 @@ export default function GlobalAdminSettings() {
                         className="h-10"
                       />
                       <p className="text-base text-gray-700">Configure email delivery settings</p>
+                    </div>
+                    <Button variant="ghost" size="icon">
+                      <Edit className="h-5 w-5" />
+                    </Button>
+                  </div>
+                  
+                  <div 
+                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    onClick={() => setLocation("/global-admin/integrations/aws-s3")}
+                  >
+                    <div className="flex items-center gap-6">
+                      <img 
+                        src={awsS3Logo} 
+                        alt="AWS S3" 
+                        className="h-10"
+                      />
+                      <p className="text-base text-gray-700">Configure remote storage</p>
                     </div>
                     <Button variant="ghost" size="icon">
                       <Edit className="h-5 w-5" />
