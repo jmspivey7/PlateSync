@@ -5,7 +5,7 @@ import fs from 'fs';
 import { db } from '../db';
 import { users, churches } from '@shared/schema';
 import { eq, and, sql, not, like } from 'drizzle-orm';
-import { syncChurchInfoToMembers } from '../storage';
+// Removed syncChurchInfoToMembers import to prevent conflicts
 import { isAuthenticated } from '../middleware/auth';
 import * as s3Service from '../services/s3';
 
@@ -126,7 +126,7 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
       }
       
       // Use the S3 URL for consistency across all functionality
-      console.log(`Setting S3 logo URL: ${s3LogoUrl} for church ${churchId}`);
+      console.log(`✅ NEW LOGO UPLOAD: Setting S3 logo URL: ${s3LogoUrl} for church ${churchId}`);
       
       // Update the user's record first (always update the user who uploaded)
       await db
