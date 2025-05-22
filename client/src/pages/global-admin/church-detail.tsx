@@ -645,7 +645,7 @@ export default function ChurchDetail() {
                 <div className="p-4 bg-red-50 border border-red-200 rounded-md">
                   <p className="text-red-700">Failed to load users. Please try again.</p>
                 </div>
-              ) : users && users.length > 0 ? (
+              ) : users && users.filter(user => !user.email || !user.email.startsWith('INACTIVE_')).length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -658,7 +658,7 @@ export default function ChurchDetail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user) => (
+                      {users.filter(user => !user.email || !user.email.startsWith('INACTIVE_')).map((user) => (
                         <TableRow key={user.id}>
                           <TableCell>
                             <div className="flex flex-col">
@@ -671,17 +671,25 @@ export default function ChurchDetail() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
-                              {user.isAccountOwner && (
-                                <Shield className="h-4 w-4 mr-1 text-indigo-600" />
+                              {(user.isAccountOwner || user.role === "ACCOUNT_OWNER") && (
+                                <Shield className="h-4 w-4 mr-1 text-purple-600" />
                               )}
-                              <span>{user.role === "ADMIN" ? "Administrator" : "Usher"}</span>
+                              <span>
+                                {user.role === "ACCOUNT_OWNER" || user.isAccountOwner ? "Account Owner" :
+                                 user.role === "ADMIN" ? "Administrator" : 
+                                 user.role === "STANDARD_USER" ? "Standard User" : 
+                                 "Standard User"}
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell>{formatDate(user.createdAt)}</TableCell>
-                          <TableCell>{user.lastLoginAt ? formatDate(user.lastLoginAt, true) : "Never"}</TableCell>
+                          <TableCell>Recent activity</TableCell>
                           <TableCell>
-                            <Badge variant={user.isActive ? "outline" : "destructive"} className={user.isActive ? "bg-green-500 text-white hover:bg-green-500" : ""}>
-                              {user.isActive ? "Active" : "Inactive"}
+                            <Badge 
+                              variant="outline" 
+                              className="bg-green-100 text-green-800 hover:bg-green-100"
+                            >
+                              Verified
                             </Badge>
                           </TableCell>
                         </TableRow>
