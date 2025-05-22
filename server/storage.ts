@@ -2726,6 +2726,7 @@ The PlateSync Team
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <img src="https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png" alt="PlateSync Logo" style="max-width: 200px; height: auto; margin-bottom: 15px;" />
     <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
     <p style="margin: 10px 0 0; font-size: 18px;">Welcome to {{churchName}}</p>
   </div>
@@ -2787,6 +2788,7 @@ The PlateSync Team
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <img src="https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png" alt="PlateSync Logo" style="max-width: 200px; height: auto; margin-bottom: 15px;" />
     <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
     <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
   </div>

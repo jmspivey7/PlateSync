@@ -2249,6 +2249,54 @@ The PlateSync Team
     }
   });
   
+  // Fix S3 logo URLs in email templates
+  app.post('/api/email-templates/fix-logo-urls', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      const correctS3Url = 'https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png';
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      
+      // Get all system templates
+      const templates = await storage.getEmailTemplates(systemChurchId);
+      let updatedCount = 0;
+      
+      for (const template of templates) {
+        if (template.bodyHtml) {
+          let updatedHtml = template.bodyHtml;
+          let hasChanges = false;
+          
+          // Replace old Replit domain URLs with S3 URL
+          const oldPatterns = [
+            'https://plate-sync-jspivey.replit.app/logo-with-text.png',
+            '/logo-with-text.png',
+            '/assets/logo-with-text.png',
+            '/logos/logo-with-text.png'
+          ];
+          
+          for (const pattern of oldPatterns) {
+            if (updatedHtml.includes(pattern)) {
+              updatedHtml = updatedHtml.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), correctS3Url);
+              hasChanges = true;
+            }
+          }
+          
+          if (hasChanges) {
+            await storage.updateEmailTemplate(template.id, systemChurchId, {
+              subject: template.subject,
+              bodyHtml: updatedHtml,
+              bodyText: template.bodyText
+            });
+            updatedCount++;
+          }
+        }
+      }
+      
+      res.json({ message: `Updated ${updatedCount} email templates with correct S3 logo URLs` });
+    } catch (error) {
+      console.error('Error fixing logo URLs:', error);
+      res.status(500).json({ message: 'Failed to fix logo URLs' });
+    }
+  });
+
   // Update system email template
   app.put('/api/email-templates/system/:id', requireGlobalAdmin, async (req: any, res) => {
     try {
