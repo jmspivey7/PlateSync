@@ -213,7 +213,8 @@ const CsvImporter = () => {
   };
 
   return (
-    <Card className="shadow-none border-0 pt-0">
+    <>
+      <Card className="shadow-none border-0 pt-0">
       <CardContent className="pt-0 pb-3">
         <div 
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer mb-4 
@@ -374,6 +375,7 @@ const CsvImporter = () => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
