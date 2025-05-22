@@ -296,12 +296,12 @@ const PlanningCenterIntegration = () => {
         className: "bg-[#69ad4c] text-white",
       });
       
-      // Force a delay before allowing reconnection to ensure token revocation completes
-      setIsConnecting(true);
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
-        setIsConnecting(false);
-      }, 2000);
+      // Immediately invalidate and refetch the status
+      queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
+      queryClient.refetchQueries({ queryKey: ['/api/planning-center/status'] });
+      
+      // Also invalidate CSV import stats in case they need updating
+      queryClient.invalidateQueries({ queryKey: ['/api/csv-import/stats'] });
     },
     onError: (error) => {
       toast({
