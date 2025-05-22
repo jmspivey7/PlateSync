@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,35 +13,28 @@ import sendgridLogo from "../../assets/integrations/sendgrid-logo.png";
 import stripeLogo from "../../assets/integrations/stripe-logo.png";
 import planningCenterLogo from "../../assets/integrations/planning-center-logo.png";
 
-type TemplateType = "WELCOME_EMAIL" | "PASSWORD_RESET";
-
 interface EmailTemplate {
   id: number;
-  type: TemplateType;
+  templateType: string;
   subject: string;
   lastUpdated?: string;
 }
 
-// Pre-defined system email templates
-const systemTemplates: EmailTemplate[] = [
-  {
-    id: 1,
-    type: "WELCOME_EMAIL",
-    subject: "Welcome to PlateSync",
-    lastUpdated: "May 10, 2025, 2:30 PM"
-  },
-  {
-    id: 2,
-    type: "PASSWORD_RESET",
-    subject: "Reset Your PlateSync Password",
-    lastUpdated: "May 12, 2025, 11:15 AM"
-  }
-];
-
 export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const [templates] = useState<EmailTemplate[]>(systemTemplates);
+
+  // Fetch system email templates from API
+  const { data: templates = [], isLoading: templatesLoading } = useQuery({
+    queryKey: ['/api/email-templates/system'],
+    queryFn: async () => {
+      const response = await fetch('/api/email-templates/system');
+      if (!response.ok) {
+        throw new Error('Failed to fetch system email templates');
+      }
+      return await response.json();
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,30 +74,39 @@ export default function GlobalAdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {templates.map((template) => (
-                    <div 
-                      key={template.id} 
-                      className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
-                      onClick={() => setLocation(`/global-admin/edit-email-template/${template.id}`)}
-                    >
-                      <div>
-                        <h3 className="font-medium">
-                          {template.type === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
-                        </h3>
-                        <p className="text-sm text-gray-500">{template.subject}</p>
-                        {template.lastUpdated && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Last edited: {template.lastUpdated}
-                          </p>
-                        )}
+                {templatesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#69ad4c]"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {templates.map((template) => (
+                      <div 
+                        key={template.id} 
+                        className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
+                        onClick={() => {
+                          console.log('Clicking template:', template.id, template.templateType);
+                          setLocation(`/global-admin/edit-email-template/${template.id}`);
+                        }}
+                      >
+                        <div>
+                          <h3 className="font-medium">
+                            {template.templateType === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
+                          </h3>
+                          <p className="text-sm text-gray-500">{template.subject}</p>
+                          {template.lastUpdated && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Last edited: {template.lastUpdated}
+                            </p>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon">
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
