@@ -4,11 +4,19 @@ import { Button } from '@/components/ui/button';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, Users, Clock } from 'lucide-react';
+import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, Users, Clock, Link2Off } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'wouter';
 import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const CsvImporter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -17,6 +25,7 @@ const CsvImporter = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
+  const [showPlanningCenterWarning, setShowPlanningCenterWarning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -26,6 +35,14 @@ const CsvImporter = () => {
     queryKey: ['/api/csv-import/stats'],
     refetchOnWindowFocus: false,
   });
+
+  // Fetch Planning Center connection status
+  const { data: planningCenterStatus } = useQuery({
+    queryKey: ['/api/planning-center/status'],
+    refetchOnWindowFocus: false,
+  });
+
+  const isPlanningCenterConnected = planningCenterStatus?.connected;
 
   const importMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -101,6 +118,11 @@ const CsvImporter = () => {
   };
 
   const processFile = (selectedFile: File) => {
+    // Check if Planning Center is connected before processing CSV
+    if (isPlanningCenterConnected) {
+      setShowPlanningCenterWarning(true);
+      return;
+    }
     if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
       setImportStatus('error');
       setStatusMessage('Please upload a valid CSV file');
@@ -154,6 +176,12 @@ const CsvImporter = () => {
   const handleImport = async () => {
     if (!file) return;
     
+    // Double-check Planning Center connection before import
+    if (isPlanningCenterConnected) {
+      setShowPlanningCenterWarning(true);
+      return;
+    }
+    
     setImportStatus('loading');
     setProgress(10);
     
@@ -176,6 +204,11 @@ const CsvImporter = () => {
   };
 
   const handleClick = () => {
+    // Check if Planning Center is connected before allowing file selection
+    if (isPlanningCenterConnected) {
+      setShowPlanningCenterWarning(true);
+      return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -293,6 +326,54 @@ const CsvImporter = () => {
         </div>
       </CardContent>
     </Card>
+
+    {/* Planning Center Warning Dialog */}
+    <Dialog open={showPlanningCenterWarning} onOpenChange={setShowPlanningCenterWarning}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-orange-500" />
+            Planning Center Already Connected
+          </DialogTitle>
+          <DialogDescription>
+            Your church is currently connected to Planning Center for member management. 
+            You cannot use both Planning Center and CSV file imports simultaneously.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-2">
+              <Link2Off className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-orange-800">
+                <p className="font-medium mb-1">To proceed with CSV import:</p>
+                <p>You must first disconnect from Planning Center in the Planning Center Integration section below.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowPlanningCenterWarning(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setShowPlanningCenterWarning(false);
+              // Optionally scroll to Planning Center section
+              const planningCenterSection = document.querySelector('[data-planning-center-section]');
+              if (planningCenterSection) {
+                planningCenterSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            Go to Planning Center Settings
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
