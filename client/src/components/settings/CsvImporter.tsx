@@ -29,6 +29,7 @@ const CsvImporter = () => {
   const [showImportModeDialog, setShowImportModeDialog] = useState(false);
   const [existingMemberCount, setExistingMemberCount] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [replaceAllMode, setReplaceAllMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -50,6 +51,9 @@ const CsvImporter = () => {
   const importMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       try {
+        // Add the replaceAll parameter to the form data
+        formData.append('replaceAll', replaceAllMode.toString());
+        
         const response = await fetch('/api/members/import', {
           method: 'POST',
           body: formData,
@@ -163,6 +167,9 @@ const CsvImporter = () => {
     setImportStatus('idle');
     setStatusMessage(null);
     setProgress(0);
+    
+    // Store the replaceAll setting to use in the actual import
+    setReplaceAllMode(replaceAll);
     
     // Preview the CSV data
     const reader = new FileReader();
