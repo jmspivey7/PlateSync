@@ -217,7 +217,7 @@ export default function GlobalAdminUsers() {
                                 <span className="sr-only">Actions</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="bg-white border shadow-lg">
                               <DropdownMenuItem onClick={() => {/* View action */}}>
                                 View Details
                               </DropdownMenuItem>
