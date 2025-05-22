@@ -128,7 +128,10 @@ const CsvImporter = () => {
 
     // Check if there are existing members
     try {
-      const membersResponse = await apiRequest('GET', '/api/members');
+      const membersResponse = await fetch('/api/members', {
+        method: 'GET',
+        credentials: 'include'
+      });
       const membersData = await membersResponse.json();
       
       if (membersData.length > 0) {
