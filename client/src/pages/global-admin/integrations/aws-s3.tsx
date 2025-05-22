@@ -45,11 +45,18 @@ export default function AwsS3Integration() {
     },
   });
 
-  // Load current AWS S3 settings
+  // Load current AWS S3 settings using the same pattern as other integrations
   const { data: settings, isLoading } = useQuery<AwsS3Settings>({
     queryKey: ['/api/global-admin/integrations/aws-s3'],
     queryFn: async () => {
-      const response = await fetch('/api/global-admin/integrations/aws-s3');
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) throw new Error('Authentication required');
+      
+      const response = await fetch('/api/global-admin/integrations/aws-s3', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch AWS S3 settings');
       return response.json();
     },
