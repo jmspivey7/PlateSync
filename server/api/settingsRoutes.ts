@@ -125,15 +125,14 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
         s3LogoUrl = absoluteLogoUrl;
       }
       
-      // We'll use the local URL for the web app since it's more reliable
-      // Later, we can use the S3 URL for emails
-      console.log(`Setting logo URL: ${logoUrl} for church ${churchId}`);
+      // Use the S3 URL for consistency across all functionality
+      console.log(`Setting S3 logo URL: ${s3LogoUrl} for church ${churchId}`);
       
       // Update the user's record first (always update the user who uploaded)
       await db
         .update(users)
         .set({ 
-          churchLogoUrl: logoUrl,
+          churchLogoUrl: s3LogoUrl,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId));
@@ -145,23 +144,30 @@ router.post('/logo', isAuthenticated, (req: any, res) => {
         .where(eq(churches.id, churchId));
       
       if (church) {
-        // Update the church record with the logo URL
+        // Update the church record with the S3 logo URL
         await db
           .update(churches)
           .set({
-            logoUrl: logoUrl,
+            logoUrl: s3LogoUrl,
             updatedAt: new Date()
           })
           .where(eq(churches.id, churchId));
         
-        console.log(`Updated church record with logo URL: ${logoUrl}`);
+        console.log(`Updated church record with S3 logo URL: ${s3LogoUrl}`);
       } else {
         console.warn(`Church record not found for ID: ${churchId}`);
       }
         
-      // Use our synchronization function to update all users in this church
-      const syncResult = await syncChurchInfoToMembers(db, churchId);
-      console.log(`Church logo synchronization result: ${syncResult ? 'Success' : 'Failed'}`);
+      // Update all users in this church with the new S3 logo URL
+      await db
+        .update(users)
+        .set({ 
+          churchLogoUrl: s3LogoUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(users.churchId, churchId));
+      
+      console.log(`Updated all church members with new S3 logo URL: ${s3LogoUrl}`);
       
       // Return success with both URLs
       res.status(200).json({
