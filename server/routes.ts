@@ -2180,7 +2180,7 @@ The PlateSync Team
   }
 
   // Get system-wide email templates
-  app.get('/api/email-templates/system', requireGlobalAdmin, async (req: any, res) => {
+  app.get('/api/email-templates/system', async (req: any, res) => {
     try {
       // System templates use the special SYSTEM_TEMPLATES churchId
       const systemChurchId = 'SYSTEM_TEMPLATES';
