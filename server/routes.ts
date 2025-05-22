@@ -2276,14 +2276,14 @@ The PlateSync Team
       // System templates use the special SYSTEM_TEMPLATES churchId
       const systemChurchId = 'SYSTEM_TEMPLATES';
       
-      // Get the correct system templates (IDs 30 and 31)
+      // Get the correct system templates (IDs 30, 31, and 32)
       let templates = await storage.getEmailTemplates(systemChurchId);
       console.log(`Found ${templates.length} system templates before filtering`);
       
-      // Filter to only get the correct templates (should be IDs 30 and 31)
+      // Filter to only get the correct templates (should be IDs 30, 31, and 32)
       templates = templates.filter(t => 
         t.churchId === 'SYSTEM_TEMPLATES' && 
-        (t.id === 30 || t.id === 31)
+        (t.id === 30 || t.id === 31 || t.id === 32)
       );
       
       console.log(`Returning ${templates.length} filtered system templates:`, templates.map(t => `ID ${t.id}: ${t.templateType}`));
