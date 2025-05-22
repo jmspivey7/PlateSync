@@ -1,143 +1,124 @@
-import React, { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Edit } from "lucide-react";
-import { format } from "date-fns";
-import { useLocation } from "wouter";
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { Mail, Edit, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-// Define the Global Admin template types
-type GlobalAdminTemplateType = 'WELCOME_EMAIL' | 'PASSWORD_RESET' | 'EMAIL_VERIFICATION';
-
-interface EmailTemplate {
+interface SystemTemplate {
   id: number;
   templateType: string;
   subject: string;
-  bodyText: string;
   bodyHtml: string;
-  churchId: string | null;
-  createdAt: string;
-  updatedAt: string;
+  bodyText: string;
 }
 
 export default function SystemEmailTemplates() {
-  const [initialized, setInitialized] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [templates, setTemplates] = useState<SystemTemplate[]>([]);
 
-  // Fetch all templates
-  const { data: templates = [], isLoading, isError } = useQuery({
-    queryKey: ['/api/email-templates/system', 'v4'], // Updated version to force cache refresh
-    queryFn: async () => {
-      const response = await fetch('/api/email-templates/system?_=' + Date.now()); // Cache buster
-      if (!response.ok) {
-        throw new Error('Failed to fetch system email templates');
-      }
-      const data = await response.json();
-      console.log('🔍 Frontend received templates:', data.map((t: any) => `ID ${t.id}: ${t.templateType}`));
-      console.log('🔍 Full template data:', data);
-      return data;
+  // Predefined template data with correct IDs and order
+  const templateInfo = [
+    {
+      id: 30,
+      templateType: 'WELCOME_EMAIL',
+      title: 'Welcome Email',
+      description: 'Welcome to PlateSync'
     },
-    staleTime: 0, // Always refetch
-    cacheTime: 0  // Don't cache
-  });
+    {
+      id: 31,
+      templateType: 'PASSWORD_RESET', 
+      title: 'Password Reset',
+      description: 'Reset Your PlateSync Password'
+    },
+    {
+      id: 32,
+      templateType: 'EMAIL_VERIFICATION',
+      title: 'Email Verification', 
+      description: 'Verify Your PlateSync Account'
+    }
+  ];
 
-  // Initialize templates if none exist
-  const initializeTemplatesMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/email-templates/initialize-system', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+  // Load templates on component mount
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const loadTemplates = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🔍 Loading system email templates...');
       
-      if (!response.ok) {
-        throw new Error('Failed to initialize system email templates');
+      // Load all three templates directly by ID
+      const [welcomeRes, passwordRes, verificationRes] = await Promise.all([
+        fetch('/api/email-templates/system/30'),
+        fetch('/api/email-templates/system/31'),
+        fetch('/api/email-templates/system/32')
+      ]);
+
+      const loadedTemplates: SystemTemplate[] = [];
+
+      if (welcomeRes.ok) {
+        const welcomeData = await welcomeRes.json();
+        console.log('✅ Loaded Welcome Email template:', welcomeData.id);
+        loadedTemplates.push(welcomeData);
+      } else {
+        console.log('❌ Failed to load Welcome Email template');
       }
+
+      if (passwordRes.ok) {
+        const passwordData = await passwordRes.json();
+        console.log('✅ Loaded Password Reset template:', passwordData.id);
+        loadedTemplates.push(passwordData);
+      } else {
+        console.log('❌ Failed to load Password Reset template');
+      }
+
+      if (verificationRes.ok) {
+        const verificationData = await verificationRes.json();
+        console.log('✅ Loaded Email Verification template:', verificationData.id);
+        loadedTemplates.push(verificationData);
+      } else {
+        console.log('❌ Failed to load Email Verification template');
+      }
+
+      // Sort templates by ID to ensure correct order
+      loadedTemplates.sort((a, b) => a.id - b.id);
       
-      return await response.json();
-    },
-    onSuccess: () => {
+      console.log('🔍 Final loaded templates:', loadedTemplates.map(t => `ID ${t.id}: ${t.templateType}`));
+      setTemplates(loadedTemplates);
+      
+    } catch (error) {
+      console.error('❌ Error loading system email templates:', error);
       toast({
-        title: "System templates initialized",
-        description: "Default system email templates have been created successfully.",
-        variant: "default",
-        className: "bg-white"
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/email-templates/system'] });
-      setInitialized(true);
-    },
-    onError: (error) => {
-      toast({
-        title: "Initialization failed",
-        description: error instanceof Error ? error.message : "Failed to initialize templates",
+        title: "Loading failed",
+        description: "Failed to load system email templates",
         variant: "destructive",
         className: "bg-white border-red-600"
       });
-    },
-  });
-
-  // Initialize templates on component mount
-  useEffect(() => {
-    // Define system templates that we need
-    const systemTemplateTypes: GlobalAdminTemplateType[] = ['WELCOME_EMAIL', 'PASSWORD_RESET', 'EMAIL_VERIFICATION'];
-    const existingTemplateTypes = templates.map((t: EmailTemplate) => t.templateType);
-    const hasRequiredTemplates = systemTemplateTypes.every(type => 
-      existingTemplateTypes.includes(type)
-    );
-    
-    if (!hasRequiredTemplates && !isLoading && !isError && !initialized) {
-      initializeTemplatesMutation.mutate();
+    } finally {
+      setIsLoading(false);
     }
-  }, [templates.length, isLoading, isError, initialized]);
-
-  // Check if template has been customized by comparing createdAt and updatedAt
-  const isTemplateCustomized = (template: EmailTemplate): boolean => {
-    return new Date(template.updatedAt).getTime() > new Date(template.createdAt).getTime();
-  };
-
-  // Format the last edited date
-  const formatLastEdited = (template: EmailTemplate): string => {
-    const date = isTemplateCustomized(template) 
-      ? new Date(template.updatedAt) 
-      : new Date(template.createdAt);
-    return format(date, 'MMM d, yyyy h:mm a');
   };
 
   // Handle edit template
-  const handleEditTemplate = (template: EmailTemplate) => {
-    console.log('Clicking template:', template.id, template.templateType);
+  const handleEditTemplate = (template: SystemTemplate) => {
+    console.log('🔍 Clicking template:', template.id, template.templateType);
     setLocation(`/global-admin/edit-email-template/${template.id}`);
   };
 
-  // Format template type for display
-  const formatTemplateType = (type: string): string => {
-    switch(type) {
-      case 'WELCOME_EMAIL':
-        return 'Welcome Email';
-      case 'PASSWORD_RESET':
-        return 'Password Reset';
-      default:
-        return type.replace(/_/g, ' ').toLowerCase()
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-    }
+  // Get template info by ID
+  const getTemplateInfo = (id: number) => {
+    return templateInfo.find(info => info.id === id) || {
+      title: 'Unknown Template',
+      description: 'Unknown template type'
+    };
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="text-center p-4 text-red-500">
-        Error loading templates. Please try again.
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
       </div>
     );
   }
@@ -152,78 +133,41 @@ export default function SystemEmailTemplates() {
         
         <div className="border border-gray-400 rounded-md overflow-hidden mt-4">
           <div className="divide-y">
-            {Array.isArray(templates) && templates.length > 0 ? [...templates]
-              // Filter to only show global admin templates (WELCOME_EMAIL, PASSWORD_RESET, and EMAIL_VERIFICATION)
-              .filter(template => 
-                (template.templateType === 'WELCOME_EMAIL' || 
-                template.templateType === 'PASSWORD_RESET' ||
-                template.templateType === 'EMAIL_VERIFICATION') as boolean
-              )
-              .sort((a, b) => {
-                // Define the order of Global Admin template types
-                const templateOrder: Record<string, number> = {
-                  'WELCOME_EMAIL': 1,
-                  'PASSWORD_RESET': 2,
-                  'EMAIL_VERIFICATION': 3
-                };
-                
-                // Sort based on the defined order (with fallback if template type not found)
-                return (templateOrder[a.templateType] || 99) - (templateOrder[b.templateType] || 99);
-              })
-              .map((template) => (
-              <div 
-                key={template.id}
-                onClick={() => handleEditTemplate(template)}
-                className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150 group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                      <Mail className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-sm font-medium text-gray-900">
-                        {formatTemplateType(template.templateType)}
-                      </h3>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {isTemplateCustomized(template) ? 
-                          <span className="text-green-600">Customized</span> : 
-                          <span className="text-gray-500">Default</span>
-                        }
-                        <span className="mx-1">•</span>
-                        <span>Last edited: {formatLastEdited(template)}</span>
+            {templates.length > 0 ? templates.map((template) => {
+              const info = getTemplateInfo(template.id);
+              return (
+                <div 
+                  key={template.id}
+                  onClick={() => handleEditTemplate(template)}
+                  className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary flex items-center justify-center">
+                        <Mail className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {info.title}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {info.description}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    <Edit className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-center text-gray-400 group-hover:text-gray-600">
+                      <Edit className="h-4 w-4" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )) : (
+              );
+            }) : (
               <div className="p-6 text-center text-gray-500">
-                No system email templates found. Click initialize to create default templates.
+                No system email templates found.
               </div>
             )}
           </div>
         </div>
-        
-        {templates.length === 0 && (
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => initializeTemplatesMutation.mutate()}
-              disabled={initializeTemplatesMutation.isPending}
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
-            >
-              {initializeTemplatesMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                  Initializing...
-                </>
-              ) : 'Initialize Templates'}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
