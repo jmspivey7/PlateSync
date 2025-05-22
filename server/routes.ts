@@ -328,6 +328,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Test endpoint without auth middleware
+  app.post('/api/test-recipients', async (req: any, res) => {
+    console.log('Test endpoint reached!', req.body);
+    res.json({ success: true, message: 'Test endpoint working!' });
+  });
+
   // Add report recipient endpoint
   app.post('/api/report-recipients', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
