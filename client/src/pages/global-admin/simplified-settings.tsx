@@ -73,7 +73,7 @@ export default function GlobalAdminSettings() {
           </Button>
         </div>
         
-        <Tabs defaultValue="email-templates" className="mb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <TabsList className="mb-4">
             <TabsTrigger value="email-templates" className="text-sm">Email Templates</TabsTrigger>
             <TabsTrigger value="integrations" className="text-sm">Integrations</TabsTrigger>
