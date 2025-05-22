@@ -1279,7 +1279,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Import valid members using the dedicated import helper that properly handles duplicates
       const { importMembers } = await import('./import-members');
       const importResult = await importMembers(validMembers, churchId);
-      const importedCount = typeof importResult === 'number' ? importResult : (importResult?.importedCount || importResult?.added || 0);
+      const importedCount = importResult.importedCount;
       console.log(`Successfully imported ${importedCount} members`);
       
       // Update last sync date 
