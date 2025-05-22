@@ -24,21 +24,21 @@ export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Fetch system email templates from API (using test endpoint temporarily)
-  const { data: testData, isLoading: templatesLoading } = useQuery({
-    queryKey: ['/api/test-templates'],
-    queryFn: async () => {
-      const response = await fetch('/api/test-templates');
-      if (!response.ok) {
-        throw new Error('Failed to fetch system email templates');
-      }
-      const data = await response.json();
-      console.log('Test data received:', data);
-      return data;
+  // For now, use hardcoded template IDs that we know work
+  const templates = [
+    {
+      id: 30,
+      templateType: "WELCOME_EMAIL",
+      subject: "Welcome to PlateSync",
+    },
+    {
+      id: 31,
+      templateType: "PASSWORD_RESET", 
+      subject: "Reset Your PlateSync Password",
     }
-  });
-
-  const templates = testData?.templates || [];
+  ];
+  
+  const templatesLoading = false;
 
   return (
     <div className="min-h-screen bg-gray-50">
