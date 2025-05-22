@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, TestTube, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import GlobalAdminHeader from '@/components/global-admin/GlobalAdminHeader';
 import { apiRequest } from '@/lib/queryClient';
-import awsS3Logo from '/images/aws-s3-logo.png';
+const awsS3Logo = "/images/aws-s3-logo.png";
 
 const awsS3Schema = z.object({
   accessKeyId: z.string().min(1, 'Access Key ID is required'),
