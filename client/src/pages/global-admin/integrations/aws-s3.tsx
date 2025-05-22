@@ -12,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, TestTube, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import GlobalAdminHeader from '@/components/global-admin/GlobalAdminHeader';
 import { apiRequest } from '@/lib/queryClient';
-const awsS3Logo = "/images/aws-s3-logo.png";
 
 const awsS3Schema = z.object({
   accessKeyId: z.string().min(1, 'Access Key ID is required'),
@@ -192,12 +191,9 @@ export default function AwsS3Integration() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Settings
               </Button>
-              <div className="flex items-center gap-4">
-                <img src={awsS3Logo} alt="AWS S3" className="h-8" />
-                <h1 className="text-3xl font-bold leading-tight text-gray-900">
-                  AWS S3 Integration
-                </h1>
-              </div>
+              <h1 className="text-3xl font-bold leading-tight text-gray-900">
+                AWS S3 Integration
+              </h1>
             </div>
           </div>
         </header>
