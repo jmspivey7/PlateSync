@@ -8,6 +8,7 @@ import connectPg from 'connect-pg-simple';
 import globalAdminProfileRoutes from './api/globalAdminProfileRoutes';
 import profileRoutes from './api/profileRoutes';
 import settingsRoutes from './api/settingsRoutes';
+import { requireGlobalAdmin } from './middleware/globalAdminMiddleware';
 
 // Extend express-session with our user type
 declare global {
@@ -749,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupPlanningCenterRoutes(app);
 
   // AWS S3 Integration Routes
-  app.get('/api/global-admin/integrations/aws-s3', globalAdminMiddleware, async (req, res) => {
+  app.get('/api/global-admin/integrations/aws-s3', requireGlobalAdmin, async (req, res) => {
     try {
       res.json({
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
@@ -763,7 +764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/global-admin/integrations/aws-s3', globalAdminMiddleware, async (req, res) => {
+  app.put('/api/global-admin/integrations/aws-s3', requireGlobalAdmin, async (req, res) => {
     try {
       res.json({ 
         message: "AWS S3 settings are managed through Replit secrets",
@@ -775,7 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/global-admin/integrations/aws-s3/test', globalAdminMiddleware, async (req, res) => {
+  app.post('/api/global-admin/integrations/aws-s3/test', requireGlobalAdmin, async (req, res) => {
     try {
       const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
       const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;

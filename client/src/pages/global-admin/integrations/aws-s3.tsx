@@ -23,6 +23,13 @@ const awsS3Schema = z.object({
 
 type AwsS3FormData = z.infer<typeof awsS3Schema>;
 
+interface AwsS3Settings {
+  accessKeyId: string;
+  secretAccessKey: string;
+  region: string;
+  bucketName: string;
+}
+
 export default function AwsS3Integration() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
@@ -39,8 +46,13 @@ export default function AwsS3Integration() {
   });
 
   // Load current AWS S3 settings
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading } = useQuery<AwsS3Settings>({
     queryKey: ['/api/global-admin/integrations/aws-s3'],
+    queryFn: async () => {
+      const response = await fetch('/api/global-admin/integrations/aws-s3');
+      if (!response.ok) throw new Error('Failed to fetch AWS S3 settings');
+      return response.json();
+    },
     retry: false,
   });
 
