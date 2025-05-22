@@ -559,7 +559,7 @@ export default function ChurchDetail() {
                     </span>
                   </div>
                   <div className="flex flex-col px-6 py-4 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Last Updated</span>
+                    <span className="text-sm text-muted-foreground">Last Finalized Count</span>
                     <span className="flex items-center">
                       <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
                       {isLoadingChurch ? (
@@ -626,7 +626,7 @@ export default function ChurchDetail() {
                 </div>
                 <div className="flex items-center">
                   <div className="px-3 py-1 bg-gray-100 rounded-md text-sm font-medium flex items-center">
-                    <span>{isLoadingUsers ? "..." : users?.length || 0} Users</span>
+                    <span>{isLoadingUsers ? "..." : users?.filter(user => !user.email || !user.email.startsWith('INACTIVE_')).length || 0} Users</span>
                   </div>
                 </div>
               </div>

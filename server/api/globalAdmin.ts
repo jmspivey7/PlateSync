@@ -132,10 +132,10 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
     // For each church, get additional statistics
     const churchesWithStats = await Promise.all(
       churchesList.map(async (church) => {
-        // Get user count for this church (excluding GLOBAL_ADMIN users)
+        // Get user count for this church (excluding GLOBAL_ADMIN users and INACTIVE users)
         // Use direct SQL to ensure consistent counting with the detail page
         const userCountResult = await db.execute(
-          `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${church.id}' AND role != 'GLOBAL_ADMIN'`
+          `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${church.id}' AND role != 'GLOBAL_ADMIN' AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')`
         );
         const userCount = parseInt(userCountResult.rows[0]?.userCount || '0');
         
