@@ -102,9 +102,15 @@ export default function AwsS3Integration() {
 
   const testMutation = useMutation({
     mutationFn: async (data: AwsS3FormData) => {
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) throw new Error('Authentication required');
+      
       const response = await fetch('/api/global-admin/integrations/aws-s3/test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(data),
       });
       return response.json();
