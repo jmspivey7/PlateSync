@@ -43,6 +43,7 @@ import SystemEmailEditor from "@/pages/global-admin/system-email-editor";
 
 // Global Admin Integration Pages
 import SendGridIntegration from "@/pages/global-admin/integrations/sendgrid";
+import AwsS3Integration from "@/pages/global-admin/integrations/aws-s3";
 import PlanningCenterIntegration from "@/pages/global-admin/integrations/planning-center";
 import StripeIntegration from "@/pages/global-admin/integrations/stripe";
 import StripeTestPage from "@/pages/global-admin/integrations/stripe-test";
@@ -189,6 +190,7 @@ function Router() {
       
       {/* Global Admin Integration Routes */}
       <Route path="/global-admin/integrations/sendgrid" component={SendGridIntegration} />
+      <Route path="/global-admin/integrations/aws-s3" component={AwsS3Integration} />
       <Route path="/global-admin/integrations/planning-center" component={PlanningCenterIntegration} />
       <Route path="/global-admin/integrations/stripe" component={StripeIntegration} />
       <Route path="/global-admin/integrations/stripe-test" component={StripeTestPage} />
