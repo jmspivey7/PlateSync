@@ -491,13 +491,14 @@ router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
     }
     
     // Use a raw SQL query with string interpolation for consistency
-    // Exclude GLOBAL_ADMIN users from the church users list
+    // Exclude GLOBAL_ADMIN users and INACTIVE users from the church users list
     const result = await db.execute(
       `SELECT id, email, first_name AS "firstName", last_name AS "lastName", 
               role, is_verified AS "isVerified", is_account_owner AS "isAccountOwner", 
               created_at AS "createdAt", updated_at AS "updatedAt"
        FROM users 
-       WHERE church_id = '${id}' AND role != 'GLOBAL_ADMIN'
+       WHERE church_id = '${id}' AND role != 'GLOBAL_ADMIN' 
+       AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')
        ORDER BY created_at DESC`
     );
     

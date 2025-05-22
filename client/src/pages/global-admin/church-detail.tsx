@@ -554,7 +554,7 @@ export default function ChurchDetail() {
                       {isLoadingChurch ? (
                         <Skeleton className="h-6 w-36" />
                       ) : (
-                        formatDate(church?.createdAt || "", false)
+                        formatDate(church?.createdOn || church?.createdAt || "", false)
                       )}
                     </span>
                   </div>
@@ -565,7 +565,7 @@ export default function ChurchDetail() {
                       {isLoadingChurch ? (
                         <Skeleton className="h-6 w-36" />
                       ) : (
-                        formatDate(church?.updatedAt || "", true)
+                        formatDate(church?.lastUpdated || church?.updatedAt || "", true)
                       )}
                     </span>
                   </div>
@@ -683,7 +683,7 @@ export default function ChurchDetail() {
                             </div>
                           </TableCell>
                           <TableCell>{formatDate(user.createdAt)}</TableCell>
-                          <TableCell>Recent activity</TableCell>
+                          <TableCell>{formatDate(user.updatedAt)}</TableCell>
                           <TableCell>
                             <Badge 
                               variant="outline" 
