@@ -24,17 +24,21 @@ export default function GlobalAdminSettings() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Fetch system email templates from API
-  const { data: templates = [], isLoading: templatesLoading } = useQuery({
-    queryKey: ['/api/email-templates/system'],
+  // Fetch system email templates from API (using test endpoint temporarily)
+  const { data: testData, isLoading: templatesLoading } = useQuery({
+    queryKey: ['/api/test-templates'],
     queryFn: async () => {
-      const response = await fetch('/api/email-templates/system');
+      const response = await fetch('/api/test-templates');
       if (!response.ok) {
         throw new Error('Failed to fetch system email templates');
       }
-      return await response.json();
+      const data = await response.json();
+      console.log('Test data received:', data);
+      return data;
     }
   });
+
+  const templates = testData?.templates || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
