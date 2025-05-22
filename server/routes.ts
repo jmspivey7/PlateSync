@@ -2187,10 +2187,15 @@ The PlateSync Team
       
       // Get the correct system templates (IDs 30 and 31)
       let templates = await storage.getEmailTemplates(systemChurchId);
-      console.log(`Found ${templates.length} system templates`);
+      console.log(`Found ${templates.length} system templates before filtering`);
       
       // Filter to only get the correct templates (should be IDs 30 and 31)
-      templates = templates.filter(t => t.churchId === 'SYSTEM_TEMPLATES');
+      templates = templates.filter(t => 
+        t.churchId === 'SYSTEM_TEMPLATES' && 
+        (t.id === 30 || t.id === 31)
+      );
+      
+      console.log(`Returning ${templates.length} filtered system templates:`, templates.map(t => `ID ${t.id}: ${t.templateType}`));
       
       res.json(templates);
     } catch (error) {
