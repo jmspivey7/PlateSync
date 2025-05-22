@@ -33,7 +33,9 @@ export default function SystemEmailTemplates() {
       if (!response.ok) {
         throw new Error('Failed to fetch system email templates');
       }
-      return response.json();
+      const data = await response.json();
+      console.log('Frontend received templates:', data.map((t: any) => `ID ${t.id}: ${t.templateType}`));
+      return data;
     }
   });
 
