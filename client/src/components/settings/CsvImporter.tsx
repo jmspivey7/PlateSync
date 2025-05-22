@@ -28,6 +28,7 @@ const CsvImporter = () => {
   const [showPlanningCenterWarning, setShowPlanningCenterWarning] = useState(false);
   const [showImportModeDialog, setShowImportModeDialog] = useState(false);
   const [existingMemberCount, setExistingMemberCount] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -132,13 +133,16 @@ const CsvImporter = () => {
         method: 'GET',
         credentials: 'include'
       });
-      const membersData = await membersResponse.json();
       
-      if (membersData.length > 0) {
-        setExistingMemberCount(membersData.length);
-        setSelectedFile(selectedFile);
-        setShowImportModeDialog(true);
-        return;
+      if (membersResponse.ok) {
+        const membersData = await membersResponse.json();
+        
+        if (Array.isArray(membersData) && membersData.length > 0) {
+          setExistingMemberCount(membersData.length);
+          setSelectedFile(selectedFile);
+          setShowImportModeDialog(true);
+          return;
+        }
       }
     } catch (error) {
       console.error('Error checking existing members:', error);
