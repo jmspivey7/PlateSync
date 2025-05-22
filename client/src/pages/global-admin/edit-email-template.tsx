@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Eye } from 'lucide-react';
 import GlobalAdminHeader from '@/components/global-admin/GlobalAdminHeader';
 
 interface EmailTemplate {
@@ -133,6 +134,21 @@ export default function EditEmailTemplate() {
     return template.templateType === 'WELCOME_EMAIL' ? 'Welcome Email Template' : 'Password Reset Email Template';
   };
 
+  // Function to render preview with sample data
+  const renderPreview = (html: string) => {
+    // Replace template variables with sample data for preview
+    return html
+      .replace(/\{\{churchName\}\}/g, 'Sample Church')
+      .replace(/\{\{userName\}\}/g, 'John Doe')
+      .replace(/\{\{USER_NAME\}\}/g, 'John Doe')
+      .replace(/\{\{userEmail\}\}/g, 'john.doe@email.com')
+      .replace(/\{\{churchLogoUrl\}\}/g, 'https://repl-plates-image-repo.s3.amazonaws.com/logos/sample-church-logo.png')
+      .replace(/\{\{plateSyncLogoUrl\}\}/g, 'https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png')
+      .replace(/\{\{resetUrl\}\}/g, 'https://yourchurch.platesync.com/reset-password?token=sample-token')
+      .replace(/\{\{loginUrl\}\}/g, 'https://yourchurch.platesync.com/login')
+      .replace(/\{\{supportEmail\}\}/g, 'support@platesync.com');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -197,68 +213,114 @@ export default function EditEmailTemplate() {
                     Template ID: {template.id} | Type: {template.templateType}
                   </p>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Subject Line
-                    </label>
-                    <Input
-                      value={formData.subject}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        subject: e.target.value
-                      })}
-                      placeholder="Email subject line"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      HTML Body
-                    </label>
-                    <Textarea
-                      value={formData.bodyHtml}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        bodyHtml: e.target.value
-                      })}
-                      placeholder="HTML email content"
-                      rows={12}
-                      className="font-mono text-sm"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Available variables: {"{{churchName}}, {{userName}}, {{churchLogoUrl}}, {{plateSyncLogoUrl}}"}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Text Body (Plain Text Fallback)
-                    </label>
-                    <Textarea
-                      value={formData.bodyText}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        bodyText: e.target.value
-                      })}
-                      placeholder="Plain text email content"
-                      rows={8}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Plain text version for email clients that don't support HTML
-                    </p>
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <Button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="bg-[#69ad4c] hover:bg-[#5a9440] text-white"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {isSaving ? 'Saving...' : 'Save Template'}
-                    </Button>
-                  </div>
+                <CardContent>
+                  <Tabs defaultValue="edit" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="edit">Edit Template</TabsTrigger>
+                      <TabsTrigger value="preview">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="edit" className="space-y-6 mt-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Subject Line
+                        </label>
+                        <Input
+                          value={formData.subject}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            subject: e.target.value
+                          })}
+                          placeholder="Email subject line"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          HTML Body
+                        </label>
+                        <Textarea
+                          value={formData.bodyHtml}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            bodyHtml: e.target.value
+                          })}
+                          placeholder="HTML email content"
+                          rows={12}
+                          className="font-mono text-sm"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Available variables: {"{{churchName}}, {{userName}}, {{churchLogoUrl}}, {{plateSyncLogoUrl}}"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Text Body (Plain Text Fallback)
+                        </label>
+                        <Textarea
+                          value={formData.bodyText}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            bodyText: e.target.value
+                          })}
+                          placeholder="Plain text email content"
+                          rows={8}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Plain text version for email clients that don't support HTML
+                        </p>
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={handleSave}
+                          disabled={isSaving}
+                          className="bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          {isSaving ? 'Saving...' : 'Save Template'}
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="preview" className="mt-6">
+                      <div className="space-y-4">
+                        <div className="border rounded-lg p-4 bg-gray-50">
+                          <h3 className="font-medium text-gray-900 mb-2">Email Preview</h3>
+                          <p className="text-sm text-gray-600 mb-4">
+                            This shows how the email will look with sample data
+                          </p>
+                          
+                          <div className="bg-white border rounded-lg p-4 mb-4">
+                            <div className="border-b pb-3 mb-4">
+                              <h4 className="font-medium text-gray-700">Subject:</h4>
+                              <p className="text-gray-900">{formData.subject}</p>
+                            </div>
+                            
+                            <div className="border rounded-lg overflow-hidden">
+                              <div 
+                                className="max-h-96 overflow-y-auto"
+                                dangerouslySetInnerHTML={{ 
+                                  __html: renderPreview(formData.bodyHtml) 
+                                }}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-100 rounded-lg p-4">
+                            <h4 className="font-medium text-gray-700 mb-2">Plain Text Version:</h4>
+                            <pre className="text-sm text-gray-600 whitespace-pre-wrap">
+                              {renderPreview(formData.bodyText)}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </div>
