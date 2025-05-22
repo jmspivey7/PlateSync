@@ -108,7 +108,10 @@ export default function GlobalAdminSettings() {
                       >
                         <div>
                           <h3 className="font-medium">
-                            {template.templateType === "WELCOME_EMAIL" ? "Welcome Email" : "Password Reset"}
+                            {template.templateType === "WELCOME_EMAIL" ? "Welcome Email" : 
+                             template.templateType === "PASSWORD_RESET" ? "Password Reset" : 
+                             template.templateType === "EMAIL_VERIFICATION" ? "Email Verification" : 
+                             template.templateType}
                           </h3>
                           <p className="text-sm text-gray-500">{template.subject}</p>
                           {template.lastUpdated && (
