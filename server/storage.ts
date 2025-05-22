@@ -1241,15 +1241,83 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(members.createdAt));
   }
 
-  async deleteAllMembers(churchId: string): Promise<void> {
+  async mergeAndUpdateMembers(churchId: string, csvMembers: Array<Partial<InsertMember>>): Promise<{ updated: number; added: number }> {
     try {
-      console.log(`Deleting all members for church ${churchId}`);
-      await db
-        .delete(members)
-        .where(eq(members.churchId, churchId));
-      console.log(`Successfully deleted all members for church ${churchId}`);
+      console.log(`Starting merge and update for church ${churchId} with ${csvMembers.length} CSV records`);
+      let updatedCount = 0;
+      let addedCount = 0;
+
+      for (const csvMember of csvMembers) {
+        if (!csvMember.firstName || !csvMember.lastName) {
+          console.log('Skipping member - missing first or last name');
+          continue;
+        }
+
+        // First try to find by email if available
+        let existingMember = null;
+        if (csvMember.email) {
+          const [emailMatch] = await db
+            .select()
+            .from(members)
+            .where(and(
+              eq(members.email, csvMember.email),
+              eq(members.churchId, churchId)
+            ))
+            .limit(1);
+          existingMember = emailMatch;
+        }
+
+        // If no email match, try to find by exact name match
+        if (!existingMember) {
+          const [nameMatch] = await db
+            .select()
+            .from(members)
+            .where(and(
+              eq(members.firstName, csvMember.firstName),
+              eq(members.lastName, csvMember.lastName),
+              eq(members.churchId, churchId)
+            ))
+            .limit(1);
+          existingMember = nameMatch;
+        }
+
+        if (existingMember) {
+          // Update existing member with CSV data
+          await db
+            .update(members)
+            .set({
+              firstName: csvMember.firstName || existingMember.firstName,
+              lastName: csvMember.lastName || existingMember.lastName,
+              email: csvMember.email || existingMember.email,
+              phone: csvMember.phone || existingMember.phone,
+              notes: csvMember.notes || existingMember.notes,
+              isVisitor: csvMember.isVisitor ?? existingMember.isVisitor,
+              updatedAt: new Date()
+            })
+            .where(eq(members.id, existingMember.id));
+          
+          updatedCount++;
+          console.log(`Updated existing member: ${csvMember.firstName} ${csvMember.lastName}`);
+        } else {
+          // Add new member
+          await db
+            .insert(members)
+            .values({
+              ...csvMember,
+              churchId: churchId,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          
+          addedCount++;
+          console.log(`Added new member: ${csvMember.firstName} ${csvMember.lastName}`);
+        }
+      }
+
+      console.log(`Merge complete: ${updatedCount} updated, ${addedCount} added`);
+      return { updated: updatedCount, added: addedCount };
     } catch (error) {
-      console.error('Error deleting all members:', error);
+      console.error('Error in merge and update:', error);
       throw error;
     }
   }

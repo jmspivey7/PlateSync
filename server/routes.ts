@@ -559,28 +559,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found ${validRecords.length} valid records out of ${records.length} total records`);
       
-      // If replaceAll is true, delete all existing members first
+      let result;
       if (replaceAll) {
-        console.log(`Replacing all existing members for church ${churchId}`);
-        await storage.deleteAllMembers(churchId);
+        // Use merge and update approach to preserve donation history
+        console.log(`Merging and updating members for church ${churchId}`);
+        result = await storage.mergeAndUpdateMembers(churchId, validRecords);
+        console.log(`Merge complete: ${result.updated} updated, ${result.added} added`);
+        
+        // Record the import stats in the database
+        await storage.updateCsvImportStats(userId, churchId, result.added + result.updated);
+      } else {
+        // Import the members using the shared import function (add only new)
+        result = await importMembers(validRecords, churchId);
+        
+        // Record the import stats in the database
+        await storage.updateCsvImportStats(userId, churchId, result.importedCount);
       }
-      
-      // Import the members using the shared import function
-      const result = await importMembers(validRecords, churchId);
-      
-      // Record the import stats in the database
-      await storage.updateCsvImportStats(userId, churchId, result.importedCount);
       
       // Invalidate relevant cache
       await queryClient.invalidateQueries(['/api/csv-import/stats']);
       
       // Return success response
-      res.status(200).json({
-        success: true,
-        importedCount: result.importedCount,
-        totalRecords: validRecords.length,
-        duplicatesSkipped: result.duplicatesSkipped || 0
-      });
+      if (replaceAll) {
+        res.status(200).json({
+          success: true,
+          importedCount: result.added + result.updated,
+          totalRecords: validRecords.length,
+          updatedCount: result.updated,
+          addedCount: result.added
+        });
+      } else {
+        res.status(200).json({
+          success: true,
+          importedCount: result.importedCount,
+          totalRecords: validRecords.length,
+          duplicatesSkipped: result.duplicatesSkipped || 0
+        });
+      }
       
     } catch (error) {
       console.error('Error processing CSV import:', error);
