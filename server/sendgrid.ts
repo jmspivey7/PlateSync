@@ -845,7 +845,7 @@ The PlateSync Team
     let plateSyncLogoUrl = '';
     // CRITICAL: Always use S3 for ALL logos in emails
     if (process.env.AWS_S3_BUCKET) {
-      plateSyncLogoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+      plateSyncLogoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/logo-with-text.png`;
       console.log(`📧 Using PlateSync logo from S3: ${plateSyncLogoUrl}`);
     } else {
       // No fallback - just don't use a logo if S3 isn't available
