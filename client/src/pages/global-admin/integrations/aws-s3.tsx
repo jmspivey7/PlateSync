@@ -58,7 +58,11 @@ export default function AwsS3Integration() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: AwsS3FormData) => {
-      const response = await apiRequest('PUT', '/api/global-admin/integrations/aws-s3', data);
+      const response = await fetch('/api/global-admin/integrations/aws-s3', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -79,7 +83,11 @@ export default function AwsS3Integration() {
 
   const testMutation = useMutation({
     mutationFn: async (data: AwsS3FormData) => {
-      const response = await apiRequest('POST', '/api/global-admin/integrations/aws-s3/test', data);
+      const response = await fetch('/api/global-admin/integrations/aws-s3/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
       return response.json();
     },
     onSuccess: (result) => {

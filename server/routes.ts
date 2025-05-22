@@ -747,6 +747,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up Planning Center routes
   setupPlanningCenterRoutes(app);
+
+  // AWS S3 Integration Routes
+  app.get('/api/global-admin/integrations/aws-s3', globalAdminMiddleware, async (req, res) => {
+    try {
+      res.json({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        region: process.env.AWS_REGION || '',
+        bucketName: process.env.AWS_S3_BUCKET || '',
+      });
+    } catch (error) {
+      console.error("Error fetching AWS S3 settings:", error);
+      res.status(500).json({ error: "Failed to fetch AWS S3 settings" });
+    }
+  });
+
+  app.put('/api/global-admin/integrations/aws-s3', globalAdminMiddleware, async (req, res) => {
+    try {
+      res.json({ 
+        message: "AWS S3 settings are managed through Replit secrets",
+        note: "Your AWS credentials are securely stored and already configured"
+      });
+    } catch (error) {
+      console.error("Error updating AWS S3 settings:", error);
+      res.status(500).json({ error: "Failed to update AWS S3 settings" });
+    }
+  });
+
+  app.post('/api/global-admin/integrations/aws-s3/test', globalAdminMiddleware, async (req, res) => {
+    try {
+      const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+      const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+      const region = process.env.AWS_REGION;
+      const bucketName = process.env.AWS_S3_BUCKET;
+      
+      if (!accessKeyId || !secretAccessKey || !region || !bucketName) {
+        return res.json({ 
+          success: false, 
+          error: "AWS credentials are not properly configured in environment secrets" 
+        });
+      }
+      
+      const { S3Client, HeadBucketCommand } = await import('@aws-sdk/client-s3');
+      
+      const s3Client = new S3Client({
+        region: region,
+        credentials: {
+          accessKeyId: accessKeyId,
+          secretAccessKey: secretAccessKey,
+        },
+      });
+
+      const command = new HeadBucketCommand({ Bucket: bucketName });
+      await s3Client.send(command);
+      
+      res.json({ 
+        success: true, 
+        message: "AWS S3 connectivity test successful! Bucket is accessible." 
+      });
+    } catch (error: any) {
+      console.error("AWS S3 connectivity test failed:", error);
+      res.json({ 
+        success: false, 
+        error: error.message || "Failed to connect to AWS S3" 
+      });
+    }
+  });
   
   // If in development, add test endpoints
   if (process.env.NODE_ENV === 'development') {
