@@ -190,10 +190,10 @@ export default function AwsS3Integration() {
           <Button
             variant="outline"
             className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
-            onClick={() => setLocation("/global-admin/settings")}
+            onClick={() => setLocation("/global-admin/settings?tab=integrations")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Settings
+            Back to Integrations
           </Button>
         </div>
 
