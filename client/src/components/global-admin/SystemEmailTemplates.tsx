@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { useLocation } from "wouter";
 
 // Define the Global Admin template types
-type GlobalAdminTemplateType = 'WELCOME_EMAIL' | 'PASSWORD_RESET';
+type GlobalAdminTemplateType = 'WELCOME_EMAIL' | 'PASSWORD_RESET' | 'EMAIL_VERIFICATION';
 
 interface EmailTemplate {
   id: number;
@@ -78,7 +78,7 @@ export default function SystemEmailTemplates() {
   // Initialize templates on component mount
   useEffect(() => {
     // Define system templates that we need
-    const systemTemplateTypes: GlobalAdminTemplateType[] = ['WELCOME_EMAIL', 'PASSWORD_RESET'];
+    const systemTemplateTypes: GlobalAdminTemplateType[] = ['WELCOME_EMAIL', 'PASSWORD_RESET', 'EMAIL_VERIFICATION'];
     const existingTemplateTypes = templates.map((t: EmailTemplate) => t.templateType);
     const hasRequiredTemplates = systemTemplateTypes.every(type => 
       existingTemplateTypes.includes(type)
@@ -150,16 +150,18 @@ export default function SystemEmailTemplates() {
         <div className="border border-gray-400 rounded-md overflow-hidden mt-4">
           <div className="divide-y">
             {Array.isArray(templates) && templates.length > 0 ? [...templates]
-              // Filter to only show global admin templates (WELCOME_EMAIL and PASSWORD_RESET)
+              // Filter to only show global admin templates (WELCOME_EMAIL, PASSWORD_RESET, and EMAIL_VERIFICATION)
               .filter(template => 
                 (template.templateType === 'WELCOME_EMAIL' || 
-                template.templateType === 'PASSWORD_RESET') as boolean
+                template.templateType === 'PASSWORD_RESET' ||
+                template.templateType === 'EMAIL_VERIFICATION') as boolean
               )
               .sort((a, b) => {
                 // Define the order of Global Admin template types
                 const templateOrder: Record<string, number> = {
                   'WELCOME_EMAIL': 1,
-                  'PASSWORD_RESET': 2
+                  'PASSWORD_RESET': 2,
+                  'EMAIL_VERIFICATION': 3
                 };
                 
                 // Sort based on the defined order (with fallback if template type not found)
