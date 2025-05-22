@@ -2624,19 +2624,19 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getEmailTemplateById(id: number, churchId?: string): Promise<EmailTemplate | undefined> {
-    // Create the base query
-    let query = db
-      .select()
-      .from(emailTemplates)
-      .where(eq(emailTemplates.id, id));
+    // Create the query with proper AND conditions
+    const conditions = [eq(emailTemplates.id, id)];
     
-    // If churchId is provided, include it in the query
+    // If churchId is provided, add it as an additional condition
     if (churchId) {
-      query = query.where(eq(emailTemplates.churchId, churchId));
+      conditions.push(eq(emailTemplates.churchId, churchId));
     }
     
-    // Execute the query and return the first result
-    const [template] = await query;
+    // Execute the query with AND conditions
+    const [template] = await db
+      .select()
+      .from(emailTemplates)
+      .where(and(...conditions));
     
     if (template) {
       console.log(`Found template ID ${id}, type: ${template.templateType}, churchId: ${template.churchId}`);
