@@ -1353,7 +1353,17 @@ export function setupPlanningCenterRoutes(app: Express) {
       }
       
       // Remove tokens from our database regardless of API revocation outcome
-      await storage.deletePlanningCenterTokens(user.id, user.churchId);
+      console.log(`Attempting to delete Planning Center tokens for user: ${user.id}, church: ${user.churchId}`);
+      
+      try {
+        await storage.deletePlanningCenterTokens(user.id, user.churchId);
+        console.log('Planning Center tokens deleted successfully');
+      } catch (deleteError) {
+        console.error('Error deleting Planning Center tokens:', deleteError);
+        // Try alternative deletion with user.id as churchId
+        console.log(`Trying alternative deletion with user.id: ${user.id} as churchId`);
+        await storage.deletePlanningCenterTokens(user.id, user.id);
+      }
       
       res.json({ 
         success: true, 
