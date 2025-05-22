@@ -445,11 +445,11 @@ const CsvImporter = () => {
                   performImport(selectedFile, true);
                 }
               }}
-              className="w-full p-4 h-auto flex flex-col items-start bg-red-50 hover:bg-red-100 text-red-900 border border-red-200"
+              className="w-full p-4 h-auto flex flex-col items-start bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200"
               variant="outline"
             >
-              <div className="font-medium">Replace All Members</div>
-              <div className="text-sm text-red-700">Remove all {existingMemberCount} current members and import only the CSV data</div>
+              <div className="font-medium">Merge and Update Members</div>
+              <div className="text-sm text-orange-700">Keep all {existingMemberCount} current members and update any matches with CSV data</div>
             </Button>
           </div>
         </div>

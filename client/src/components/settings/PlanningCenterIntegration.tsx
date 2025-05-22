@@ -462,24 +462,24 @@ const PlanningCenterIntegration = () => {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              CSV Data Will Be Overwritten
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              Switching to Planning Center
             </DialogTitle>
             <DialogDescription>
               Your church currently has member data imported from a CSV file. 
-              Connecting to Planning Center will permanently overwrite this data.
+              Connecting to Planning Center will merge this data and switch to Planning Center as your primary source.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
               <div className="flex items-start gap-2">
-                <FileText className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-red-800">
-                  <p className="font-medium mb-1">This action cannot be undone:</p>
+                <FileText className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-orange-800">
+                  <p className="font-medium mb-1">What will happen:</p>
                   <ul className="list-disc list-inside space-y-1 text-xs">
-                    <li>All member data from your CSV file will be replaced</li>
-                    <li>Planning Center will become your new member data source</li>
-                    <li>Any manual edits to CSV member data will be lost</li>
+                    <li>Planning Center will become your primary member data source</li>
+                    <li>Existing CSV member data will be merged with Planning Center data</li>
+                    <li>Donation history will be preserved for all members</li>
                   </ul>
                 </div>
               </div>
