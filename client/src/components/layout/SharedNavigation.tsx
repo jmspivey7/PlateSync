@@ -144,18 +144,20 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                 <span>Profile</span>
               </Button>
               
-              {/* Subscription */}
-              <Button 
-                variant="ghost" 
-                className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
-                onClick={() => {
-                  setLocation("/subscription");
-                  setMobileMenuOpen(false);
-                }}
-              >
-                <CreditCard className="mr-4 h-5 w-5" />
-                <span>Subscription</span>
-              </Button>
+              {/* Subscription - Only for Account Owners */}
+              {isAccountOwner && (
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
+                  onClick={() => {
+                    setLocation("/subscription");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <CreditCard className="mr-4 h-5 w-5" />
+                  <span>Subscription</span>
+                </Button>
+              )}
 
               {/* Help */}
               <Button 
