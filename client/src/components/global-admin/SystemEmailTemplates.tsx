@@ -102,7 +102,7 @@ export default function SystemEmailTemplates() {
 
   // Handle edit template
   const handleEditTemplate = (template: EmailTemplate) => {
-    setLocation(`/global-admin/email-templates/edit/${template.id}`);
+    setLocation(`/global-admin/edit-email-template/${template.id}`);
   };
 
   // Format template type for display

@@ -180,6 +180,7 @@ function Router() {
       <Route path="/global-admin/users" component={GlobalAdminUsers} />
       <Route path="/global-admin/reports" component={GlobalAdminReports} />
       <Route path="/global-admin/settings" component={GlobalAdminSettings} />
+      <Route path="/global-admin/email-templates" component={GlobalAdminSettings} />
       <Route path="/global-admin/edit-email-template/:id">
         <EditEmailTemplate />
       </Route>
