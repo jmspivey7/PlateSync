@@ -597,6 +597,9 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
+      // Get PlateSync logo URL from system configuration
+      const plateSyncLogoUrl = await storage.getSystemConfig('platesync_logo_url') || 'https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png';
+      
       // Replace template variables with both formats (old and new)
       const formattedUserRole = params.role === 'STANDARD_USER' ? 'Standard User' 
                               : params.role === 'ACCOUNT_OWNER' ? 'Account Owner' 
@@ -617,6 +620,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         '{{USER_ROLE}}': params.role || 'User',
         '{{formattedUserRole}}': formattedUserRole,
         '{{userName}}': `${params.firstName} ${params.lastName}`,
+        '{{plateSyncLogoUrl}}': plateSyncLogoUrl,
       };
       
       Object.entries(replacements).forEach(([key, value]) => {
@@ -773,11 +777,15 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
       let text = globalTemplate.bodyText || '';
       let html = globalTemplate.bodyHtml || '';
       
+      // Get PlateSync logo URL from system configuration
+      const plateSyncLogoUrl = await storage.getSystemConfig('platesync_logo_url') || 'https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png';
+      
       // Replace placeholder variables
       const replacements: Record<string, string> = {
         '{{userName}}': userName,
         '{{resetUrl}}': params.resetUrl,
-        '{{recipientName}}': userName
+        '{{recipientName}}': userName,
+        '{{plateSyncLogoUrl}}': plateSyncLogoUrl,
       };
       
       // Apply all replacements
