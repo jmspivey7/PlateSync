@@ -59,22 +59,48 @@ const CountsPage = () => {
     queryKey: ["/api/batches"],
   });
 
-  // Get open batches to fetch their donations
-  const openBatches = batches?.filter(b => b.status === "OPEN" || b.status === "PENDING_FINALIZATION") || [];
-  
-  // Fetch donations for all open batches
-  const donationQueries = openBatches.map(batch => 
-    useQuery({
-      queryKey: ["/api/batches", batch.id, "donations"],
-      queryFn: async () => {
-        const response = await fetch(`/api/batches/${batch.id}/donations`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch donations for batch ${batch.id}`);
+  // Fetch donations for a specific open batch when needed
+  const [donationTotals, setDonationTotals] = useState<Record<number, number>>({});
+
+  // Effect to fetch donation totals for open batches
+  useEffect(() => {
+    if (!batches) return;
+    
+    const openBatches = batches.filter(b => b.status === "OPEN" || b.status === "PENDING_FINALIZATION");
+    
+    const fetchDonationTotals = async () => {
+      const totals: Record<number, number> = {};
+      
+      for (const batch of openBatches) {
+        try {
+          const response = await fetch(`/api/batches/${batch.id}/donations`);
+          if (response.ok) {
+            const donations = await response.json();
+            const cashTotal = donations
+              .filter((d: any) => d.donationType === "CASH")
+              .reduce((sum: number, d: any) => sum + parseFloat(d.amount.toString()), 0) || 0;
+            
+            const checkTotal = donations
+              .filter((d: any) => d.donationType === "CHECK")
+              .reduce((sum: number, d: any) => sum + parseFloat(d.amount.toString()), 0) || 0;
+            
+            totals[batch.id] = cashTotal + checkTotal;
+          }
+        } catch (error) {
+          console.error(`Error fetching donations for batch ${batch.id}:`, error);
         }
-        return response.json();
-      },
-    })
-  );
+      }
+      
+      setDonationTotals(totals);
+    };
+
+    fetchDonationTotals();
+  }, [batches]);
+
+  // Helper function to get donation total for a specific batch
+  const getDonationTotal = (batchId: number) => {
+    return donationTotals[batchId] || null;
+  };
 
   // Fetch selected batch with donations
   const { data: selectedBatch, isLoading: isLoadingSelectedBatch } = useQuery<BatchWithDonations>({
@@ -248,19 +274,9 @@ const CountsPage = () => {
 
                             // For open batches, calculate the live total from donations
                             if (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") {
-                              const donationQuery = donationQueries.find((_, index) => openBatches[index]?.id === batch.id);
-                              const donations = donationQuery?.data;
-                              
-                              if (donations && Array.isArray(donations)) {
-                                const cashTotal = donations
-                                  .filter(d => d.donationType === "CASH")
-                                  .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
-                                
-                                const checkTotal = donations
-                                  .filter(d => d.donationType === "CHECK")
-                                  .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
-                                
-                                return formatCurrency(cashTotal + checkTotal);
+                              const liveTotal = getDonationTotal(batch.id);
+                              if (liveTotal !== null) {
+                                return formatCurrency(liveTotal);
                               }
                             }
                             
