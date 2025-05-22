@@ -2395,7 +2395,7 @@ The PlateSync Team
   });
   
   // Get specific system email template by ID
-  app.get('/api/email-templates/system/:id', async (req: any, res) => {
+  app.get('/api/email-templates/system/:id', requireGlobalAdmin, async (req: any, res) => {
     try {
       const templateId = parseInt(req.params.id);
       console.log(`🔍 Looking for template ID: ${templateId}`);
