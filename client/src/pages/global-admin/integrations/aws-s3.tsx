@@ -182,7 +182,7 @@ export default function AwsS3Integration() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <div className="h-7 w-7 bg-orange-500 rounded mr-3 flex items-center justify-center">
+            <div className="h-7 w-7 bg-[#69ad4c] rounded mr-3 flex items-center justify-center">
               <span className="text-white text-xs font-bold">S3</span>
             </div>
             <h2 className="text-2xl font-bold">AWS S3 Integration</h2>
@@ -197,8 +197,7 @@ export default function AwsS3Integration() {
           </Button>
         </div>
 
-        <div className="max-w-3xl mx-auto">
-          <Card>
+        <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Configure Remote Storage</CardTitle>
                   <CardDescription>
@@ -331,7 +330,6 @@ export default function AwsS3Integration() {
                   </Form>
                 </CardContent>
               </Card>
-        </div>
       </main>
     </div>
   );
