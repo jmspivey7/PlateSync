@@ -479,67 +479,130 @@ const UserManagement = () => {
               No users found
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                
-                <TableBody>
+            <>
+              {/* Desktop table view */}
+              {!isMobile && (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow 
+                          key={user.id}
+                          className="cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)]"
+                          onClick={() => {
+                            setSelectedUserId(user.id);
+                            setUserDetailsOpen(true);
+                          }}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
+                                <AvatarFallback className="bg-[#69ad4c] text-white">
+                                  {user.firstName && user.lastName 
+                                    ? `${user.firstName[0]}${user.lastName[0]}`
+                                    : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{user.firstName} {user.lastName}</div>
+                                <div className="text-sm text-gray-500">{user.email}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {user.role === "ACCOUNT_OWNER" || 
+                             user.isAccountOwner || 
+                             user.isMasterAdmin ? (
+                              <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
+                            ) : user.role === "ADMIN" ? (
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
+                            ) : user.role === "STANDARD_USER" ? (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{user.role}</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {user.isVerified ? (
+                              <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Verified</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Pending</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {/* Mobile card view */}
+              {isMobile && (
+                <div className="space-y-3">
                   {filteredUsers.map((user) => (
-                    <TableRow 
+                    <div 
                       key={user.id}
-                      className="cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)]"
+                      className="rounded-md border p-4 cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)] active:bg-[rgba(105,173,76,0.15)]"
                       onClick={() => {
                         setSelectedUserId(user.id);
                         setUserDetailsOpen(true);
                       }}
                     >
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
-                            <AvatarFallback className="bg-[#69ad4c] text-white">
-                              {user.firstName && user.lastName 
-                                ? `${user.firstName[0]}${user.lastName[0]}`
-                                : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{user.firstName} {user.lastName}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10 flex-shrink-0">
+                          <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
+                          <AvatarFallback className="bg-[#69ad4c] text-white text-sm">
+                            {user.firstName && user.lastName 
+                              ? `${user.firstName[0]}${user.lastName[0]}`
+                              : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col gap-2">
+                            {/* User info */}
+                            <div>
+                              <div className="font-medium text-base">{user.firstName} {user.lastName}</div>
+                              <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                            </div>
+                            
+                            {/* Role and Status badges */}
+                            <div className="flex flex-wrap gap-2">
+                              {user.role === "ACCOUNT_OWNER" || 
+                               user.isAccountOwner || 
+                               user.isMasterAdmin ? (
+                                <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 text-xs">Account Owner</Badge>
+                              ) : user.role === "ADMIN" ? (
+                                <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs">Administrator</Badge>
+                              ) : user.role === "STANDARD_USER" ? (
+                                <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100 text-xs">Standard User</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100 text-xs">{user.role}</Badge>
+                              )}
+                              
+                              {user.isVerified ? (
+                                <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Verified</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs">Pending</Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {user.role === "ACCOUNT_OWNER" || 
-                         user.isAccountOwner || 
-                         user.isMasterAdmin ? (
-                          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
-                        ) : user.role === "ADMIN" ? (
-                          <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
-                        ) : user.role === "STANDARD_USER" ? (
-                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{user.role}</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {user.isVerified ? (
-                          <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Verified</Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Pending</Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
