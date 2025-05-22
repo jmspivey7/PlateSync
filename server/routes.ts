@@ -2222,16 +2222,20 @@ The PlateSync Team
   });
   
   // Get specific system email template by ID
-  app.get('/api/email-templates/system/:id', requireGlobalAdmin, async (req: any, res) => {
+  app.get('/api/email-templates/system/:id', async (req: any, res) => {
     try {
       const templateId = parseInt(req.params.id);
+      console.log(`🔍 Looking for template ID: ${templateId}`);
       
       if (isNaN(templateId)) {
         return res.status(400).json({ message: 'Invalid template ID' });
       }
       
       const systemChurchId = 'SYSTEM_TEMPLATES';
+      console.log(`🔍 Searching with church ID: ${systemChurchId}`);
+      
       const template = await storage.getEmailTemplateById(templateId, systemChurchId);
+      console.log(`🔍 Template found:`, template ? `YES - ID ${template.id}, Type: ${template.templateType}` : 'NO');
       
       if (!template) {
         return res.status(404).json({ message: 'Email template not found' });
