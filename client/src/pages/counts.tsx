@@ -59,17 +59,22 @@ const CountsPage = () => {
     queryKey: ["/api/batches"],
   });
 
-  // Fetch donation details for batch 129 (our active open count)
-  const { data: batchDonations } = useQuery({
-    queryKey: ["/api/batches", 129, "donations"],
-    queryFn: async () => {
-      const response = await fetch(`/api/batches/129/donations`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch batch donations");
-      }
-      return response.json();
-    },
-  });
+  // Get open batches to fetch their donations
+  const openBatches = batches?.filter(b => b.status === "OPEN" || b.status === "PENDING_FINALIZATION") || [];
+  
+  // Fetch donations for all open batches
+  const donationQueries = openBatches.map(batch => 
+    useQuery({
+      queryKey: ["/api/batches", batch.id, "donations"],
+      queryFn: async () => {
+        const response = await fetch(`/api/batches/${batch.id}/donations`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch donations for batch ${batch.id}`);
+        }
+        return response.json();
+      },
+    })
+  );
 
   // Fetch selected batch with donations
   const { data: selectedBatch, isLoading: isLoadingSelectedBatch } = useQuery<BatchWithDonations>({
@@ -241,20 +246,25 @@ const CountsPage = () => {
                               return formatCurrency(batch.totalAmount || 0);
                             }
 
-                            // For batch 129 (our current open count), show the calculated total
-                            if (batch.id === 129 && batchDonations) {
-                              const cashTotal = batchDonations
-                                .filter(d => d.donationType === "CASH")
-                                .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
+                            // For open batches, calculate the live total from donations
+                            if (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") {
+                              const donationQuery = donationQueries.find((_, index) => openBatches[index]?.id === batch.id);
+                              const donations = donationQuery?.data;
                               
-                              const checkTotal = batchDonations
-                                .filter(d => d.donationType === "CHECK")
-                                .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
-                              
-                              return formatCurrency(cashTotal + checkTotal);
+                              if (donations && Array.isArray(donations)) {
+                                const cashTotal = donations
+                                  .filter(d => d.donationType === "CASH")
+                                  .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
+                                
+                                const checkTotal = donations
+                                  .filter(d => d.donationType === "CHECK")
+                                  .reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0) || 0;
+                                
+                                return formatCurrency(cashTotal + checkTotal);
+                              }
                             }
                             
-                            // For any other batch or if data is loading, show the stored amount or 0
+                            // Fallback to stored amount
                             return formatCurrency(batch.totalAmount || 0);
                           })()}
                         </td>
