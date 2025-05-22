@@ -2243,6 +2243,105 @@ The PlateSync Team
           `,
           churchId: systemChurchId
         });
+
+        // Create email verification template
+        await storage.createEmailTemplate({
+          templateType: 'EMAIL_VERIFICATION',
+          subject: 'Verify Your PlateSync Account',
+          bodyText: `
+Hello {{USER_NAME}},
+
+Welcome to PlateSync! To complete your account setup and start using our donation management system, please verify your email address.
+
+{{churchName}} has added you to their PlateSync system to help manage donations and offerings.
+
+To verify your email and set up your password, please click on the link below:
+{{verificationUrl}}
+
+What happens next:
+- Click the verification link to confirm your email
+- Create a secure password for your account  
+- Access the PlateSync system to help manage donations
+
+SECURITY NOTE: This verification link will expire in 48 hours for security reasons.
+
+If you did not expect this invitation or have questions, please contact your church administrator.
+
+Sincerely,
+The PlateSync Team
+          `,
+          bodyHtml: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+  <!-- Logo Section -->
+  <div style="padding: 40px 20px; text-align: center; background-color: #ffffff;">
+    <div style="text-align: center; margin-bottom: 30px;">
+      <img src="{{plateSyncLogoUrl}}" alt="PlateSync Logo" style="max-width: 300px; height: auto; display: block; margin: 0 auto;" />
+    </div>
+    <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: bold; color: #2d3748; text-align: center;">Email Verification</h1>
+    <p style="margin: 0; font-size: 18px; color: #4a5568; text-align: center;">Complete your PlateSync account setup</p>
+  </div>
+  
+  <div style="padding: 30px;">
+    <div style="margin-bottom: 25px;">
+      <h2 style="color: #2d3748; margin: 0 0 15px 0; font-size: 20px;">Hello {{USER_NAME}},</h2>
+      <p style="color: #4a5568; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">
+        Welcome to PlateSync! To complete your account setup and start using our donation management system, please verify your email address.
+      </p>
+      
+      <p style="color: #4a5568; margin: 0 0 25px 0; font-size: 16px; line-height: 1.6;">
+        {{churchName}} has added you to their PlateSync system to help manage donations and offerings.
+      </p>
+    </div>
+    
+    <!-- Call to Action Button -->
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{verificationUrl}}" 
+         style="background-color: #69ad4c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
+        Verify Email & Set Password
+      </a>
+    </div>
+    
+    <div style="margin: 25px 0;">
+      <p style="color: #4a5568; margin: 0 0 10px 0; font-size: 14px;">
+        Or copy and paste this link into your browser:
+      </p>
+      <p style="word-break: break-all; background-color: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 13px; color: #495057; margin: 0 0 20px 0;">
+        {{verificationUrl}}
+      </p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin: 25px 0;">
+      <p style="margin: 0 0 10px 0; color: #495057; font-size: 14px; font-weight: bold;">
+        What happens next:
+      </p>
+      <ul style="margin: 0; padding-left: 20px; color: #495057; font-size: 14px; line-height: 1.5;">
+        <li>Click the verification link to confirm your email</li>
+        <li>Create a secure password for your account</li>
+        <li>Access the PlateSync system to help manage donations</li>
+      </ul>
+    </div>
+    
+    <div style="margin: 25px 0; padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+      <p style="margin: 0; color: #856404; font-size: 14px;">
+        <strong>Security Note:</strong> This verification link will expire in 48 hours for security reasons.
+      </p>
+    </div>
+    
+    <p style="color: #4a5568; margin: 20px 0 0 0; font-size: 14px; line-height: 1.6;">
+      If you did not expect this invitation or have questions, please contact your church administrator.
+    </p>
+    
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+      <p style="color: #4a5568; margin: 0; font-size: 16px;">
+        Sincerely,<br>
+        <strong>The PlateSync Team</strong>
+      </p>
+    </div>
+  </div>
+</div>
+          `,
+          churchId: systemChurchId
+        });
         
         console.log('System templates initialized successfully');
       } else {
