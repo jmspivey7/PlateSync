@@ -344,18 +344,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'First name, last name, and email are required' });
       }
       
-      console.log(`Creating report recipient for church ID: ${churchId}`);
+      console.log(`Creating report recipient for church ID: ${churchId}`, { firstName, lastName, email });
       
       const newRecipient = await storage.createReportRecipient({
         firstName,
         lastName,
         email,
-        churchId,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        churchId
       });
       
-      console.log(`Created report recipient with ID: ${newRecipient.id}`);
+      console.log(`Created report recipient with ID: ${newRecipient.id}`, newRecipient);
+      
+      // Ensure we're setting the correct content type
+      res.setHeader('Content-Type', 'application/json');
       res.status(201).json(newRecipient);
     } catch (error) {
       console.error('Error creating report recipient:', error);
