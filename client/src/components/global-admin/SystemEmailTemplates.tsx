@@ -27,14 +27,15 @@ export default function SystemEmailTemplates() {
 
   // Fetch all templates
   const { data: templates = [], isLoading, isError } = useQuery({
-    queryKey: ['/api/email-templates/system', 'v3'], // Updated version to force cache refresh
+    queryKey: ['/api/email-templates/system', 'v4'], // Updated version to force cache refresh
     queryFn: async () => {
       const response = await fetch('/api/email-templates/system?_=' + Date.now()); // Cache buster
       if (!response.ok) {
         throw new Error('Failed to fetch system email templates');
       }
       const data = await response.json();
-      console.log('Frontend received templates:', data.map((t: any) => `ID ${t.id}: ${t.templateType}`));
+      console.log('🔍 Frontend received templates:', data.map((t: any) => `ID ${t.id}: ${t.templateType}`));
+      console.log('🔍 Full template data:', data);
       return data;
     },
     staleTime: 0, // Always refetch
