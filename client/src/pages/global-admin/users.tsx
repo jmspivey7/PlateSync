@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   ArrowLeft, 
   Search, 
+  Trash2,
   UserPlus, 
   Users as UsersIcon,
   MoreHorizontal,
@@ -79,6 +80,8 @@ export default function GlobalAdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState<GlobalAdminUser[]>(sampleUsers);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [showUserDetailDialog, setShowUserDetailDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<GlobalAdminUser | null>(null);
   const [newUser, setNewUser] = useState({
     firstName: "",
     lastName: "",
@@ -115,6 +118,24 @@ export default function GlobalAdminUsers() {
     });
   };
 
+  const handleRowClick = (user: GlobalAdminUser) => {
+    setSelectedUser(user);
+    setShowUserDetailDialog(true);
+  };
+
+  const handleToggleUserStatus = (userId: string) => {
+    setUsers(users.map(user => 
+      user.id === userId 
+        ? { ...user, status: user.status === "active" ? "inactive" : "active" }
+        : user
+    ));
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    setUsers(users.filter(user => user.id !== userId));
+    setShowUserDetailDialog(false);
+  };
+
   // Filter users based on search query
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -149,7 +170,7 @@ export default function GlobalAdminUsers() {
             <div className="flex justify-between items-center">
               <CardTitle>Global Administrator Accounts</CardTitle>
               <Button 
-                className="bg-[#69ad4c] hover:bg-[#5a9740]"
+                className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
                 onClick={() => setShowAddUserDialog(true)}
               >
                 <UserPlus className="h-4 w-4 mr-2" />
@@ -179,19 +200,22 @@ export default function GlobalAdminUsers() {
                     <TableHead className="font-bold">Role</TableHead>
                     <TableHead className="font-bold">Status</TableHead>
                     <TableHead className="font-bold">Last Login</TableHead>
-                    <TableHead className="w-16 font-bold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                      <TableCell colSpan={5} className="text-center py-6 text-gray-500">
                         No users found matching your search criteria
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow 
+                        key={user.id} 
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => handleRowClick(user)}
+                      >
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.role}</TableCell>
@@ -209,33 +233,6 @@ export default function GlobalAdminUsers() {
                           )}
                         </TableCell>
                         <TableCell>{user.lastLogin}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white border shadow-lg">
-                              <DropdownMenuItem onClick={() => {/* View action */}}>
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {/* Edit action */}}>
-                                Edit User
-                              </DropdownMenuItem>
-                              {user.status === "active" ? (
-                                <DropdownMenuItem onClick={() => {/* Deactivate action */}}>
-                                  Deactivate
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem onClick={() => {/* Activate action */}}>
-                                  Activate
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -319,6 +316,102 @@ export default function GlobalAdminUsers() {
               disabled={!newUser.firstName || !newUser.lastName || !newUser.email}
             >
               Add Administrator
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Detail Dialog */}
+      <Dialog open={showUserDetailDialog} onOpenChange={setShowUserDetailDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">User Details</DialogTitle>
+            <DialogDescription>
+              View and manage administrator account details and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="grid gap-6 py-4">
+              {/* User Info */}
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Full Name</Label>
+                    <div className="text-sm font-medium">{selectedUser.name}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Email Address</Label>
+                    <div className="text-sm">{selectedUser.email}</div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Role</Label>
+                    <div className="text-sm">{selectedUser.role}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Status</Label>
+                    <div className="flex items-center">
+                      {selectedUser.status === "active" ? (
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-500 border-gray-300">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Inactive
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">Last Login</Label>
+                  <div className="text-sm">{selectedUser.lastLogin}</div>
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="border-t pt-4">
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => handleToggleUserStatus(selectedUser.id)}
+                    variant={selectedUser.status === "active" ? "destructive" : "default"}
+                    className={selectedUser.status === "active" ? "" : "bg-[#69ad4c] hover:bg-[#5a9740] text-white"}
+                  >
+                    {selectedUser.status === "active" ? (
+                      <>
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Deactivate User
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Activate User
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    onClick={() => handleDeleteUser(selectedUser.id)}
+                    variant="outline"
+                    className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete User
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUserDetailDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
