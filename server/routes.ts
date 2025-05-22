@@ -2181,14 +2181,18 @@ The PlateSync Team
 
   // Test endpoint to check templates without auth
   app.get('/api/test-templates', async (req: any, res) => {
+    console.log('🔍 TEST: API endpoint called!');
     try {
       const systemChurchId = 'SYSTEM_TEMPLATES';
+      console.log('🔍 TEST: Calling storage.getEmailTemplates with:', systemChurchId);
       let templates = await storage.getEmailTemplates(systemChurchId);
-      console.log(`TEST: Found ${templates.length} system templates:`, templates.map(t => `ID ${t.id}: ${t.templateType}`));
-      res.json({ success: true, templates });
+      console.log(`🔍 TEST: Found ${templates.length} system templates:`, templates.map(t => `ID ${t.id}: ${t.templateType} (churchId: ${t.churchId})`));
+      const result = { success: true, templates, count: templates.length };
+      console.log('🔍 TEST: Returning result:', result);
+      res.json(result);
     } catch (error) {
-      console.error('TEST: Error fetching system email templates:', error);
-      res.status(500).json({ message: 'Failed to fetch system email templates' });
+      console.error('🔍 TEST: Error fetching system email templates:', error);
+      res.status(500).json({ message: 'Failed to fetch system email templates', error: String(error) });
     }
   });
 
