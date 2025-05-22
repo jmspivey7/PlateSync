@@ -39,6 +39,7 @@ import GlobalAdminUsers from "@/pages/global-admin/users";
 import GlobalAdminReports from "@/pages/global-admin/reports";
 import GlobalAdminSettings from "@/pages/global-admin/simplified-settings";
 import EditEmailTemplate from "@/pages/global-admin/edit-email-template";
+import SystemEmailEditor from "@/pages/global-admin/system-email-editor";
 
 // Global Admin Integration Pages
 import SendGridIntegration from "@/pages/global-admin/integrations/sendgrid";
@@ -184,6 +185,7 @@ function Router() {
       <Route path="/global-admin/edit-email-template/:id">
         <EditEmailTemplate />
       </Route>
+      <Route path="/global-admin/system-email-editor" component={SystemEmailEditor} />
       
       {/* Global Admin Integration Routes */}
       <Route path="/global-admin/integrations/sendgrid" component={SendGridIntegration} />
