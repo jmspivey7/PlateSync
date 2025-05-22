@@ -203,9 +203,9 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Get user count - exclude GLOBAL_ADMIN users from the count
+    // Get active user count (excluding GLOBAL_ADMIN users and INACTIVE users)
     const userResult = await db.execute(
-      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${id}' AND role != 'GLOBAL_ADMIN'`
+      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${id}' AND role != 'GLOBAL_ADMIN' AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')`
     );
     const userCount = parseInt(userResult.rows[0]?.userCount || '0');
       
@@ -220,12 +220,33 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
       `SELECT SUM(amount) as "totalDonations" FROM donations WHERE church_id = '${id}'`
     );
     const totalDonations = donationsResult.rows[0]?.totalDonations || '0.00';
+
+    // Get Account Owner's email for contact email
+    const accountOwnerResult = await db.execute(
+      `SELECT email FROM users WHERE church_id = '${id}' AND (role = 'ACCOUNT_OWNER' OR is_account_owner = true) AND (email IS NULL OR email NOT LIKE 'INACTIVE_%') LIMIT 1`
+    );
+    const contactEmail = accountOwnerResult.rows[0]?.email || church.contact_email;
+
+    // Get Account Owner's registration date for Created On
+    const accountOwnerCreatedResult = await db.execute(
+      `SELECT created_at FROM users WHERE church_id = '${id}' AND (role = 'ACCOUNT_OWNER' OR is_account_owner = true) AND (email IS NULL OR email NOT LIKE 'INACTIVE_%') ORDER BY created_at ASC LIMIT 1`
+    );
+    const createdOn = accountOwnerCreatedResult.rows[0]?.created_at || church.created_at;
+
+    // Get most recent finalized count date for Last Updated
+    const lastFinalizedResult = await db.execute(
+      `SELECT MAX(attestation_confirmation_date) as last_finalized FROM batches WHERE church_id = '${id}' AND status = 'FINALIZED'`
+    );
+    const lastUpdated = lastFinalizedResult.rows[0]?.last_finalized || church.updated_at;
     
     res.status(200).json({
       ...church,
       userCount,
       totalMembers,
       totalDonations,
+      contactEmail,
+      createdOn,
+      lastUpdated,
     });
   } catch (error) {
     console.error("Error fetching church:", error);
