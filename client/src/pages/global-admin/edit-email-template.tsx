@@ -41,7 +41,14 @@ export default function EditEmailTemplate() {
         setIsLoading(true);
         console.log(`🔍 Loading template ID: ${templateId}`);
         
-        const response = await fetch(`/api/email-templates/system/${templateId}`);
+        // Get the JWT token from localStorage for Global Admin authentication
+        const token = localStorage.getItem('globalAdminToken');
+        
+        const response = await fetch(`/api/email-templates/system/${templateId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         console.log(`🔍 Response status: ${response.status}`);
         
         if (response.ok) {
@@ -95,10 +102,14 @@ export default function EditEmailTemplate() {
       setIsSaving(true);
       console.log(`💾 Saving template ${template.id}`);
       
+      // Get the JWT token from localStorage for Global Admin authentication
+      const token = localStorage.getItem('globalAdminToken');
+      
       const response = await fetch(`/api/email-templates/system/${template.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           subject: formData.subject,
