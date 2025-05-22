@@ -48,6 +48,11 @@ export default function GlobalAdminSettings() {
       id: 31,
       templateType: "PASSWORD_RESET", 
       subject: "Reset Your PlateSync Password",
+    },
+    {
+      id: 32,
+      templateType: "EMAIL_VERIFICATION",
+      subject: "Verify Your PlateSync Account",
     }
   ];
   
