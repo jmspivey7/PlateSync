@@ -1241,6 +1241,19 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(members.createdAt));
   }
 
+  async deleteAllMembers(churchId: string): Promise<void> {
+    try {
+      console.log(`Deleting all members for church ${churchId}`);
+      await db
+        .delete(members)
+        .where(eq(members.churchId, churchId));
+      console.log(`Successfully deleted all members for church ${churchId}`);
+    } catch (error) {
+      console.error('Error deleting all members:', error);
+      throw error;
+    }
+  }
+
   async getMember(id: number, churchId: string): Promise<Member | undefined> {
     const [member] = await db
       .select()
