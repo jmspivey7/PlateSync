@@ -752,10 +752,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AWS S3 Integration Routes
   app.get('/api/global-admin/integrations/aws-s3', requireGlobalAdmin, async (req, res) => {
     try {
+      // Extract just the region code from AWS_REGION (e.g., "us-east-2" from "US East (Ohio) us-east-2")
+      const rawRegion = process.env.AWS_REGION || '';
+      const region = rawRegion.includes(' ') ? rawRegion.split(' ').pop() || rawRegion : rawRegion;
+      
       res.json({
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-        region: process.env.AWS_REGION || '',
+        region: region,
         bucketName: process.env.AWS_S3_BUCKET || '',
       });
     } catch (error) {
