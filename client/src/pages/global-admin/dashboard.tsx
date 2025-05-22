@@ -245,24 +245,24 @@ export default function GlobalAdminDashboard() {
             </div>
 
             {/* Charts - Second Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-              <Card className="lg:col-span-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                   <div>
                     <CardTitle>Conversion Rate</CardTitle>
                     <CardDescription>Monthly trial-to-paid conversion rate</CardDescription>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-[#69ad4c]">35%</div>
-                    <div className="text-sm text-muted-foreground">Current trial-to-paid conversion</div>
+                    <div className="text-2xl font-bold text-[#69ad4c]">35%</div>
+                    <div className="text-xs text-muted-foreground">Current conversion</div>
                     <div className="flex items-center justify-end mt-1 text-xs">
                       <span className="text-green-600 mr-1">↑ 3%</span>
-                      <span className="text-muted-foreground">from last month</span>
+                      <span className="text-muted-foreground">vs last month</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={conversionRateData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
@@ -281,27 +281,24 @@ export default function GlobalAdminDashboard() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Charts - Third Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="lg:col-span-3">
+              <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                   <div>
                     <CardTitle>Churn Rate</CardTitle>
                     <CardDescription>Monthly subscription churn rate</CardDescription>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-[#ff6b6b]">3.2%</div>
-                    <div className="text-sm text-muted-foreground">Current monthly subscriber churn</div>
+                    <div className="text-2xl font-bold text-[#ff6b6b]">3.2%</div>
+                    <div className="text-xs text-muted-foreground">Current churn</div>
                     <div className="flex items-center justify-end mt-1 text-xs">
                       <span className="text-green-600 mr-1">↓ 0.3%</span>
-                      <span className="text-muted-foreground">from last month</span>
+                      <span className="text-muted-foreground">vs last month</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={churnRateData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
