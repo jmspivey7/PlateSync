@@ -131,27 +131,25 @@ export default function SystemEmailEditor() {
     <div className="min-h-screen bg-gray-50">
       <GlobalAdminHeader />
       
-      <div className="py-10">
-        <header>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center mb-6">
-              <Button
-                variant="ghost"
-                onClick={() => setLocation('/global-admin/settings')}
-                className="mr-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Settings
-              </Button>
-              <h1 className="text-3xl font-bold leading-tight text-gray-900">System Email Templates</h1>
+      <main className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <div className="h-7 w-7 bg-[#69ad4c] rounded mr-3 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">✉</span>
             </div>
+            <h2 className="text-2xl font-bold">System Email Templates</h2>
           </div>
-        </header>
+          <Button
+            variant="outline"
+            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            onClick={() => setLocation("/global-admin/settings?tab=email-templates")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Templates
+          </Button>
+        </div>
 
-        <main>
-          <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div className="px-4 py-8 sm:px-0">
-              <Tabs defaultValue="welcome" className="w-full">
+        <Tabs defaultValue="welcome" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="welcome">Welcome Email</TabsTrigger>
                   <TabsTrigger value="password">Password Reset</TabsTrigger>
@@ -281,10 +279,7 @@ export default function SystemEmailEditor() {
                   </Card>
                 </TabsContent>
               </Tabs>
-            </div>
-          </div>
-        </main>
-      </div>
+      </main>
     </div>
   );
 }

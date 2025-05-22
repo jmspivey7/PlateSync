@@ -319,7 +319,7 @@ export default function EditEmailTemplate() {
                   </Tabs>
                 </CardContent>
               </Card>
-            </main>
-          </div>
-        );
-      }
+      </main>
+    </div>
+  );
+}
