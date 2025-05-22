@@ -398,6 +398,54 @@ const CsvImporter = () => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Import Mode Choice Dialog */}
+    <Dialog open={showImportModeDialog} onOpenChange={setShowImportModeDialog}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Choose Import Method</DialogTitle>
+          <DialogDescription>
+            You currently have {existingMemberCount} members in your database. How would you like to handle the CSV import?
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div className="space-y-3">
+            <Button 
+              onClick={() => {
+                setShowImportModeDialog(false);
+                if (selectedFile) {
+                  performImport(selectedFile, false);
+                }
+              }}
+              className="w-full p-4 h-auto flex flex-col items-start bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200"
+              variant="outline"
+            >
+              <div className="font-medium">Add to Existing Members</div>
+              <div className="text-sm text-blue-700">Keep your current {existingMemberCount} members and add new ones from the CSV file</div>
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                setShowImportModeDialog(false);
+                if (selectedFile) {
+                  performImport(selectedFile, true);
+                }
+              }}
+              className="w-full p-4 h-auto flex flex-col items-start bg-red-50 hover:bg-red-100 text-red-900 border border-red-200"
+              variant="outline"
+            >
+              <div className="font-medium">Replace All Members</div>
+              <div className="text-sm text-red-700">Remove all {existingMemberCount} current members and import only the CSV data</div>
+            </Button>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowImportModeDialog(false)}>
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   );
 };

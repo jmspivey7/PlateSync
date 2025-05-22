@@ -509,12 +509,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user;
       const churchId = user?.churchId || '';
       const userId = user?.id || '';
+      const replaceAll = req.body.replaceAll === 'true';
       
       if (!churchId) {
         return res.status(400).json({ message: 'Church ID is required' });
       }
       
-      console.log(`Processing CSV import for church ID: ${churchId}, file size: ${req.file.size} bytes`);
+      console.log(`Processing CSV import for church ID: ${churchId}, file size: ${req.file.size} bytes, replaceAll: ${replaceAll}`);
       
       // Parse CSV data
       const csvContent = req.file.buffer.toString('utf8');
@@ -557,6 +558,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Found ${validRecords.length} valid records out of ${records.length} total records`);
+      
+      // If replaceAll is true, delete all existing members first
+      if (replaceAll) {
+        console.log(`Replacing all existing members for church ${churchId}`);
+        await storage.deleteAllMembers(churchId);
+      }
       
       // Import the members using the shared import function
       const result = await importMembers(validRecords, churchId);
