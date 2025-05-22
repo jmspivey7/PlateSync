@@ -130,11 +130,11 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
               ) : isAdmin ? "Administrator" : "Standard User"}
             </div>
             
-            <div className="flex flex-col items-center justify-start">
+            <div className="flex flex-col items-stretch justify-start">
               {/* Profile */}
               <Button 
                 variant="ghost" 
-                className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
+                className="flex items-center py-5 px-6 rounded-none justify-start text-lg w-full"
                 onClick={() => {
                   setLocation("/profile");
                   setMobileMenuOpen(false);
@@ -148,7 +148,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
               {isAccountOwner && (
                 <Button 
                   variant="ghost" 
-                  className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
+                  className="flex items-center py-5 px-6 rounded-none justify-start text-lg w-full"
                   onClick={() => {
                     setLocation("/subscription");
                     setMobileMenuOpen(false);
