@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -45,7 +45,7 @@ export default function AwsS3Integration() {
   });
 
   // Update form when settings load
-  useState(() => {
+  useEffect(() => {
     if (settings) {
       form.reset({
         accessKeyId: settings.accessKeyId || '',
@@ -54,7 +54,7 @@ export default function AwsS3Integration() {
         bucketName: settings.bucketName || '',
       });
     }
-  });
+  }, [settings, form]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: AwsS3FormData) => {
