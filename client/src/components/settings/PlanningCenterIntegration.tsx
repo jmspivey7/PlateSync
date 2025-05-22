@@ -253,9 +253,10 @@ const PlanningCenterIntegration = () => {
       return response;
     },
     onSuccess: (data) => {
+      const importedCount = data?.importedCount || data?.imported || 0;
       toast({
         title: "Members Imported",
-        description: `Successfully imported ${data.importedCount} members from Planning Center.`,
+        description: `Successfully imported ${importedCount} members from Planning Center.`,
         className: "text-white",
         style: { backgroundColor: PLANNING_CENTER_BLUE },
       });
