@@ -104,6 +104,7 @@ export default function SystemEmailTemplates() {
 
   // Handle edit template
   const handleEditTemplate = (template: EmailTemplate) => {
+    console.log('Clicking template:', template.id, template.templateType);
     setLocation(`/global-admin/edit-email-template/${template.id}`);
   };
 
