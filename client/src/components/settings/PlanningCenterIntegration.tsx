@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, Link as LinkIcon, UserPlus, Users, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, Link as LinkIcon, UserPlus, Users, CheckCircle, AlertCircle, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 // Import the Planning Center logo directly
 import planningCenterLogo from "@assets/planning-center-full-color.png";
 
@@ -26,12 +34,36 @@ const PlanningCenterIntegration = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   // Removed unused state variables for troubleshooting features
   const [connectionStatus, setConnectionStatus] = useState<'success' | 'error' | null>(null);
+  const [showCsvWarning, setShowCsvWarning] = useState(false);
   
   // Hook to get current user and access church information
   const { user } = useAuth();
 
+  // Query to check CSV import status
+  const { data: csvImportStats } = useQuery({
+    queryKey: ['/api/csv-import/stats'],
+    retry: false,
+  });
+
+  // Function to proceed with Planning Center connection (bypassing CSV warning)
+  const proceedWithConnection = async () => {
+    setShowCsvWarning(false);
+    await connectToPlanningCenter();
+  };
+
   // Function to handle Planning Center connection
   const handleConnectPlanningCenter = async () => {
+    // Check if there are existing CSV imports
+    if (csvImportStats?.lastImportDate) {
+      setShowCsvWarning(true);
+      return;
+    }
+
+    await connectToPlanningCenter();
+  };
+
+  // Actual connection function
+  const connectToPlanningCenter = async () => {
     try {
       setIsConnecting(true);
       
@@ -424,6 +456,64 @@ const PlanningCenterIntegration = () => {
           {/* Troubleshooting section removed */}
         </div>
       )}
+
+      {/* CSV Import Warning Dialog */}
+      <Dialog open={showCsvWarning} onOpenChange={setShowCsvWarning}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              CSV Data Will Be Overwritten
+            </DialogTitle>
+            <DialogDescription>
+              Your church currently has member data imported from a CSV file. 
+              Connecting to Planning Center will permanently overwrite this data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-2">
+                <FileText className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-red-800">
+                  <p className="font-medium mb-1">This action cannot be undone:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>All member data from your CSV file will be replaced</li>
+                    <li>Planning Center will become your new member data source</li>
+                    <li>Any manual edits to CSV member data will be lost</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">After connecting to Planning Center:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>Member data will sync automatically from Planning Center</li>
+                    <li>Updates in Planning Center will reflect in PlateSync</li>
+                    <li>You can manually refresh member data anytime</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCsvWarning(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={proceedWithConnection}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Yes, Connect to Planning Center
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
