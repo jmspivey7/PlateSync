@@ -2179,6 +2179,19 @@ The PlateSync Team
     }
   }
 
+  // Test endpoint to check templates without auth
+  app.get('/api/test-templates', async (req: any, res) => {
+    try {
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      let templates = await storage.getEmailTemplates(systemChurchId);
+      console.log(`TEST: Found ${templates.length} system templates:`, templates.map(t => `ID ${t.id}: ${t.templateType}`));
+      res.json({ success: true, templates });
+    } catch (error) {
+      console.error('TEST: Error fetching system email templates:', error);
+      res.status(500).json({ message: 'Failed to fetch system email templates' });
+    }
+  });
+
   // Get system-wide email templates
   app.get('/api/email-templates/system', async (req: any, res) => {
     try {
