@@ -1,6 +1,6 @@
-import { db } from './db';
-import { members } from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from "./db";
+import { members, churchMembers } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 interface MemberRecord {
   firstName: string;
@@ -19,69 +19,114 @@ export async function importMembers(records: MemberRecord[], churchId: string): 
   let importedCount = 0;
   let duplicatesSkipped = 0;
   
-  console.log(`Starting member import for church ${churchId} with ${records.length} records`);
+  console.log(`Starting import of ${records.length} members for church ${churchId}`);
   
-  // Process members one by one to handle duplicates properly
   for (const record of records) {
     try {
-      // Set up basic member data
       const memberData = {
-        firstName: record.firstName.trim(),
-        lastName: record.lastName.trim(),
-        email: record.email?.trim() || null,
-        phone: record.phone?.trim() || null,
-        notes: record.notes?.trim() || null,
-        churchId: churchId,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        firstName: record.firstName,
+        lastName: record.lastName,
+        email: record.email || null,
+        phone: record.phone || null,
+        notes: record.notes || null,
+        isVisitor: false,
       };
-      
-      // Check for duplicate based on first name, last name and email (if available)
+
       let isDuplicate = false;
-      
+      let existingMemberId: number | null = null;
+
+      // Check for duplicates by email first (if email exists)
       if (memberData.email) {
-        // Check by email first if available
         const existingMemberByEmail = await db.select()
           .from(members)
-          .where(
-            and(
-              eq(members.churchId, churchId),
-              eq(members.email, memberData.email)
-            )
-          );
+          .where(eq(members.email, memberData.email));
           
         if (existingMemberByEmail.length > 0) {
-          console.log(`Skipping duplicate member with email ${memberData.email}`);
-          duplicatesSkipped++;
-          isDuplicate = true;
+          existingMemberId = existingMemberByEmail[0].id;
+          
+          // Check if this member is already associated with this church
+          const existingChurchMembership = await db.select()
+            .from(churchMembers)
+            .where(
+              and(
+                eq(churchMembers.churchId, churchId),
+                eq(churchMembers.memberId, existingMemberId)
+              )
+            );
+            
+          if (existingChurchMembership.length > 0) {
+            console.log(`Skipping duplicate member with email ${memberData.email} - already associated with this church`);
+            duplicatesSkipped++;
+            isDuplicate = true;
+          } else {
+            // Member exists but not associated with this church - we'll add the association
+            console.log(`Found existing member with email ${memberData.email} - adding to church ${churchId}`);
+          }
         }
       }
-      
-      // If not a duplicate by email, check by first name and last name
-      if (!isDuplicate) {
+
+      // If not found by email, check by first name and last name
+      if (!isDuplicate && !existingMemberId) {
         const existingMemberByName = await db.select()
           .from(members)
           .where(
             and(
-              eq(members.churchId, churchId),
               eq(members.firstName, memberData.firstName),
               eq(members.lastName, memberData.lastName)
             )
           );
           
         if (existingMemberByName.length > 0) {
-          console.log(`Skipping duplicate member with name ${memberData.firstName} ${memberData.lastName}`);
-          duplicatesSkipped++;
-          isDuplicate = true;
+          existingMemberId = existingMemberByName[0].id;
+          
+          // Check if this member is already associated with this church
+          const existingChurchMembership = await db.select()
+            .from(churchMembers)
+            .where(
+              and(
+                eq(churchMembers.churchId, churchId),
+                eq(churchMembers.memberId, existingMemberId)
+              )
+            );
+            
+          if (existingChurchMembership.length > 0) {
+            console.log(`Skipping duplicate member with name ${memberData.firstName} ${memberData.lastName} - already associated with this church`);
+            duplicatesSkipped++;
+            isDuplicate = true;
+          } else {
+            // Member exists but not associated with this church - we'll add the association
+            console.log(`Found existing member with name ${memberData.firstName} ${memberData.lastName} - adding to church ${churchId}`);
+          }
         }
       }
       
-      // If not a duplicate, insert the new member
+      // If not a duplicate, process the member
       if (!isDuplicate) {
         try {
-          await db.insert(members).values(memberData);
+          // If we found an existing member, use their ID, otherwise create new member
+          if (existingMemberId) {
+            // Add existing member to this church
+            await db.insert(churchMembers).values({
+              churchId: churchId,
+              memberId: existingMemberId,
+              memberNotes: record.notes || null,
+              isActive: true,
+            });
+            console.log(`✅ Successfully added existing member to church: ${memberData.firstName} ${memberData.lastName}`);
+          } else {
+            // Create new member and associate with church
+            const [newMember] = await db.insert(members).values(memberData).returning();
+            
+            await db.insert(churchMembers).values({
+              churchId: churchId,
+              memberId: newMember.id,
+              memberNotes: record.notes || null,
+              isActive: true,
+            });
+            console.log(`✅ Successfully imported new member: ${memberData.firstName} ${memberData.lastName}`);
+          }
+          
           importedCount++;
-          console.log(`✅ Successfully imported member: ${memberData.firstName} ${memberData.lastName}`);
         } catch (insertError: any) {
           // Handle unique constraint violations as duplicates
           if (insertError.code === '23505' && insertError.constraint === 'members_email_unique') {

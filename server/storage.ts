@@ -1255,13 +1255,31 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Member operations
+  // Member operations - now uses junction table to get members for a church
   async getMembers(churchId: string): Promise<Member[]> {
-    return db
-      .select()
+    const result = await db
+      .select({
+        id: members.id,
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+        phone: members.phone,
+        isVisitor: members.isVisitor,
+        createdAt: members.createdAt,
+        updatedAt: members.updatedAt,
+        notes: members.notes,
+        externalId: members.externalId,
+        externalSystem: members.externalSystem,
+      })
       .from(members)
-      .where(eq(members.churchId, churchId))
+      .innerJoin(churchMembers, eq(members.id, churchMembers.memberId))
+      .where(and(
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
+      ))
       .orderBy(desc(members.createdAt));
+    
+    return result;
   }
 
   async mergeAndUpdateMembers(churchId: string, csvMembers: Array<Partial<InsertMember>>): Promise<{ updated: number; added: number }> {
