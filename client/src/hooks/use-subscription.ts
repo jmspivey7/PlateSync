@@ -93,10 +93,7 @@ export function useSubscription() {
       }
     },
     onSuccess: () => {
-      toast({
-        title: "Trial Started",
-        description: "Your 30-day free trial has been activated!",
-      });
+      // Trial started successfully - no toast notification needed
     },
     onError: (error: Error) => {
       toast({

@@ -103,15 +103,7 @@ export default function Onboarding() {
       }
     },
     onSuccess: () => {
-      toast({
-        title: 'Settings Saved',
-        description: donorNotificationsEnabled 
-          ? 'Donor notifications have been enabled' 
-          : 'Donor notifications have been disabled',
-        className: donorNotificationsEnabled 
-          ? 'bg-[#48BB78] text-white'
-          : 'bg-slate-800 text-white',
-      });
+
       
       // Move to next step after short delay
       setTimeout(() => {
@@ -709,6 +701,12 @@ export default function Onboarding() {
       // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
+      // Clear any stored authentication and redirect to login page
+      localStorage.removeItem('userVerified');
+      localStorage.removeItem('onboardingServiceOptions');
+      localStorage.removeItem('firstName');
+      localStorage.removeItem('lastName');
+      
       // Redirect to login page after completing onboarding
       setLocation("/login-local");
     }
@@ -862,11 +860,7 @@ export default function Onboarding() {
         JSON.stringify(storedOptions.filter((item: string) => item !== option))
       );
       
-      toast({
-        title: "Service option removed",
-        description: `"${option}" has been removed`,
-        variant: "default"
-      });
+
     } catch (error) {
       toast({
         title: "Failed to remove service option",
