@@ -88,21 +88,17 @@ export default function Onboarding() {
         // Get the churchId from localStorage that was stored during verification
         const churchId = localStorage.getItem('onboardingChurchId') || '';
         
-        console.log('Email notification request (bypassed):', { enabled, churchId });
+        console.log('Sending email notification request:', { enabled, churchId });
         
-        // TEMPORARY BYPASS: Skip the API call and return success
-        // This allows users to complete onboarding while we fix the routing issue
-        const response = {
-          success: true,
-          message: 'Email notification setting bypassed for now',
-          enabled: enabled,
+        const response = await apiRequest("/api/onboard-email-setting", "POST", { 
+          enabled,
           churchId: churchId
-        };
+        });
         
-        console.log('Email notification response (bypassed):', response);
+        console.log('Email notification response received:', response);
         return response;
       } catch (error) {
-        console.error("Error in notification settings:", error);
+        console.error("Error in notification settings API request:", error);
         throw error;
       }
     },

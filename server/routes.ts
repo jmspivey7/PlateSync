@@ -195,6 +195,21 @@ function setupSessionMiddleware(app: Express) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // CRITICAL: Onboarding endpoint MUST be first, before any middleware
+  app.post('/api/onboard-email-setting', express.json(), (req: any, res) => {
+    console.log(`[ONBOARD-ENDPOINT] Successfully reached! Body:`, req.body);
+    
+    const { enabled, churchId } = req.body;
+    
+    // Return proper JSON response
+    res.json({
+      success: true,
+      message: "Email notification setting saved",
+      enabled: enabled,
+      churchId: churchId
+    });
+  });
+
   // Set up app.trustProxy before any middleware
   app.set("trust proxy", 1);
   
