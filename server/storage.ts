@@ -233,6 +233,9 @@ export interface IStorage {
     stripeSubscriptionId: string;
   }): Promise<Subscription | undefined>;
   cancelSubscription(churchId: string): Promise<Subscription | undefined>;
+  
+  // Onboarding operations
+  updateOnboardingLogo(churchId: string, logoUrl: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3617,6 +3620,36 @@ PlateSync Reporting System
     } catch (error) {
       console.error(`Error activating church with ID ${id}:`, error);
       return undefined;
+    }
+  }
+
+  /**
+   * Store logo URL temporarily during onboarding
+   */
+  async updateOnboardingLogo(churchId: string, logoUrl: string): Promise<void> {
+    try {
+      // Update the church record if it exists
+      await db
+        .update(churches)
+        .set({
+          logoUrl: logoUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, churchId));
+
+      // Also update any existing user with this churchId
+      await db
+        .update(users)
+        .set({
+          churchLogoUrl: logoUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(users.churchId, churchId));
+
+      console.log(`✅ Onboarding logo stored for church ${churchId}: ${logoUrl}`);
+    } catch (error) {
+      console.error(`Error storing onboarding logo for church ${churchId}:`, error);
+      throw error;
     }
   }
 
