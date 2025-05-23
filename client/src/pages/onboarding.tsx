@@ -881,7 +881,13 @@ export default function Onboarding() {
       // Load service options from localStorage during onboarding
       try {
         const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
-        setServiceOptions(storedOptions);
+        // Convert string array to object array format expected by UI
+        const formattedOptions = storedOptions.map((option: string) => ({
+          name: option,
+          value: option.toLowerCase().replace(/\s+/g, '-'),
+          isDefault: false
+        }));
+        setServiceOptions(formattedOptions);
       } catch (error) {
         console.error('Error loading service options from localStorage:', error);
         // Default options if there's an error loading from localStorage
