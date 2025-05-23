@@ -169,11 +169,8 @@ export default function Onboarding() {
       }
     },
     onSuccess: () => {
-      // Settings saved successfully - user must manually click Save & Continue
-      toast({
-        title: 'Settings saved',
-        description: 'Email notification preferences have been saved successfully.',
-      });
+      // Settings saved successfully - no toast notification needed
+      // User advances automatically after save
     },
     onError: (error) => {
       console.error("Error saving notification settings:", error);
@@ -587,8 +584,8 @@ export default function Onboarding() {
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      // When skipping email notifications, save as OFF (false) by default
-      donorNotificationMutation.mutate(false);
+      // When skipping email notifications, save as OFF (false) and advance immediately
+      setCurrentStep(OnboardingStep.SUBSCRIPTION);
     } else {
       // If on last step or otherwise, redirect to login page
       setLocation("/login-local");
