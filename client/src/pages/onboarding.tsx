@@ -1654,7 +1654,7 @@ export default function Onboarding() {
                               setIsImportingFromPlanningCenter(true);
                               
                               try {
-                                const response = await apiRequest('/api/planning-center/import', 'POST', {});
+                                const response = await apiRequest('/api/planning-center/import', 'POST');
                                 
                                 if (response.success) {
                                   setImportStatus('success');
