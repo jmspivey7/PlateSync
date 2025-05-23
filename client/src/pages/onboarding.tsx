@@ -1654,7 +1654,7 @@ export default function Onboarding() {
                               setIsImportingFromPlanningCenter(true);
                               
                               try {
-                                const response = await apiRequest('POST', '/api/planning-center/import', {});
+                                const response = await apiRequest('/api/planning-center/import', 'POST', {});
                                 
                                 if (response.success) {
                                   setImportStatus('success');
@@ -1689,7 +1689,7 @@ export default function Onboarding() {
                             ) : (
                               <UserPlus className="mr-2 h-4 w-4" />
                             )}
-                            Import Members
+                            {isImportingFromPlanningCenter ? 'Importing Members...' : 'Import Members'}
                           </Button>
                         </div>
                       ) : (
