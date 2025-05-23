@@ -152,43 +152,7 @@ export default function LoginLocal() {
     setShowRegisterPassword(!showRegisterPassword);
   };
   
-  // TEMPORARY UTILITY: Function to delete a test user (jmspivey@icloud.com)
-  const deleteTestUser = async () => {
-    setIsDeletingTestUser(true);
-    try {
-      const response = await fetch(`/api/dev/delete-test-user?email=jmspivey@icloud.com`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete test user');
-      }
-      
-      const data = await response.json();
-      toast({
-        title: "Test User Deleted",
-        description: `Successfully deleted jmspivey@icloud.com user and related data.`,
-        variant: "default"
-      });
-      
-      // If we're currently using this email in the form, clear it to avoid confusion
-      if (registerEmail === 'jmspivey@icloud.com') {
-        setRegisterEmail('');
-      }
-      
-      console.log('Deleted test user data:', data);
-    } catch (error) {
-      console.error('Error deleting test user:', error);
-      toast({
-        title: "Delete Failed",
-        description: error instanceof Error ? error.message : "Failed to delete test user",
-        variant: "destructive"
-      });
-    } finally {
-      setIsDeletingTestUser(false);
-    }
-  };
+
   
   // Show loading spinner while checking auth
   if (authLoading) {
