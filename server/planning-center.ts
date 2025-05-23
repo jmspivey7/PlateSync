@@ -585,12 +585,29 @@ export function setupPlanningCenterRoutes(app: Express) {
   
   // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
-    if (!req.user) {
-      console.log('No authenticated user found for Planning Center auth URL generation');
-      return res.status(401).json({ 
-        error: 'Authentication required',
-        message: 'You must be logged in to connect to Planning Center',
-        details: 'Please ensure you are logged in and try again'
+    // Handle both authenticated users and registration flow
+    let churchId = '';
+    let userId = '';
+    
+    if (req.user) {
+      // Authenticated user
+      const authUrlUser = req.user as any;
+      churchId = authUrlUser.churchId || authUrlUser.id;
+      userId = authUrlUser.id;
+      console.log('Auth URL for authenticated user:', { userId, churchId });
+    } else {
+      // Registration flow - get church ID from query parameter
+      churchId = req.query.churchId as string || '';
+      userId = churchId; // Use church ID as user ID for registration
+      console.log('Auth URL for registration flow:', { userId, churchId });
+    }
+    
+    if (!churchId) {
+      console.log('No church ID found for Planning Center auth URL generation');
+      return res.status(400).json({ 
+        error: 'Church ID required',
+        message: 'Church ID is required to connect to Planning Center',
+        details: 'Please provide a valid church ID'
       });
     }
     
