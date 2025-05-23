@@ -100,8 +100,8 @@ export default function Onboarding() {
         });
       }
       
-      // Redirect to home page
-      window.location.href = '/';
+      // Redirect to Create Account form
+      window.location.href = '/create-account';
       
     } catch (error) {
       console.error('Error canceling onboarding:', error);
@@ -1079,7 +1079,7 @@ export default function Onboarding() {
             
             <div className="flex justify-between pt-4 border-t">
               <Button 
-                variant="destructive" 
+                className="bg-red-600 hover:bg-red-700 text-white"
                 onClick={() => setShowCancelDialog(true)}
                 disabled={isCanceling}
               >
@@ -1178,11 +1178,18 @@ export default function Onboarding() {
             
             <div className="flex justify-between pt-4 border-t mt-8">
               <Button 
-                variant="outline" 
-                onClick={handleBackStep}
-                disabled={true} // Back button disabled for this step (as mentioned in handleBackStep)
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => setShowCancelDialog(true)}
+                disabled={isCanceling}
               >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                {isCanceling ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Canceling...
+                  </>
+                ) : (
+                  'Cancel'
+                )}
               </Button>
               
               <div className="space-x-2">
@@ -1192,8 +1199,6 @@ export default function Onboarding() {
                 >
                   Skip for now
                 </Button>
-                
-
                 
                 <Button 
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
