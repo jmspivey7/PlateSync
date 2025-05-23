@@ -435,8 +435,8 @@ export default function EmailTemplateEditor() {
                                 html = html.replace(/<img\s+src="{{churchLogoUrl}}"\s+alt="{{churchName}} Logo"[^>]*>/g, '');
                               }
                               
+                              // Don't force mobile width - let it scale naturally with the container
                               return html
-                                .replace(/max-width: \d+px/g, 'max-width: 375px')
                                 .replace(/max-height: \d+px/g, 'max-height: 150px');
                             })()
                           }} />
