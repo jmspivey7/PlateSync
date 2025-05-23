@@ -1429,7 +1429,7 @@ export default function Onboarding() {
             <div className="flex justify-between pt-4 border-t">
               <div className="flex space-x-3">
                 <Button 
-                  variant="destructive" 
+                  className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => setShowCancelDialog(true)}
                   disabled={isCanceling}
                 >
@@ -1924,31 +1924,7 @@ export default function Onboarding() {
             <p className="text-gray-600 max-w-md">
               Congratulations! Your PlateSync account is ready to use and your 30-day free trial has started. Click the button below to sign in and start managing your donations.
             </p>
-            <div className="flex justify-between pt-4 border-t mt-6 w-full max-w-md">
-              <div className="flex space-x-3">
-                <Button 
-                  variant="destructive" 
-                  onClick={() => setShowCancelDialog(true)}
-                  disabled={isCanceling}
-                >
-                  {isCanceling ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Canceling...
-                    </>
-                  ) : (
-                    'Cancel'
-                  )}
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={handleBackStep}
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-              </div>
-              
+            <div className="flex justify-center pt-4 border-t mt-6 w-full max-w-md">
               <Button 
                 className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
                 onClick={handleNextStep}
