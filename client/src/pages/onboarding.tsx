@@ -1479,7 +1479,7 @@ export default function Onboarding() {
                   {/* Planning Center Integration UI */}
                   <div className="flex flex-col items-center justify-center p-4 space-y-6 rounded-lg border border-gray-300">
                     <img 
-                      src="/planning-center-full-color.png" 
+                      src="/images/integrations/planning-center-logo.png" 
                       alt="Planning Center Logo" 
                       className="h-12 mb-2" 
                     />
