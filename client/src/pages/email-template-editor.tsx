@@ -197,7 +197,7 @@ export default function EmailTemplateEditor() {
 
       {/* Main content area - exactly matching Global Admin layout */}
       <div className="p-6">
-        <Card className="w-full">
+        <Card className="w-full max-w-none">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-gray-900">
               Edit {templateInfo.name} Template
@@ -207,7 +207,7 @@ export default function EmailTemplateEditor() {
             </p>
           </CardHeader>
           
-          <CardContent>
+          <CardContent className="w-full max-w-none">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="border-b border-gray-200 pb-4 mb-6">
                 <TabsList className="grid w-full grid-cols-2">
