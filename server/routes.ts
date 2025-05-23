@@ -2718,7 +2718,7 @@ Sincerely,
           password: hashedPassword,
           firstName: firstName,
           lastName: lastName,
-          role: "ADMIN",
+          role: "ACCOUNT_OWNER",
           churchName: churchName,
           churchId: userId,
           isAccountOwner: true
