@@ -109,7 +109,7 @@ export async function importMembers(records: MemberRecord[], churchId: string): 
             await db.insert(churchMembers).values({
               churchId: churchId,
               memberId: existingMemberId,
-              memberNotes: record.notes || null,
+              notes: record.notes || null,
               isActive: true,
             });
             console.log(`✅ Successfully added existing member to church: ${memberData.firstName} ${memberData.lastName}`);
@@ -120,7 +120,7 @@ export async function importMembers(records: MemberRecord[], churchId: string): 
             await db.insert(churchMembers).values({
               churchId: churchId,
               memberId: newMember.id,
-              memberNotes: record.notes || null,
+              notes: record.notes || null,
               isActive: true,
             });
             console.log(`✅ Successfully imported new member: ${memberData.firstName} ${memberData.lastName}`);
