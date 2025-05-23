@@ -1303,12 +1303,29 @@ export default function Onboarding() {
             </div>
             
             <div className="flex justify-between pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={handleBackStep}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isCanceling}
+                >
+                  {isCanceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Canceling...
+                    </>
+                  ) : (
+                    'Cancel'
+                  )}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleBackStep}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+              </div>
               
               <div className="space-x-2">
                 <Button
@@ -1395,12 +1412,29 @@ export default function Onboarding() {
             </div>
             
             <div className="flex justify-between pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={handleBackStep}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isCanceling}
+                >
+                  {isCanceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Canceling...
+                    </>
+                  ) : (
+                    'Cancel'
+                  )}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleBackStep}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+              </div>
               
               <div className="space-x-2">
                 <Button
