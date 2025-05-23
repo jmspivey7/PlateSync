@@ -10,6 +10,7 @@ import {
   json,
   jsonb,
   index,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -97,7 +98,7 @@ export const users = pgTable("users", {
   // isActive: boolean("is_active").default(true).notNull(),
 });
 
-// Church members table
+// Church members table - now supports members belonging to multiple churches
 export const members = pgTable("members", {
   id: serial("id").primaryKey(),
   firstName: varchar("first_name").notNull(),
@@ -108,11 +109,26 @@ export const members = pgTable("members", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   notes: text("notes"),
-  churchId: varchar("church_id").references(() => users.id),
   // Fields for external system integration
   externalId: varchar("external_id", { length: 100 }),
   externalSystem: varchar("external_system", { length: 50 }),
 });
+
+// Junction table for many-to-many relationship between churches and members
+export const churchMembers = pgTable("church_members", {
+  id: serial("id").primaryKey(),
+  churchId: varchar("church_id").references(() => users.id).notNull(),
+  memberId: integer("member_id").references(() => members.id).notNull(),
+  // Church-specific member information
+  memberNotes: text("member_notes"), // Notes specific to this church relationship
+  joinedDate: timestamp("joined_date").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  // Ensure each member can only be added once per church
+  uniqueChurchMember: unique().on(table.churchId, table.memberId),
+}));
 
 // Donation types enum
 export const donationTypeEnum = z.enum(["CASH", "CHECK"]);
