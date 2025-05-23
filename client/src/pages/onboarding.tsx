@@ -1685,12 +1685,29 @@ export default function Onboarding() {
             </Tabs>
             
             <div className="flex justify-between pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={handleBackStep}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isCanceling}
+                >
+                  {isCanceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Canceling...
+                    </>
+                  ) : (
+                    'Cancel'
+                  )}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleBackStep}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+              </div>
               
               <div className="space-x-2">
                 {importStatus !== 'success' && (
@@ -1809,12 +1826,29 @@ export default function Onboarding() {
             </div>
             
             <div className="flex justify-between pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={handleBackStep}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isCanceling}
+                >
+                  {isCanceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Canceling...
+                    </>
+                  ) : (
+                    'Cancel'
+                  )}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleBackStep}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+              </div>
               
               <Button 
                 className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
@@ -1876,12 +1910,29 @@ export default function Onboarding() {
               Congratulations! Your PlateSync account is ready to use and your 30-day free trial has started. Click the button below to sign in and start managing your donations.
             </p>
             <div className="flex justify-between pt-4 border-t mt-6 w-full max-w-md">
-              <Button 
-                variant="outline" 
-                onClick={handleBackStep}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isCanceling}
+                >
+                  {isCanceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Canceling...
+                    </>
+                  ) : (
+                    'Cancel'
+                  )}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleBackStep}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+              </div>
               
               <Button 
                 className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
@@ -1953,6 +2004,48 @@ export default function Onboarding() {
           {renderStepContent()}
         </CardContent>
       </Card>
+      
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+              Cancel Account Setup
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your account setup? This will permanently delete all your data including:
+              <br /><br />
+              • Church information and settings
+              <br />
+              • Logo and branding
+              <br />
+              • Imported member data
+              <br />
+              • Email notification preferences
+              <br /><br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Setup</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleCancelOnboarding}
+              disabled={isCanceling}
+            >
+              {isCanceling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Yes, Delete Everything'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
