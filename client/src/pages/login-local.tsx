@@ -7,8 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, ChurchIcon, UserIcon, BuildingIcon, Trash2Icon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, ChurchIcon, UserIcon, BuildingIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import plateSyncLogo from "../assets/platesync-logo.png";
@@ -30,7 +29,7 @@ export default function LoginLocal() {
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [registerSuccess, setRegisterSuccess] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isDeletingTestUser, setIsDeletingTestUser] = useState(false);
+
   
   const { user, isLoading: authLoading, login, loginStatus } = useAuth();
   const [, setLocation] = useLocation();
@@ -445,43 +444,6 @@ export default function LoginLocal() {
                     {isRegistering ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>
-                
-                {/* TEMPORARY UTILITY: Button to clear test email */}
-                <div className="mt-6 border-t pt-4">
-                  <p className="text-xs text-gray-500 mb-2">Development Tools</p>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full flex items-center justify-center space-x-2 border-dashed border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        disabled={isDeletingTestUser}
-                      >
-                        <Trash2Icon className="h-4 w-4" />
-                        <span>Clear Test Email (jmspivey@icloud.com)</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Test User</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete the user with email jmspivey@icloud.com 
-                          and all associated data (church, service options, etc.) from the database.
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={deleteTestUser}
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                          disabled={isDeletingTestUser}
-                        >
-                          {isDeletingTestUser ? "Deleting..." : "Delete User"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
               </CardContent>
             </TabsContent>
           </Tabs>
