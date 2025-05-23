@@ -169,12 +169,11 @@ export default function Onboarding() {
       }
     },
     onSuccess: () => {
-
-      
-      // Move to next step after short delay
-      setTimeout(() => {
-        handleNextStep();
-      }, 1000);
+      // Settings saved successfully - user must manually click Save & Continue
+      toast({
+        title: 'Settings saved',
+        description: 'Email notification preferences have been saved successfully.',
+      });
     },
     onError: (error) => {
       console.error("Error saving notification settings:", error);
