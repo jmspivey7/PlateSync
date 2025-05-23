@@ -150,8 +150,9 @@ export default function Onboarding() {
       }
     },
     onSuccess: (data) => {
+      const importCount = data.importedCount || data.added || data.imported || 0;
       setImportStatus('success');
-      setStatusMessage(`Successfully imported ${data.importedCount} members.`);
+      setStatusMessage(`Successfully imported ${importCount} members.`);
       setImportProgress(100);
       
       // Invalidate the members query to refresh the list if needed
@@ -159,7 +160,7 @@ export default function Onboarding() {
       
       toast({
         title: 'Import Successful',
-        description: `${data.importedCount} members imported successfully.`,
+        description: `${importCount} members imported successfully.`,
         className: 'bg-[#48BB78] text-white',
       });
       

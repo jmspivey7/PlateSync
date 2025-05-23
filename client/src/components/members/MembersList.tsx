@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -41,15 +41,16 @@ const MembersList = ({}: MembersListProps) => {
     queryKey: ['/api/members'],
   });
   
-  // No longer needed - duplicate removal is now done automatically
-  
-  if (isError) {
-    toast({
-      title: "Error",
-      description: "Failed to load members",
-      variant: "destructive",
-    });
-  }
+  // Handle error in useEffect to prevent infinite re-renders
+  useEffect(() => {
+    if (isError) {
+      toast({
+        title: "Error",
+        description: "Failed to load members",
+        variant: "destructive",
+      });
+    }
+  }, [isError, toast]);
   
   // Check if members is an array before filtering
   const isValidMembersArray = Array.isArray(members);

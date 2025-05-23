@@ -391,16 +391,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Creating service option "${name}" for church ID: ${churchId}`);
       
+      // Check if this is the first service option for this church
+      const existingOptions = await storage.getServiceOptions(churchId);
+      const isFirstOption = existingOptions.length === 0;
+      
       // Create service option with proper data structure
       const serviceOptionData = {
         name: name.trim(),
         value: name.toLowerCase().replace(/\s+/g, '-'),
         churchId: churchId,
-        isDefault: false // First option created during onboarding could be default
+        isDefault: isFirstOption // First option is automatically set as default
       };
 
       const newOption = await storage.createServiceOption(serviceOptionData);
-      console.log(`Service option "${name}" created successfully`);
+      console.log(`Service option "${name}" created successfully${isFirstOption ? ' (set as default)' : ''}`);
       
       res.status(201).json(newOption);
     } catch (error) {
