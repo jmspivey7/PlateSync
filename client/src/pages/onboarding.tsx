@@ -357,11 +357,7 @@ export default function Onboarding() {
       
       setUploadSuccess(true);
       
-      toast({
-        title: "Logo uploaded successfully",
-        description: "Your church logo has been saved. Please click Next to continue.",
-        variant: "default"
-      });
+      // Logo uploaded successfully - no toast needed during onboarding
       
     } catch (error) {
       toast({
