@@ -157,8 +157,8 @@ export default function EmailTemplateEditor() {
   // Get template info
   const templateInfo = templateTypeInfo[templateData.templateType];
 
-  // Process HTML for preview with placeholder data
-  const processedHtml = bodyHtml
+  // Process HTML for preview with sample data
+  let processedHtml = bodyHtml
     .replace(/\{\{churchName\}\}/g, user?.churchName || 'Sample Church')
     .replace(/\{\{firstName\}\}/g, 'John')
     .replace(/\{\{lastName\}\}/g, 'Doe')
@@ -169,8 +169,21 @@ export default function EmailTemplateEditor() {
     .replace(/\{\{weekRange\}\}/g, 'Jan 1-7, 2025')
     .replace(/\{\{totalAmount\}\}/g, '$2,500.00')
     .replace(/\{\{batchCount\}\}/g, '5')
-    .replace(/\{\{userRole\}\}/g, 'Administrator')
-    .replace(/\{\{churchLogoUrl\}\}/g, user?.churchLogoUrl || 'https://repl-plates-image-repo.s3.amazonaws.com/logos/PlateSync_Logo.png');
+    .replace(/\{\{userRole\}\}/g, 'Administrator');
+
+  // Handle logo conditional logic - if no logo, remove the entire logo section
+  if (!user?.churchLogoUrl) {
+    // Remove the entire logo conditional block when no logo is available
+    processedHtml = processedHtml
+      .replace(/\{\{#if churchLogoUrl\}\}[\s\S]*?\{\{\/if\}\}/g, '')
+      .replace(/\{\{churchLogoUrl\}\}/g, '');
+  } else {
+    // Replace logo URL and remove conditional tags
+    processedHtml = processedHtml
+      .replace(/\{\{#if churchLogoUrl\}\}/g, '')
+      .replace(/\{\{\/if\}\}/g, '')
+      .replace(/\{\{churchLogoUrl\}\}/g, user.churchLogoUrl);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
