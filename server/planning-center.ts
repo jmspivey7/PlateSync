@@ -847,11 +847,33 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Instead of directly redirecting to Planning Center, we'll redirect to our
       // intermediate page that handles the flow more elegantly
-      console.log('Redirecting to Planning Center redirect page');
-      // Include churchId in redirect URL if available
-      const authUser = req.user as any;
-      const userChurchId = authUser.churchId || authUser.id;
-      res.redirect(`/planning-center-redirect.html${userChurchId ? `?churchId=${userChurchId}` : ''}`);
+      // Store state in session for verification during callback
+      if (req.session) {
+        req.session.planningCenterState = state;
+        req.session.planningCenterChurchId = churchId;
+        console.log('State and churchId saved in session for authorization flow');
+      }
+
+      // Build the Planning Center OAuth authorization URL
+      const redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL || 
+                         `${req.protocol}://${req.get('host')}/api/planning-center/callback`;
+      
+      const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
+      authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+      authUrl.searchParams.append('redirect_uri', redirectUri);
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('scope', 'people');
+      authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('prompt', 'login'); // Force login screen
+      
+      // Add device type for callback handling
+      const deviceType = req.query.deviceType as string || 'desktop';
+      authUrl.searchParams.append('deviceType', deviceType);
+      
+      console.log('Redirecting directly to Planning Center OAuth server for login');
+      
+      // Redirect directly to Planning Center's OAuth server where user will see login screen
+      res.redirect(authUrl.toString());
       
     } catch (error) {
       console.error('Error starting Planning Center authorization flow:', error);
