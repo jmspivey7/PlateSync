@@ -1,280 +1,155 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, RefreshCcw, Save } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Save, Eye, Mail, RotateCcw, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
-// Define template types
-type TemplateType = 'WELCOME_EMAIL' | 'PASSWORD_RESET' | 'DONATION_CONFIRMATION' | 'COUNT_REPORT';
-
-interface EmailTemplate {
-  id: number;
-  templateType: TemplateType;
-  subject: string;
-  bodyText: string;
-  bodyHtml: string;
-  churchId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Template type information with friendly display names and placeholders
-const templateTypeInfo: Record<TemplateType, { name: string; description: string; placeholders: string[] }> = {
-  WELCOME_EMAIL: {
-    name: 'Welcome Email',
-    description: 'Sent to new users when they are added to the system.',
-    placeholders: ['{{firstName}}', '{{lastName}}', '{{churchName}}', '{{verificationUrl}}', '{{verificationToken}}']
-  },
-  PASSWORD_RESET: {
-    name: 'Password Reset',
-    description: 'Sent when a user requests a password reset.',
-    placeholders: ['{{resetUrl}}']
-  },
+// Template type information
+const templateTypeInfo = {
   DONATION_CONFIRMATION: {
     name: 'Donation Receipt',
     description: 'Sent to donors when their donation is recorded.',
-    placeholders: ['{{donorName}}', '{{churchName}}', '{{amount}}', '{{date}}', '{{donationId}}', '{{churchLogoUrl}}']
+    variables: ['{{churchName}}', '{{donorName}}', '{{amount}}', '{{date}}', '{{paymentMethod}}', '{{churchLogoUrl}}']
   },
   COUNT_REPORT: {
     name: 'Count Report',
-    description: 'Sent to report recipients when a count is finalized.',
-    placeholders: ['{{recipientName}}', '{{churchName}}', '{{batchName}}', '{{batchDate}}', '{{totalAmount}}', '{{cashAmount}}', '{{checkAmount}}', '{{donationCount}}']
+    description: 'Weekly summary report sent to administrators.',
+    variables: ['{{churchName}}', '{{weekRange}}', '{{totalAmount}}', '{{batchCount}}', '{{churchLogoUrl}}']
+  },
+  WELCOME_EMAIL: {
+    name: 'Welcome Email',
+    description: 'Welcome message for new users.',
+    variables: ['{{firstName}}', '{{lastName}}', '{{churchName}}', '{{userRole}}', '{{churchLogoUrl}}']
   }
 };
 
 export default function EmailTemplateEditor() {
   const { id } = useParams();
-  const templateId = parseInt(id || '0');
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<string>("edit");
-  const [templateData, setTemplateData] = useState<EmailTemplate | null>(null);
+  
+  const [activeTab, setActiveTab] = useState('edit');
+  const [subject, setSubject] = useState('');
+  const [bodyHtml, setBodyHtml] = useState('');
+  const [bodyText, setBodyText] = useState('');
   const [isFormDirty, setIsFormDirty] = useState(false);
-  const { user } = useAuth();
 
   // Fetch template data
-  const {
-    data: template,
-    isLoading,
-    isError,
-    error
-  } = useQuery<EmailTemplate>({
-    queryKey: [`/api/email-templates/${templateId}`],
-    enabled: templateId > 0,
+  const { data: templateData, isLoading } = useQuery({
+    queryKey: [`/api/email-templates/${id}`],
   });
 
-  // Update template data when fetched
-  useEffect(() => {
-    if (template) {
-      setTemplateData(template);
-    }
-  }, [template]);
+  // Fetch user data for logo replacement
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+  });
 
-  // Check if template ID is valid
-  if (templateId <= 0) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-red-600 mb-2">Invalid Template ID</h2>
-              <p className="text-gray-600 mb-4">The template ID is invalid or missing.</p>
-              <Link href="/settings">
-                <Button>Return to Settings</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Update template mutation - improved to handle HTML properly
+  // Update template mutation
   const updateTemplateMutation = useMutation({
-    mutationFn: async (data: Partial<EmailTemplate>) => {
-      console.log('Saving template data with HTML length:', data.bodyHtml?.length);
-      
-      // Use PUT instead of PATCH to solve the HTML handling issue
-      const response = await fetch(`/api/email-templates/${templateId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          subject: data.subject,
-          bodyHtml: data.bodyHtml,
-          bodyText: data.bodyText
-        })
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Template update failed:', errorText);
-        throw new Error(`Failed to update email template: ${response.status} ${response.statusText}`);
-      }
-      
-      return await response.json();
+    mutationFn: async (templateData: any) => {
+      const response = await apiRequest('PUT', `/api/email-templates/${id}`, templateData);
+      return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Template updated",
-        description: "Email template has been updated successfully.",
-        variant: "default",
-        className: "bg-white"
+        title: 'Template Updated',
+        description: 'Email template has been saved successfully.',
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/email-templates/${templateId}`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
       setIsFormDirty(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/email-templates/${id}`] });
     },
-    onError: (error) => {
-      console.error('Template update error:', error);
+    onError: (error: any) => {
       toast({
-        title: "Update failed",
-        description: error instanceof Error ? error.message : "Failed to update template",
-        variant: "destructive",
-        className: "bg-white border-red-600"
+        title: 'Error',
+        description: error.message || 'Failed to update template',
+        variant: 'destructive',
       });
     },
   });
-  
-  // Reset template to default
+
+  // Reset template mutation
   const resetTemplateMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/email-templates/${templateId}/reset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to reset email template');
-      }
-      
-      return await response.json();
+      const response = await apiRequest('POST', `/api/email-templates/${id}/reset`);
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
-        title: "Template reset",
-        description: "Email template has been reset to default.",
-        variant: "default",
-        className: "bg-white"
+        title: 'Template Reset',
+        description: 'Template has been reset to default.',
       });
-      setTemplateData(data);
-      queryClient.invalidateQueries({ queryKey: [`/api/email-templates/${templateId}`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
-      setIsFormDirty(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/email-templates/${id}`] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Reset failed",
-        description: error instanceof Error ? error.message : "Failed to reset template",
-        variant: "destructive",
-        className: "bg-white border-red-600"
+        title: 'Error',
+        description: error.message || 'Failed to reset template',
+        variant: 'destructive',
       });
     },
   });
 
-  // Handle form changes
-  const handleInputChange = (field: keyof EmailTemplate, value: string) => {
+  // Set form values when template data loads
+  useEffect(() => {
     if (templateData) {
-      setTemplateData({
-        ...templateData,
-        [field]: value
-      });
-      setIsFormDirty(true);
+      setSubject(templateData.subject || '');
+      setBodyHtml(templateData.bodyHtml || '');
+      setBodyText(templateData.bodyText || '');
     }
-  };
+  }, [templateData]);
 
-  // Handle form submission
+  // Track form changes
+  useEffect(() => {
+    if (templateData) {
+      const hasChanges = 
+        subject !== (templateData.subject || '') ||
+        bodyHtml !== (templateData.bodyHtml || '') ||
+        bodyText !== (templateData.bodyText || '');
+      setIsFormDirty(hasChanges);
+    }
+  }, [subject, bodyHtml, bodyText, templateData]);
+
   const handleSave = () => {
-    if (templateData) {
-      updateTemplateMutation.mutate({
-        subject: templateData.subject,
-        bodyText: templateData.bodyText,
-        bodyHtml: templateData.bodyHtml
-      });
-    }
+    updateTemplateMutation.mutate({
+      subject,
+      bodyHtml,
+      bodyText,
+    });
   };
 
-  // Confirm reset
   const handleReset = () => {
-    if (confirm("Are you sure you want to reset this template to its default? This will discard any customizations.")) {
-      resetTemplateMutation.mutate();
-    }
+    resetTemplateMutation.mutate();
   };
 
-  // Handle back button
   const handleBack = () => {
-    if (isFormDirty) {
-      if (confirm("You have unsaved changes. Are you sure you want to leave this page? Your changes will be lost.")) {
-        setLocation("/settings");
-      }
-    } else {
-      setLocation("/settings");
-    }
+    setLocation('/settings');
   };
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="py-8">
-            <div className="flex flex-col items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-              <p className="mt-4 text-gray-600">Loading template...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
       </div>
     );
   }
 
-  // Error state
-  if (isError) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Template</h2>
-              <p className="text-gray-600 mb-4">{error instanceof Error ? error.message : "Failed to load template data"}</p>
-              <Link href="/settings">
-                <Button>Return to Settings</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If no template data, show error
   if (!templateData) {
     return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-red-600 mb-2">Template Not Found</h2>
-              <p className="text-gray-600 mb-4">The requested email template could not be found.</p>
-              <Link href="/settings">
-                <Button>Return to Settings</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-gray-900">Template not found</h2>
+          <Button onClick={handleBack} className="mt-4">
+            Return to Settings
+          </Button>
+        </div>
       </div>
     );
   }
@@ -282,173 +157,186 @@ export default function EmailTemplateEditor() {
   // Get template info
   const templateInfo = templateTypeInfo[templateData.templateType];
 
+  // Process HTML for preview with placeholder data
+  const processedHtml = bodyHtml
+    .replace(/\{\{churchName\}\}/g, user?.churchName || 'Sample Church')
+    .replace(/\{\{firstName\}\}/g, 'John')
+    .replace(/\{\{lastName\}\}/g, 'Doe')
+    .replace(/\{\{donorName\}\}/g, 'John Doe')
+    .replace(/\{\{amount\}\}/g, '$100.00')
+    .replace(/\{\{date\}\}/g, new Date().toLocaleDateString())
+    .replace(/\{\{paymentMethod\}\}/g, 'Cash')
+    .replace(/\{\{weekRange\}\}/g, 'Jan 1-7, 2025')
+    .replace(/\{\{totalAmount\}\}/g, '$2,500.00')
+    .replace(/\{\{batchCount\}\}/g, '5')
+    .replace(/\{\{userRole\}\}/g, 'Administrator')
+    .replace(/\{\{churchLogoUrl\}\}/g, user?.churchLogoUrl || 'https://repl-plates-image-repo.s3.amazonaws.com/logos/PlateSync_Logo.png');
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-6">
-        <Card className="w-full">
-          <CardHeader className="border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <Button 
-                variant="ghost" 
-                className="p-0 hover:bg-transparent"
-                onClick={handleBack}
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                <span>Return to Settings</span>
-              </Button>
-            </div>
-            <CardTitle className="mt-4">{templateInfo.name} Template</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{templateInfo.description}</p>
-          
-          <div className="flex flex-wrap gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={handleReset}
-              disabled={resetTemplateMutation.isPending}
-              className="border-gray-400"
-            >
-              {resetTemplateMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <RefreshCcw className="h-4 w-4 mr-1" />
-              )}
-              Reset to Default
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!isFormDirty || updateTemplateMutation.isPending}
-              className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-            >
-              {updateTemplateMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-1" />
-              )}
-              Save Changes
-            </Button>
+      {/* Header bar matching Global Admin style */}
+      <div className="flex items-center justify-between p-4 bg-white border-b">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
+            <Mail className="h-5 w-5 text-white" />
           </div>
-        </CardHeader>
-        <CardContent className="pt-6 w-full">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger 
-                value="edit" 
-                className="hover:bg-[#e6f5e6] data-[state=active]:border-b-[#69ad4c] data-[state=active]:border-b-2"
-              >
-                Edit Content
-              </TabsTrigger>
-              <TabsTrigger 
-                value="preview" 
-                className="hover:bg-[#e6f5e6] data-[state=active]:border-b-[#69ad4c] data-[state=active]:border-b-2"
-              >
-                Preview HTML
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="edit" className="space-y-6 w-full">
-              <div className="w-full">
-                <Label htmlFor="subject" className="font-medium">Subject</Label>
-                <Input
-                  id="subject"
-                  value={templateData.subject}
-                  onChange={(e) => handleInputChange('subject', e.target.value)}
-                  className="mt-1 border-gray-400 w-full"
-                />
+          <h1 className="text-xl font-semibold text-gray-900">
+            {templateInfo.name} Template
+          </h1>
+        </div>
+        
+        <Button
+          variant="outline"
+          onClick={handleBack}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Templates
+        </Button>
+      </div>
+
+      {/* Main content area - exactly matching Global Admin layout */}
+      <div className="p-6">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Edit {templateInfo.name} Template
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Template ID: {templateData.id} | Type: {templateData.templateType}
+            </p>
+          </CardHeader>
+          
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-6">
+                <TabsList className="grid w-fit grid-cols-2">
+                  <TabsTrigger value="edit" className="flex items-center gap-2">
+                    Edit Template
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+                
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleReset}
+                    disabled={resetTemplateMutation.isPending}
+                    className="flex items-center gap-2"
+                  >
+                    {resetTemplateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                    Reset to Default
+                  </Button>
+                  
+                  <Button
+                    onClick={handleSave}
+                    disabled={!isFormDirty || updateTemplateMutation.isPending}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                  >
+                    {updateTemplateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Save Template
+                  </Button>
+                </div>
               </div>
-              
-              <div>
-                <Label htmlFor="bodyText" className="font-medium">Text Version</Label>
-                <p className="text-sm text-gray-500 mb-1">
-                  This version is sent to email clients that can't display HTML.
-                </p>
-                <Textarea
-                  id="bodyText"
-                  value={templateData.bodyText}
-                  onChange={(e) => handleInputChange('bodyText', e.target.value)}
-                  rows={12}
-                  className="font-mono text-sm mt-1 border-gray-400 w-full"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="bodyHtml" className="font-medium">HTML Version</Label>
-                <p className="text-sm text-gray-500 mb-1">
-                  This version is displayed in most email clients.
-                </p>
-                <Textarea
-                  id="bodyHtml"
-                  value={templateData.bodyHtml}
-                  onChange={(e) => handleInputChange('bodyHtml', e.target.value)}
-                  rows={15}
-                  className="font-mono text-sm mt-1 border-gray-400 w-full"
-                />
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                <h3 className="text-sm font-medium mb-2">Available Placeholders:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {templateInfo.placeholders.map((placeholder) => (
-                    <div 
-                      key={placeholder} 
-                      className="bg-white px-3 py-1 text-sm rounded-full border border-gray-300"
-                    >
-                      {placeholder}
+
+              <TabsContent value="edit" className="mt-0 space-y-6">
+                <div>
+                  <Label htmlFor="subject" className="text-base font-medium text-gray-900">
+                    Subject Line
+                  </Label>
+                  <Input
+                    id="subject"
+                    type="text"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="mt-2"
+                    placeholder="Enter email subject..."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="bodyHtml" className="text-base font-medium text-gray-900">
+                    HTML Body
+                  </Label>
+                  <Textarea
+                    id="bodyHtml"
+                    value={bodyHtml}
+                    onChange={(e) => setBodyHtml(e.target.value)}
+                    className="mt-2 min-h-[300px] font-mono text-sm"
+                    placeholder="Enter HTML content..."
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Available variables: {templateInfo.variables?.join(', ')}
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="bodyText" className="text-base font-medium text-gray-900">
+                    Text Body (Plain Text Fallback)
+                  </Label>
+                  <Textarea
+                    id="bodyText"
+                    value={bodyText}
+                    onChange={(e) => setBodyText(e.target.value)}
+                    className="mt-2 min-h-[200px] font-mono text-sm"
+                    placeholder="Enter plain text version..."
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Plain text version for email clients that don't support HTML.
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="preview" className="mt-0">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Preview</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      This shows how the email will look with sample data
+                    </p>
+                    
+                    <div className="border border-gray-200 rounded-lg bg-white">
+                      <div className="p-4 border-b border-gray-200 bg-gray-50">
+                        <p className="text-sm font-medium text-gray-900">Subject:</p>
+                        <p className="text-sm text-gray-700">{subject || 'No subject'}</p>
+                      </div>
+                      
+                      <div className="p-6">
+                        <div 
+                          dangerouslySetInnerHTML={{ 
+                            __html: processedHtml 
+                          }} 
+                        />
+                      </div>
                     </div>
-                  ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-900 mb-2">Plain Text Version:</h4>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {bodyText || 'No plain text version'}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  These placeholders will be replaced with actual values when the email is sent.
-                </p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="preview" className="space-y-6 w-full">
-              <div className="w-full">
-                <Label className="font-medium">Subject</Label>
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mt-1 w-full">
-                  {templateData.subject}
-                </div>
-              </div>
-              
-              <div className="w-full">
-                <Label className="font-medium">HTML Preview</Label>
-                <div className="border rounded-md bg-white mt-1 border-gray-400 w-full min-h-[400px] p-4 overflow-auto">
-                  {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
-                    <div dangerouslySetInnerHTML={{
-                      __html: (() => {
-                        let html = templateData.bodyHtml;
-                        
-                        // If user exists and has a church logo, replace the placeholder with the actual logo URL
-                        if (user && user.churchLogoUrl) {
-                          html = html.replace(
-                            /{{churchLogoUrl}}/g, 
-                            user.churchLogoUrl.startsWith('http') 
-                              ? user.churchLogoUrl 
-                              : `${window.location.origin}${user.churchLogoUrl}`
-                          );
-                        } else {
-                          // Otherwise remove the image entirely
-                          html = html.replace(/<img\s+src="{{churchLogoUrl}}"\s+alt="{{churchName}} Logo"[^>]*>/g, '');
-                        }
-                        
-                        // Don't force mobile width - let it scale naturally with the container
-                        return html
-                          .replace(/max-height: \d+px/g, 'max-height: 150px');
-                      })()
-                    }} />
-                  ) : (
-                    <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Note: Placeholders will be replaced with actual values when the email is sent.
-                </p>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   );
 }
