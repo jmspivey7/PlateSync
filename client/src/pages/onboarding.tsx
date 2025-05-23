@@ -73,8 +73,11 @@ export default function Onboarding() {
   const [importProgress, setImportProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   
-  // Email notification state - default to false (OFF)
-  const [donorNotificationsEnabled, setDonorNotificationsEnabled] = useState(false);
+  // Email notification state - load from localStorage or default to false (OFF)
+  const [donorNotificationsEnabled, setDonorNotificationsEnabled] = useState(() => {
+    const saved = localStorage.getItem('onboardingEmailNotifications');
+    return saved ? JSON.parse(saved) : false;
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPlanningCenterConnecting, setIsPlanningCenterConnecting] = useState(false);
   const [isPlanningCenterConnected, setIsPlanningCenterConnected] = useState(false);
@@ -240,11 +243,14 @@ export default function Onboarding() {
       
       setLogoFile(file);
       
-      // Create preview
+      // Create preview and save to localStorage for persistence
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target) {
-          setLogoPreview(e.target.result as string);
+          const previewUrl = e.target.result as string;
+          setLogoPreview(previewUrl);
+          // Save preview to localStorage for back navigation
+          localStorage.setItem('onboardingLogoPreview', previewUrl);
         }
       };
       reader.readAsDataURL(file);
@@ -866,10 +872,10 @@ export default function Onboarding() {
     }
   }, [currentStep]);
 
-  // Load existing service options when entering the service options step
+  // Load existing data when entering specific steps
   useEffect(() => {
     if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
-      // Load from localStorage during onboarding
+      // Load service options from localStorage during onboarding
       try {
         const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
         setServiceOptions(storedOptions);
@@ -877,6 +883,17 @@ export default function Onboarding() {
         console.error('Error loading service options from localStorage:', error);
         // Default options if there's an error loading from localStorage
         setServiceOptions([]);
+      }
+    } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
+      // Restore logo preview if user navigates back
+      try {
+        const savedPreview = localStorage.getItem('onboardingLogoPreview');
+        if (savedPreview) {
+          setLogoPreview(savedPreview);
+          // Note: We can't restore the File object, but we keep the preview for UI
+        }
+      } catch (error) {
+        console.error('Error loading logo preview from localStorage:', error);
       }
     }
   }, [currentStep]);
@@ -1268,7 +1285,10 @@ export default function Onboarding() {
                     id="donor-notifications"
                     checked={donorNotificationsEnabled}
                     onCheckedChange={(checked) => {
-                      setDonorNotificationsEnabled(checked || false);
+                      const newValue = checked || false;
+                      setDonorNotificationsEnabled(newValue);
+                      // Save to localStorage immediately for persistence
+                      localStorage.setItem('onboardingEmailNotifications', JSON.stringify(newValue));
                     }}
                     className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
                   />
