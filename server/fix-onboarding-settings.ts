@@ -173,43 +173,20 @@ export async function fixOnboardingSettings(userId: string) {
       }
     }
     
-    // 4. Check for service options
+    // 4. Check for service options - DON'T create defaults during registration
+    // The user's chosen service options from the onboarding flow should be the only ones
     const existingOptions = await db
       .select()
       .from(serviceOptions)
       .where(eq(serviceOptions.churchId, churchId));
     
+    console.log(`Found ${existingOptions.length} existing service options for church ${churchId}`);
+    
+    // Only create defaults if this is NOT part of a registration flow
+    // (Registration should only use service options explicitly chosen by the user)
     if (existingOptions.length === 0) {
-      console.log("No service options found, creating defaults");
-      
-      // Create default service options
-      const defaultOptions = ['Sunday Morning', 'Sunday Evening', 'Wednesday Night'];
-      
-      // Get the schema for service options
-      const serviceOptionFields = await db.execute(sql`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'service_options'
-      `);
-      
-      console.log("Service option schema fields:", serviceOptionFields);
-      
-      for (const option of defaultOptions) {
-        try {
-          // Direct SQL insert to avoid schema issues
-          await db.execute(sql`
-            INSERT INTO service_options (name, value, church_id, created_at, updated_at)
-            VALUES (${option}, ${option}, ${churchId}, NOW(), NOW())
-          `);
-          console.log(`Service option '${option}' created successfully`);
-        } catch (insertError) {
-          console.error(`Error inserting service option '${option}':`, insertError);
-        }
-      }
-      
-      console.log("Default service options created");
-    } else {
-      console.log(`Found ${existingOptions.length} existing service options`);
+      console.log("No service options found, but NOT creating defaults during registration flow");
+      console.log("Service options should be created only by user choice during onboarding");
     }
     
     console.log("Settings fix completed successfully");
