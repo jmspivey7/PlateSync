@@ -808,7 +808,8 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log('Error checking existing tokens, proceeding with OAuth');
       }
     } else {
-      console.log('Force re-authorization requested, proceeding with OAuth even if already connected');
+      console.log('FORCE RE-AUTHORIZATION: Skipping existing token check and proceeding with fresh OAuth flow');
+      // Explicitly do NOT check for existing tokens when forceReauth is true
     }
     
     if (!churchId) {
