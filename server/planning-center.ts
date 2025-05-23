@@ -709,6 +709,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Get church ID from session data (set during auth URL generation)
       const churchId = req.session.planningCenterChurchId || (req.query.churchId ? String(req.query.churchId) : undefined);
+      console.log('Session church ID:', req.session.planningCenterChurchId);
+      console.log('Query church ID:', req.query.churchId);
+      console.log('Final church ID for auto-claim:', churchId);
       
       app.locals.tempPlanningCenterTokens[tempKey] = {
         accessToken: access_token,
