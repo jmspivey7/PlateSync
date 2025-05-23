@@ -73,7 +73,7 @@ export default function Onboarding() {
   const [importProgress, setImportProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   
-  // Email notification state
+  // Email notification state - default to false (OFF)
   const [donorNotificationsEnabled, setDonorNotificationsEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPlanningCenterConnecting, setIsPlanningCenterConnecting] = useState(false);
@@ -540,8 +540,8 @@ export default function Onboarding() {
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      // Send to subscription page instead of complete page
-      setCurrentStep(OnboardingStep.SUBSCRIPTION);
+      // When skipping email notifications, save as OFF (false) by default
+      donorNotificationMutation.mutate(false);
     } else {
       // If on last step or otherwise, redirect to login page
       setLocation("/login-local");
@@ -1302,16 +1302,14 @@ export default function Onboarding() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="relative inline-flex">
-                    <Switch 
-                      id="donor-notifications"
-                      checked={donorNotificationsEnabled}
-                      onCheckedChange={(checked) => {
-                        setDonorNotificationsEnabled(checked || false);
-                      }}
-                      className="data-[state=checked]:bg-[#69ad4c]"
-                    />
-                  </div>
+                  <Switch 
+                    id="donor-notifications"
+                    checked={donorNotificationsEnabled}
+                    onCheckedChange={(checked) => {
+                      setDonorNotificationsEnabled(checked || false);
+                    }}
+                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
+                  />
                   <span className="font-semibold text-base">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
                 </div>
               </div>
