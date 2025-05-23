@@ -501,15 +501,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
   });
   
-  app.post('/api/members/import', isAuthenticated, restrictSuspendedChurchAccess, upload.single('csvFile'), async (req: any, res) => {
+  app.post('/api/members/import', upload.single('csvFile'), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No CSV file provided' });
       }
       
+      // Handle both authenticated users and registration flow
       const user = req.user;
-      const churchId = user?.churchId || '';
-      const userId = user?.id || '';
+      let churchId = '';
+      let userId = '';
+      
+      if (user) {
+        // Authenticated user - use their church ID and check for suspended access
+        churchId = user.churchId || user.id || '';
+        userId = user.id || '';
+        
+        // Check if church access is suspended for authenticated users
+        const church = await storage.getChurch(churchId);
+        if (church && church.subscriptionStatus === 'suspended') {
+          return res.status(403).json({ 
+            message: 'Church access is suspended. Please update your subscription to continue using PlateSync.' 
+          });
+        }
+      } else {
+        // Registration flow - get church ID from request body
+        churchId = req.body.churchId || '';
+        userId = churchId; // Use church ID as user ID for registration
+      }
+      
       const replaceAll = req.body.replaceAll === 'true';
       
       if (!churchId) {

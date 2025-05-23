@@ -131,6 +131,14 @@ export default function Onboarding() {
   const importCsvMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       try {
+        // Add church ID to the form data for registration flow
+        const storedUserId = localStorage.getItem('userId');
+        const idToUse = churchId || storedUserId;
+        
+        if (idToUse) {
+          formData.append('churchId', idToUse);
+        }
+        
         const response = await fetch('/api/members/import', {
           method: 'POST',
           body: formData,
