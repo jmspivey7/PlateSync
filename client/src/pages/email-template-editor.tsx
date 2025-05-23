@@ -283,21 +283,22 @@ export default function EmailTemplateEditor() {
   const templateInfo = templateTypeInfo[templateData.templateType];
 
   return (
-    <div className="w-full max-w-none px-4 py-8">
-      <Card className="w-full">
-        <CardHeader className="border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <Button 
-              variant="ghost" 
-              className="p-0 hover:bg-transparent"
-              onClick={handleBack}
-            >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              <span>Return to Settings</span>
-            </Button>
-          </div>
-          <CardTitle className="mt-4">{templateInfo.name} Template</CardTitle>
-          <p className="text-sm text-gray-600 mt-1">{templateInfo.description}</p>
+    <div className="min-h-screen w-full px-4 py-8">
+      <div className="w-full max-w-7xl mx-auto">
+        <Card className="w-full">
+          <CardHeader className="border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <Button 
+                variant="ghost" 
+                className="p-0 hover:bg-transparent"
+                onClick={handleBack}
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                <span>Return to Settings</span>
+              </Button>
+            </div>
+            <CardTitle className="mt-4">{templateInfo.name} Template</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{templateInfo.description}</p>
           
           <div className="flex flex-wrap gap-2 mt-4">
             <Button
@@ -446,7 +447,8 @@ export default function EmailTemplateEditor() {
             </TabsContent>
           </Tabs>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
