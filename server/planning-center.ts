@@ -618,7 +618,8 @@ export function setupPlanningCenterRoutes(app: Express) {
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
     // Check if force re-authorization is requested (during registration)
     const forceReauth = req.query.forceReauth === 'true';
-    console.log('Planning Center auth URL requested with forceReauth:', forceReauth);
+    const isRegistration = req.query.isRegistration === 'true';
+    console.log('Planning Center auth URL requested with forceReauth:', forceReauth, 'isRegistration:', isRegistration);
     
     // Handle both authenticated users and registration flow
     let churchId = '';

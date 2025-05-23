@@ -1692,7 +1692,7 @@ export default function Onboarding() {
                               // Use popup window for OAuth flow during registration
                               // Get the Planning Center auth URL first, then open popup
                               try {
-                                const response = await fetch(`/api/planning-center/auth-url?churchId=${idToUse}&deviceType=desktop&forceReauth=true`);
+                                const response = await fetch(`/api/planning-center/auth-url?churchId=${idToUse}&deviceType=desktop&forceReauth=true&isRegistration=true`);
                                 if (!response.ok) {
                                   throw new Error('Failed to get Planning Center auth URL');
                                 }
