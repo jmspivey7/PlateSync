@@ -116,6 +116,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
   updateUserEmailNotificationSetting(userId: string, enabled: boolean): Promise<boolean>;
+  updateChurchEmailNotificationSetting(churchId: string, enabled: boolean): Promise<boolean>;
   updateUserRole(id: string, role: string): Promise<User>;
   createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User>;
   deleteUser(id: string): Promise<void>;
@@ -1021,7 +1022,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // This method was a duplicate - see the complete implementation below
+  async updateChurchEmailNotificationSetting(churchId: string, enabled: boolean): Promise<boolean> {
+    try {
+      console.log(`Updating church email notifications to ${enabled ? 'ENABLED' : 'DISABLED'} for church ${churchId}`);
+      
+      // Update the church's email notification setting
+      await db
+        .update(churches)
+        .set({ 
+          emailNotificationsEnabled: enabled,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, churchId));
+      
+      console.log(`Successfully updated church email notification settings for church ${churchId}`);
+      return true;
+    } catch (error) {
+      console.error('Error updating church email notification setting:', error);
+      return false;
+    }
+  }
   
   async updateUserRole(id: string, role: string): Promise<User> {
     // Prepare update data
