@@ -809,6 +809,16 @@ export function setupPlanningCenterRoutes(app: Express) {
       }
     } else {
       console.log('FORCE RE-AUTHORIZATION: Skipping existing token check and proceeding with fresh OAuth flow');
+      console.log('Force reauth parameters:', { forceReauth, isRegistration, userId, churchId });
+      
+      // Clear any existing Planning Center session data when forcing reauth
+      if (isRegistration) {
+        console.log('Registration flow: Clearing existing Planning Center session data');
+        req.session.planningCenterState = undefined;
+        req.session.planningCenterUserId = undefined;
+        req.session.planningCenterChurchId = undefined;
+      }
+      
       // Explicitly do NOT check for existing tokens when forceReauth is true
     }
     

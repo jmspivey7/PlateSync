@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Planning Center Auth Test</title>
+</head>
+<body>
+    <h1>Planning Center Auth URL Test</h1>
+    <button onclick="testAuthUrl()">Test Planning Center Auth URL</button>
+    <div id="results"></div>
+    
+    <script>
+        async function testAuthUrl() {
+            const churchId = '07aed68ea9fc3bf0'; // Your church ID
+            const url = `/api/planning-center/auth-url?forceReauth=true&isRegistration=true&churchId=${churchId}`;
+            
+            console.log('Testing URL:', url);
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log('Response status:', response.status);
+                console.log('Response data:', data);
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = `
+                    <h3>Response Status: ${response.status}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                if (data.url) {
+                    resultsDiv.innerHTML += `<p><strong>OAuth URL:</strong> ${data.url}</p>`;
+                } else if (data.already_connected) {
+                    resultsDiv.innerHTML += `<p><strong>Already Connected:</strong> ${data.message}</p>`;
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('results').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
