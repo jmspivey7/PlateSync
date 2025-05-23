@@ -1178,22 +1178,7 @@ export default function Onboarding() {
                   Skip for now
                 </Button>
                 
-                {logoFile && !uploadSuccess && (
-                  <Button
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                    onClick={handleLogoUpload}
-                    disabled={isUploading}
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>Save Logo</>
-                    )}
-                  </Button>
-                )}
+
                 
                 <Button 
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
