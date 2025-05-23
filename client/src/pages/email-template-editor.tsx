@@ -298,37 +298,35 @@ export default function EmailTemplateEditor() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="preview" className="mt-0">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Preview</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      This shows how the email will look with sample data
-                    </p>
+              <TabsContent value="preview" className="mt-0 space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Preview</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    This shows how the email will look with sample data
+                  </p>
+                  
+                  <div className="border border-gray-200 rounded-lg bg-white">
+                    <div className="p-4 border-b border-gray-200 bg-gray-50">
+                      <p className="text-sm font-medium text-gray-900">Subject:</p>
+                      <p className="text-sm text-gray-700">{subject || 'No subject'}</p>
+                    </div>
                     
-                    <div className="border border-gray-200 rounded-lg bg-white">
-                      <div className="p-4 border-b border-gray-200 bg-gray-50">
-                        <p className="text-sm font-medium text-gray-900">Subject:</p>
-                        <p className="text-sm text-gray-700">{subject || 'No subject'}</p>
-                      </div>
-                      
-                      <div className="p-6">
-                        <div 
-                          dangerouslySetInnerHTML={{ 
-                            __html: processedHtml 
-                          }} 
-                        />
-                      </div>
+                    <div className="p-6">
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: processedHtml 
+                        }} 
+                      />
                     </div>
                   </div>
-                  
-                  <div>
-                    <h4 className="text-base font-semibold text-gray-900 mb-2">Plain Text Version:</h4>
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                        {bodyText || 'No plain text version'}
-                      </pre>
-                    </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-base font-semibold text-gray-900 mb-2">Plain Text Version:</h4>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {bodyText || 'No plain text version'}
+                    </pre>
                   </div>
                 </div>
               </TabsContent>
