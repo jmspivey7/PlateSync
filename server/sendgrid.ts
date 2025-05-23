@@ -378,10 +378,10 @@ export async function sendDonationNotification(params: DonationNotificationParam
       const text = `
 Dear ${params.donorName},
 
-Thank you for your donation of $${formattedAmount} on ${params.date} to ${params.churchName}.
+Thank you for your donation of ${formattedAmount} on ${params.date} to ${params.churchName}.
 
 Donation Details:
-- Amount: $${formattedAmount}
+- Amount: ${formattedAmount}
 - Date: ${params.date}
 - Donation ID: #${donationId}
 
@@ -1330,9 +1330,9 @@ A count has been finalized for ${params.churchName}, and a Detailed Count Report
 Count Details:
 - Count: ${params.batchName}
 - Date: ${params.batchDate}
-- Total Amount: $${formattedTotalAmount}
-- Cash: $${formattedCashAmount}
-- Checks: $${formattedCheckAmount}
+- Total Amount: ${formattedTotalAmount}
+- Cash: ${formattedCashAmount}
+- Checks: ${formattedCheckAmount}
 - Number of Donations: ${params.donationCount}
 
 ${params.primaryAttestor ? `Attestation Information:
