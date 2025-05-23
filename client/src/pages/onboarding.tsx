@@ -70,7 +70,10 @@ export default function Onboarding() {
     setIsCanceling(true);
     try {
       const storedUserId = localStorage.getItem('userId');
-      const idToUse = churchId || storedUserId;
+      const storedChurchId = localStorage.getItem('onboardingChurchId');
+      const idToUse = churchId || storedChurchId || storedUserId;
+      
+      console.log(`[CANCEL] Attempting to purge church ID: ${idToUse}`);
       
       if (idToUse) {
         // Call the purge endpoint to remove all church data
@@ -81,22 +84,48 @@ export default function Onboarding() {
           },
         });
         
+        console.log(`[CANCEL] Purge response status: ${response.status}`);
+        
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[CANCEL] Purge failed: ${errorText}`);
           throw new Error('Failed to cancel account');
         }
         
-        // Clear all localStorage onboarding data
+        const result = await response.json();
+        console.log(`[CANCEL] Purge successful: ${JSON.stringify(result)}`);
+        
+        // Clear ALL localStorage data including additional items
         localStorage.removeItem('userId');
         localStorage.removeItem('userVerified');
         localStorage.removeItem('onboardingServiceOptions');
         localStorage.removeItem('onboardingLogoPreview');
         localStorage.removeItem('onboardingEmailNotifications');
         localStorage.removeItem('onboardingServiceOptionsSaved');
+        localStorage.removeItem('onboardingChurchId');
+        localStorage.removeItem('churchId');
+        localStorage.removeItem('firstName');
+        localStorage.removeItem('lastName');
+        localStorage.removeItem('email');
+        
+        console.log('[CANCEL] All localStorage data cleared');
+        
+        // Force logout from any existing session
+        try {
+          await fetch('/api/logout-local', { method: 'POST', credentials: 'include' });
+          await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+        } catch (logoutError) {
+          console.log('[CANCEL] Logout completed');
+        }
         
         // Account canceled successfully - no toast notification needed
+      } else {
+        console.error('[CANCEL] No church ID found to purge');
+        throw new Error('No account data found to cancel');
       }
       
-      // Redirect to main login page
+      // Force redirect to main login page
+      console.log('[CANCEL] Redirecting to login page');
       window.location.href = '/login-local';
       
     } catch (error) {
