@@ -93,7 +93,7 @@ export function useSubscription() {
       }
     },
     onSuccess: () => {
-      // Trial started successfully - no toast notification needed
+      // Trial started successfully - no toast notification during onboarding
     },
     onError: (error: Error) => {
       toast({
