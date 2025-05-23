@@ -1506,7 +1506,7 @@ export default function Onboarding() {
                   {/* Planning Center Integration UI */}
                   <div className="flex flex-col items-center justify-center p-4 space-y-6 rounded-lg border border-gray-300">
                     <img 
-                      src="/planning-center-logo.png" 
+                      src="/planning-center-full-color.png" 
                       alt="Planning Center Logo" 
                       className="h-12 mb-2" 
                     />
@@ -1566,11 +1566,22 @@ export default function Onboarding() {
                         <Button
                           onClick={() => {
                             setIsPlanningCenterConnecting(true);
-                            // Mock successful connection after 2 seconds
-                            setTimeout(() => {
-                              setIsPlanningCenterConnecting(false);
-                              setIsPlanningCenterConnected(true);
-                            }, 2000);
+                            
+                            // Get church ID for registration flow
+                            const storedUserId = localStorage.getItem('userId');
+                            const idToUse = churchId || storedUserId;
+                            
+                            if (idToUse) {
+                              // Redirect to Planning Center OAuth with church ID
+                              const authUrl = `/api/planning-center/authorize?churchId=${idToUse}`;
+                              window.location.href = authUrl;
+                            } else {
+                              // Mock successful connection if no church ID available
+                              setTimeout(() => {
+                                setIsPlanningCenterConnecting(false);
+                                setIsPlanningCenterConnected(true);
+                              }, 2000);
+                            }
                           }}
                           className="w-full text-white"
                           style={{ backgroundColor: '#2176FF' }}
