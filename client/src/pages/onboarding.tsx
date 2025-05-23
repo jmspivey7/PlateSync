@@ -736,7 +736,7 @@ export default function Onboarding() {
       // Member import is complete or skipped, move to email notifications
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      // Save the email notification setting first, then user can manually proceed
+      // Save the email notification setting and advance to subscription step
       try {
         await donorNotificationMutation.mutateAsync(donorNotificationsEnabled);
         setCurrentStep(OnboardingStep.SUBSCRIPTION);
