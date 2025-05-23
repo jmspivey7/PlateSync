@@ -209,8 +209,8 @@ export default function EmailTemplateEditor() {
           
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-6">
-                <TabsList className="grid w-fit grid-cols-2">
+              <div className="border-b border-gray-200 pb-4 mb-6">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="edit" className="flex items-center gap-2">
                     Edit Template
                   </TabsTrigger>
@@ -219,35 +219,6 @@ export default function EmailTemplateEditor() {
                     Preview
                   </TabsTrigger>
                 </TabsList>
-                
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleReset}
-                    disabled={resetTemplateMutation.isPending}
-                    className="flex items-center gap-2"
-                  >
-                    {resetTemplateMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-4 w-4" />
-                    )}
-                    Reset to Default
-                  </Button>
-                  
-                  <Button
-                    onClick={handleSave}
-                    disabled={!isFormDirty || updateTemplateMutation.isPending}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                  >
-                    {updateTemplateMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    Save Template
-                  </Button>
-                </div>
               </div>
 
               <TabsContent value="edit" className="mt-0 space-y-6">
@@ -333,6 +304,36 @@ export default function EmailTemplateEditor() {
             </Tabs>
           </CardContent>
         </Card>
+        
+        {/* Action buttons moved outside card for full tab width */}
+        <div className="flex justify-end gap-3 mt-6">
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            disabled={resetTemplateMutation.isPending}
+            className="flex items-center gap-2"
+          >
+            {resetTemplateMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="h-4 w-4" />
+            )}
+            Reset to Default
+          </Button>
+          
+          <Button
+            onClick={handleSave}
+            disabled={!isFormDirty || updateTemplateMutation.isPending}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+          >
+            {updateTemplateMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Save Template
+          </Button>
+        </div>
       </div>
     </div>
   );
