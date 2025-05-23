@@ -1663,10 +1663,7 @@ export default function Onboarding() {
                                   className: 'bg-[#48BB78] text-white',
                                 });
                                 
-                                // Auto advance to next step after 2 seconds
-                                setTimeout(() => {
-                                  handleNextStep();
-                                }, 2000);
+                                // DO NOT auto-advance - user must click "Save & Continue"
                               }, 2000);
                             }}
                             disabled={isImportingFromPlanningCenter}
