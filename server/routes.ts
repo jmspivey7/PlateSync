@@ -242,11 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
   
-  // Support both GET and POST for logout
-  app.get("/api/logout", handleLogout);
-  app.post("/api/logout", handleLogout);
-  
-  // Purge onboarding data endpoint (no auth required for cancellation)
+  // Purge onboarding data endpoint (no auth required for cancellation) - MUST be before other routes
   app.delete('/api/purge-onboarding/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
