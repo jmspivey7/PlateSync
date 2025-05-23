@@ -1896,9 +1896,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Church not found' });
       }
       
-      // Check if templates already exist
+      // Check if templates already exist - only get church templates, not system templates
       const existingTemplates = await storage.getEmailTemplates(churchId);
-      const existingTypes = existingTemplates.map(t => t.templateType);
+      // Filter out any system templates that might accidentally be included
+      const churchTemplates = existingTemplates.filter(t => t.churchId === churchId && t.churchId !== 'SYSTEM_TEMPLATES');
+      const existingTypes = churchTemplates.map(t => t.templateType);
       
       const templates = [];
       
