@@ -495,7 +495,7 @@ please contact the church office directly.
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
           <td style="padding: 8px 0; width: 40%; color: #718096;">Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${formattedAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">${formattedAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Date:</td>
