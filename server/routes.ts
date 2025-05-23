@@ -2904,30 +2904,9 @@ Sincerely,
         
       console.log(`Created church record with ID: ${church.id}`);
       
-      // Create initial service options for this church
-      await db.insert(serviceOptions)
-        .values([
-          { 
-            name: "Service Type", 
-            value: "Sunday Morning", 
-            isDefault: true, 
-            churchId: userId 
-          },
-          { 
-            name: "Service Type", 
-            value: "Sunday Evening", 
-            isDefault: false, 
-            churchId: userId 
-          },
-          { 
-            name: "Service Type", 
-            value: "Wednesday Evening", 
-            isDefault: false, 
-            churchId: userId 
-          }
-        ]);
-      
-      console.log(`Created default service options for church: ${userId}`);
+      // Service options will be created only by user choice during onboarding
+      // No automatic default service options are created during registration
+      console.log(`Registration complete for church: ${userId} - service options will be added during onboarding`);
       
       // Create a trial subscription for this church
       // Since userId is used as churchId in our registration flow
