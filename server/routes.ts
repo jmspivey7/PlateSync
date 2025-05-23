@@ -3287,14 +3287,17 @@ Sincerely,
             ));
             
           if (user) {
-            // Log the user in by setting up the session
-            req.login(user, (err) => {
-              if (err) {
-                console.error('Error auto-logging in user:', err);
-                // Continue anyway, verification was successful
-              } else {
-                console.log('User auto-logged in after verification:', user.id);
-              }
+            // Log the user in by setting up the session - use promise wrapper
+            await new Promise<void>((resolve, reject) => {
+              req.login(user, (err) => {
+                if (err) {
+                  console.error('Error auto-logging in user:', err);
+                  reject(err);
+                } else {
+                  console.log('User auto-logged in after verification:', user.id);
+                  resolve();
+                }
+              });
             });
           }
         } catch (loginError) {
