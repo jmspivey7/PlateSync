@@ -3820,12 +3820,26 @@ PlateSync Reporting System
       
       // Check if it's a trial subscription
       if (subscription.status === "TRIAL") {
-        const trialEndDate = new Date(subscription.trialEndDate);
-        daysRemaining = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const trialEndDate = subscription.trialEndDate ? new Date(subscription.trialEndDate) : null;
         
-        // Trial is expired if days remaining is less than or equal to 0
-        isTrialExpired = daysRemaining <= 0;
-        isActive = !isTrialExpired;
+        if (trialEndDate) {
+          daysRemaining = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Debug logging to see what's happening
+          console.log(`Trial calculation debug for church ${churchId}:`);
+          console.log(`- Current time: ${now.toISOString()}`);
+          console.log(`- Trial end date: ${trialEndDate.toISOString()}`);
+          console.log(`- Days remaining: ${daysRemaining}`);
+          
+          // Trial is expired if days remaining is less than or equal to 0
+          isTrialExpired = daysRemaining <= 0;
+          isActive = !isTrialExpired;
+        } else {
+          // No trial end date found - treat as expired
+          isTrialExpired = true;
+          isActive = false;
+          daysRemaining = 0;
+        }
       } else if (subscription.status === "ACTIVE") {
         // Paid subscription
         isActive = true;
