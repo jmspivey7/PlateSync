@@ -238,9 +238,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Regular user profile routes
   app.use('/api/profile', isAuthenticated, profileRoutes);
   
-  // Settings routes including church logo management
-  app.use('/api/settings', isAuthenticated, settingsRoutes);
-  
   // Dedicated endpoint for toggling email notifications (no auth required for onboarding)
   app.post('/api/settings/email-notifications', async (req: any, res) => {
     try {
@@ -280,6 +277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: 'An error occurred while updating settings' });
     }
   });
+  
+  // Settings routes including church logo management
+  app.use('/api/settings', isAuthenticated, settingsRoutes);
   
   // Member data endpoints
   app.get('/api/members', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
