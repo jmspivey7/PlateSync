@@ -489,8 +489,11 @@ export default function Onboarding() {
       // Show the account creation spinner screen
       setIsAccountCreating(true);
       
-      // Account creation complete - user can proceed manually
-      setIsAccountCreating(false);
+      // Move to the next step after a short delay
+      setTimeout(() => {
+        setIsAccountCreating(false);
+        setCurrentStep(OnboardingStep.UPLOAD_LOGO);
+      }, 2000);
       
     } catch (error) {
       setVerificationError(error instanceof Error ? error.message : "Invalid verification code");
