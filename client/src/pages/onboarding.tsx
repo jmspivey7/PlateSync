@@ -88,6 +88,8 @@ export default function Onboarding() {
         // Get the churchId from localStorage that was stored during verification
         const churchId = localStorage.getItem('onboardingChurchId') || '';
         
+        console.log('Sending email notification request:', { enabled, churchId });
+        
         const response = await apiRequest("/api/onboarding/email-notifications", {
           method: "POST",
           body: { 
@@ -96,6 +98,8 @@ export default function Onboarding() {
             churchId: churchId
           }
         });
+        
+        console.log('Email notification response received:', response);
         return response;
       } catch (error) {
         console.error("Error in notification settings API request:", error);

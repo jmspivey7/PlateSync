@@ -252,6 +252,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: req.body
       });
       
+      console.log('Request headers:', req.headers['content-type']);
+      
       // Handle both authenticated users and registration flow
       if (req.user) {
         // Authenticated user
@@ -281,7 +283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update church's email notification setting instead of user setting
       await storage.updateChurchEmailNotificationSetting(churchId, enabled);
       
-      // Return success
+      // Return success with proper headers
+      res.setHeader('Content-Type', 'application/json');
       return res.status(200).json({ success: true, message: 'Email notification setting updated successfully' });
     } catch (error) {
       console.error('Error updating email notification setting:', error);
