@@ -247,6 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Email notifications request received:', {
         hasUser: !!req.user,
         bodyUserId: req.body.userId,
+        bodyChurchId: req.body.churchId,
         sessionExists: !!req.session,
         body: req.body
       });
@@ -258,15 +259,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         churchId = req.user.churchId || req.user.id;
         console.log('Using authenticated user:', { userId, churchId });
       } else {
-        // Registration flow - get userId from request body
-        userId = req.body.userId;
-        churchId = userId; // Use userId as churchId during registration
+        // Registration flow - get userId and churchId from request body
+        userId = req.body.userId || req.body.churchId;
+        churchId = req.body.churchId || req.body.userId;
         console.log('Using registration flow:', { userId, churchId });
       }
       
-      if (!churchId) {
-        console.log('No church ID found, returning error');
-        return res.status(400).json({ message: 'Church ID is required' });
+      if (!churchId || !userId) {
+        console.log('Missing required IDs:', { churchId, userId });
+        return res.status(400).json({ message: 'Church ID and User ID are required' });
       }
       
       // Validate input

@@ -85,14 +85,15 @@ export default function Onboarding() {
   const donorNotificationMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
       try {
-        // Get the userId from localStorage that was stored during verification
-        const userId = localStorage.getItem('verifiedUserId');
+        // Get the churchId from localStorage that was stored during verification
+        const churchId = localStorage.getItem('onboardingChurchId') || '';
         
         const response = await apiRequest("/api/settings/email-notifications", {
           method: "POST",
           body: { 
             enabled,
-            userId
+            userId: churchId,
+            churchId: churchId
           }
         });
         return response;
