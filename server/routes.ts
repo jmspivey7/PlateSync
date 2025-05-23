@@ -379,6 +379,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to fetch service options' });
     }
   });
+
+  // Create service option endpoint for onboarding
+  app.post('/api/service-options', async (req: any, res) => {
+    try {
+      const { name, churchId } = req.body;
+      
+      if (!name || !churchId) {
+        return res.status(400).json({ message: 'Name and churchId are required' });
+      }
+
+      console.log(`Creating service option "${name}" for church ID: ${churchId}`);
+      
+      // Create service option with proper data structure
+      const serviceOptionData = {
+        name: name.trim(),
+        value: name.toLowerCase().replace(/\s+/g, '-'),
+        churchId: churchId,
+        isDefault: false // First option created during onboarding could be default
+      };
+
+      const newOption = await storage.createServiceOption(serviceOptionData);
+      console.log(`Service option "${name}" created successfully`);
+      
+      res.status(201).json(newOption);
+    } catch (error) {
+      console.error('Error creating service option:', error);
+      res.status(500).json({ message: 'Failed to create service option' });
+    }
+  });
   
   // Report Recipients endpoints
   app.get('/api/report-recipients', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
