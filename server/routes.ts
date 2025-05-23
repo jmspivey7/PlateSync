@@ -3276,6 +3276,32 @@ Sincerely,
           // Continue anyway, verification was successful
         }
         
+        // Auto-login the user after successful verification
+        try {
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(and(
+              eq(users.email, email),
+              eq(users.churchId, churchId)
+            ));
+            
+          if (user) {
+            // Log the user in by setting up the session
+            req.login(user, (err) => {
+              if (err) {
+                console.error('Error auto-logging in user:', err);
+                // Continue anyway, verification was successful
+              } else {
+                console.log('User auto-logged in after verification:', user.id);
+              }
+            });
+          }
+        } catch (loginError) {
+          console.error('Error auto-logging in user:', loginError);
+          // Continue anyway, verification was successful
+        }
+        
         return res.status(200).json({ message: 'Verification successful', verified: true });
       } else {
         return res.status(400).json({ message: 'Invalid or expired verification code', verified: false });
