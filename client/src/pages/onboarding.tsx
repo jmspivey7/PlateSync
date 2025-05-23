@@ -483,11 +483,8 @@ export default function Onboarding() {
       // Show the account creation spinner screen
       setIsAccountCreating(true);
       
-      // Move to the next step after a short delay
-      setTimeout(() => {
-        setIsAccountCreating(false);
-        setCurrentStep(OnboardingStep.UPLOAD_LOGO);
-      }, 2000);
+      // Account creation complete - user can proceed manually
+      setIsAccountCreating(false);
       
     } catch (error) {
       setVerificationError(error instanceof Error ? error.message : "Invalid verification code");
@@ -667,15 +664,15 @@ export default function Onboarding() {
       // Member import is complete or skipped, move to email notifications
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      // Save the email notification setting first, then move to subscription
+      // Save the email notification setting first, then user can manually proceed
       try {
         await donorNotificationMutation.mutateAsync(donorNotificationsEnabled);
-        setCurrentStep(OnboardingStep.SUBSCRIPTION);
+        // Setting saved successfully - user can now manually proceed to subscription
       } catch (error) {
         console.error('Error saving email notification setting:', error);
-        // Still advance to next step even if save fails
-        setCurrentStep(OnboardingStep.SUBSCRIPTION);
+        // Show error but don't auto-advance
       }
+      setCurrentStep(OnboardingStep.SUBSCRIPTION);
     } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
       // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
