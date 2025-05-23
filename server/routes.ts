@@ -630,7 +630,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Registration flow - get church ID from request body
         churchId = req.body.churchId || '';
-        userId = churchId; // Use church ID as user ID for registration
+        userId = req.body.userId || churchId; // Use provided user ID or fall back to church ID
+        
+        console.log(`CSV IMPORT DURING REGISTRATION: churchId=${churchId}, userId=${userId}`);
       }
       
       const replaceAll = req.body.replaceAll === 'true';
@@ -695,6 +697,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Import the members using the shared import function (add only new)
         result = await importMembers(validRecords, churchId);
+        
+        console.log(`CSV IMPORT RESULT: imported=${result.importedCount}, skipped=${result.duplicatesSkipped}, total=${validRecords.length}`);
         
         // Record the import stats in the database
         await storage.updateCsvImportStats(userId, churchId, result.importedCount);
