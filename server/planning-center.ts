@@ -454,8 +454,38 @@ export function setupPlanningCenterRoutes(app: Express) {
           console.log(`Cleaned up ${expiredCount} expired temporary tokens`);
         }
         
-        // Redirect with temporary key for client-side token claiming and include churchId if available
-        // Also account for mobile devices with a device type parameter
+        // Check if this is a popup flow (desktop during registration)
+        const isPopupFlow = deviceType === 'desktop';
+        
+        if (isPopupFlow) {
+          // For popup windows during registration, return a success page that closes the popup
+          const successHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Planning Center Connected</title>
+              <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                .success { color: #22c55e; font-size: 18px; margin-bottom: 20px; }
+                .loading { color: #6b7280; }
+              </style>
+            </head>
+            <body>
+              <div class="success">✅ Successfully connected to Planning Center!</div>
+              <div class="loading">Closing window...</div>
+              <script>
+                // Store success state and close popup
+                setTimeout(function() {
+                  window.close();
+                }, 1500);
+              </script>
+            </body>
+            </html>
+          `;
+          return res.send(successHtml);
+        }
+        
+        // For non-popup flows (mobile or settings page), use the redirect page
         const timestamp = Date.now(); // Generate timestamp for cache-busting
         let redirectUrl = `/planning-center-redirect.html?success=true&tempKey=${tempKey}`;
         
