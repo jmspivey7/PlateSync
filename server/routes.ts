@@ -3052,15 +3052,10 @@ Sincerely,
           nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
         };
       } else {
-        // Default to trial expired
+        // Use the actual trial status from statusData calculation
         response = {
           ...statusData,
-          status: "TRIAL",     // Show as a trial
-          isActive: true,      // Still active 
-          isTrialExpired: true, // But trial has expired
-          daysRemaining: 0,     // 0 days remaining
-          trialEndDate: new Date().toISOString(), // Trial ends today
-          plan: 'TRIAL'        // Trial plan
+          plan: subscription?.plan || 'TRIAL'
         };
       }
       
