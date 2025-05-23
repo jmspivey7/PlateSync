@@ -120,7 +120,7 @@ export const churchMembers = pgTable("church_members", {
   churchId: varchar("church_id").references(() => users.id).notNull(),
   memberId: integer("member_id").references(() => members.id).notNull(),
   // Church-specific member information
-  memberNotes: text("member_notes"), // Notes specific to this church relationship
+  notes: text("notes"), // Notes specific to this church relationship
   joinedDate: timestamp("joined_date").defaultNow(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
