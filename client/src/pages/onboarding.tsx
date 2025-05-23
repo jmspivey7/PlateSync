@@ -160,11 +160,7 @@ export default function Onboarding() {
       queryClient.invalidateQueries({ queryKey: ['/api/members'] });
       
       // Import successful - no toast needed during onboarding flow
-      
-      // Auto advance to next step after 2 seconds
-      setTimeout(() => {
-        handleNextStep();
-      }, 2000);
+      // User can now manually proceed with Save & Continue button
     },
     onError: (error) => {
       setImportStatus('error');
