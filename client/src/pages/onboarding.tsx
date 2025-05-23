@@ -257,6 +257,54 @@ export default function Onboarding() {
   };
   
   // Handle logo upload
+  // Handle service options saving
+  const handleServiceOptionsSave = async () => {
+    const storedUserId = localStorage.getItem('userId');
+    const idToUse = churchId || storedUserId;
+    
+    if (!idToUse) {
+      console.log('No church ID available for service options save');
+      return;
+    }
+    
+    // Get service options from localStorage
+    const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+    if (storedOptions.length === 0) {
+      console.log('No service options to save');
+      return;
+    }
+    
+    console.log('Saving service options:', storedOptions);
+    
+    try {
+      // Save each service option to the database
+      for (const option of storedOptions) {
+        const saveResponse = await fetch('/api/service-options', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: option,
+            churchId: idToUse
+          }),
+        });
+        
+        if (!saveResponse.ok) {
+          console.error(`Failed to save service option "${option}":`, await saveResponse.text());
+        } else {
+          console.log(`Service option "${option}" saved successfully`);
+        }
+      }
+      
+      // Clear the localStorage after successful save
+      localStorage.removeItem('onboardingServiceOptions');
+      
+    } catch (error) {
+      console.error('Error saving service options:', error);
+    }
+  };
+
   const handleLogoUpload = async () => {
     if (!logoFile) {
       toast({
@@ -640,114 +688,11 @@ export default function Onboarding() {
       }
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
-      // Before moving to member import, try to save service options if they weren't saved already
-      const storedUserId = localStorage.getItem('userId');
-      const idToUse = churchId || storedUserId;
-      const userVerified = localStorage.getItem('userVerified') === 'true';
-      
-      console.log('Service Options Step - User info:', { 
-        idToUse, 
-        churchId, 
-        storedUserId, 
-        userVerified 
-      });
-      
-      if (idToUse && userVerified) {
-        try {
-          // Check if we have any unsaved service options in localStorage
-          const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
-          console.log('Service Options to save from localStorage:', storedOptions);
-          
-          // Create default service options if none exist
-          if (storedOptions.length === 0) {
-            console.log('No service options found in localStorage, adding defaults');
-            const defaultOptions = ['Sunday Morning', 'Sunday Evening', 'Wednesday Night'];
-            localStorage.setItem('onboardingServiceOptions', JSON.stringify(defaultOptions));
-            setServiceOptions(defaultOptions);
-          }
-          
-          // First initialize default service options in database
-          try {
-            const initResponse = await fetch('/api/service-options/initialize', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ churchId: idToUse }),
-            });
-            
-            if (!initResponse.ok) {
-              console.error('Failed to initialize service options:', await initResponse.text());
-            } else {
-              console.log('Service options initialized successfully');
-            }
-          } catch (initError) {
-            console.error('Error initializing service options:', initError);
-          }
-          
-          // Now get existing options from database 
-          const getResponse = await fetch(`/api/service-options`);
-          
-          if (getResponse.ok) {
-            const existingOptions = await getResponse.json();
-            console.log('Existing service options in database:', existingOptions);
-            const existingNames = existingOptions.map((opt: any) => opt.name);
-            
-            // Get options from localStorage
-            const currentStoredOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
-            console.log('Current stored options in localStorage:', currentStoredOptions);
-            
-            // Filter out options that already exist in the database
-            const optionsToSave = currentStoredOptions.filter((opt: string) => !existingNames.includes(opt));
-            console.log('Options to save to database:', optionsToSave);
-            
-            // Save any remaining options to the database
-            for (const option of optionsToSave) {
-              try {
-                console.log(`Attempting to save service option: ${option}`);
-                const saveResponse = await fetch('/api/service-options', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    name: option,
-                    churchId: idToUse
-                  }),
-                });
-                
-                if (saveResponse.ok) {
-                  const savedOption = await saveResponse.json();
-                  console.log(`Service option "${option}" saved successfully:`, savedOption);
-                } else {
-                  console.error(`Failed to save service option "${option}":`, await saveResponse.text());
-                }
-              } catch (error) {
-                console.error(`Error saving service option "${option}":`, error);
-              }
-            }
-            
-            // Verify options were saved by refreshing from server
-            try {
-              const verifyResponse = await fetch(`/api/service-options`);
-              if (verifyResponse.ok) {
-                const savedOptions = await verifyResponse.json();
-                console.log('Final service options in database after saving:', savedOptions);
-              }
-            } catch (verifyError) {
-              console.error('Error verifying saved service options:', verifyError);
-            }
-          } else {
-            console.error('Failed to get existing service options:', await getResponse.text());
-          }
-        } catch (error) {
-          console.error('Error syncing service options:', error);
-        }
-      } else {
-        console.warn('Cannot save service options - missing user ID or verification status');
+      // If user has service options in localStorage, save them automatically
+      const storedOptions = JSON.parse(localStorage.getItem('onboardingServiceOptions') || '[]');
+      if (storedOptions.length > 0) {
+        await handleServiceOptionsSave();
       }
-      
-      // Now proceed to member import step
       setCurrentStep(OnboardingStep.IMPORT_MEMBERS);
     } else if (currentStep === OnboardingStep.IMPORT_MEMBERS) {
       // Member import is complete or skipped, move to email notifications
