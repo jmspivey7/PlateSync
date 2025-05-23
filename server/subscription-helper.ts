@@ -57,14 +57,23 @@ export async function createTrialSubscriptionForOnboarding(
     return existingSubscription; // Return existing if already created
   }
   
+  // Also check if there's a subscription using the original churchId (for backwards compatibility)
+  if (churchId !== church.id) {
+    const existingSubscriptionByUserId = await storage.getSubscription(churchId);
+    if (existingSubscriptionByUserId) {
+      console.log(`Found existing subscription for user/church ${churchId}:`, existingSubscriptionByUserId);
+      return existingSubscriptionByUserId;
+    }
+  }
+  
   // Calculate trial end date (30 days from now)
   const now = new Date();
   const trialEndDate = new Date(now);
   trialEndDate.setDate(trialEndDate.getDate() + 30);
   
-  // Create the subscription using church.id (UUID) instead of churchId (user ID)
+  // Create the subscription using the original churchId to maintain consistency
   const subscription = await storage.createSubscription({
-    churchId: church.id, // Use the UUID from the church record
+    churchId: churchId, // Use the original churchId passed to the function
     plan: 'TRIAL',
     status: 'TRIAL',
     trialStartDate: now,
