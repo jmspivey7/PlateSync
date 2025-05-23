@@ -667,8 +667,15 @@ export default function Onboarding() {
       // Member import is complete or skipped, move to email notifications
       setCurrentStep(OnboardingStep.EMAIL_NOTIFICATIONS);
     } else if (currentStep === OnboardingStep.EMAIL_NOTIFICATIONS) {
-      // Email notifications configuration is complete, move to subscription
-      setCurrentStep(OnboardingStep.SUBSCRIPTION);
+      // Save the email notification setting first, then move to subscription
+      try {
+        await donorNotificationMutation.mutateAsync(donorNotificationsEnabled);
+        setCurrentStep(OnboardingStep.SUBSCRIPTION);
+      } catch (error) {
+        console.error('Error saving email notification setting:', error);
+        // Still advance to next step even if save fails
+        setCurrentStep(OnboardingStep.SUBSCRIPTION);
+      }
     } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
       // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
@@ -683,15 +690,19 @@ export default function Onboarding() {
       localStorage.removeItem('churchId');
       localStorage.removeItem('email');
       
-      // Clear any session data and force logout
+      // Force a complete logout by calling both logout endpoints
       try {
         await fetch('/api/logout-local', { method: 'POST', credentials: 'include' });
+        await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+        
+        // Small delay to ensure session is cleared on server
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
-        console.log('Logout call completed');
+        console.log('Logout calls completed');
       }
       
-      // Redirect to login page after completing onboarding
-      setLocation("/login-local");
+      // Force browser to reload to clear any cached authentication state
+      window.location.href = "/login-local";
     }
   };
   
@@ -1315,7 +1326,7 @@ export default function Onboarding() {
                 
                 <Button 
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  onClick={() => donorNotificationMutation.mutate(donorNotificationsEnabled)}
+                  onClick={handleNextStep}
                   disabled={donorNotificationMutation.isPending}
                 >
                   {donorNotificationMutation.isPending ? (
