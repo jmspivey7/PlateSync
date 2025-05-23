@@ -413,8 +413,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update service option endpoint
-  app.patch('/api/service-options/:id', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+  // Add debugging middleware specifically for this route
+  app.patch('/api/service-options/:id', (req, res, next) => {
+    console.log(`🔥 PATCH REQUEST INTERCEPTED: ${req.method} ${req.path} - Body:`, req.body);
+    next();
+  }, isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const user = req.user;
