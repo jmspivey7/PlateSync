@@ -246,6 +246,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/logout", handleLogout);
   app.post("/api/logout", handleLogout);
   
+  // Purge onboarding data endpoint (no auth required for cancellation)
+  app.delete('/api/purge-onboarding/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      console.log(`Purging church ${id} and all associated data during onboarding cancellation`);
+      
+      // Get user IDs associated with this church first
+      const userResult = await db.execute(
+        `SELECT id FROM users WHERE church_id = '${id}'`
+      );
+      const userIds = userResult.rows.map((row: any) => row.id);
+      const userIdsForQuery = userIds.map((uid: string) => `'${uid}'`).join(',');
+      
+      console.log(`Purging church ${id} and ${userIds.length} associated users`);
+      
+      // Delete verification codes for this church
+      await db.execute(
+        `DELETE FROM verification_codes WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted verification codes for church`);
+      
+      // Delete planning center tokens
+      await db.execute(
+        `DELETE FROM planning_center_tokens WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted planning center tokens`);
+      
+      // Delete subscription data
+      await db.execute(
+        `DELETE FROM subscriptions WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted subscriptions`);
+      
+      // Delete service options
+      await db.execute(
+        `DELETE FROM service_options WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted service options`);
+      
+      // Delete report recipients
+      await db.execute(
+        `DELETE FROM report_recipients WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted report recipients`);
+      
+      // Delete donations first to maintain referential integrity
+      await db.execute(
+        `DELETE FROM donations WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted donations`);
+      
+      // Delete batches
+      await db.execute(
+        `DELETE FROM batches WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted batches`);
+      
+      // Delete members
+      await db.execute(
+        `DELETE FROM members WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted members`);
+      
+      // Set account_owner_id to NULL to remove foreign key constraint
+      await db.execute(
+        `UPDATE churches SET account_owner_id = NULL WHERE id = '${id}'`
+      );
+      console.log(`Removed account owner reference`);
+      
+      // Delete sessions associated with users
+      if (userIds.length > 0) {
+        await db.execute(
+          `DELETE FROM sessions WHERE sess::jsonb->'user'->>'id' IN (${userIdsForQuery})`
+        );
+        console.log(`Deleted user sessions`);
+      }
+      
+      // Now delete users associated with the church
+      await db.execute(
+        `DELETE FROM users WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted users`);
+      
+      // Finally, delete the church itself
+      await db.execute(
+        `DELETE FROM churches WHERE id = '${id}'`
+      );
+      console.log(`Deleted church entity`);
+      
+      res.status(200).json({ 
+        message: `Church ${id} and all associated data successfully purged`,
+        deletedUserCount: userIds.length
+      });
+      
+    } catch (error) {
+      console.error('Error purging onboarding data:', error);
+      res.status(500).json({ 
+        message: 'Error purging onboarding data',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Set up global admin routes
   app.use('/api/global-admin', globalAdminRoutes);
   
