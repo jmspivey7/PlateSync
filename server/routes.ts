@@ -242,11 +242,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/settings', isAuthenticated, settingsRoutes);
   
   // Dedicated endpoint for toggling email notifications
-  app.post('/api/settings/email-notifications', isAuthenticated, async (req: any, res) => {
+  app.post('/api/settings/email-notifications', async (req: any, res) => {
     try {
-      const user = req.user;
-      if (!user || !user.id) {
-        return res.status(401).json({ message: 'Unauthorized' });
+      let churchId = '';
+      let userId = '';
+      
+      // Handle both authenticated users and registration flow
+      if (req.user) {
+        // Authenticated user
+        userId = req.user.id;
+        churchId = req.user.churchId || req.user.id;
+      } else {
+        // Registration flow - get userId from request body
+        userId = req.body.userId;
+        churchId = userId; // Use userId as churchId during registration
+      }
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
       }
       
       // Validate input
@@ -255,8 +268,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid input: enabled must be a boolean' });
       }
       
-      // Update user's email notification setting
-      await storage.updateUserEmailNotificationSetting(user.id, enabled);
+      console.log(`Updating email notification setting for church ${churchId}: ${enabled}`);
+      
+      // Update church's email notification setting instead of user setting
+      await storage.updateChurchEmailNotificationSetting(churchId, enabled);
       
       // Return success
       return res.status(200).send('OK');
