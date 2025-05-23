@@ -209,7 +209,7 @@ export const donationsRelations = relations(donations, ({ one }) => ({
   }),
 }));
 
-// Schema validation for members
+// Schema validation for members (no churchId - handled by junction table)
 export const insertMemberSchema = createInsertSchema(members).pick({
   firstName: true,
   lastName: true,
@@ -217,7 +217,17 @@ export const insertMemberSchema = createInsertSchema(members).pick({
   phone: true,
   isVisitor: true,
   notes: true,
+  externalId: true,
+  externalSystem: true,
+});
+
+// Schema for adding a member to a church (junction table)
+export const insertChurchMemberSchema = createInsertSchema(churchMembers).pick({
   churchId: true,
+  memberId: true,
+  memberNotes: true,
+  joinedDate: true,
+  isActive: true,
 });
 
 // Schema validation for batches
