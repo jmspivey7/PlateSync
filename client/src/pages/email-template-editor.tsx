@@ -327,8 +327,8 @@ export default function EmailTemplateEditor() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <CardContent className="pt-6 w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger 
                 value="edit" 
@@ -344,14 +344,14 @@ export default function EmailTemplateEditor() {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="edit" className="space-y-6">
-              <div>
+            <TabsContent value="edit" className="space-y-6 w-full">
+              <div className="w-full">
                 <Label htmlFor="subject" className="font-medium">Subject</Label>
                 <Input
                   id="subject"
                   value={templateData.subject}
                   onChange={(e) => handleInputChange('subject', e.target.value)}
-                  className="mt-1 border-gray-400"
+                  className="mt-1 border-gray-400 w-full"
                 />
               </div>
               
@@ -401,17 +401,17 @@ export default function EmailTemplateEditor() {
               </div>
             </TabsContent>
             
-            <TabsContent value="preview" className="space-y-6">
-              <div>
+            <TabsContent value="preview" className="space-y-6 w-full">
+              <div className="w-full">
                 <Label className="font-medium">Subject</Label>
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mt-1">
+                <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mt-1 w-full">
                   {templateData.subject}
                 </div>
               </div>
               
-              <div>
+              <div className="w-full">
                 <Label className="font-medium">HTML Preview</Label>
-                <div className="border rounded-md bg-white overflow-hidden mt-1 border-gray-400">
+                <div className="border rounded-md bg-white overflow-hidden mt-1 border-gray-400 w-full">
                   <ScrollArea className="h-[500px]">
                     <div className="p-4">
                       {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
