@@ -617,6 +617,12 @@ export function setupPlanningCenterRoutes(app: Express) {
   // Registration-specific callback endpoint - always closes popup
   app.get('/api/planning-center/callback-registration', async (req: Request, res: Response) => {
     console.log('Planning Center registration callback received');
+    console.log('Callback query params:', req.query);
+    console.log('Callback session data:', {
+      planningCenterState: req.session.planningCenterState,
+      planningCenterUserId: req.session.planningCenterUserId,
+      planningCenterChurchId: req.session.planningCenterChurchId
+    });
     
     const { code, error, error_description } = req.query;
     
