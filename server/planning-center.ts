@@ -870,6 +870,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       const deviceType = req.query.deviceType as string || 'desktop';
       authUrl.searchParams.append('deviceType', deviceType);
       
+      console.log('Planning Center OAuth URL with all parameters:', authUrl.toString());
       console.log('Redirecting directly to Planning Center OAuth server for login');
       
       // Redirect directly to Planning Center's OAuth server where user will see login screen
