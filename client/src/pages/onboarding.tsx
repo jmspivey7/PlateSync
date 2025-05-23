@@ -158,11 +158,7 @@ export default function Onboarding() {
       // Invalidate the members query to refresh the list if needed
       queryClient.invalidateQueries({ queryKey: ['/api/members'] });
       
-      toast({
-        title: 'Import Successful',
-        description: `${importCount} members imported successfully.`,
-        className: 'bg-[#48BB78] text-white',
-      });
+      // Import successful - no toast needed during onboarding flow
       
       // Auto advance to next step after 2 seconds
       setTimeout(() => {
@@ -644,11 +640,7 @@ export default function Onboarding() {
         setStatusMessage(`Successfully imported ${Math.floor(Math.random() * 15) + 5} members.`);
         setImportProgress(100);
         
-        toast({
-          title: 'Import Successful',
-          description: `Members imported successfully.`,
-          className: 'bg-[#48BB78] text-white',
-        });
+        // Members imported successfully - no toast needed during onboarding
         
         // Auto advance to next step after 2 seconds
         setTimeout(() => {
@@ -702,11 +694,22 @@ export default function Onboarding() {
       // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
-      // Clear any stored authentication and redirect to login page
+      // Clear ALL stored authentication data to force proper login
       localStorage.removeItem('userVerified');
       localStorage.removeItem('onboardingServiceOptions');
       localStorage.removeItem('firstName');
       localStorage.removeItem('lastName');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('onboardingChurchId');
+      localStorage.removeItem('churchId');
+      localStorage.removeItem('email');
+      
+      // Clear any session data and force logout
+      try {
+        await fetch('/api/logout-local', { method: 'POST', credentials: 'include' });
+      } catch (error) {
+        console.log('Logout call completed');
+      }
       
       // Redirect to login page after completing onboarding
       setLocation("/login-local");
@@ -800,11 +803,7 @@ export default function Onboarding() {
         localStorage.setItem('onboardingServiceOptions', JSON.stringify([...storedOptions, trimmedOption]));
       }
       
-      toast({
-        title: "Service option added",
-        description: `"${trimmedOption}" has been added`,
-        variant: "default"
-      });
+      // Service option added successfully - no toast needed during onboarding
       
     } catch (error) {
       toast({
