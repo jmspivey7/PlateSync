@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import {
   users,
   members,
+  churchMembers,
   donations,
   batches,
   serviceOptions,
@@ -1300,10 +1301,7 @@ export class DatabaseStorage implements IStorage {
           const [emailMatch] = await db
             .select()
             .from(members)
-            .where(and(
-              eq(members.email, csvMember.email),
-              eq(members.churchId, churchId)
-            ))
+            .where(eq(members.email, csvMember.email))
             .limit(1);
           existingMember = emailMatch;
         }
@@ -1315,40 +1313,73 @@ export class DatabaseStorage implements IStorage {
             .from(members)
             .where(and(
               eq(members.firstName, csvMember.firstName),
-              eq(members.lastName, csvMember.lastName),
-              eq(members.churchId, churchId)
+              eq(members.lastName, csvMember.lastName)
             ))
             .limit(1);
           existingMember = nameMatch;
         }
 
         if (existingMember) {
-          // Update existing member with CSV data
-          await db
-            .update(members)
-            .set({
-              firstName: csvMember.firstName || existingMember.firstName,
-              lastName: csvMember.lastName || existingMember.lastName,
-              email: csvMember.email || existingMember.email,
-              phone: csvMember.phone || existingMember.phone,
-              notes: csvMember.notes || existingMember.notes,
-              isVisitor: csvMember.isVisitor ?? existingMember.isVisitor,
-              updatedAt: new Date()
-            })
-            .where(eq(members.id, existingMember.id));
-          
-          updatedCount++;
+          // Check if this member is already associated with this church
+          const [existingChurchMembership] = await db
+            .select()
+            .from(churchMembers)
+            .where(and(
+              eq(churchMembers.churchId, churchId),
+              eq(churchMembers.memberId, existingMember.id)
+            ))
+            .limit(1);
+
+          if (existingChurchMembership) {
+            // Update existing member with CSV data
+            await db
+              .update(members)
+              .set({
+                firstName: csvMember.firstName || existingMember.firstName,
+                lastName: csvMember.lastName || existingMember.lastName,
+                email: csvMember.email || existingMember.email,
+                phone: csvMember.phone || existingMember.phone,
+                notes: csvMember.notes || existingMember.notes,
+                isVisitor: csvMember.isVisitor ?? existingMember.isVisitor,
+                updatedAt: new Date()
+              })
+              .where(eq(members.id, existingMember.id));
+            
+            updatedCount++;
+          } else {
+            // Member exists but not associated with this church - add the association
+            await db.insert(churchMembers).values({
+              churchId: churchId,
+              memberId: existingMember.id,
+              memberNotes: csvMember.notes || null,
+              isActive: true,
+            });
+            addedCount++;
+          }
           console.log(`Updated existing member: ${csvMember.firstName} ${csvMember.lastName}`);
         } else {
-          // Add new member
-          await db
+          // Add new member and associate with church
+          const [newMember] = await db
             .insert(members)
             .values({
-              ...csvMember,
-              churchId: churchId,
+              firstName: csvMember.firstName!,
+              lastName: csvMember.lastName!,
+              email: csvMember.email || null,
+              phone: csvMember.phone || null,
+              notes: csvMember.notes || null,
+              isVisitor: csvMember.isVisitor ?? false,
               createdAt: new Date(),
               updatedAt: new Date()
-            });
+            })
+            .returning();
+          
+          // Create church membership
+          await db.insert(churchMembers).values({
+            churchId: churchId,
+            memberId: newMember.id,
+            memberNotes: csvMember.notes || null,
+            isActive: true,
+          });
           
           addedCount++;
           console.log(`Added new member: ${csvMember.firstName} ${csvMember.lastName}`);
@@ -1365,11 +1396,25 @@ export class DatabaseStorage implements IStorage {
 
   async getMember(id: number, churchId: string): Promise<Member | undefined> {
     const [member] = await db
-      .select()
+      .select({
+        id: members.id,
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+        phone: members.phone,
+        isVisitor: members.isVisitor,
+        createdAt: members.createdAt,
+        updatedAt: members.updatedAt,
+        notes: members.notes,
+        externalId: members.externalId,
+        externalSystem: members.externalSystem,
+      })
       .from(members)
+      .innerJoin(churchMembers, eq(members.id, churchMembers.memberId))
       .where(and(
         eq(members.id, id),
-        eq(members.churchId, churchId)
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
       ));
     
     return member;
