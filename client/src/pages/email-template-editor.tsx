@@ -283,8 +283,8 @@ export default function EmailTemplateEditor() {
   const templateInfo = templateTypeInfo[templateData.templateType];
 
   return (
-    <div className="container mx-auto py-8">
-      <Card>
+    <div className="w-full max-w-none px-4 py-8">
+      <Card className="w-full">
         <CardHeader className="border-b border-gray-200">
           <div className="flex justify-between items-center">
             <Button 
