@@ -1691,15 +1691,57 @@ export default function Onboarding() {
                             const idToUse = churchId || storedUserId;
                             
                             if (idToUse) {
-                              // Redirect to Planning Center OAuth with church ID
-                              const authUrl = `/api/planning-center/authorize?churchId=${idToUse}`;
-                              window.location.href = authUrl;
-                            } else {
-                              // Mock successful connection if no church ID available
-                              setTimeout(() => {
+                              // Use popup window for OAuth flow during registration
+                              const authUrl = `/api/planning-center/authorize?churchId=${idToUse}&deviceType=desktop`;
+                              const popup = window.open(
+                                authUrl,
+                                'planning-center-auth',
+                                'width=600,height=700,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+                              );
+                              
+                              // Monitor popup for completion
+                              const checkClosed = setInterval(() => {
+                                if (popup?.closed) {
+                                  clearInterval(checkClosed);
+                                  setIsPlanningCenterConnecting(false);
+                                  
+                                  // Check if connection was successful
+                                  setTimeout(async () => {
+                                    try {
+                                      const response = await fetch(`/api/planning-center/status?churchId=${idToUse}`);
+                                      if (response.ok) {
+                                        const status = await response.json();
+                                        if (status.connected) {
+                                          setIsPlanningCenterConnected(true);
+                                          toast({
+                                            title: "Success!",
+                                            description: "Planning Center connected successfully.",
+                                          });
+                                        }
+                                      }
+                                    } catch (error) {
+                                      console.error('Error checking Planning Center status:', error);
+                                    }
+                                  }, 1000);
+                                }
+                              }, 1000);
+                              
+                              // Handle popup blocker
+                              if (!popup) {
                                 setIsPlanningCenterConnecting(false);
-                                setIsPlanningCenterConnected(true);
-                              }, 2000);
+                                toast({
+                                  title: "Popup Blocked",
+                                  description: "Please allow popups and try again.",
+                                  variant: "destructive"
+                                });
+                              }
+                            } else {
+                              setIsPlanningCenterConnecting(false);
+                              toast({
+                                title: "Error",
+                                description: "Church ID not available. Please complete previous steps first.",
+                                variant: "destructive"
+                              });
                             }
                           }}
                           className="w-full text-white"
