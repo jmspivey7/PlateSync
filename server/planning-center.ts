@@ -616,6 +616,10 @@ export function setupPlanningCenterRoutes(app: Express) {
   
   // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
+    // Check if force re-authorization is requested (during registration)
+    const forceReauth = req.query.forceReauth === 'true';
+    console.log('Planning Center auth URL requested with forceReauth:', forceReauth);
+    
     // Handle both authenticated users and registration flow
     let churchId = '';
     let userId = '';
@@ -631,6 +635,25 @@ export function setupPlanningCenterRoutes(app: Express) {
       churchId = req.query.churchId as string || '';
       userId = churchId; // Use church ID as user ID for registration
       console.log('Auth URL for registration flow:', { userId, churchId });
+    }
+    
+    // If forceReauth is false, check if already connected and skip OAuth
+    if (!forceReauth) {
+      try {
+        const existingTokens = await storage.getPlanningCenterTokens(userId, churchId);
+        if (existingTokens) {
+          console.log('Planning Center already connected, skipping OAuth');
+          return res.json({
+            already_connected: true,
+            message: 'Planning Center is already connected',
+            skip_oauth: true
+          });
+        }
+      } catch (error) {
+        console.log('Error checking existing tokens, proceeding with OAuth');
+      }
+    } else {
+      console.log('Force re-authorization requested, proceeding with OAuth even if already connected');
     }
     
     if (!churchId) {
