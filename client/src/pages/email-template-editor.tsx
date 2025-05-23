@@ -401,55 +401,51 @@ export default function EmailTemplateEditor() {
               </div>
             </TabsContent>
             
-            <TabsContent value="preview">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium">Subject</h3>
-                  <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mt-1">
-                    {templateData.subject}
-                  </div>
+            <TabsContent value="preview" className="space-y-6">
+              <div>
+                <Label className="font-medium">Subject</Label>
+                <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mt-1">
+                  {templateData.subject}
                 </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="text-sm font-medium mb-2">HTML Preview</h3>
-                  <div className="border rounded-md bg-white overflow-hidden">
-                    <ScrollArea className="h-[500px]">
-                      <div className="p-4">
-                        {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
-                          <div dangerouslySetInnerHTML={{
-                            __html: (() => {
-                              let html = templateData.bodyHtml;
-                              
-                              // If user exists and has a church logo, replace the placeholder with the actual logo URL
-                              if (user && user.churchLogoUrl) {
-                                html = html.replace(
-                                  /{{churchLogoUrl}}/g, 
-                                  user.churchLogoUrl.startsWith('http') 
-                                    ? user.churchLogoUrl 
-                                    : `${window.location.origin}${user.churchLogoUrl}`
-                                );
-                              } else {
-                                // Otherwise remove the image entirely
-                                html = html.replace(/<img\s+src="{{churchLogoUrl}}"\s+alt="{{churchName}} Logo"[^>]*>/g, '');
-                              }
-                              
-                              // Don't force mobile width - let it scale naturally with the container
-                              return html
-                                .replace(/max-height: \d+px/g, 'max-height: 150px');
-                            })()
-                          }} />
-                        ) : (
-                          <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Note: Placeholders will be replaced with actual values when the email is sent.
-                  </p>
+              </div>
+              
+              <div>
+                <Label className="font-medium">HTML Preview</Label>
+                <div className="border rounded-md bg-white overflow-hidden mt-1 border-gray-400">
+                  <ScrollArea className="h-[500px]">
+                    <div className="p-4">
+                      {templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT' ? (
+                        <div dangerouslySetInnerHTML={{
+                          __html: (() => {
+                            let html = templateData.bodyHtml;
+                            
+                            // If user exists and has a church logo, replace the placeholder with the actual logo URL
+                            if (user && user.churchLogoUrl) {
+                              html = html.replace(
+                                /{{churchLogoUrl}}/g, 
+                                user.churchLogoUrl.startsWith('http') 
+                                  ? user.churchLogoUrl 
+                                  : `${window.location.origin}${user.churchLogoUrl}`
+                              );
+                            } else {
+                              // Otherwise remove the image entirely
+                              html = html.replace(/<img\s+src="{{churchLogoUrl}}"\s+alt="{{churchName}} Logo"[^>]*>/g, '');
+                            }
+                            
+                            // Don't force mobile width - let it scale naturally with the container
+                            return html
+                              .replace(/max-height: \d+px/g, 'max-height: 150px');
+                          })()
+                        }} />
+                      ) : (
+                        <div dangerouslySetInnerHTML={{ __html: templateData.bodyHtml }} />
+                      )}
+                    </div>
+                  </ScrollArea>
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Note: Placeholders will be replaced with actual values when the email is sent.
+                </p>
               </div>
             </TabsContent>
           </Tabs>
