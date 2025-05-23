@@ -283,8 +283,8 @@ export default function EmailTemplateEditor() {
   const templateInfo = templateTypeInfo[templateData.templateType];
 
   return (
-    <div className="min-h-screen w-full px-4 py-8">
-      <div className="w-full max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <main className="container mx-auto px-4 py-6">
         <Card className="w-full">
           <CardHeader className="border-b border-gray-200">
             <div className="flex justify-between items-center">
@@ -448,7 +448,7 @@ export default function EmailTemplateEditor() {
           </Tabs>
         </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }
