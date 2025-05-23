@@ -424,18 +424,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Church ID not found' });
       }
       
-      console.log(`Updating service option ${id} for church ID: ${churchId} with data:`, req.body);
+      console.log(`PATCH /api/service-options/${id} - Church ID: ${churchId} - Data:`, req.body);
       
       const updatedOption = await storage.updateServiceOption(id, req.body, churchId);
+      console.log(`Update result:`, updatedOption);
       
       if (!updatedOption) {
+        console.log(`Service option ${id} not found for church ${churchId}`);
         return res.status(404).json({ message: 'Service option not found' });
       }
       
-      console.log(`Service option ${id} updated successfully:`, JSON.stringify(updatedOption, null, 2));
+      console.log(`SUCCESS: Service option ${id} updated:`, JSON.stringify(updatedOption, null, 2));
+      console.log(`Returning JSON response with updatedOption`);
       
-      // Return the updated option directly
-      res.json(updatedOption);
+      // Return simple success response to avoid serialization issues
+      return res.status(200).json({ 
+        id: updatedOption.id,
+        name: updatedOption.name,
+        value: updatedOption.value,
+        isDefault: updatedOption.isDefault,
+        churchId: updatedOption.churchId
+      });
     } catch (error) {
       console.error('Error updating service option:', error);
       res.setHeader('Content-Type', 'application/json');
