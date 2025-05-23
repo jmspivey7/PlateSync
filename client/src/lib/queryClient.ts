@@ -90,7 +90,7 @@ export async function apiRequest<T = any>(
   }
   
   // Debug logging for the problematic endpoint
-  if (url.includes('/api/onboarding/email-notifications')) {
+  if (url.includes('/api/onboard-email-setting') || url.includes('/api/onboarding/email-notifications')) {
     const contentType = res.headers.get('content-type');
     const responseText = await res.text();
     console.log('DEBUG - Response status:', res.status);
