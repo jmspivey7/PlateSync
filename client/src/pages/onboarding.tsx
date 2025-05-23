@@ -1691,6 +1691,21 @@ export default function Onboarding() {
                             )}
                             {isImportingFromPlanningCenter ? 'Importing Members...' : 'Import Members'}
                           </Button>
+                          
+                          {/* Success status display */}
+                          {importStatus === 'success' && statusMessage && (
+                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center">
+                                <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                                <div className="text-sm">
+                                  <p className="text-green-800 font-medium">{statusMessage}</p>
+                                  <p className="text-green-600 text-xs mt-1">
+                                    Imported on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <Button
@@ -1748,50 +1763,19 @@ export default function Onboarding() {
                                   clearInterval(checkClosed);
                                   setIsPlanningCenterConnecting(false);
                                   
-                                  // Start import process after popup closes
+                                  // Just check if connection was successful - no auto-import
                                   setTimeout(async () => {
                                     try {
-                                      // First check if connection was successful
                                       const statusResponse = await fetch(`/api/planning-center/status?churchId=${idToUse}`);
                                       if (statusResponse.ok) {
                                         const status = await statusResponse.json();
                                         if (status.connected) {
                                           setIsPlanningCenterConnected(true);
-                                          
-                                          // Start member import process
                                           toast({
                                             title: "Connected!",
-                                            description: "Starting member import from Planning Center...",
+                                            description: "Planning Center connected successfully. Click 'Import Members' to proceed.",
+                                            className: 'bg-[#48BB78] text-white',
                                           });
-                                          
-                                          try {
-                                            const importResponse = await fetch(`/api/planning-center/import-members?churchId=${idToUse}`, {
-                                              method: 'POST'
-                                            });
-                                            
-                                            if (importResponse.ok) {
-                                              const importResult = await importResponse.json();
-                                              const totalImported = importResult.added + importResult.updated;
-                                              
-                                              toast({
-                                                title: "Import Complete!",
-                                                description: `Successfully imported ${totalImported} members from Planning Center.`,
-                                              });
-                                            } else {
-                                              toast({
-                                                title: "Import Warning",
-                                                description: "Connected to Planning Center, but member import had issues.",
-                                                variant: "destructive"
-                                              });
-                                            }
-                                          } catch (importError) {
-                                            console.error('Error importing members:', importError);
-                                            toast({
-                                              title: "Import Warning", 
-                                              description: "Connected to Planning Center, but couldn't import members automatically.",
-                                              variant: "destructive"
-                                            });
-                                          }
                                         } else {
                                           toast({
                                             title: "Connection Issue",
