@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { SubscriptionStatus } from "@/components/subscription/subscription-status";
 import { SubscriptionPlans } from "@/components/subscription/subscription-plans";
-import { StripeVerificationTest } from "@/components/subscription/StripeVerificationTest";
+
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import PageLayout from "@/components/layout/PageLayout";
@@ -202,16 +202,7 @@ export default function SubscriptionPage() {
             please don't hesitate to <a href="mailto:support@platesync.com" className="text-green-600 hover:text-green-700 font-medium">contact our support team</a>.
           </p>
         </div>
-        
-        {/* Developer Testing Tools - can be removed for production */}
-        <div className="mt-12 pt-8 border-t border-gray-200 max-w-2xl mx-auto">
-          <details className="bg-gray-50 p-4 rounded-lg">
-            <summary className="font-medium cursor-pointer">Developer Testing Tools</summary>
-            <div className="mt-4">
-              <StripeVerificationTest />
-            </div>
-          </details>
-        </div>
+
       </div>
     </PageLayout>
   );
