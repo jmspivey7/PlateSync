@@ -1422,11 +1422,25 @@ export class DatabaseStorage implements IStorage {
 
   async getMemberWithDonations(id: number, churchId: string): Promise<MemberWithDonations | undefined> {
     const [member] = await db
-      .select()
+      .select({
+        id: members.id,
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+        phone: members.phone,
+        isVisitor: members.isVisitor,
+        createdAt: members.createdAt,
+        updatedAt: members.updatedAt,
+        notes: members.notes,
+        externalId: members.externalId,
+        externalSystem: members.externalSystem,
+      })
       .from(members)
+      .innerJoin(churchMembers, eq(members.id, churchMembers.memberId))
       .where(and(
         eq(members.id, id),
-        eq(members.churchId, churchId)
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
       ));
     
     if (!member) return undefined;
@@ -1461,26 +1475,60 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createMember(memberData: InsertMember): Promise<Member> {
+  async createMember(memberData: InsertMember, churchId: string): Promise<Member> {
+    // Create the member without churchId (it's no longer a direct field)
+    const memberDataWithoutChurchId = {
+      firstName: memberData.firstName,
+      lastName: memberData.lastName,
+      email: memberData.email,
+      phone: memberData.phone,
+      notes: memberData.notes,
+      isVisitor: memberData.isVisitor,
+      externalId: memberData.externalId,
+      externalSystem: memberData.externalSystem,
+    };
+
     const [newMember] = await db
       .insert(members)
-      .values(memberData)
+      .values(memberDataWithoutChurchId)
       .returning();
+    
+    // Create the church membership relationship
+    await db.insert(churchMembers).values({
+      churchId: churchId,
+      memberId: newMember.id,
+      memberNotes: memberData.notes || null,
+      isActive: true,
+    });
     
     return newMember;
   }
 
   async updateMember(id: number, data: Partial<InsertMember>, churchId: string): Promise<Member | undefined> {
+    // First verify this member belongs to this church
+    const [membership] = await db
+      .select()
+      .from(churchMembers)
+      .where(and(
+        eq(churchMembers.memberId, id),
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
+      ));
+    
+    if (!membership) {
+      return undefined; // Member doesn't belong to this church
+    }
+
+    // Remove churchId from data if it exists (no longer a direct field)
+    const { churchId: _, ...memberDataWithoutChurchId } = data as any;
+
     const [updatedMember] = await db
       .update(members)
       .set({
-        ...data,
+        ...memberDataWithoutChurchId,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(members.id, id),
-        eq(members.churchId, churchId)
-      ))
+      .where(eq(members.id, id))
       .returning();
     
     return updatedMember;
