@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings routes including church logo management
   app.use('/api/settings', isAuthenticated, settingsRoutes);
   
-  // Dedicated endpoint for toggling email notifications
+  // Dedicated endpoint for toggling email notifications (no auth required for onboarding)
   app.post('/api/settings/email-notifications', async (req: any, res) => {
     try {
       let churchId = '';
