@@ -2085,7 +2085,7 @@ This is an automated email. Please do not reply to this message.
   
   <div class="report-details">
     <p><strong>Service:</strong> {{serviceType}}</p>
-    <p><strong>Total Amount:</strong> <span class="total">${{totalAmount}}</span></p>
+    <p><strong>Total Amount:</strong> <span class="total">$\{{totalAmount}}</span></p>
     <p><strong>Total Donations:</strong> {{totalDonations}}</p>
     <p><strong>Counters:</strong> {{counterNames}}</p>
   </div>
