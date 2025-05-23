@@ -235,26 +235,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Global admin profile routes
   app.use('/api/global-admin', globalAdminProfileRoutes);
   
-  // ISOLATED ONBOARDING ENDPOINT - NO MIDDLEWARE INTERFERENCE
-  app.post('/api/onboard-email-setting', (req: any, res) => {
-    res.setHeader('Content-Type', 'application/json');
+  // ISOLATED ONBOARDING ENDPOINT - MUST BE BEFORE ANY OTHER ROUTES
+  app.post('/api/onboard-email-setting', express.json(), (req: any, res) => {
+    console.log(`[ONBOARD-ENDPOINT] Hit! Body:`, req.body);
     
-    const { enabled, churchId } = req.body;
-    
-    console.log(`[ISOLATED] Request: enabled=${enabled}, churchId=${churchId}`);
-    
-    if (!churchId || typeof enabled !== 'boolean') {
-      return res.status(400).json({ error: 'Invalid request' });
-    }
-    
-    // Skip database operation for now and just return success
-    console.log(`[ISOLATED] Would update church ${churchId} email setting to ${enabled}`);
-    
-    return res.status(200).json({ 
-      success: true, 
-      churchId: churchId,
-      enabled: enabled 
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST',
+      'Access-Control-Allow-Headers': 'Content-Type'
     });
+    
+    const result = {
+      success: true,
+      message: "Endpoint reached successfully",
+      body: req.body
+    };
+    
+    res.end(JSON.stringify(result));
+    return;
   });
 
   // Regular user profile routes
