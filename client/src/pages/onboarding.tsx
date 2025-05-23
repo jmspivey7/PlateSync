@@ -975,13 +975,13 @@ export default function Onboarding() {
                   <p className="text-sm text-red-500 mt-2">{verificationError}</p>
                 )}
                 
-                <div className="flex items-center justify-center space-x-4 mt-4 w-full">
+                <div className="flex justify-center mt-4 w-full">
                   <Button
                     type="button"
                     variant="outline"
                     disabled={isVerifying || !email}
                     onClick={sendVerificationCode}
-                    className="w-full"
+                    className="px-6"
                   >
                     {isVerifying ? (
                       <>
@@ -990,22 +990,6 @@ export default function Onboarding() {
                       </>
                     ) : (
                       'Resend Code'
-                    )}
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    disabled={isVerifying || verificationCode.length !== 6}
-                    onClick={verifyCode}
-                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      'Verify'
                     )}
                   </Button>
                 </div>
