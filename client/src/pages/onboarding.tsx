@@ -88,7 +88,7 @@ export default function Onboarding() {
         // Get the churchId from localStorage that was stored during verification
         const churchId = localStorage.getItem('onboardingChurchId') || '';
         
-        const response = await apiRequest("/api/settings/email-notifications", {
+        const response = await apiRequest("/api/onboarding/email-notifications", {
           method: "POST",
           body: { 
             enabled,

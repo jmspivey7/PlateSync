@@ -239,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/profile', isAuthenticated, profileRoutes);
   
   // Dedicated endpoint for toggling email notifications (no auth required for onboarding)
-  app.post('/api/settings/email-notifications', async (req: any, res) => {
+  app.post('/api/onboarding/email-notifications', async (req: any, res) => {
     try {
       let churchId = '';
       let userId = '';
