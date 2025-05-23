@@ -613,6 +613,160 @@ export function setupPlanningCenterRoutes(app: Express) {
       return res.redirect(`/settings?planningCenterError=${errorDetails}&error_description=${encodeURIComponent(errorDescription)}`);
     }
   });
+
+  // Registration-specific callback endpoint - always closes popup
+  app.get('/api/planning-center/callback-registration', async (req: Request, res: Response) => {
+    console.log('Planning Center registration callback received');
+    
+    const { code, error, error_description } = req.query;
+    
+    if (error) {
+      console.error('Planning Center OAuth error during registration:', error, error_description);
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Connection Failed</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fef2f2; }
+            .error { color: #dc2626; font-size: 18px; margin-bottom: 20px; }
+            .message { color: #6b7280; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">❌ Connection Failed</div>
+          <div class="message">${error_description || 'Authorization was denied or failed'}</div>
+          <script>
+            setTimeout(function() {
+              window.close();
+            }, 3000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(errorHtml);
+    }
+
+    if (!code) {
+      console.error('No authorization code received during registration');
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Connection Failed</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fef2f2; }
+            .error { color: #dc2626; font-size: 18px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">❌ No authorization code received</div>
+          <script>
+            setTimeout(function() {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(errorHtml);
+    }
+
+    try {
+      // Exchange code for access token
+      const tokenResponse = await fetch(PLANNING_CENTER_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: PLANNING_CENTER_CLIENT_ID,
+          client_secret: PLANNING_CENTER_CLIENT_SECRET,
+          code: String(code),
+          redirect_uri: `${req.protocol}://${req.get('host')}/api/planning-center/callback-registration`,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+      }
+
+      const tokens = await tokenResponse.json();
+      const { access_token, refresh_token, expires_in } = tokens;
+
+      console.log('Planning Center tokens received during registration');
+
+      // Store tokens temporarily for registration flow
+      const tempKey = crypto.randomBytes(24).toString('hex');
+      app.locals.tempPlanningCenterTokens = app.locals.tempPlanningCenterTokens || {};
+      
+      const churchId = req.query.churchId ? String(req.query.churchId) : undefined;
+      
+      app.locals.tempPlanningCenterTokens[tempKey] = {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresAt: new Date(Date.now() + expires_in * 1000),
+        created: new Date(),
+        churchId: churchId,
+        isRegistration: true
+      };
+
+      console.log(`Stored registration tokens with key ${tempKey.substring(0, 8)}...`);
+
+      // Return success page that closes popup
+      const successHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Planning Center Connected</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f0fdf4; }
+            .success { color: #16a34a; font-size: 20px; margin-bottom: 15px; font-weight: 600; }
+            .message { color: #64748b; font-size: 16px; margin-bottom: 20px; }
+            .loading { color: #64748b; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="success">✅ Planning Center Connected Successfully!</div>
+          <div class="message">Ready to import your members...</div>
+          <div class="loading">This window will close automatically.</div>
+          <script>
+            // Close popup after brief delay to show success message
+            setTimeout(function() {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(successHtml);
+
+    } catch (error) {
+      console.error('Error during registration Planning Center callback:', error);
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Connection Failed</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fef2f2; }
+            .error { color: #dc2626; font-size: 18px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">❌ Connection failed during setup</div>
+          <script>
+            setTimeout(function() {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(errorHtml);
+    }
+  });
   
   // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
@@ -774,9 +928,13 @@ export function setupPlanningCenterRoutes(app: Express) {
       let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
       const protocol = req.protocol || 'https';
       
-      // Use a fixed callback URL if provided in environment (preferred)
+      // Use different callback URLs for registration vs settings
       let redirectUri;
-      if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+      if (isRegistration) {
+        // Use registration-specific callback
+        redirectUri = `${protocol}://${host}/api/planning-center/callback-registration`;
+        console.log('Using registration callback URL:', redirectUri);
+      } else if (process.env.PLANNING_CENTER_CALLBACK_URL) {
         redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
         console.log('Using fixed callback URL from env:', redirectUri);
       } else {
