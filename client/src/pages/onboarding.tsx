@@ -1650,21 +1650,35 @@ export default function Onboarding() {
                           </Alert>
                           
                           <Button 
-                            onClick={() => {
+                            onClick={async () => {
                               setIsImportingFromPlanningCenter(true);
-                              // Mock successful import after 2 seconds
-                              setTimeout(() => {
-                                setIsImportingFromPlanningCenter(false);
-                                setImportStatus('success');
-                                setStatusMessage('Successfully imported members from Planning Center.');
-                                toast({
-                                  title: 'Import Successful',
-                                  description: 'Members imported successfully from Planning Center.',
-                                  className: 'bg-[#48BB78] text-white',
-                                });
+                              
+                              try {
+                                const response = await apiRequest('POST', '/api/planning-center/import', {});
                                 
-                                // DO NOT auto-advance - user must click "Save & Continue"
-                              }, 2000);
+                                if (response.success) {
+                                  setImportStatus('success');
+                                  setStatusMessage(`Successfully imported ${response.importedCount} members from Planning Center.`);
+                                  toast({
+                                    title: 'Import Successful',
+                                    description: `Successfully imported ${response.importedCount} members from Planning Center.`,
+                                    className: 'bg-[#48BB78] text-white',
+                                  });
+                                } else {
+                                  throw new Error(response.error || 'Import failed');
+                                }
+                              } catch (error) {
+                                console.error('Error importing members:', error);
+                                setImportStatus('error');
+                                setStatusMessage('Failed to import members from Planning Center.');
+                                toast({
+                                  title: 'Import Failed',
+                                  description: 'Could not import members from Planning Center. Please try again.',
+                                  variant: 'destructive'
+                                });
+                              } finally {
+                                setIsImportingFromPlanningCenter(false);
+                              }
                             }}
                             disabled={isImportingFromPlanningCenter}
                             className="text-white w-full"
