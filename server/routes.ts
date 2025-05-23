@@ -413,6 +413,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Update service option endpoint
+  app.patch('/api/service-options/:id', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(401).json({ message: 'Church ID not found' });
+      }
+      
+      console.log(`Updating service option ${id} for church ID: ${churchId}`);
+      
+      const updatedOption = await storage.updateServiceOption(id, req.body, churchId);
+      
+      if (!updatedOption) {
+        return res.status(404).json({ message: 'Service option not found' });
+      }
+      
+      console.log(`Service option ${id} updated successfully`);
+      res.json(updatedOption);
+    } catch (error) {
+      console.error('Error updating service option:', error);
+      res.status(500).json({ message: 'Failed to update service option' });
+    }
+  });
+  
   // Report Recipients endpoints
   app.get('/api/report-recipients', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
