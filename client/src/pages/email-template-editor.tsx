@@ -163,11 +163,11 @@ export default function EmailTemplateEditor() {
     .replace(/\{\{firstName\}\}/g, 'John')
     .replace(/\{\{lastName\}\}/g, 'Doe')
     .replace(/\{\{donorName\}\}/g, 'John Doe')
-    .replace(/\{\{amount\}\}/g, '$100.00')
+    .replace(/\{\{amount\}\}/g, '100.00')
     .replace(/\{\{date\}\}/g, new Date().toLocaleDateString())
     .replace(/\{\{paymentMethod\}\}/g, 'Cash')
     .replace(/\{\{weekRange\}\}/g, 'Jan 1-7, 2025')
-    .replace(/\{\{totalAmount\}\}/g, '$2,500.00')
+    .replace(/\{\{totalAmount\}\}/g, '2,500.00')
     .replace(/\{\{batchCount\}\}/g, '5')
     .replace(/\{\{userRole\}\}/g, 'Administrator');
 
