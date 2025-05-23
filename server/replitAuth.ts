@@ -72,10 +72,8 @@ async function upsertUser(
     profileImageUrl: claims["profile_image_url"],
   });
   
-  // If this is a new user, create default service options
-  if (isNewUser) {
-    await storage.createDefaultServiceOptions(userId);
-  }
+  // Service options will be created only by user choice during onboarding
+  // No automatic default service options are created for new users
 }
 
 export async function setupAuth(app: Express) {
