@@ -714,6 +714,23 @@ export function setupPlanningCenterRoutes(app: Express) {
 
       console.log(`Stored registration tokens with key ${tempKey.substring(0, 8)}...`);
 
+      // For registration flow, immediately claim the tokens to make them permanent
+      if (churchId) {
+        try {
+          console.log(`Auto-claiming registration tokens for church ${churchId}`);
+          await storage.storePlanningCenterTokens(churchId, churchId, {
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            expiresAt: new Date(Date.now() + expires_in * 1000),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          console.log(`Successfully stored permanent tokens for church ${churchId}`);
+        } catch (error) {
+          console.error(`Failed to auto-claim tokens for church ${churchId}:`, error);
+        }
+      }
+
       // Return success page that closes popup
       const successHtml = `
         <!DOCTYPE html>
