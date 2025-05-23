@@ -78,11 +78,23 @@ export async function importMembers(records: MemberRecord[], churchId: string): 
       
       // If not a duplicate, insert the new member
       if (!isDuplicate) {
-        await db.insert(members).values(memberData);
-        importedCount++;
+        try {
+          await db.insert(members).values(memberData);
+          importedCount++;
+          console.log(`✅ Successfully imported member: ${memberData.firstName} ${memberData.lastName}`);
+        } catch (insertError: any) {
+          // Handle unique constraint violations as duplicates
+          if (insertError.code === '23505' && insertError.constraint === 'members_email_unique') {
+            console.log(`Skipping duplicate member with email ${memberData.email} (constraint violation)`);
+            duplicatesSkipped++;
+          } else {
+            console.error(`Error importing member ${record.firstName} ${record.lastName}:`, insertError);
+            // Continue processing other records even if one fails
+          }
+        }
       }
     } catch (error) {
-      console.error(`Error importing member ${record.firstName} ${record.lastName}:`, error);
+      console.error(`Error processing member ${record.firstName} ${record.lastName}:`, error);
       // Continue processing other records even if one fails
     }
   }

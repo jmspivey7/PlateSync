@@ -569,23 +569,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
 
 
-  // Logo upload for onboarding (unauthenticated) - simplified approach
-  app.post('/api/upload-logo', async (req: any, res) => {
+  // Configure multer for logo uploads
+  const logoStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'public/logos/');
+    },
+    filename: (req, file, cb) => {
+      const timestamp = Date.now();
+      const extension = path.extname(file.originalname);
+      cb(null, `church-logo-${timestamp}${extension}`);
+    }
+  });
+
+  const logoUpload = multer({
+    storage: logoStorage,
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'), false);
+      }
+    },
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  });
+
+  // Logo upload for onboarding (unauthenticated) - now properly handles file uploads
+  app.post('/api/upload-logo', logoUpload.single('logo'), async (req: any, res) => {
     try {
       const { churchId } = req.body;
       if (!churchId) {
+        console.error('No church ID provided in logo upload request');
         return res.status(400).json({ message: 'Church ID is required' });
       }
 
-      console.log(`✅ ONBOARDING LOGO: Mock logo upload for church ${churchId}`);
+      if (!req.file) {
+        console.error('No logo file provided in upload request');
+        return res.status(400).json({ message: 'No logo file uploaded' });
+      }
 
-      // For now, just acknowledge the upload and store a placeholder
-      const logoUrl = `/logos/placeholder-logo.png`;
-      await storage.updateOnboardingLogo(churchId, logoUrl);
+      console.log(`✅ ONBOARDING LOGO: Processing actual file upload for church ${churchId}`, {
+        filename: req.file.filename,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+
+      // Create both local and S3 URLs for the logo
+      const logoUrl = `/logos/${req.file.filename}`;
+      const s3LogoUrl = `https://repl-plates-image-repo.s3.amazonaws.com/logos/${req.file.filename}`;
+
+      // Store the logo URL for this church during onboarding
+      await storage.updateOnboardingLogo(churchId, s3LogoUrl);
+
+      console.log(`✅ ONBOARDING LOGO: Stored logo URL: ${s3LogoUrl} for church ${churchId}`);
 
       res.status(200).json({
         message: 'Logo uploaded successfully',
-        logoUrl: logoUrl
+        logoUrl: logoUrl,
+        s3LogoUrl: s3LogoUrl
       });
     } catch (error) {
       console.error('Onboarding logo upload error:', error);
