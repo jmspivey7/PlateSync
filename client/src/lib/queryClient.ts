@@ -89,6 +89,23 @@ export async function apiRequest<T = any>(
     return {} as T;
   }
   
+  // Debug logging for the problematic endpoint
+  if (url.includes('/api/onboarding/email-notifications')) {
+    const contentType = res.headers.get('content-type');
+    const responseText = await res.text();
+    console.log('DEBUG - Response status:', res.status);
+    console.log('DEBUG - Response content-type:', contentType);
+    console.log('DEBUG - Raw response text:', responseText);
+    
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      console.error('DEBUG - JSON parse error:', e);
+      console.error('DEBUG - Failed to parse response:', responseText);
+      throw new Error('Invalid JSON response from server');
+    }
+  }
+  
   // Otherwise parse and return JSON
   return await res.json();
 }

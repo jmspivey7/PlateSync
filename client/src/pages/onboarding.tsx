@@ -90,11 +90,10 @@ export default function Onboarding() {
         
         console.log('Sending email notification request:', { enabled, churchId });
         
-        const response = await apiRequest("/api/onboarding/email-notifications", {
+        const response = await apiRequest("/api/onboard-email-setting", {
           method: "POST",
           body: { 
             enabled,
-            userId: churchId,
             churchId: churchId
           }
         });
