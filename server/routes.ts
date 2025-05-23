@@ -424,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Church ID not found' });
       }
       
-      console.log(`Updating service option ${id} for church ID: ${churchId}`);
+      console.log(`Updating service option ${id} for church ID: ${churchId} with data:`, req.body);
       
       const updatedOption = await storage.updateServiceOption(id, req.body, churchId);
       
@@ -432,10 +432,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Service option not found' });
       }
       
-      console.log(`Service option ${id} updated successfully`);
-      res.json(updatedOption);
+      console.log(`Service option ${id} updated successfully:`, updatedOption);
+      
+      // Ensure proper JSON response with explicit content-type
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200).json(updatedOption);
     } catch (error) {
       console.error('Error updating service option:', error);
+      res.setHeader('Content-Type', 'application/json');
       res.status(500).json({ message: 'Failed to update service option' });
     }
   });
