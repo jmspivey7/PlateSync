@@ -425,11 +425,7 @@ export default function Onboarding() {
       
       setVerificationSent(true);
       
-      toast({
-        title: "Verification code sent",
-        description: `A 6-digit code has been sent to ${email}`,
-        variant: "default"
-      });
+
     } catch (error) {
       setVerificationError(error instanceof Error ? error.message : "Failed to send verification code");
       
