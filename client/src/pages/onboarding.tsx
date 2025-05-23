@@ -634,6 +634,10 @@ export default function Onboarding() {
       // For verification step, we need to verify the code
       verifyCode();
     } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
+      // If user has selected a logo but hasn't uploaded it yet, upload it first
+      if (logoFile && !uploadSuccess) {
+        await handleLogoUpload();
+      }
       setCurrentStep(OnboardingStep.SERVICE_OPTIONS);
     } else if (currentStep === OnboardingStep.SERVICE_OPTIONS) {
       // Before moving to member import, try to save service options if they weren't saved already
