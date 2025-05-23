@@ -239,6 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/profile', isAuthenticated, profileRoutes);
   
   // Dedicated endpoint for toggling email notifications (no auth required for onboarding)
+  // Place this BEFORE any other middleware that might interfere
   app.post('/api/onboarding/email-notifications', async (req: any, res) => {
     try {
       let churchId = '';
@@ -283,9 +284,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update church's email notification setting instead of user setting
       await storage.updateChurchEmailNotificationSetting(churchId, enabled);
       
-      // Return success with proper headers
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(200).json({ success: true, message: 'Email notification setting updated successfully' });
+      // Force JSON response with explicit headers
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      });
+      res.end(JSON.stringify({ success: true, message: 'Email notification setting updated successfully' }));
+      return;
     } catch (error) {
       console.error('Error updating email notification setting:', error);
       return res.status(500).json({ message: 'An error occurred while updating settings' });
