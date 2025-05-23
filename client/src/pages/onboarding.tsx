@@ -1757,16 +1757,6 @@ export default function Onboarding() {
                                   }, 1000);
                                 }
                               }, 1000);
-                              
-                              // Handle popup blocker
-                              if (!popup) {
-                                setIsPlanningCenterConnecting(false);
-                                toast({
-                                  title: "Popup Blocked",
-                                  description: "Please allow popups and try again.",
-                                  variant: "destructive"
-                                });
-                              }
                             } else {
                               setIsPlanningCenterConnecting(false);
                               toast({
