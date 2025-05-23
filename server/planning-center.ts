@@ -390,14 +390,45 @@ export function setupPlanningCenterRoutes(app: Express) {
             return res.redirect('/settings?planningCenterError=token_storage_failed');
           }
           
-          // Successfully saved tokens - redirect based on device type
-          // Mobile devices need a more reliable redirect
-          if (isMobileDevice) {
-            // For mobile devices, use a simpler and more reliable redirect
-            return res.redirect('/settings?planningCenterConnected=true&mobile=true');
+          // Check if this is a popup window during registration
+          const deviceType = req.query.deviceType as string;
+          const isPopupFlow = deviceType === 'desktop';
+          
+          if (isPopupFlow) {
+            // For popup windows during registration, show success page and close popup
+            const successHtml = `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Planning Center Connected</title>
+                <style>
+                  body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f8fafc; }
+                  .success { color: #16a34a; font-size: 20px; margin-bottom: 15px; font-weight: 600; }
+                  .message { color: #64748b; font-size: 16px; margin-bottom: 20px; }
+                  .loading { color: #64748b; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="success">✅ Planning Center Connected Successfully!</div>
+                <div class="message">Starting member import...</div>
+                <div class="loading">This window will close automatically.</div>
+                <script>
+                  // Close popup after brief delay to show success message
+                  setTimeout(function() {
+                    window.close();
+                  }, 2000);
+                </script>
+              </body>
+              </html>
+            `;
+            return res.send(successHtml);
           } else {
-            // Desktop devices work fine with the standard redirect
-            return res.redirect('/settings?planningCenterConnected=true');
+            // For mobile devices or settings page, use redirect
+            if (isMobileDevice) {
+              return res.redirect('/settings?planningCenterConnected=true&mobile=true');
+            } else {
+              return res.redirect('/settings?planningCenterConnected=true');
+            }
           }
         } catch (tokenSaveError) {
           console.error('Error saving Planning Center tokens:', tokenSaveError);

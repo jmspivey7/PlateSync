@@ -1737,22 +1737,65 @@ export default function Onboarding() {
                                   clearInterval(checkClosed);
                                   setIsPlanningCenterConnecting(false);
                                   
-                                  // Check if connection was successful
+                                  // Start import process after popup closes
                                   setTimeout(async () => {
                                     try {
-                                      const response = await fetch(`/api/planning-center/status?churchId=${idToUse}`);
-                                      if (response.ok) {
-                                        const status = await response.json();
+                                      // First check if connection was successful
+                                      const statusResponse = await fetch(`/api/planning-center/status?churchId=${idToUse}`);
+                                      if (statusResponse.ok) {
+                                        const status = await statusResponse.json();
                                         if (status.connected) {
                                           setIsPlanningCenterConnected(true);
+                                          
+                                          // Start member import process
                                           toast({
-                                            title: "Success!",
-                                            description: "Planning Center connected successfully.",
+                                            title: "Connected!",
+                                            description: "Starting member import from Planning Center...",
+                                          });
+                                          
+                                          try {
+                                            const importResponse = await fetch(`/api/planning-center/import-members?churchId=${idToUse}`, {
+                                              method: 'POST'
+                                            });
+                                            
+                                            if (importResponse.ok) {
+                                              const importResult = await importResponse.json();
+                                              const totalImported = importResult.added + importResult.updated;
+                                              
+                                              toast({
+                                                title: "Import Complete!",
+                                                description: `Successfully imported ${totalImported} members from Planning Center.`,
+                                              });
+                                            } else {
+                                              toast({
+                                                title: "Import Warning",
+                                                description: "Connected to Planning Center, but member import had issues.",
+                                                variant: "destructive"
+                                              });
+                                            }
+                                          } catch (importError) {
+                                            console.error('Error importing members:', importError);
+                                            toast({
+                                              title: "Import Warning", 
+                                              description: "Connected to Planning Center, but couldn't import members automatically.",
+                                              variant: "destructive"
+                                            });
+                                          }
+                                        } else {
+                                          toast({
+                                            title: "Connection Issue",
+                                            description: "Could not verify Planning Center connection.",
+                                            variant: "destructive"
                                           });
                                         }
                                       }
                                     } catch (error) {
                                       console.error('Error checking Planning Center status:', error);
+                                      toast({
+                                        title: "Connection Error",
+                                        description: "Could not verify Planning Center connection.",
+                                        variant: "destructive"
+                                      });
                                     }
                                   }, 1000);
                                 }
