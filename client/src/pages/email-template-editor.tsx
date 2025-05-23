@@ -282,10 +282,10 @@ export default function EmailTemplateEditor() {
                   </div>
                   
                   <div className="p-6">
-                    <div 
-                      dangerouslySetInnerHTML={{ 
-                        __html: processedHtml 
-                      }} 
+                    <iframe 
+                      srcDoc={processedHtml}
+                      style={{ width: '100%', height: '600px', border: 'none' }}
+                      title="Email Template Preview"
                     />
                   </div>
                 </div>
