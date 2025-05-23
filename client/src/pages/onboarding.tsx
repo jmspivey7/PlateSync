@@ -93,15 +93,11 @@ export default function Onboarding() {
         localStorage.removeItem('onboardingEmailNotifications');
         localStorage.removeItem('onboardingServiceOptionsSaved');
         
-        toast({
-          title: "Account canceled",
-          description: "Your account and all data have been removed",
-          variant: "default"
-        });
+        // Account canceled successfully - no toast notification needed
       }
       
-      // Redirect to Create Account form
-      window.location.href = '/create-account';
+      // Redirect to main login page
+      window.location.href = '/login-local';
       
     } catch (error) {
       console.error('Error canceling onboarding:', error);
