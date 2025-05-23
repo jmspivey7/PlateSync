@@ -320,7 +320,6 @@ export default function EmailTemplateEditor() {
                         />
                       </div>
                     </div>
-                    </div>
                   </div>
                   
                   <div>
