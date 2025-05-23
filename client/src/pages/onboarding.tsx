@@ -1695,14 +1695,11 @@ export default function Onboarding() {
                           {/* Success status display */}
                           {importStatus === 'success' && statusMessage && (
                             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                              <div className="flex items-center justify-center">
-                                <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                                <div className="text-sm text-center">
-                                  <p className="text-green-800 font-medium">{statusMessage}</p>
-                                  <p className="text-green-600 text-xs mt-1">
-                                    Imported on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
-                                  </p>
-                                </div>
+                              <div className="text-sm text-center">
+                                <p className="text-green-800 font-medium">{statusMessage}</p>
+                                <p className="text-green-600 text-xs mt-1">
+                                  Imported on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+                                </p>
                               </div>
                             </div>
                           )}
