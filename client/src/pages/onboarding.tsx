@@ -1320,7 +1320,7 @@ export default function Onboarding() {
             <div className="flex justify-between pt-4 border-t">
               <div className="flex space-x-3">
                 <Button 
-                  variant="destructive" 
+                  className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => setShowCancelDialog(true)}
                   disabled={isCanceling}
                 >
