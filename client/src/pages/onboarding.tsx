@@ -1683,12 +1683,13 @@ export default function Onboarding() {
                         </div>
                       ) : (
                         <Button
-                          onClick={() => {
+                          onClick={async () => {
                             setIsPlanningCenterConnecting(true);
                             
                             // Get church ID for registration flow
                             const storedUserId = localStorage.getItem('userId');
                             const idToUse = churchId || storedUserId;
+                            let popup: Window | null = null;
                             
                             if (idToUse) {
                               // Use popup window for OAuth flow during registration
@@ -1705,7 +1706,7 @@ export default function Onboarding() {
                                 }
                                 
                                 // Open popup with the actual Planning Center OAuth URL
-                                const popup = window.open(
+                                popup = window.open(
                                   data.url,
                                   'planning-center-auth',
                                   'width=600,height=700,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
