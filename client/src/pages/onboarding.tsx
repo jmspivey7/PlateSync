@@ -52,6 +52,59 @@ export default function Onboarding() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isAccountCreating, setIsAccountCreating] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
+
+  // Handle cancel onboarding with data purge
+  const handleCancelOnboarding = async () => {
+    setIsCanceling(true);
+    try {
+      const storedUserId = localStorage.getItem('userId');
+      const idToUse = churchId || storedUserId;
+      
+      if (idToUse) {
+        // Call the purge endpoint to remove all church data
+        const response = await fetch(`/api/purge-onboarding/${idToUse}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to cancel account');
+        }
+        
+        // Clear all localStorage onboarding data
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userVerified');
+        localStorage.removeItem('onboardingServiceOptions');
+        localStorage.removeItem('onboardingLogoPreview');
+        localStorage.removeItem('onboardingEmailNotifications');
+        localStorage.removeItem('onboardingServiceOptionsSaved');
+        
+        toast({
+          title: "Account canceled",
+          description: "Your account and all data have been removed",
+          variant: "default"
+        });
+      }
+      
+      // Redirect to home page
+      window.location.href = '/';
+      
+    } catch (error) {
+      console.error('Error canceling onboarding:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCanceling(false);
+      setShowCancelDialog(false);
+    }
+  };
   
   // Service options states
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
@@ -489,7 +542,7 @@ export default function Onboarding() {
       // Show the account creation spinner screen
       setIsAccountCreating(true);
       
-      // Move to the next step after a short delay
+      // Move to step 2 (UPLOAD_LOGO) after a short delay
       setTimeout(() => {
         setIsAccountCreating(false);
         setCurrentStep(OnboardingStep.UPLOAD_LOGO);
@@ -1016,11 +1069,18 @@ export default function Onboarding() {
             
             <div className="flex justify-between pt-4 border-t">
               <Button 
-                variant="outline" 
-                onClick={handleBackStep}
-                disabled={true} // Back button is disabled for verification
+                variant="destructive" 
+                onClick={() => setShowCancelDialog(true)}
+                disabled={isCanceling}
               >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                {isCanceling ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Canceling...
+                  </>
+                ) : (
+                  'Cancel'
+                )}
               </Button>
               
               <div>
