@@ -1692,12 +1692,43 @@ export default function Onboarding() {
                             
                             if (idToUse) {
                               // Use popup window for OAuth flow during registration
-                              const authUrl = `/api/planning-center/authorize?churchId=${idToUse}&deviceType=desktop`;
-                              const popup = window.open(
-                                authUrl,
-                                'planning-center-auth',
-                                'width=600,height=700,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
-                              );
+                              // Get the Planning Center auth URL first, then open popup
+                              try {
+                                const response = await fetch(`/api/planning-center/auth-url?churchId=${idToUse}&deviceType=desktop`);
+                                if (!response.ok) {
+                                  throw new Error('Failed to get Planning Center auth URL');
+                                }
+                                
+                                const data = await response.json();
+                                if (!data.url) {
+                                  throw new Error('No auth URL received');
+                                }
+                                
+                                // Open popup with the actual Planning Center OAuth URL
+                                const popup = window.open(
+                                  data.url,
+                                  'planning-center-auth',
+                                  'width=600,height=700,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+                                );
+                                
+                                if (!popup) {
+                                  toast({
+                                    title: "Popup Blocked",
+                                    description: "Please allow popups and try again",
+                                    variant: "destructive"
+                                  });
+                                  setIsPlanningCenterConnecting(false);
+                                  return;
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "Connection Failed",
+                                  description: "Failed to start Planning Center connection",
+                                  variant: "destructive"
+                                });
+                                setIsPlanningCenterConnecting(false);
+                                return;
+                              }
                               
                               // Monitor popup for completion
                               const checkClosed = setInterval(() => {
