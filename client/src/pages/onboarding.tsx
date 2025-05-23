@@ -150,7 +150,8 @@ export default function Onboarding() {
       }
     },
     onSuccess: (data) => {
-      const importCount = data.importedCount || data.added || data.imported || 0;
+      console.log('CSV Import Success Data:', data);
+      const importCount = data.importedCount || data.addedCount || data.added || data.imported || 0;
       setImportStatus('success');
       setStatusMessage(`Successfully imported ${importCount} members.`);
       setImportProgress(100);
