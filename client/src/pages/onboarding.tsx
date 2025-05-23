@@ -667,12 +667,12 @@ export default function Onboarding() {
       // Save the email notification setting first, then user can manually proceed
       try {
         await donorNotificationMutation.mutateAsync(donorNotificationsEnabled);
-        // Setting saved successfully - user can now manually proceed to subscription
+        setCurrentStep(OnboardingStep.SUBSCRIPTION);
       } catch (error) {
         console.error('Error saving email notification setting:', error);
-        // Show error but don't auto-advance
+        // Still advance to next step even if save fails
+        setCurrentStep(OnboardingStep.SUBSCRIPTION);
       }
-      setCurrentStep(OnboardingStep.SUBSCRIPTION);
     } else if (currentStep === OnboardingStep.SUBSCRIPTION) {
       // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
