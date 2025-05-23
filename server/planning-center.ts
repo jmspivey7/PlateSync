@@ -707,7 +707,8 @@ export function setupPlanningCenterRoutes(app: Express) {
       const tempKey = crypto.randomBytes(24).toString('hex');
       app.locals.tempPlanningCenterTokens = app.locals.tempPlanningCenterTokens || {};
       
-      const churchId = req.query.churchId ? String(req.query.churchId) : undefined;
+      // Get church ID from session data (set during auth URL generation)
+      const churchId = req.session.planningCenterChurchId || (req.query.churchId ? String(req.query.churchId) : undefined);
       
       app.locals.tempPlanningCenterTokens[tempKey] = {
         accessToken: access_token,
@@ -724,7 +725,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       if (churchId) {
         try {
           console.log(`Auto-claiming registration tokens for church ${churchId}`);
-          await storage.storePlanningCenterTokens(churchId, churchId, {
+          await storage.savePlanningCenterTokens(churchId, churchId, {
             accessToken: access_token,
             refreshToken: refresh_token,
             expiresAt: new Date(Date.now() + expires_in * 1000),
