@@ -1966,7 +1966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   <p>Thank you for your generous donation to {{churchName}}. Your support helps us continue our mission and serve our community.</p>
   
   <div class="donation-details">
-    <p><strong>Donation Amount:</strong> <span class="amount">${{amount}}</span></p>
+    <p><strong>Donation Amount:</strong> <span class="amount">$\{{amount}}</span></p>
     <p><strong>Date:</strong> {{date}}</p>
     <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
   </div>
@@ -1989,7 +1989,7 @@ Dear {{donorName}},
 Thank you for your generous donation to {{churchName}}. Your support helps us continue our mission and serve our community.
 
 Donation Details:
-Amount: ${{amount}}
+Amount: $\{{amount}}
 Date: {{date}}
 Payment Method: {{paymentMethod}}
 
