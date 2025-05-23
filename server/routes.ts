@@ -2111,7 +2111,7 @@ Please find attached the donation count report for {{date}} at {{churchName}}.
 
 Report Details:
 Service: {{serviceType}}
-Total Amount: ${{totalAmount}}
+Total Amount: $\{{totalAmount}}
 Total Donations: {{totalDonations}}
 Counters: {{counterNames}}
 
