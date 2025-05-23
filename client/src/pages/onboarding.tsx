@@ -627,23 +627,9 @@ export default function Onboarding() {
     }, 300);
     
     try {
-      // Use the importCsvMutation if we've defined it, otherwise simulate success
-      if (importCsvMutation && importCsvMutation.mutateAsync) {
-        await importCsvMutation.mutateAsync(formData);
-      } else {
-        // Simulate a successful import for demonstration in onboarding
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setImportStatus('success');
-        setStatusMessage(`Successfully imported ${Math.floor(Math.random() * 15) + 5} members.`);
-        setImportProgress(100);
-        
-        // Members imported successfully - no toast needed during onboarding
-        
-        // Auto advance to next step after 2 seconds
-        setTimeout(() => {
-          handleNextStep();
-        }, 2000);
-      }
+      // Always use the real import function, never simulate
+      console.log('Starting real CSV import during registration...');
+      await importCsvMutation.mutateAsync(formData);
     } catch (error) {
       setImportStatus('error');
       setStatusMessage(error instanceof Error ? error.message : 'An error occurred during import');
