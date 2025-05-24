@@ -1863,47 +1863,54 @@ export default function Onboarding() {
               </TabsContent>
             </Tabs>
             
-            <div className="flex justify-between pt-4 border-t">
-              <div className="flex space-x-3">
-                <Button 
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => setShowCancelDialog(true)}
-                  disabled={isCanceling}
-                >
-                  {isCanceling ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Canceling...
-                    </>
-                  ) : (
-                    'Cancel'
-                  )}
-                </Button>
+            {/* Mobile-responsive button layout */}
+            <div className="pt-4 border-t space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                {/* Left side buttons - shown last on mobile */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 order-2 sm:order-1">
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Canceling...
+                      </>
+                    ) : (
+                      'Cancel'
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full sm:w-auto"
+                    onClick={handleBackStep}
+                  >
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                </div>
                 
-                <Button 
-                  variant="outline" 
-                  onClick={handleBackStep}
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-              </div>
-              
-              <div className="space-x-2">
-                {importStatus !== 'success' && (
-                  <Button
-                    variant="outline"
+                {/* Right side buttons - shown first on mobile */}
+                <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+                  {importStatus !== 'success' && (
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={handleNextStep}
+                    >
+                      Skip for now
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
                     onClick={handleNextStep}
                   >
-                    Skip for now
+                    Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                )}
-                
-                <Button 
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  onClick={handleNextStep}
-                >
-                  Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -2004,45 +2011,51 @@ export default function Onboarding() {
               </div>
             </div>
             
-            <div className="flex justify-between pt-4 border-t">
-              <div className="flex space-x-3">
-                <Button 
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => setShowCancelDialog(true)}
-                  disabled={isCanceling}
-                >
-                  {isCanceling ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Canceling...
-                    </>
-                  ) : (
-                    'Cancel'
-                  )}
-                </Button>
+            {/* Mobile-responsive button layout */}
+            <div className="pt-4 border-t space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                {/* Left side buttons - shown last on mobile */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 order-2 sm:order-1">
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Canceling...
+                      </>
+                    ) : (
+                      'Cancel'
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full sm:w-auto"
+                    onClick={handleBackStep}
+                  >
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                </div>
                 
-                <Button 
-                  variant="outline" 
-                  onClick={handleBackStep}
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-              </div>
-              
-              <Button 
-                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-8"
-                onClick={async () => {
-                  try {
-                    // Get churchId from localStorage during onboarding
-                    const churchId = localStorage.getItem('onboardingChurchId');
-                    if (!churchId) {
-                      toast({
-                        title: "Error starting trial",
-                        description: "Church ID not found. Please restart onboarding.",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
+                {/* Right side buttons - shown first on mobile */}
+                <div className="order-1 sm:order-2">
+                  <Button 
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto px-8"
+                    onClick={async () => {
+                      try {
+                        // Get churchId from localStorage during onboarding
+                        const churchId = localStorage.getItem('onboardingChurchId');
+                        if (!churchId) {
+                          toast({
+                            title: "Error starting trial",
+                            description: "Church ID not found. Please restart onboarding.",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
                     
                     // Get church name too if available
                     const storedChurchName = localStorage.getItem('churchName');
@@ -2076,7 +2089,9 @@ export default function Onboarding() {
                     Start My Free Trial <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
-              </Button>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -2093,7 +2108,7 @@ export default function Onboarding() {
             </p>
             <div className="flex justify-center pt-4 border-t mt-6 w-full max-w-md">
               <Button 
-                className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
+                className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white w-full sm:w-auto"
                 onClick={handleNextStep}
               >
                 Go to Sign In <ChevronsRight className="ml-2 h-4 w-4" />
