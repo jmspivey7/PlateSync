@@ -222,25 +222,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const handleLogout = (req: Request, res: Response) => {
     console.log("Logout endpoint called - destroying session");
     
-    // Use passport logout if available
-    if (req.logout) {
-      req.logout((err) => {
-        if (err) {
-          console.error("Passport logout error:", err);
-        }
-      });
-    }
-    
-    // Completely destroy the session
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("Session destruction error:", err);
-      }
-      
-      // Clear all cookies
+    try {
+      // Clear all cookies first
       res.clearCookie('connect.sid');
+      res.clearCookie('session');
       
-      console.log("Session destroyed and cookies cleared");
+      // Destroy session if it exists
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error("Session destruction error:", err);
+          }
+          console.log("Session destroyed and cookies cleared");
+        });
+      }
       
       // For GET requests or if 'redirect' is true in the POST body, redirect to login
       const isGetRequest = req.method === 'GET';
@@ -252,7 +247,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For API calls that don't want redirect, just send a success response
         res.status(200).json({ success: true, message: "Logged out successfully" });
       }
-    });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(200).json({ success: true, message: "Logged out successfully" });
+    }
   };
   
   // Register logout routes BEFORE any auth middleware
