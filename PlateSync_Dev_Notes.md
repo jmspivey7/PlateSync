@@ -2,7 +2,35 @@
 
 This document contains essential information for developers working on the PlateSync application. It serves as a reference for various workflows, integration details, and special handling required by the application.
 
-## Latest Fixes - Authentication System
+## Latest Fixes - Subscription & Authentication System
+
+### ✅ TRIAL EXPIRATION SYSTEM COMPLETED (May 24, 2025)
+**Feature**: Complete subscription management with trial expiration handling and expired subscription page.
+
+**Functionality**:
+1. **Trial Status Detection**: System automatically detects when 30-day trial period expires
+2. **Role-Based Access Control**: 
+   - Account Owners with expired trials can only access subscription-related pages
+   - Administrators and Standard Users are completely blocked from expired accounts
+3. **Expired Subscription Page**: Dedicated page with PlateSync branding and subscription options
+4. **Payment Integration**: Subscription buttons connect to Global Admin configured Stripe payment links
+
+**Technical Implementation**:
+- **Middleware Protection**: `checkTrialExpiration` middleware applies to all protected routes
+- **Public Payment API**: `/api/stripe/payment-links` endpoint provides payment links without authentication
+- **New Tab Navigation**: Payment links open in new tabs to prevent Stripe skeleton loading issues
+- **Subscription Cards**: Monthly plan ($2.99) with "Most Popular" badge, Annual plan ($25.00) with "Best Value" badge
+
+**UI/UX Features**:
+- Centered enlarged PlateSync logo with consistent branding
+- Side-by-side subscription card layout with aligned buttons
+- Clear messaging about trial expiration and upgrade requirements
+- Red "Sign Out" button for easy logout access
+
+**Database Structure**:
+- `trial_end_date` field in churches table tracks 30-day trial period
+- Subscription status calculated dynamically based on current date vs trial end date
+- Payment links stored in Global Admin Stripe integration settings
 
 ### ✅ LOGOUT FUNCTIONALITY FIXED (May 24, 2025)
 **Issue**: Session destruction was causing crashes with "Cannot read properties of undefined (reading 'regenerate')" error during logout process.
