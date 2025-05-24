@@ -194,9 +194,11 @@ export default function GlobalAdminReports() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">127</div>
+              <div className="text-3xl font-bold">
+                {parseInt(reportsData?.churchStats?.total_churches) || 0}
+              </div>
               <p className="text-sm text-green-600 flex items-center mt-1">
-                +12 from previous period
+                +{parseInt(reportsData?.churchStats?.new_churches) || 0} from previous period
               </p>
             </CardContent>
             <CardFooter className="pt-0 pb-3">
@@ -215,9 +217,11 @@ export default function GlobalAdminReports() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">1,452</div>
+              <div className="text-3xl font-bold">
+                {parseInt(reportsData?.userStats?.total_users) || 0}
+              </div>
               <p className="text-sm text-green-600 flex items-center mt-1">
-                +87 from previous period
+                +{parseInt(reportsData?.userStats?.new_users) || 0} from previous period
               </p>
             </CardContent>
             <CardFooter className="pt-0 pb-3">
@@ -231,14 +235,20 @@ export default function GlobalAdminReports() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex justify-between items-center text-lg">
-                <span>Total Donations</span>
-                <BarChart3 className="h-5 w-5 text-[#69ad4c]" />
+                <span>Total Revenue</span>
+                <DollarSign className="h-5 w-5 text-[#69ad4c]" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">$2.4M</div>
+              <div className="text-3xl font-bold">
+                {formatDollar(
+                  reportsData?.subscriptionSummary?.reduce((total: number, sub: any) => 
+                    total + (parseFloat(sub.total_revenue) || 0), 0
+                  ) || 0
+                )}
+              </div>
               <p className="text-sm text-green-600 flex items-center mt-1">
-                +14% from previous period
+                Revenue for selected period
               </p>
             </CardContent>
             <CardFooter className="pt-0 pb-3">
