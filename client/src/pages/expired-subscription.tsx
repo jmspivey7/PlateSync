@@ -77,8 +77,8 @@ export default function ExpiredSubscription() {
               <CardContent className="p-6">
                 <div className="text-center">
                   <p className="text-sm text-gray-500 mb-1">Account Owner</p>
-                  <p className="text-xl font-semibold text-gray-900">{(user as any).firstName} {(user as any).lastName}</p>
-                  <p className="text-gray-600">{(user as any).churchName}</p>
+                  <p className="text-xl font-semibold text-gray-900">{(user as any).churchName}</p>
+                  <p className="text-red-600 font-medium">Trial Expired: May 1, 2025</p>
                 </div>
               </CardContent>
             </Card>
@@ -188,8 +188,7 @@ export default function ExpiredSubscription() {
           <div className="text-center">
             <Button 
               onClick={handleLogout}
-              variant="ghost" 
-              className="text-gray-600 hover:text-gray-900"
+              className="bg-red-600 hover:bg-red-700 text-white"
               size="lg"
             >
               Sign Out
