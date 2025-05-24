@@ -16,15 +16,20 @@ export default function ExpiredSubscription() {
     try {
       // Redirect to Stripe payment links
       const paymentLinks = {
-        monthly: process.env.VITE_STRIPE_MONTHLY_PAYMENT_LINK,
-        annual: process.env.VITE_STRIPE_ANNUAL_PAYMENT_LINK
+        monthly: import.meta.env.VITE_STRIPE_MONTHLY_PAYMENT_LINK,
+        annual: import.meta.env.VITE_STRIPE_ANNUAL_PAYMENT_LINK
       };
+      
+      console.log('Payment links:', paymentLinks);
+      console.log(`Attempting to redirect to ${plan} plan:`, paymentLinks[plan]);
       
       const paymentLink = paymentLinks[plan];
       if (paymentLink) {
+        console.log('Redirecting to:', paymentLink);
         window.location.href = paymentLink;
       } else {
         console.error(`Payment link not configured for ${plan} plan`);
+        console.error('Available payment links:', paymentLinks);
         setIsRedirecting(false);
       }
     } catch (error) {
