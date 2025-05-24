@@ -3872,8 +3872,37 @@ Sincerely,
       
       console.log(`Password verified successfully for user: ${user.id}`);
       
-      // If church is suspended, check if the user is a global admin
+      // Check subscription status for trial expiration
       if (user.churchId) {
+        const [subscription] = await db
+          .select()
+          .from(subscriptions)
+          .where(eq(subscriptions.churchId, user.churchId));
+        
+        if (subscription) {
+          const now = new Date();
+          const trialEndDate = new Date(subscription.trialEndDate);
+          const isTrialExpired = subscription.status === 'TRIAL' && now > trialEndDate;
+          
+          console.log(`Subscription check for church ${user.churchId}:`, {
+            status: subscription.status,
+            trialEndDate: subscription.trialEndDate,
+            isExpired: isTrialExpired,
+            userRole: user.role
+          });
+          
+          // If trial is expired and user is not Account Owner, block login
+          if (isTrialExpired && user.role !== 'ACCOUNT_OWNER') {
+            console.log(`Trial expired login blocked for non-owner: ${user.id}, role: ${user.role}`);
+            return res.status(403).json({ 
+              message: 'Account suspended due to trial expiration. Please contact your Account Owner to upgrade to a paid subscription.',
+              trialExpired: true,
+              userRole: user.role
+            });
+          }
+        }
+        
+        // If church is suspended, check if the user is a global admin
         const [church] = await db
           .select()
           .from(churches)

@@ -2,6 +2,31 @@
 
 This document contains essential information for developers working on the PlateSync application. It serves as a reference for various workflows, integration details, and special handling required by the application.
 
+## Latest Fixes - Authentication System
+
+### ✅ LOGOUT FUNCTIONALITY FIXED (May 24, 2025)
+**Issue**: Session destruction was causing crashes with "Cannot read properties of undefined (reading 'regenerate')" error during logout process.
+
+**Root Cause**: ReplitAuth system was conflicting with local authentication system, causing session management issues.
+
+**Solution**:
+1. **Completely disabled ReplitAuth system** by renaming `server/replitAuth.ts` to `server/replitAuth.ts.DISABLED`
+2. **Enhanced logout handler** with proper error handling and session checks in `server/routes.ts`
+3. **Improved session cleanup** with cookie clearing and proper error handling
+
+**Result**: 
+- ✅ Server logs now show "Logout endpoint called - destroying session"
+- ✅ Server logs show "Session destroyed and cookies cleared" 
+- ✅ Users are properly redirected to login page after registration completion
+- ✅ No more authentication system conflicts or crashes
+- ✅ Registration flow now works perfectly: Complete registration → Click "Go to Sign In" → Logout → Login page
+
+**Technical Details**:
+- Logout endpoint handles both GET and POST requests
+- Session destruction is wrapped in try-catch blocks
+- Cookie clearing happens before session destruction
+- Proper redirect logic for different request types
+
 ## Table of Contents
 1. [Planning Center Integration](#planning-center-integration)
    - [OAuth Authentication Flow](#oauth-authentication-flow)
