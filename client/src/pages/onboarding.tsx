@@ -2025,40 +2025,8 @@ export default function Onboarding() {
                       churchName: storedChurchName || undefined
                     });
                     
-                    // CRITICAL FIX: Clear authentication immediately after trial completion
-                    // This ensures user must log in manually to access their new account
-                    console.log('Trial completed - clearing all authentication data');
-                    
-                    // Clear ALL cached data to force fresh login
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    
-                    // Force logout from session
-                    try {
-                      await fetch('/api/logout-local', { 
-                        method: 'POST', 
-                        credentials: 'include',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        }
-                      });
-                      await fetch('/api/logout', { 
-                        method: 'POST', 
-                        credentials: 'include',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        }
-                      });
-                      
-                      // Wait for logout to complete
-                      await new Promise(resolve => setTimeout(resolve, 500));
-                    } catch (error) {
-                      console.log('Logout completed');
-                    }
-                    
-                    // Force redirect to login page with complete page reload
-                    console.log('Registration complete - redirecting to login page');
-                    window.location.replace("/login-local");
+                    // Move to completion step normally
+                    handleNextStep();
                     
                   } catch (error) {
                     toast({
