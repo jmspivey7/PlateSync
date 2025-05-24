@@ -17,7 +17,7 @@ export default function LoginLocal() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Register state
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
@@ -30,24 +30,24 @@ export default function LoginLocal() {
   const [registerSuccess, setRegisterSuccess] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
 
-  
+
   const { user, isLoading: authLoading, login, loginStatus } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // Active tab state
   const [activeTab, setActiveTab] = useState("signin");
-  
+
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (user && !authLoading) {
       setLocation("/dashboard");
     }
   }, [user, authLoading, setLocation]);
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: "Missing information",
@@ -59,43 +59,41 @@ export default function LoginLocal() {
 
     // Use the login function from useAuth hook
     login({ username: email, password });
-    
+
     // The redirect will happen automatically in the useAuth hook
   };
-  
-
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterError(null);
     setRegisterSuccess(null);
-    
+
     // Validate inputs
     if (!registerEmail || !registerPassword || !confirmPassword || !churchName || !firstName || !lastName) {
       setRegisterError("All fields are required");
       return;
     }
-    
+
     if (registerPassword !== confirmPassword) {
       setRegisterError("Passwords do not match");
       return;
     }
-    
+
     if (registerPassword.length < 8) {
       setRegisterError("Password must be at least 8 characters long");
       return;
     }
-    
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(registerEmail)) {
       setRegisterError("Please enter a valid email address");
       return;
     }
-    
+
     try {
       setIsRegistering(true);
-      
+
       // Define response type
       const response: Response = await fetch('/api/register-church', {
         method: 'POST',
@@ -110,7 +108,7 @@ export default function LoginLocal() {
           lastName: lastName
         })
       });
-      
+
       interface RegisterResponse {
         message: string;
         onboarding: {
@@ -119,13 +117,13 @@ export default function LoginLocal() {
           email: string;
         };
       }
-      
+
       const data: RegisterResponse = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || "Failed to register");
       }
-      
+
       // Clear form
       setRegisterEmail("");
       setRegisterPassword("");
@@ -133,30 +131,30 @@ export default function LoginLocal() {
       setChurchName("");
       setFirstName("");
       setLastName("");
-      
+
       // Immediately redirect to onboarding without showing toast
       const { churchId, churchName: churchNameFromResponse, email: emailFromResponse } = data.onboarding;
       // Redirect to onboarding page with query parameters
       window.location.href = `/onboarding?churchId=${churchId}&churchName=${encodeURIComponent(churchNameFromResponse)}&email=${encodeURIComponent(emailFromResponse)}`;
-      
+
     } catch (error) {
       setRegisterError(error instanceof Error ? error.message : "Registration failed");
     } finally {
       setIsRegistering(false);
     }
   };
-  
+
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-  
+
   const toggleRegisterPasswordVisibility = () => {
     setShowRegisterPassword(!showRegisterPassword);
   };
-  
 
-  
+
+
   // Show loading spinner while checking auth
   if (authLoading) {
     return (
@@ -165,7 +163,7 @@ export default function LoginLocal() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-md p-6">
@@ -179,13 +177,13 @@ export default function LoginLocal() {
               />
             </div>
           </CardHeader>
-          
+
           <Tabs defaultValue="signin" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full grid grid-cols-2 mb-4">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="register">Create Account</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="signin">
               <CardContent className="py-4">
                 <p className="text-gray-600 mb-4">Welcome back. Please enter your credentials to access your account.</p>
@@ -195,7 +193,7 @@ export default function LoginLocal() {
                       {loginStatus.error.message}
                     </div>
                   )}
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="email" className="font-bold">Email:</Label>
                     <div className="relative">
@@ -213,7 +211,7 @@ export default function LoginLocal() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="password" className="font-bold">Password:</Label>
                     <div className="relative">
@@ -243,44 +241,15 @@ export default function LoginLocal() {
                       </button>
                     </div>
                   </div>
-                  
+
                   <Button 
                     type="submit" 
                     className="w-full bg-[#69ad4c] hover:bg-[#59ad3c] text-white" 
                     disabled={loginStatus.isLoading}
                   >
-
-                    {showPassword ? (
-                      <EyeOffIcon className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-[#69ad4c] hover:bg-[#59ad3c] text-white" 
-                disabled={loginStatus.isLoading}
-              >
-                {loginStatus.isLoading ? "Signing in..." : "Sign In"}
-              </Button>
-              
-              <div className="text-center mt-4">
-                <a 
-                  href="/forgot-password" 
-                  className="text-sm text-[#69ad4c] hover:underline"
-                >
-                  Forgot password?
-                </a>
-              </div>
-            </form>
-          </CardContent>
-
                     {loginStatus.isLoading ? "Signing in..." : "Sign In"}
                   </Button>
-                  
+
                   <div className="text-center mt-4">
                     <a 
                       href="/forgot-password" 
@@ -292,18 +261,18 @@ export default function LoginLocal() {
                 </form>
               </CardContent>
             </TabsContent>
-            
+
             <TabsContent value="register">
               <CardContent className="py-4">
                 <p className="text-gray-600 mb-4 text-center">Start your <strong>30-Day Free Trial</strong> of PlateSync Today! No credit card required. Complete the New Account form to get started.</p>
-                
+
                 <form onSubmit={handleRegister} className="space-y-4">
                   {registerError && (
                     <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm mb-4">
                       {registerError}
                     </div>
                   )}
-                  
+
                   {registerSuccess && (
                     <div className="p-3 rounded-md bg-green-50 text-green-600 text-sm mb-4">
                       {registerSuccess}
@@ -327,7 +296,7 @@ export default function LoginLocal() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName" className="font-bold">First Name:</Label>
@@ -346,7 +315,7 @@ export default function LoginLocal() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="lastName" className="font-bold">Last Name:</Label>
                       <div className="relative">
@@ -383,7 +352,7 @@ export default function LoginLocal() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="registerPassword" className="font-bold">Password:</Label>
                     <div className="relative">
@@ -413,7 +382,7 @@ export default function LoginLocal() {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="font-bold">Confirm Password:</Label>
                     <div className="relative">
@@ -431,7 +400,7 @@ export default function LoginLocal() {
                       />
                     </div>
                   </div>
-                  
+
                   <Button 
                     type="submit" 
                     className="w-full bg-[#69ad4c] hover:bg-[#59ad3c] text-white" 
