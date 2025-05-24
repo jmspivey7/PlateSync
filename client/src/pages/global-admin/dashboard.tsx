@@ -267,76 +267,56 @@ export default function GlobalAdminDashboard() {
             </div>
 
             {/* Charts - Second Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <Card>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <div>
-                    <CardTitle>Conversion Rate</CardTitle>
-                    <CardDescription>Monthly trial-to-paid conversion rate</CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-[#69ad4c]">35%</div>
-                    <div className="text-xs text-muted-foreground">Current conversion</div>
-                    <div className="flex items-center justify-end mt-1 text-xs">
-                      <span className="text-green-600 mr-1">↑ 3%</span>
-                      <span className="text-muted-foreground">vs last month</span>
-                    </div>
-                  </div>
+                <CardHeader>
+                  <CardTitle>Donation Trends</CardTitle>
+                  <CardDescription>Monthly donation amounts and volume over time</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={conversionRateData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value: number) => `${value}%`} />
-                      <Tooltip formatter={(value: number) => [`${value}%`]} />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="rate" 
-                        name="Conversion Rate (%)" 
-                        stroke="#69ad4c" 
-                        strokeWidth={2}
-                        activeDot={{ r: 8 }} 
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <div>
-                    <CardTitle>Churn Rate</CardTitle>
-                    <CardDescription>Monthly subscription churn rate</CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-[#ff6b6b]">3.2%</div>
-                    <div className="text-xs text-muted-foreground">Current churn</div>
-                    <div className="flex items-center justify-end mt-1 text-xs">
-                      <span className="text-green-600 mr-1">↓ 0.3%</span>
-                      <span className="text-muted-foreground">vs last month</span>
+                  {donationData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={donationData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis yAxisId="left" tickFormatter={(value: number) => `$${value.toLocaleString()}`} />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => [
+                            name === 'amount' ? `$${value.toLocaleString()}` : value,
+                            name === 'amount' ? 'Total Amount' : 'Donation Count'
+                          ]}
+                        />
+                        <Legend />
+                        <Line 
+                          yAxisId="left"
+                          type="monotone" 
+                          dataKey="amount" 
+                          name="Total Amount" 
+                          stroke="#69ad4c" 
+                          strokeWidth={2}
+                          activeDot={{ r: 8 }} 
+                        />
+                        <Line 
+                          yAxisId="right"
+                          type="monotone" 
+                          dataKey="count" 
+                          name="Donation Count" 
+                          stroke="#132433" 
+                          strokeWidth={2}
+                          activeDot={{ r: 8 }} 
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No donation data available yet</p>
+                        <p className="text-sm">Charts will appear as churches start processing donations</p>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={churnRateData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value: number) => `${value}%`} />
-                      <Tooltip formatter={(value: number) => [`${value}%`]} />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="rate" 
-                        name="Churn Rate (%)" 
-                        stroke="#ff6b6b" 
-                        strokeWidth={2}
-                        activeDot={{ r: 8 }} 
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
             </div>
