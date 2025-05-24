@@ -32,8 +32,20 @@ export default function ExpiredSubscription() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      // Force page reload to clear all state and redirect to login
+      window.location.href = '/login-local';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force redirect even if logout fails
+      window.location.href = '/login-local';
+    }
   };
 
   return (
@@ -68,8 +80,8 @@ export default function ExpiredSubscription() {
             {user && (
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-600">Account Owner</p>
-                <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
-                <p className="text-sm text-gray-600">{user.churchName}</p>
+                <p className="font-medium text-gray-900">{(user as any).firstName} {(user as any).lastName}</p>
+                <p className="text-sm text-gray-600">{(user as any).churchName}</p>
               </div>
             )}
 
