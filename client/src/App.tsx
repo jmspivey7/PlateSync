@@ -28,6 +28,7 @@ import EmailSettings from "@/pages/email-settings";
 import EmailTemplateEditor from "@/pages/email-template-editor";
 import Subscription from "@/pages/subscription";
 import SubscriptionPage from "@/pages/subscription-page";
+import ExpiredSubscription from "@/pages/expired-subscription";
 
 // Global Admin pages
 import GlobalAdminLogin from "@/pages/global-admin/login";
@@ -87,10 +88,32 @@ function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
   const [redirectInProgress, setRedirectInProgress] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
   
+  // Check subscription status for Account Owners
+  useEffect(() => {
+    if (!user || user.role !== 'ACCOUNT_OWNER' || checkingSubscription) return;
+    
+    setCheckingSubscription(true);
+    fetch('/api/subscription/status', {
+      method: 'GET',
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      setSubscriptionStatus(data);
+      setCheckingSubscription(false);
+    })
+    .catch(error => {
+      console.error('Error checking subscription status:', error);
+      setCheckingSubscription(false);
+    });
+  }, [user, checkingSubscription]);
+
   // Check authentication and redirect if needed
   useEffect(() => {
-    if (isLoading || redirectInProgress) return;
+    if (isLoading || redirectInProgress || checkingSubscription) return;
     
     // Skip authentication checks for Global Admin paths
     if (isGlobalAdminPath(location)) {
@@ -115,6 +138,23 @@ function Router() {
           setLocation("/login-local"); 
           setRedirectInProgress(false);
         }, 100);
+      } else if (user && user.role === 'ACCOUNT_OWNER' && subscriptionStatus?.isTrialExpired && 
+                 location !== "/expired-subscription" && location !== "/subscription" && !currentPathIsPublic) {
+        // Account Owner with expired trial trying to access protected routes
+        console.log('Redirecting Account Owner with expired trial to expired subscription page');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/expired-subscription");
+          setRedirectInProgress(false);
+        }, 100);
+      } else if (user && user.role !== 'ACCOUNT_OWNER' && subscriptionStatus?.isTrialExpired && !currentPathIsPublic) {
+        // Administrators and Standard Users are completely blocked from expired accounts
+        console.log('Blocking access for non-Account Owner with expired trial');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/login-local");
+          setRedirectInProgress(false);
+        }, 100);
       } else if (user && currentPathIsPublic && location !== "/verify" && location !== "/onboarding") {
         // User is authenticated and trying to access a public page (except verify and onboarding)
         console.log('Redirecting authenticated user to dashboard');
@@ -130,7 +170,7 @@ function Router() {
       console.error('Error during authentication redirect:', error);
       setRedirectInProgress(false);
     }
-  }, [user, isLoading, location, setLocation, redirectInProgress]);
+  }, [user, isLoading, location, setLocation, redirectInProgress, subscriptionStatus, checkingSubscription]);
   
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -170,6 +210,7 @@ function Router() {
       <Route path="/service-options" component={ServiceOptions} />
       <Route path="/email-settings" component={EmailSettings} />
       <Route path="/subscription" component={SubscriptionPage} />
+      <Route path="/expired-subscription" component={ExpiredSubscription} />
 
       <Route path="/email-template/:id" component={EmailTemplateEditor} />
       
