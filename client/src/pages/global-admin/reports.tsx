@@ -70,6 +70,7 @@ const formatMonth = (dateString: string) => {
 export default function GlobalAdminReports() {
   const [_, setLocation] = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState("30days");
+  const [downloadingReport, setDownloadingReport] = useState<string | null>(null);
   
   // Check for authentication
   useEffect(() => {

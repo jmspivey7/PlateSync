@@ -7,6 +7,7 @@ import { eq, desc, and, asc, SQL, ilike, sql, ne, count, sum, gte } from "drizzl
 import { z } from "zod";
 import { generateId, scryptHash, verifyPassword, generateToken } from "../util";
 import { requireGlobalAdmin } from "../middleware/globalAdminMiddleware";
+import * as XLSX from "xlsx";
 
 const router = Router();
 
@@ -741,5 +742,219 @@ router.get("/logout", (req, res) => {
 
 // We'll add the profile avatar endpoint later when mounted in routes.ts
 // Using the same avatarUpload middleware
+
+// Excel export endpoints
+router.get("/reports/export/churches", requireGlobalAdmin, async (req, res) => {
+  try {
+    const { period = '30days' } = req.query;
+    
+    // Convert period to SQL interval
+    let interval = '30 days';
+    switch (period) {
+      case '7days': interval = '7 days'; break;
+      case '30days': interval = '30 days'; break;
+      case '90days': interval = '90 days'; break;
+      case '6months': interval = '6 months'; break;
+    }
+
+    // Get detailed church data
+    const churchData = await db.execute(sql`
+      SELECT 
+        c.id,
+        c.name,
+        c.email,
+        c.status,
+        c.created_at,
+        COUNT(DISTINCT u.id) as user_count,
+        COUNT(DISTINCT s.id) as subscription_count,
+        COALESCE(SUM(d.amount), 0) as total_donations
+      FROM churches c
+      LEFT JOIN users u ON u.church_id = c.id
+      LEFT JOIN subscriptions s ON s.church_id = c.id
+      LEFT JOIN donations d ON d.church_id = c.id 
+        AND d.created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+      WHERE c.created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+      GROUP BY c.id, c.name, c.email, c.status, c.created_at
+      ORDER BY c.created_at DESC
+    `);
+
+    // Format data for Excel
+    const excelData = churchData.rows.map((church: any) => ({
+      'Church ID': church.id,
+      'Church Name': church.name,
+      'Email': church.email,
+      'Status': church.status,
+      'Created Date': new Date(church.created_at).toLocaleDateString(),
+      'Total Users': parseInt(church.user_count) || 0,
+      'Subscriptions': parseInt(church.subscription_count) || 0,
+      'Total Donations': `$${parseFloat(church.total_donations || 0).toFixed(2)}`
+    }));
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Churches Report");
+    
+    // Generate Excel file buffer
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="churches-report-${period}.xlsx"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error("Error generating churches Excel report:", error);
+    res.status(500).json({ message: "Failed to generate Excel report" });
+  }
+});
+
+router.get("/reports/export/users", requireGlobalAdmin, async (req, res) => {
+  try {
+    const { period = '30days' } = req.query;
+    
+    // Convert period to SQL interval
+    let interval = '30 days';
+    switch (period) {
+      case '7days': interval = '7 days'; break;
+      case '30days': interval = '30 days'; break;
+      case '90days': interval = '90 days'; break;
+      case '6months': interval = '6 months'; break;
+    }
+
+    // Get detailed user data
+    const userData = await db.execute(sql`
+      SELECT 
+        u.id,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u.role,
+        u.created_at,
+        c.name as church_name,
+        c.status as church_status
+      FROM users u
+      LEFT JOIN churches c ON u.church_id = c.id
+      WHERE u.created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+        AND u.role != 'GLOBAL_ADMIN'
+      ORDER BY u.created_at DESC
+    `);
+
+    // Format data for Excel
+    const excelData = userData.rows.map((user: any) => ({
+      'User ID': user.id,
+      'Email': user.email,
+      'First Name': user.first_name || '',
+      'Last Name': user.last_name || '',
+      'Role': user.role,
+      'Church': user.church_name || 'No Church',
+      'Church Status': user.church_status || 'N/A',
+      'Created Date': new Date(user.created_at).toLocaleDateString()
+    }));
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users Report");
+    
+    // Generate Excel file buffer
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="users-report-${period}.xlsx"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error("Error generating users Excel report:", error);
+    res.status(500).json({ message: "Failed to generate Excel report" });
+  }
+});
+
+router.get("/reports/export/revenue", requireGlobalAdmin, async (req, res) => {
+  try {
+    const { period = '30days' } = req.query;
+    
+    // Convert period to SQL interval
+    let interval = '30 days';
+    switch (period) {
+      case '7days': interval = '7 days'; break;
+      case '30days': interval = '30 days'; break;
+      case '90days': interval = '90 days'; break;
+      case '6months': interval = '6 months'; break;
+    }
+
+    // Get detailed subscription/revenue data
+    const revenueData = await db.execute(sql`
+      SELECT 
+        s.id,
+        s.plan,
+        s.status,
+        s.created_at,
+        c.name as church_name,
+        c.email as church_email,
+        CASE 
+          WHEN s.plan = 'MONTHLY' THEN 2.99
+          WHEN s.plan = 'ANNUAL' THEN 25.00
+          ELSE 0
+        END as monthly_value,
+        CASE 
+          WHEN s.plan = 'ANNUAL' THEN 25.00
+          ELSE 0
+        END as annual_value
+      FROM subscriptions s
+      LEFT JOIN churches c ON s.church_id = c.id
+      WHERE s.created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+      ORDER BY s.created_at DESC
+    `);
+
+    // Format data for Excel
+    const excelData = revenueData.rows.map((sub: any) => ({
+      'Subscription ID': sub.id,
+      'Church Name': sub.church_name || 'Unknown',
+      'Church Email': sub.church_email || '',
+      'Plan Type': sub.plan,
+      'Status': sub.status,
+      'Monthly Revenue': sub.plan === 'MONTHLY' ? '$2.99' : '$0.00',
+      'Annual Revenue': sub.plan === 'ANNUAL' ? '$25.00' : '$0.00',
+      'Created Date': new Date(sub.created_at).toLocaleDateString()
+    }));
+
+    // Add summary row
+    const totalMonthly = revenueData.rows.filter((r: any) => r.plan === 'MONTHLY').length * 2.99;
+    const totalAnnual = revenueData.rows.filter((r: any) => r.plan === 'ANNUAL').length * 25.00;
+    
+    excelData.push({
+      'Subscription ID': '',
+      'Church Name': '',
+      'Church Email': '',
+      'Plan Type': 'TOTALS',
+      'Status': '',
+      'Monthly Revenue': `$${totalMonthly.toFixed(2)}`,
+      'Annual Revenue': `$${totalAnnual.toFixed(2)}`,
+      'Created Date': ''
+    });
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Revenue Report");
+    
+    // Generate Excel file buffer
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="revenue-report-${period}.xlsx"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error("Error generating revenue Excel report:", error);
+    res.status(500).json({ message: "Failed to generate Excel report" });
+  }
+});
 
 export default router;
