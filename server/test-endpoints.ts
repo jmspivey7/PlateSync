@@ -1,5 +1,5 @@
 import { Express, Request, Response } from 'express';
-import { isAuthenticated } from './replitAuth';
+// REMOVED: import { isAuthenticated } from './replitAuth'; // Using local auth instead
 import { storage } from './storage';
 import { testSendGridConfiguration, sendCountReport } from './sendgrid';
 import { users } from '@shared/schema';
@@ -251,7 +251,7 @@ export function setupTestEndpoints(app: Express) {
     }
   });
   // Test SendGrid configuration
-  app.get('/api/test-sendgrid', isAuthenticated, async (_req: Request, res: Response) => {
+  app.get('/api/test-sendgrid', async (_req: Request, res: Response) => {
     try {
       const result = await testSendGridConfiguration();
       
@@ -276,7 +276,7 @@ export function setupTestEndpoints(app: Express) {
   });
   
   // Test Count Report Email
-  app.get('/api/test-count-report', isAuthenticated, async (req: any, res: Response) => {
+  app.get('/api/test-count-report', async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
