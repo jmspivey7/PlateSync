@@ -33,8 +33,9 @@ export default function ExpiredSubscription() {
       console.log(`Attempting to redirect to ${plan} plan:`, paymentLink);
       
       if (paymentLink) {
-        console.log('Redirecting to:', paymentLink);
-        window.location.href = paymentLink;
+        console.log('Opening payment link in new tab:', paymentLink);
+        window.open(paymentLink, '_blank');
+        setIsRedirecting(false);
       } else {
         console.error(`Payment link not configured for ${plan} plan in Global Admin settings`);
         console.error('Available payment links:', paymentLinks);
