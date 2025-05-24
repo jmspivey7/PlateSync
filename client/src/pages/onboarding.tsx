@@ -781,26 +781,27 @@ export default function Onboarding() {
       // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
+      console.log('COMPLETE step triggered - starting logout process');
+      
       // Clear ALL cached authentication data
       localStorage.clear();
       sessionStorage.clear();
       
-      // Clear React Query cache to remove any cached user data
-      queryClient.clear();
-      queryClient.setQueryData(["/api/auth/user"], null);
-      
       // Force logout through API
       try {
-        await fetch('/api/logout', { 
+        console.log('Making logout API call...');
+        const response = await fetch('/api/logout', { 
           method: 'POST', 
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' }
         });
+        console.log('Logout response:', response.status);
       } catch (error) {
-        console.log('Logout API call completed');
+        console.log('Logout API call error:', error);
       }
       
       // Force complete page reload to ensure all state is cleared
+      console.log('Redirecting to login page...');
       window.location.href = "/login-local";
     }
   };
