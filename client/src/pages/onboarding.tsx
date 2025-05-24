@@ -65,6 +65,17 @@ export default function Onboarding() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
+  // CRITICAL FIX: Clear ALL cached logo data when component first loads
+  // This prevents showing logos from previous church registrations
+  useEffect(() => {
+    console.log('Onboarding component loaded - clearing any cached logo data from previous registrations');
+    localStorage.removeItem('onboardingLogoPreview');
+    // Ensure logo state is completely clean
+    setLogoPreview(null);
+    setLogoFile(null);
+    setUploadSuccess(false);
+  }, []); // Empty dependency array - runs once on component mount
+
   // Handle cancel onboarding with data purge
   const handleCancelOnboarding = async () => {
     setIsCanceling(true);
@@ -984,16 +995,15 @@ export default function Onboarding() {
         setServiceOptions([]);
       }
     } else if (currentStep === OnboardingStep.UPLOAD_LOGO) {
-      // Restore logo preview if user navigates back
-      try {
-        const savedPreview = localStorage.getItem('onboardingLogoPreview');
-        if (savedPreview) {
-          setLogoPreview(savedPreview);
-          // Note: We can't restore the File object, but we keep the preview for UI
-        }
-      } catch (error) {
-        console.error('Error loading logo preview from localStorage:', error);
-      }
+      // CRITICAL FIX: Clear any cached logo data to prevent showing old church logos
+      console.log('Entering logo upload step - clearing any cached logo data');
+      localStorage.removeItem('onboardingLogoPreview');
+      setLogoPreview(null);
+      setLogoFile(null);
+      setUploadSuccess(false);
+      
+      // DO NOT restore previous logo previews - each registration should start fresh
+      console.log('Logo upload step initialized with clean state');
     }
   }, [currentStep]);
   
