@@ -781,38 +781,34 @@ export default function Onboarding() {
       // Subscription step is complete, move to completion
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
-      // Clear ALL stored authentication data to force proper login
-      localStorage.clear(); // Clear everything in localStorage
-      sessionStorage.clear(); // Clear everything in sessionStorage
+      // Clear ALL cached authentication data
+      localStorage.clear();
+      sessionStorage.clear();
       
-      // Force a complete logout by calling both logout endpoints
+      // Clear React Query cache to remove any cached user data
+      queryClient.clear();
+      queryClient.setQueryData(["/api/auth/user"], null);
+      
+      // Force logout through API
       try {
-        await fetch('/api/logout-local', { 
-          method: 'POST', 
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        await fetch('/api/logout', { 
-          method: 'POST', 
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        // Longer delay to ensure session is completely cleared
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await Promise.all([
+          fetch('/api/logout-local', { 
+            method: 'POST', 
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+          }),
+          fetch('/api/logout', { 
+            method: 'POST', 
+            credentials: 'include', 
+            headers: { 'Content-Type': 'application/json' }
+          })
+        ]);
       } catch (error) {
-        console.log('Logout calls completed');
+        console.log('Logout API calls completed');
       }
       
-      // Force complete browser reload to clear all cached state and redirect to login
-      // Use a longer delay to ensure all authentication data is completely cleared
-      setTimeout(() => {
-        window.location.replace("/login-local");
-      }, 1500);
+      // Force complete page reload to ensure all state is cleared
+      window.location.href = "/login-local";
     }
   };
   
