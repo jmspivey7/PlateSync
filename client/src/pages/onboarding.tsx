@@ -771,28 +771,34 @@ export default function Onboarding() {
       setCurrentStep(OnboardingStep.COMPLETE);
     } else if (currentStep === OnboardingStep.COMPLETE) {
       // Clear ALL stored authentication data to force proper login
-      localStorage.removeItem('userVerified');
-      localStorage.removeItem('onboardingServiceOptions');
-      localStorage.removeItem('firstName');
-      localStorage.removeItem('lastName');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('onboardingChurchId');
-      localStorage.removeItem('churchId');
-      localStorage.removeItem('email');
+      localStorage.clear(); // Clear everything in localStorage
+      sessionStorage.clear(); // Clear everything in sessionStorage
       
       // Force a complete logout by calling both logout endpoints
       try {
-        await fetch('/api/logout-local', { method: 'POST', credentials: 'include' });
-        await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+        await fetch('/api/logout-local', { 
+          method: 'POST', 
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        await fetch('/api/logout', { 
+          method: 'POST', 
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
         
-        // Small delay to ensure session is cleared on server
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Longer delay to ensure session is completely cleared
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         console.log('Logout calls completed');
       }
       
-      // Force browser to reload to clear any cached authentication state
-      window.location.href = "/login-local";
+      // Force complete browser reload to clear all cached state and redirect to login
+      window.location.replace("/login-local");
     }
   };
   
