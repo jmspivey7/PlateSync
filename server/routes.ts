@@ -40,6 +40,47 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   
   next();
 };
+
+// Middleware to check trial expiration for Account Owners and restrict access
+const checkTrialExpiration = async (req: Request, res: Response, next: NextFunction) => {
+  const user = req.user as any;
+  
+  // Only apply to Account Owners
+  if (user && user.role === 'ACCOUNT_OWNER' && user.churchId) {
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.churchId, user.churchId));
+    
+    if (subscription) {
+      const now = new Date();
+      const trialEndDate = new Date(subscription.trialEndDate);
+      const isTrialExpired = subscription.status === 'TRIAL' && now > trialEndDate;
+      
+      if (isTrialExpired) {
+        // Allow access only to subscription-related endpoints
+        const allowedPaths = [
+          '/api/subscription/',
+          '/api/auth/user',
+          '/api/logout'
+        ];
+        
+        const isAllowedPath = allowedPaths.some(path => req.path.includes(path));
+        
+        if (!isAllowedPath) {
+          console.log(`Account Owner with expired trial blocked from ${req.path}`);
+          return res.status(403).json({ 
+            message: 'Trial expired. Please upgrade to a paid subscription to continue using PlateSync.',
+            trialExpired: true,
+            requiresUpgrade: true
+          });
+        }
+      }
+    }
+  }
+  
+  next();
+};
 import { isAdmin, isAccountOwner, isMasterAdmin } from "./middleware/roleMiddleware";
 import { sendDonationNotification, testSendGridConfiguration, sendWelcomeEmail, sendPasswordResetEmail, sendCountReport } from "./sendgrid";
 import { sendVerificationEmail, verifyCode } from "./verification";
@@ -454,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/settings', isAuthenticated, settingsRoutes);
   
   // Member data endpoints
-  app.get('/api/members', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+  app.get('/api/members', isAuthenticated, checkTrialExpiration, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
       const user = req.user;
       const churchId = user?.churchId || '';
@@ -475,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Service Options endpoints
-  app.get('/api/service-options', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+  app.get('/api/service-options', isAuthenticated, checkTrialExpiration, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
       const user = req.user;
       const churchId = user?.churchId || '';
@@ -1187,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Batch Routes - API endpoints for managing batches
   
   // Get all batches for the authenticated user's church
-  app.get('/api/batches', isAuthenticated, async (req: any, res) => {
+  app.get('/api/batches', isAuthenticated, checkTrialExpiration, async (req: any, res) => {
     try {
       const userId = req.user.id || (req.user.claims && req.user.claims.sub);
       if (!userId) {
