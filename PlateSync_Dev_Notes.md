@@ -768,4 +768,39 @@ PlateSync implements a file-based profile image system using the following best 
    - For production, consider using cloud storage (AWS S3, etc.)
    - For development and smaller deployments, file-based storage is simpler
 
-*Last updated: May 17, 2025*
+---
+
+## Data Integrity & Registration Cache Issues
+
+### Logo Cache Contamination Fix (May 24, 2025)
+
+**Problem:** New church registrations were displaying logos from previously registered churches due to improper data caching and automatic syncing.
+
+**Root Causes Identified:**
+1. **Authentication Logo Syncing:** The `/api/auth/user` endpoint automatically synced existing church logos to new users during authentication
+2. **localStorage Cache Persistence:** Browser localStorage retained logo preview data (`onboardingLogoPreview`) between registrations
+3. **Cross-Church Data Leakage:** New church accounts would inherit visual assets from completely different organizations
+
+**Solution Implemented:**
+1. **Disabled Authentication Syncing:**
+   - Modified `/api/auth/user` endpoint to prevent automatic logo syncing during authentication
+   - Added explicit prevention of logo contamination with detailed logging
+   - Only allows church name syncing when appropriate, never logos
+
+2. **Comprehensive Cache Clearing:**
+   - Component initialization: Clears all cached logo data when onboarding starts
+   - Step-specific clearing: Double-clears cached data when entering logo upload step
+   - localStorage cleanup: Removes `onboardingLogoPreview` and resets all logo-related state
+
+3. **Data Isolation Enforcement:**
+   - Each church registration now starts with completely clean state
+   - Prevents visual identity contamination between different church organizations
+   - Ensures proper separation of church branding assets
+
+**Code Changes:**
+- `server/routes.ts`: Lines 3916-3947 - Replaced automatic logo syncing with contamination prevention
+- `client/src/pages/onboarding.tsx`: Added component-level and step-level cache clearing
+
+**Result:** New church registrations now display blank logo upload areas as intended, with complete data isolation between church accounts.
+
+*Last updated: May 24, 2025*
