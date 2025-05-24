@@ -12,7 +12,7 @@ import { ArrowLeft, Settings as SettingsIcon, Mail, Network, Edit } from "lucide
 import sendgridLogo from "../../assets/integrations/sendgrid-logo.png";
 import stripeLogo from "../../assets/integrations/stripe-logo.png";
 import planningCenterLogo from "../../assets/integrations/planning-center-logo.png";
-const awsS3Logo = "/images/aws-s3-logo.png";
+const awsS3Logo = "/images/integrations/aws-s3-logo.png";
 
 interface EmailTemplate {
   id: number;
