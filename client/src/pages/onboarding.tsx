@@ -1395,19 +1395,21 @@ export default function Onboarding() {
                 >
                   <ChevronLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-              </div>
-              
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={handleSkip}
-                >
-                  Skip for now
-                </Button>
+                </div>
                 
-                <Button 
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  onClick={handleNextStep}
+                {/* Right side buttons - shown first on mobile */}
+                <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={handleSkip}
+                  >
+                    Skip for now
+                  </Button>
+                  
+                  <Button 
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
+                    onClick={handleNextStep}
                 >
                   Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
