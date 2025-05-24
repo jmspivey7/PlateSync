@@ -149,9 +149,9 @@ export async function setupAuth(app: Express) {
     });
   };
   
-  // Support both GET and POST for logout
-  app.get("/api/logout", handleLogout);
-  app.post("/api/logout", handleLogout);
+  // DISABLED: Support both GET and POST for logout - conflicts with local auth
+  // app.get("/api/logout", handleLogout);
+  // app.post("/api/logout", handleLogout);
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
