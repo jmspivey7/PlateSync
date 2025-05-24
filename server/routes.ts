@@ -3913,54 +3913,36 @@ Sincerely,
           return res.status(200).json(null);
         }
         
-        // Check if user belongs to a church and ensure they have the church logo synced
-        if (user.churchId && (!user.churchLogoUrl || !user.churchName)) {
+        // CRITICAL FIX: Do NOT automatically sync logos during authentication
+        // This was causing new registrations to show existing church logos
+        // Users should only have logos that they explicitly uploaded during their own registration
+        // 
+        // Previous code here was automatically pulling logos from other users, causing data integrity issues
+        // where new church registrations would display logos from completely different churches
+        console.log(`Skipping automatic logo sync for user ${userId} to prevent data contamination`);
+        
+        // Only sync church name if missing, but NEVER sync logos automatically
+        if (user.churchId && !user.churchName) {
           try {
-            console.log(`User ${userId} missing church details, checking church ID: ${user.churchId}`);
-            
-            // Get church owner/admin information (the source of truth for church details)
             const [churchAdmin] = await db
               .select()
               .from(users)
               .where(eq(users.id, user.churchId));
               
-            if (churchAdmin && (churchAdmin.churchLogoUrl || churchAdmin.churchName)) {
-              console.log(`Found church admin details for ${user.churchId}, syncing logo and name to user ${userId}`);
-              
-              // Update user in the database with church details
-              const updates: any = {
-                updatedAt: new Date()
-              };
-              
-              if (churchAdmin.churchLogoUrl) {
-                updates.churchLogoUrl = churchAdmin.churchLogoUrl;
-                console.log(`Found church logo: ${churchAdmin.churchLogoUrl} for church ${user.churchId}`);
-              }
-              
-              if (churchAdmin.churchName) {
-                updates.churchName = churchAdmin.churchName;
-              }
-              
-              // Update the database
+            if (churchAdmin && churchAdmin.churchName) {
               await db
                 .update(users)
-                .set(updates)
+                .set({ 
+                  churchName: churchAdmin.churchName,
+                  updatedAt: new Date()
+                })
                 .where(eq(users.id, userId));
                 
-              // Also update the user object to be returned in this response
-              if (churchAdmin.churchLogoUrl) {
-                user.churchLogoUrl = churchAdmin.churchLogoUrl;
-              }
-              
-              if (churchAdmin.churchName) {
-                user.churchName = churchAdmin.churchName;
-              }
-              
-              console.log(`Updated user ${userId} with church logo information`);
+              user.churchName = churchAdmin.churchName;
+              console.log(`Updated user ${userId} with church name only (no logo sync)`);
             }
           } catch (syncError) {
-            console.error(`Error syncing church details for user ${userId}:`, syncError);
-            // Continue without failing the whole request
+            console.error(`Error syncing church name for user ${userId}:`, syncError);
           }
         }
         
