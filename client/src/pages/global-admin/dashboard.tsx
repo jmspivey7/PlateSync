@@ -71,19 +71,6 @@ const StatsCard = ({
 export default function GlobalAdminDashboard() {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // State for storing church data - define this first before using in any calculations
-  const [churchData, setChurchData] = useState({
-    totalChurches: 124,
-    activeChurches: 108,
-    trialChurches: 78,
-    paidChurches: 30,
-    annualSubscriptions: 11,
-    monthlySubscriptions: 19,
-    platesCount: 12548,
-    donationsTotal: 1425392
-  });
   
   // Check if the global admin is authenticated
   useEffect(() => {
@@ -97,49 +84,67 @@ export default function GlobalAdminDashboard() {
       setLocation("/global-admin/login");
       return;
     }
-    
-    // Load dashboard data
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-    
   }, [toast, setLocation]);
 
-  // Define chart data after the state is initialized
-  const subscriptionData = [
-    { name: 'Jan', trial: 40, subscriber: 24 },
-    { name: 'Feb', trial: 45, subscriber: 28 },
-    { name: 'Mar', trial: 55, subscriber: 32 },
-    { name: 'Apr', trial: 65, subscriber: 37 },
-    { name: 'May', trial: 60, subscriber: 42 },
-    { name: 'Jun', trial: 80, subscriber: 45 },
-  ];
+  // Fetch real dashboard analytics data
+  const { data: analytics, isLoading, error } = useQuery({
+    queryKey: ['/api/global-admin/dashboard/analytics'],
+    queryFn: async () => {
+      const token = localStorage.getItem("globalAdminToken");
+      if (!token) throw new Error('Authentication required');
+      
+      const response = await fetch('/api/global-admin/dashboard/analytics', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch analytics');
+      return response.json();
+    },
+    retry: false,
+  });
 
+  // Process real data or show empty state when no data available
+  const formatMonth = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short' });
+  };
+
+  // Transform subscription trends data for charts
+  const subscriptionData = analytics?.subscriptionTrends?.map((trend: any) => ({
+    name: formatMonth(trend.month),
+    trial: parseInt(trend.trial_count) || 0,
+    subscriber: parseInt(trend.paid_count) || 0,
+  })) || [];
+
+  // Transform donation trends data
+  const donationData = analytics?.donationTrends?.map((trend: any) => ({
+    name: formatMonth(trend.month),
+    amount: parseFloat(trend.total_amount) || 0,
+    count: parseInt(trend.donation_count) || 0,
+  })) || [];
+
+  // Subscription type breakdown from real data
   const subscriptionTypeData = [
-    { name: 'Monthly', value: 19 },
-    { name: 'Annual', value: 11 },
-  ];
-
-  const conversionRateData = [
-    { month: 'Jan', rate: 18 },
-    { month: 'Feb', rate: 22 },
-    { month: 'Mar', rate: 25 },
-    { month: 'Apr', rate: 30 },
-    { month: 'May', rate: 32 },
-    { month: 'Jun', rate: 35 },
-  ];
-
-  const churnRateData = [
-    { month: 'Jan', rate: 5.2 },
-    { month: 'Feb', rate: 4.8 },
-    { month: 'Mar', rate: 4.5 },
-    { month: 'Apr', rate: 3.9 },
-    { month: 'May', rate: 3.5 },
-    { month: 'Jun', rate: 3.2 },
+    { name: 'Monthly', value: parseInt(analytics?.subscriptionStats?.monthly_subscriptions) || 0 },
+    { name: 'Annual', value: parseInt(analytics?.subscriptionStats?.annual_subscriptions) || 0 },
   ];
 
   const COLORS = ["#69ad4c", "#132433", "#8884d8", "#82ca9d"];
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <GlobalAdminHeader />
+        <main className="container mx-auto px-4 py-6">
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Failed to Load Dashboard</h2>
+            <p className="text-gray-600">Unable to fetch analytics data. Please try refreshing the page.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -164,32 +169,28 @@ export default function GlobalAdminDashboard() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatsCard 
-                title="Trials vs. Subscribers" 
-                value={`${churchData.trialChurches} / ${churchData.paidChurches}`}
-                description="Total active trials & subscribers" 
+                title="Total Churches" 
+                value={analytics?.churchStats?.total_churches || 0}
+                description={`${analytics?.churchStats?.active_churches || 0} active churches`}
                 icon={<Users className="h-4 w-4" />}
-                trend={{ value: 12, isPositive: true }}
               />
               <StatsCard 
-                title="Annual vs. Monthly" 
-                value={`${Math.round(churchData.annualSubscriptions / (churchData.paidChurches || 1) * 100)}% / ${Math.round(churchData.monthlySubscriptions / (churchData.paidChurches || 1) * 100)}%`}
-                description="Subscription type distribution" 
+                title="Subscriptions" 
+                value={`${analytics?.subscriptionStats?.trial_active || 0} trial / ${(analytics?.subscriptionStats?.monthly_subscriptions || 0) + (analytics?.subscriptionStats?.annual_subscriptions || 0)} paid`}
+                description="Trial vs paid subscriptions" 
                 icon={<TrendingUp className="h-4 w-4" />}
-                trend={{ value: 5, isPositive: true }}
               />
               <StatsCard 
-                title="Plates Counted" 
-                value={churchData.platesCount.toLocaleString()}
-                description="Total donation counts processed" 
-                icon={<Utensils className="h-4 w-4" />}
-                trend={{ value: 8, isPositive: true }}
+                title="Donation Batches" 
+                value={analytics?.batchStats?.total_batches || 0}
+                description={`${analytics?.batchStats?.finalized_batches || 0} finalized this month`}
+                icon={<ClipboardCheck className="h-4 w-4" />}
               />
               <StatsCard 
-                title="Donations Logged" 
-                value={`$${churchData.donationsTotal.toLocaleString()}`}
-                description="Total donation amount processed" 
+                title="Total Donations" 
+                value={`$${(parseFloat(analytics?.donationStats?.total_amount) || 0).toLocaleString()}`}
+                description={`${analytics?.donationStats?.total_donations || 0} donations this month`}
                 icon={<DollarSign className="h-4 w-4" />}
-                trend={{ value: 15, isPositive: true }}
               />
             </div>
 
@@ -201,17 +202,27 @@ export default function GlobalAdminDashboard() {
                   <CardDescription>Monthly comparison of trials and paid subscribers</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={subscriptionData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="trial" name="Trials" fill="#69ad4c" />
-                      <Bar dataKey="subscriber" name="Subscribers" fill="#132433" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {subscriptionData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={subscriptionData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="trial" name="Trials" fill="#69ad4c" />
+                        <Bar dataKey="subscriber" name="Subscribers" fill="#132433" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No subscription data available yet</p>
+                        <p className="text-sm">Charts will appear as users start subscribing</p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               
@@ -221,26 +232,36 @@ export default function GlobalAdminDashboard() {
                   <CardDescription>Distribution of subscription types</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={subscriptionTypeData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {subscriptionTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {subscriptionTypeData.some(item => item.value > 0) ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={subscriptionTypeData.filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {subscriptionTypeData.filter(item => item.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No paid subscriptions yet</p>
+                        <p className="text-sm">Chart will show when users upgrade to paid plans</p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
