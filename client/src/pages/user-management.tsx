@@ -59,6 +59,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2, Plus, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -75,7 +76,7 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["MASTER_ADMIN", "ADMIN", "USHER"]),
+  role: z.enum(["ADMIN", "STANDARD_USER"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -94,7 +95,7 @@ const CreateUserForm = ({
       email: "",
       firstName: "",
       lastName: "",
-      role: "USHER",
+      role: "STANDARD_USER",
     },
   });
 
@@ -162,13 +163,12 @@ const CreateUserForm = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
                   <SelectItem value="ADMIN">Administrator</SelectItem>
-                  <SelectItem value="USHER">Usher</SelectItem>
+                  <SelectItem value="STANDARD_USER">Standard User</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
-                Master Admins have full control over church settings shared with all users. Administrators can manage most aspects of the system. Ushers can only record donations.
+                Administrators can manage most aspects of the system. Standard Users can only record and count donations.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -197,14 +197,19 @@ const CreateUserForm = ({
 };
 
 const UserManagement = () => {
-  const { isAdmin, user: currentUser } = useAuth();
+  const { isAdmin, user: currentUser, isAccountOwner } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
+  
+  // Transfer ownership dialog state
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [userToTransferTo, setUserToTransferTo] = useState<User | null>(null);
   
   // Fetch all users - using test endpoint for guaranteed results
   const { data: users, isLoading } = useQuery<User[]>({
@@ -225,24 +230,22 @@ const UserManagement = () => {
         console.error("User Management: Error fetching from test endpoint:", error);
         console.log("Falling back to hardcoded users");
         
-        // Return hardcoded fallback data
+        // Return hardcoded fallback data - only showing currentUser
+        // and making sure they are correctly marked as Account Owner
+        // Global Admin is explicitly excluded
+        
+        // Since we're in hardcoded mode, make sure currentUser is correctly displayed
+        // as an Account Owner
         return [
           {
-            id: "40829937",
-            username: "jspivey",
-            email: "jspivey@spiveyco.com",
-            firstName: "John",
-            lastName: "Spivey",
+            id: currentUser?.id || "current-user",
+            username: currentUser?.username || "current-user",
+            email: currentUser?.email || "user@example.com",
+            firstName: currentUser?.firstName || "Current",
+            lastName: currentUser?.lastName || "User",
             role: "ADMIN",
-            profileImageUrl: "/logos/admin-profile.jpg"
-          },
-          {
-            id: "922299005",
-            username: "jmspivey",
-            email: "jmspivey@icloud.com",
-            firstName: "John",
-            lastName: "Spivey",
-            role: "USHER"
+            isAccountOwner: true,
+            createdAt: new Date().toISOString()
           }
         ];
       }
@@ -259,14 +262,14 @@ const UserManagement = () => {
         title: "User created",
         description: "New user has been created successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
       setCreateDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating user:", error);
       toast({
         title: "User creation failed",
-        description: "There was an error creating the user. Please try again.",
+        description: error.message || "There was an error creating the user. Please try again.",
         variant: "destructive",
       });
     },
@@ -288,9 +291,14 @@ const UserManagement = () => {
         title: "User deleted",
         description: "User has been deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      
+      // Close all related dialogs
       setDeleteDialogOpen(false);
+      setUserDetailsOpen(false);
       setSelectedUserId(null);
+      
+      // Refresh the user list
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
     },
     onError: (error: any) => {
       console.error("Delete user error:", error);
@@ -304,7 +312,14 @@ const UserManagement = () => {
 
   // Handle create user form submission
   const handleCreateUser = (values: FormValues) => {
-    createUser(values);
+    // Ensure new users are not account owners by default
+    const userData = { 
+      ...values, 
+      isAccountOwner: false,
+      // Make sure churchId is set from the current user's church
+      churchId: currentUser?.churchId || currentUser?.id
+    };
+    createUser(userData);
   };
 
   // Handle delete user confirmation
@@ -324,7 +339,7 @@ const UserManagement = () => {
         title: "User updated",
         description: "User role has been updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
     },
     onError: () => {
       toast({
@@ -335,19 +350,54 @@ const UserManagement = () => {
     },
   });
   
+  // Transfer ownership mutation
+  const { mutate: transferOwnership, isPending: isTransferring } = useMutation({
+    mutationFn: async (targetUserId: string) => {
+      return await apiRequest<{ success: boolean }>(`/api/account-owner/transfer`, "POST", { targetUserId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Ownership transferred",
+        description: "Account ownership has been transferred successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/test-users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/account-owner'] });
+      setTransferDialogOpen(false);
+    },
+    onError: (error) => {
+      console.error("Error transferring ownership:", error);
+      toast({
+        title: "Transfer failed",
+        description: "Failed to transfer account ownership. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Handle role change
   const handleRoleChange = (userId: string, role: string) => {
     mutate({ userId, role });
   };
   
-  // Filter users based on search query
+  // Filter users based on search query and active status
   const filteredUsers = users?.filter(user => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      (user.email && user.email.toLowerCase().includes(searchLower)) ||
-      (user.firstName && user.firstName.toLowerCase().includes(searchLower)) ||
-      (user.lastName && user.lastName.toLowerCase().includes(searchLower))
-    );
+    // First filter out inactive users (with INACTIVE_ email prefix)
+    if (user.email && user.email.startsWith('INACTIVE_')) {
+      return false;
+    }
+    
+    // Then apply search filter if there's a query
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        (user.email && user.email.toLowerCase().includes(searchLower)) ||
+        (user.firstName && user.firstName.toLowerCase().includes(searchLower)) ||
+        (user.lastName && user.lastName.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // If no search query, include all active users
+    return true;
   }) || [];
   
   // If not admin, redirect or show error
@@ -429,193 +479,257 @@ const UserManagement = () => {
               No users found
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                
-                <TableBody>
+            <>
+              {/* Desktop table view */}
+              {!isMobile && (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow 
+                          key={user.id}
+                          className="cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)]"
+                          onClick={() => {
+                            setSelectedUserId(user.id);
+                            setUserDetailsOpen(true);
+                          }}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
+                                <AvatarFallback className="bg-[#69ad4c] text-white">
+                                  {user.firstName && user.lastName 
+                                    ? `${user.firstName[0]}${user.lastName[0]}`
+                                    : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{user.firstName} {user.lastName}</div>
+                                <div className="text-sm text-gray-500">{user.email}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {user.role === "ACCOUNT_OWNER" || 
+                             user.isAccountOwner || 
+                             user.isMasterAdmin ? (
+                              <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
+                            ) : user.role === "ADMIN" ? (
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
+                            ) : user.role === "STANDARD_USER" ? (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{user.role}</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {user.isVerified ? (
+                              <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Verified</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Pending</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {/* Mobile card view */}
+              {isMobile && (
+                <div className="space-y-3">
                   {filteredUsers.map((user) => (
-                    <TableRow 
+                    <div 
                       key={user.id}
-                      className="cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)]"
+                      className="rounded-md border p-4 cursor-pointer transition-colors hover:bg-[rgba(105,173,76,0.1)] active:bg-[rgba(105,173,76,0.15)]"
                       onClick={() => {
                         setSelectedUserId(user.id);
                         setUserDetailsOpen(true);
                       }}
                     >
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
-                            <AvatarFallback className="bg-gray-100 text-gray-800">
-                              {user.isMasterAdmin ? "M" : user.role === "ADMIN" ? "A" : "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">
-                              {user.firstName} {user.lastName}
-                            </p>
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10 flex-shrink-0">
+                          <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
+                          <AvatarFallback className="bg-[#69ad4c] text-white text-sm">
+                            {user.firstName && user.lastName 
+                              ? `${user.firstName[0]}${user.lastName[0]}`
+                              : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col gap-2">
+                            {/* User info */}
+                            <div>
+                              <div className="font-medium text-base">{user.firstName} {user.lastName}</div>
+                              <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                            </div>
+                            
+                            {/* Role and Status badges */}
+                            <div className="flex flex-wrap gap-2">
+                              {user.role === "ACCOUNT_OWNER" || 
+                               user.isAccountOwner || 
+                               user.isMasterAdmin ? (
+                                <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 text-xs">Account Owner</Badge>
+                              ) : user.role === "ADMIN" ? (
+                                <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs">Administrator</Badge>
+                              ) : user.role === "STANDARD_USER" ? (
+                                <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100 text-xs">Standard User</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100 text-xs">{user.role}</Badge>
+                              )}
+                              
+                              {user.isVerified ? (
+                                <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Verified</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs">Pending</Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <Badge 
-                          className={
-                            user.role === "ADMIN" 
-                              ? user.isMasterAdmin ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800" 
-                              : "bg-green-100 text-green-800"
-                          }
-                        >
-                          {user.isMasterAdmin ? "MASTER ADMIN" : user.role || "USHER"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={
-                            user.isVerified 
-                              ? "bg-gray-100 text-gray-800"
-                              : "bg-amber-100 text-amber-800"
-                          }
-                        >
-                          {user.isVerified ? "Verified" : "Pending Verification"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
       
       {/* User Details Dialog */}
       <Dialog open={userDetailsOpen} onOpenChange={setUserDetailsOpen}>
-        <DialogContent className="sm:max-w-md">
-          {selectedUserId && filteredUsers.find(u => u.id === selectedUserId) && (
-            <>
-              <DialogHeader>
-                <DialogTitle>User Details</DialogTitle>
-                <DialogDescription>
-                  View and edit detailed information about this user
-                </DialogDescription>
-              </DialogHeader>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedUserId && users?.find(u => u.id === selectedUserId) && (
+            (() => {
+              const selectedUser = users.find(u => u.id === selectedUserId)!;
               
-              {(() => {
-                const user = filteredUsers.find(u => u.id === selectedUserId)!;
-                return (
-                  <div className="space-y-4 py-2">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
-                        <AvatarFallback className="bg-gray-100 text-gray-800 text-lg">
-                          {user.isMasterAdmin ? "M" : user.role === "ADMIN" ? "A" : "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-lg font-semibold">
-                          {user.firstName} {user.lastName}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {user.email || "—"}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Role</p>
-                        <Badge 
-                          className={
-                            user.role === "ADMIN" 
-                              ? user.isMasterAdmin ? "bg-purple-100 text-purple-800 mt-1" : "bg-blue-100 text-blue-800 mt-1" 
-                              : "bg-green-100 text-green-800 mt-1"
-                          }
-                        >
-                          {user.isMasterAdmin ? "MASTER ADMIN" : user.role || "USHER"}
-                        </Badge>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Created</p>
-                        <p>
-                          {user.createdAt ? format(new Date(user.createdAt), "MM/dd/yyyy - hh:mm a") : "—"}
-                        </p>
-                      </div>
-                      
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-gray-500">Status</p>
-                        <Badge 
-                          className={
-                            user.isVerified 
-                              ? "bg-gray-100 text-gray-800 mt-1"
-                              : "bg-amber-100 text-amber-800 mt-1"
-                          }
-                        >
-                          {user.isVerified ? "Verified" : "Pending Verification"}
-                        </Badge>
-                        {!user.isVerified && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            User needs to verify their email to complete account setup
-                          </p>
+              // Don't call useAuth hook here - we get the value from the parent component
+              // React hooks can't be called conditionally
+              const isSelectedUserAccountOwner = 
+                selectedUser.role === "ACCOUNT_OWNER" || 
+                selectedUser.isAccountOwner === true;
+              
+              return (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={selectedUser.profileImageUrl || ""} alt={`${selectedUser.firstName} ${selectedUser.lastName}`} />
+                      <AvatarFallback className="text-lg bg-[#69ad4c] text-white">
+                        {selectedUser.firstName && selectedUser.lastName 
+                          ? `${selectedUser.firstName[0]}${selectedUser.lastName[0]}`
+                          : selectedUser.role === "ACCOUNT_OWNER" ? "AO" : selectedUser.role === "ADMIN" ? "AD" : "SU"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-lg font-semibold">{selectedUser.firstName} {selectedUser.lastName}</h3>
+                      <p className="text-gray-500">{selectedUser.email}</p>
+                      <div className="mt-1">
+                        {selectedUser.role === "ACCOUNT_OWNER" || 
+                          selectedUser.isAccountOwner || 
+                          selectedUser.isMasterAdmin ? (
+                          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Account Owner</Badge>
+                        ) : selectedUser.role === "ADMIN" ? (
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Administrator</Badge>
+                        ) : selectedUser.role === "STANDARD_USER" ? (
+                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Standard User</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">{selectedUser.role}</Badge>
                         )}
                       </div>
                     </div>
-                    
+                  </div>
+                  
+                  <div className="grid gap-4">
+                    {selectedUser.createdAt && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Member Since</h4>
+                        <p>{format(new Date(selectedUser.createdAt), "MMMM d, yyyy")}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Role Management Section */}
+                  {currentUser?.id !== selectedUser.id && currentUser?.isAccountOwner === true && (
                     <div className="border-t pt-4">
-                      <p className="text-sm font-medium text-gray-500 mb-2">Actions</p>
-                      <div className="flex items-center gap-2">
-                        <Select 
-                          defaultValue={user.isMasterAdmin ? "MASTER_ADMIN" : (user.role || "USHER")}
-                          onValueChange={(value) => {
-                            handleRoleChange(user.id, value);
-                            setUserDetailsOpen(false);
-                          }}
-                          disabled={isPending}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Change Role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
-                            <SelectItem value="ADMIN">Administrator</SelectItem>
-                            <SelectItem value="USHER">Usher</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <h4 className="text-sm font-semibold mb-3">Manage User Role</h4>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {!isSelectedUserAccountOwner && (
+                          <Select
+                            value={selectedUser.role}
+                            onValueChange={(value) => handleRoleChange(selectedUser.id, value)}
+                            disabled={isPending}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ADMIN">Administrator</SelectItem>
+                              <SelectItem value="STANDARD_USER">Standard User</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                         
-                        {user.id !== currentUser?.id && (
-                          <AlertDialog>
+                        {/* Transfer Account Ownership button */}
+                        {currentUser?.isAccountOwner === true && 
+                         !isSelectedUserAccountOwner && 
+                         selectedUser.role === "ADMIN" && (
+                          <Button 
+                            variant="outline"
+                            className="ml-2"
+                            onClick={() => {
+                              setUserDetailsOpen(false);
+                              setUserToTransferTo(selectedUser);
+                              setTransferDialogOpen(true);
+                            }}
+                          >
+                            Transfer Ownership
+                          </Button>
+                        )}
+                        
+                        {/* Delete User Button - moved to be in line with role dropdown */}
+                        {currentUser?.id !== selectedUser.id && 
+                         currentUser?.isAccountOwner === true && 
+                         !isSelectedUserAccountOwner && (
+                          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                             <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              <Button 
+                                variant="destructive" 
+                                className="bg-red-600 text-white hover:bg-red-700 ml-auto"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 mr-2 text-white" />
+                                Delete User
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white">
+                            
+                            <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete User</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete this user? This action cannot be undone.
+                                  This will permanently delete the user {selectedUser.firstName} {selectedUser.lastName}. 
+                                  This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => {
-                                    deleteUser(user.id);
-                                    setUserDetailsOpen(false);
-                                  }}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                <AlertDialogAction 
+                                  className="bg-red-600 text-white hover:bg-red-700"
+                                  onClick={handleDeleteUser}
+                                  disabled={isDeleting}
                                 >
                                   {isDeleting ? (
                                     <>
@@ -623,7 +737,7 @@ const UserManagement = () => {
                                       Deleting...
                                     </>
                                   ) : (
-                                    "Delete"
+                                    <>Delete</>
                                   )}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -632,11 +746,85 @@ const UserManagement = () => {
                         )}
                       </div>
                     </div>
-                  </div>
-                );
-              })()}
-            </>
+                  )}
+                </div>
+              );
+            })()
           )}
+          
+          {selectedUserId && !users?.find(u => u.id === selectedUserId) && (
+            <div>User not found</div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Transfer Ownership Dialog */}
+      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Transfer Account Ownership</DialogTitle>
+            <DialogDescription>
+              This will transfer your Account Owner role to another user. You will become a regular Admin user after the transfer.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <h3 className="text-sm font-semibold mb-2">Are you sure you want to transfer ownership to:</h3>
+            {userToTransferTo && (
+              <div className="flex items-center gap-3 p-3 border rounded-md">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={userToTransferTo.profileImageUrl || ""} alt={`${userToTransferTo.firstName} ${userToTransferTo.lastName}`} />
+                  <AvatarFallback className="bg-gray-100 text-gray-800">
+                    {userToTransferTo.role === "ACCOUNT_OWNER" || 
+                      userToTransferTo.isAccountOwner || 
+                      userToTransferTo.isMasterAdmin
+                      ? "O" 
+                      : userToTransferTo.role === "ADMIN" 
+                        ? "A" 
+                        : "S"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">
+                    {userToTransferTo.firstName} {userToTransferTo.lastName}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {userToTransferTo.email}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setTransferDialogOpen(false);
+                setUserToTransferTo(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (userToTransferTo) {
+                  transferOwnership(userToTransferTo.id);
+                }
+              }}
+              disabled={!userToTransferTo || isTransferring}
+              className="bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+            >
+              {isTransferring ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Transferring...
+                </>
+              ) : (
+                <>Confirm Transfer</>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageLayout>

@@ -107,7 +107,7 @@ type FormValues = z.infer<typeof formSchema>;
 const Settings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isAdmin, isMasterAdmin } = useAuth();
+  const { user, isAdmin, isAccountOwner } = useAuth();
   const search = useSearch();
   // Removed showSuccessToast state to eliminate duplicate notifications
   const [sendgridTestStatus, setSendgridTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -860,20 +860,20 @@ const Settings = () => {
     >
       
       <div className="grid grid-cols-1 gap-6">
-        {/* Master Admin Information Card */}
-        {isMasterAdmin && (
+        {/* Account Owner Information Card */}
+        {isAccountOwner && (
           <Card className="border-[#69ad4c]/40 bg-[#69ad4c]/5">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
-                <span className="bg-[#69ad4c] text-white p-1 rounded-md text-xs font-bold">M</span>
-                Master Admin Access
+                <span className="bg-[#69ad4c] text-white p-1 rounded-md text-xs font-bold">O</span>
+                Account Owner Access
               </CardTitle>
               <CardDescription>
-                As the Master Admin, you have additional privileges:
+                As the Account Owner, you have additional privileges:
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Any settings you update will apply to all users in your church</li>
                   <li>You can manage all users, batches, and settings across your church</li>
-                  <li>You are the primary administrator for your church's account</li>
+                  <li>You are the owner of your church's account</li>
                 </ul>
               </CardDescription>
             </CardHeader>
@@ -928,10 +928,18 @@ const Settings = () => {
                     {user?.churchLogoUrl ? (
                       <div className="mb-6 flex flex-col items-center">
                         <img 
-                          src={user.churchLogoUrl} 
+                          src={user.churchLogoUrl.startsWith('/') 
+                            ? user.churchLogoUrl
+                            : `/${user.churchLogoUrl.split('/').slice(3).join('/')}`}
                           alt={`${user.churchName || 'Church'} logo`} 
                           className="max-width-[380px] max-h-[80px] object-contain"
                           style={{ maxWidth: "380px", height: "auto" }}
+                          onError={(e) => {
+                            // If the first attempt fails, try without modifying the URL
+                            if (e.currentTarget.src !== user.churchLogoUrl) {
+                              e.currentTarget.src = user.churchLogoUrl;
+                            }
+                          }}
                         />
                       </div>
                     ) : (
@@ -1111,57 +1119,69 @@ const Settings = () => {
                   <div className="flex justify-between items-start gap-8">
                     <div className="max-w-[80%]">
                       <div className="text-sm text-gray-600">
-                        Email notifications can be sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries. Click here to test the <button 
-                          onClick={testSendGridConfiguration} 
-                          disabled={sendgridTestStatus === 'loading'}
-                          className="text-[#69ad4c] hover:underline font-medium focus:outline-none"
-                        >
-                          SendGrid
-                        </button> configuration.
+                        Email notifications can be sent to donors to confirm receipt of their donation, and to individuals specified to receive Count summaries.
                       </div>
                     </div>
                     <div className="flex items-center pl-4">
-                      <Switch
-                        checked={form.watch("emailNotificationsEnabled")}
-                        onCheckedChange={(checked) => {
-                          // Update the form value
-                          form.setValue("emailNotificationsEnabled", checked);
-                          
-                          // Save the change immediately
-                          fetch("/api/settings", {
-                            method: "PATCH",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                              churchName: form.getValues("churchName"),
-                              emailNotificationsEnabled: checked
-                            })
-                          })
-                          .then(response => {
-                            if (!response.ok) throw new Error("Failed to update settings");
-                            return response.json();
-                          })
-                          .then(() => {
-                            queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-                            toast({
-                              title: "Notification Setting Updated",
-                              description: `Email notifications have been turned ${checked ? 'ON' : 'OFF'}.`,
-                              className: "bg-[#69ad4c] text-white",
-                            });
-                          })
-                          .catch(error => {
-                            toast({
-                              title: "Error",
-                              description: `Failed to update setting: ${error.message}`,
-                              variant: "destructive",
-                              className: "bg-white border-red-600",
-                            });
-                          });
-                        }}
-                        className="enhanced-switch"
-                      />
-                      <span className="ml-2 text-base font-bold">
+                      <div className="relative inline-flex">
+                        <div className={`relative rounded-full p-[2px] ${form.watch("emailNotificationsEnabled") ? "bg-[#69ad4c]" : "bg-gray-300"} w-11 h-6 transition-colors`}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newValue = !form.watch("emailNotificationsEnabled");
+                              // Update the form value
+                              form.setValue("emailNotificationsEnabled", newValue);
+                              
+                              // Use a simplified direct API call that only sends the emailNotificationsEnabled field
+                              const apiUrl = "/api/settings/email-notifications";
+                              
+                              // Make a focused API call just for this setting
+                              fetch(apiUrl, {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ enabled: newValue })
+                              })
+                              .then(response => {
+                                if (!response.ok) throw new Error("Failed to update notification settings");
+                                return response.text();
+                              })
+                              .then(() => {
+                                // If successful, update the query cache
+                                queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                                toast({
+                                  title: "Notification Setting Updated",
+                                  description: `Email notifications have been turned ${newValue ? 'ON' : 'OFF'}.`,
+                                  className: "bg-[#69ad4c] text-white",
+                                });
+                              })
+                              .catch(error => {
+                                // Revert the UI toggle if there's an error
+                                form.setValue("emailNotificationsEnabled", !newValue);
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to update notification settings. Please try again.",
+                                  variant: "destructive",
+                                  className: "bg-white border-red-600",
+                                });
+                                console.error("Toggle error:", error);
+                              });
+                            }}
+                            className="focus:outline-none"
+                            aria-label="Toggle email notifications"
+                          >
+                            <span 
+                              className={`block h-5 w-5 rounded-full shadow-md transform transition-transform duration-200 ${
+                                form.watch("emailNotificationsEnabled") 
+                                  ? "translate-x-5 bg-white" 
+                                  : "translate-x-0 bg-gray-500"
+                              }`} 
+                            />
+                          </button>
+                        </div>
+                      </div>
+                      <span className="ml-2 text-base font-semibold">
                         {form.watch("emailNotificationsEnabled") ? 'ON' : 'OFF'}
                       </span>
                     </div>
@@ -1192,39 +1212,7 @@ const Settings = () => {
                   <>
                     <div className="mb-4">
                       <div className="text-sm text-gray-600 max-w-[90%]">
-                        Email notifications can be sent to individuals specified to receive Count summaries. Click here to test the <button 
-                          onClick={() => {
-                            fetch('/api/test-count-report')
-                              .then(response => response.json())
-                              .then(data => {
-                                if (data.success) {
-                                  toast({
-                                    title: "Test Email Sent",
-                                    description: data.message,
-                                    className: "bg-[#69ad4c] text-white",
-                                  });
-                                } else {
-                                  toast({
-                                    title: "Test Failed",
-                                    description: data.message,
-                                    variant: "destructive",
-                                    className: "bg-white border-red-600",
-                                  });
-                                }
-                              })
-                              .catch(error => {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to send test email. Make sure you have report recipients configured.",
-                                  variant: "destructive",
-                                  className: "bg-white border-red-600",
-                                });
-                              });
-                          }}
-                          className="text-[#69ad4c] hover:underline font-medium focus:outline-none"
-                        >
-                          Count Report email
-                        </button>.
+                        Email notifications can be sent to individuals specified to receive Count summaries.
                       </div>
                     </div>
                     
@@ -1246,39 +1234,47 @@ const Settings = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {reportRecipients.map((recipient) => (
-                              <TableRow key={recipient.id}>
-                                <TableCell className="py-3 text-sm">
-                                  {recipient.firstName} {recipient.lastName}
-                                </TableCell>
-                                <TableCell className="py-3 text-sm">{recipient.email}</TableCell>
-                                <TableCell className="py-3">
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      onClick={() => openEditRecipientDialog(recipient)}
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
-                                      disabled={deleteReportRecipientMutation.isPending}
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                                    >
-                                      {deleteReportRecipientMutation.isPending && deleteReportRecipientMutation.variables === recipient.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </div>
+                            {Array.isArray(reportRecipients) && reportRecipients.length > 0 ? (
+                              reportRecipients.map((recipient) => (
+                                <TableRow key={recipient.id}>
+                                  <TableCell className="py-3 text-sm">
+                                    {recipient.firstName} {recipient.lastName}
+                                  </TableCell>
+                                  <TableCell className="py-3 text-sm">{recipient.email}</TableCell>
+                                  <TableCell className="py-3">
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        onClick={() => openEditRecipientDialog(recipient)}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => deleteReportRecipientMutation.mutate(recipient.id)}
+                                        disabled={deleteReportRecipientMutation.isPending}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                      >
+                                        {deleteReportRecipientMutation.isPending && deleteReportRecipientMutation.variables === recipient.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={3} className="text-center py-4 text-gray-500">
+                                  No report recipients found
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            )}
                           </TableBody>
                         </Table>
                       </div>
@@ -1406,9 +1402,11 @@ const Settings = () => {
                     
                     {/* Service options as tags - sort to show default first */}
                     <div className="flex flex-wrap gap-2">
-                      {serviceOptions
-                        .sort((a, b) => Number(b.isDefault) - Number(a.isDefault)) // Sort to show default option first
-                        .map((option: ServiceOption) => (
+                      {Array.isArray(serviceOptions) && serviceOptions.length > 0 
+                        ? serviceOptions
+                            .slice() // Create a copy of the array before sorting
+                            .sort((a, b) => Number(b.isDefault) - Number(a.isDefault)) // Sort to show default option first
+                            .map((option: ServiceOption) => (
                         <div 
                           key={option.id} 
                           className={`group inline-flex items-center rounded-full border px-2.5 py-1.5 text-sm font-medium
@@ -1466,7 +1464,13 @@ const Settings = () => {
                             </Button>
                           </div>
                         </div>
-                      ))}
+                      ))
+                        : (
+                          <div className="text-gray-500 italic">
+                            No service options available
+                          </div>
+                        )
+                      }
                       
                       {/* Removed "Add option" button as it was confusing - input field with add button is sufficient */}
                     </div>

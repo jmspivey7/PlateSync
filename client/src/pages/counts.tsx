@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -22,7 +22,14 @@ import { useLocation } from "wouter";
 
 const statusColors = {
   OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
+  PENDING_FINALIZATION: "bg-green-100 text-green-800 hover:bg-green-100", // Same style as OPEN
   FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+};
+
+// Helper to get friendly status display names
+const getStatusDisplayName = (status: string): string => {
+  if (status === "PENDING_FINALIZATION") return "OPEN";
+  return status;
 };
 
 const CountsPage = () => {
@@ -52,6 +59,49 @@ const CountsPage = () => {
     queryKey: ["/api/batches"],
   });
 
+  // Fetch donations for a specific open batch when needed
+  const [donationTotals, setDonationTotals] = useState<Record<number, number>>({});
+
+  // Effect to fetch donation totals for open batches
+  useEffect(() => {
+    if (!batches) return;
+    
+    const openBatches = batches.filter(b => b.status === "OPEN" || b.status === "PENDING_FINALIZATION");
+    
+    const fetchDonationTotals = async () => {
+      const totals: Record<number, number> = {};
+      
+      for (const batch of openBatches) {
+        try {
+          const response = await fetch(`/api/batches/${batch.id}/donations`);
+          if (response.ok) {
+            const donations = await response.json();
+            const cashTotal = donations
+              .filter((d: any) => d.donationType === "CASH")
+              .reduce((sum: number, d: any) => sum + parseFloat(d.amount.toString()), 0) || 0;
+            
+            const checkTotal = donations
+              .filter((d: any) => d.donationType === "CHECK")
+              .reduce((sum: number, d: any) => sum + parseFloat(d.amount.toString()), 0) || 0;
+            
+            totals[batch.id] = cashTotal + checkTotal;
+          }
+        } catch (error) {
+          console.error(`Error fetching donations for batch ${batch.id}:`, error);
+        }
+      }
+      
+      setDonationTotals(totals);
+    };
+
+    fetchDonationTotals();
+  }, [batches]);
+
+  // Helper function to get donation total for a specific batch
+  const getDonationTotal = (batchId: number) => {
+    return donationTotals[batchId] || null;
+  };
+
   // Fetch selected batch with donations
   const { data: selectedBatch, isLoading: isLoadingSelectedBatch } = useQuery<BatchWithDonations>({
     queryKey: ["/api/batches", selectedBatchId, "details"],
@@ -66,9 +116,12 @@ const CountsPage = () => {
     enabled: !!selectedBatchId,
   });
 
-  // Filter batches by status - simplified to just OPEN and FINALIZED
+  // Filter batches by status - showing PENDING_FINALIZATION in "open" tab
   const filteredBatches = batches?.filter((batch) => {
-    if (activeTab === "open") return batch.status === "OPEN";
+    if (activeTab === "open") {
+      // Consider both OPEN and PENDING_FINALIZATION as "open" counts
+      return batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION";
+    }
     if (activeTab === "finalized") return batch.status === "FINALIZED";
     return true;
   });
@@ -100,6 +153,20 @@ const CountsPage = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
     if (selectedBatchId) {
       queryClient.invalidateQueries({ queryKey: ["/api/batches", selectedBatchId, "details"] });
+    }
+  };
+
+  // Function to fetch batch details and donations
+  const fetchBatchDetails = async (batchId: number) => {
+    try {
+      const response = await fetch(`/api/batches/${batchId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch batch details");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching batch details:", error);
+      return null;
     }
   };
 
@@ -187,7 +254,7 @@ const CountsPage = () => {
                         }}
                       >
                         <td className="py-3 px-3">
-                          <Badge className={getBadgeClass(batch.status)}>{batch.status}</Badge>
+                          <Badge className={getBadgeClass(batch.status)}>{getStatusDisplayName(batch.status)}</Badge>
                         </td>
                         <td className="py-3 px-3 text-gray-700 font-medium">
                           {(() => {
@@ -199,7 +266,23 @@ const CountsPage = () => {
                           })()}
                         </td>
                         <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
-                          {formatCurrency(batch.totalAmount || 0)}
+                          {(() => {
+                            // For finalized batches, use the stored total amount
+                            if (batch.status === "FINALIZED") {
+                              return formatCurrency(batch.totalAmount || 0);
+                            }
+
+                            // For open batches, calculate the live total from donations
+                            if (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION") {
+                              const liveTotal = getDonationTotal(batch.id);
+                              if (liveTotal !== null) {
+                                return formatCurrency(liveTotal);
+                              }
+                            }
+                            
+                            // Fallback to stored amount
+                            return formatCurrency(batch.totalAmount || 0);
+                          })()}
                         </td>
                       </tr>
                     );

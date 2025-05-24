@@ -77,9 +77,17 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   });
   
   // Find the default service option when service options are loaded
+  // Create a default option if no service options exist to prevent app crashes
   const defaultServiceOption = 
     serviceOptions.find(option => option.isDefault) ||
-    (serviceOptions.length > 0 ? serviceOptions[0] : null);
+    (serviceOptions.length > 0 ? serviceOptions[0] : {
+      id: -1,
+      name: "Default Service",
+      isDefault: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      churchId: ''
+    });
   
   // Initialize the form
   const form = useForm<FormValues>({
@@ -182,11 +190,21 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   // Set default service option when options are loaded
   useEffect(() => {
     // Only set default for new counts (not when editing)
-    if (!isEdit && defaultServiceOption && serviceOptions.length > 0) {
-      const defaultValue = defaultServiceOption.value;
-      if (defaultValue && !form.getValues('service')) {
-        form.setValue('service', defaultValue);
-      }
+    if (!isEdit && defaultServiceOption) {
+      // Convert ID to string for select value
+      const defaultValue = String(defaultServiceOption.id);
+      
+      // Always set the service value when defaultServiceOption is available
+      // This ensures it's set on initial load
+      form.setValue('service', defaultValue);
+      
+      // Force a re-render of the component to ensure the select shows the value
+      setTimeout(() => {
+        const currentValue = form.getValues('service');
+        if (currentValue !== defaultValue) {
+          form.setValue('service', defaultValue, { shouldDirty: true });
+        }
+      }, 0);
     }
   }, [serviceOptions, defaultServiceOption, isEdit, form]);
   
@@ -252,17 +270,17 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       return response.json();
     },
     onSuccess: (data) => {
+      // Invalidate all relevant queries to ensure complete UI refresh
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
       queryClient.invalidateQueries({ queryKey: ['/api/batches/current'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       
-      toast({
-        title: "Success",
-        description: isEdit 
-          ? "Count updated successfully." 
-          : "Count created successfully.",
-        className: "bg-[#48BB78] text-white",
-      });
+      // Also invalidate these queries to ensure dashboard data refreshes
+      queryClient.invalidateQueries({ queryKey: ['/api/batches/latest-finalized'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      
+      // Toast removed for better user experience
       
       onClose();
       
@@ -326,7 +344,19 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
   
   // Form submission handler
   const onSubmit = (values: FormValues) => {
-    createBatchMutation.mutate(values);
+    // If the service is the default fallback service (-1), make sure it gets processed correctly
+    if (values.service === "-1") {
+      console.log("Using default service option for submission");
+      // Making a copy to avoid directly modifying the form values
+      const submissionValues = {
+        ...values,
+        // We flag this as a default service so the backend knows to handle it appropriately
+        useDefaultService: true
+      };
+      createBatchMutation.mutate(submissionValues);
+    } else {
+      createBatchMutation.mutate(values);
+    }
   };
   
   return (
@@ -384,7 +414,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                           {/* Only configured service options */}
                           {isLoadingServiceOptions ? (
                             <SelectItem value="loading" disabled>Loading options...</SelectItem>
-                          ) : serviceOptions.length > 0 ? (
+                          ) : Array.isArray(serviceOptions) && serviceOptions.length > 0 ? (
                             // Sort service options to put default option first
                             [...serviceOptions]
                               .sort((a, b) => {
@@ -395,12 +425,13 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                                 return a.name.localeCompare(b.name);
                               })
                               .map((option) => (
-                                <SelectItem key={option.id} value={option.value}>
+                                <SelectItem key={option.id} value={String(option.id)}>
                                   {option.name}
                                 </SelectItem>
                               ))
                           ) : (
-                            <SelectItem value="none" disabled>No service options configured</SelectItem>
+                            // If no service options are defined, use the default one we created
+                            <SelectItem value="-1">Default Service</SelectItem>
                           )}
                         </SelectContent>
                       </Select>

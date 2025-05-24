@@ -2,6 +2,80 @@
 
 This document contains essential information for developers working on the PlateSync application. It serves as a reference for various workflows, integration details, and special handling required by the application.
 
+## Latest Fixes - Subscription & Authentication System
+
+### ✅ TRIAL EXPIRATION SYSTEM COMPLETED (May 24, 2025)
+**Feature**: Complete subscription management with trial expiration handling and expired subscription page.
+
+**Functionality**:
+1. **Trial Status Detection**: System automatically detects when 30-day trial period expires
+2. **Role-Based Access Control**: 
+   - Account Owners with expired trials can only access subscription-related pages
+   - Administrators and Standard Users are completely blocked from expired accounts
+3. **Expired Subscription Page**: Dedicated page with PlateSync branding and subscription options
+4. **Payment Integration**: Subscription buttons connect to Global Admin configured Stripe payment links
+
+**Technical Implementation**:
+- **Middleware Protection**: `checkTrialExpiration` middleware applies to all protected routes
+- **Public Payment API**: `/api/stripe/payment-links` endpoint provides payment links without authentication
+- **New Tab Navigation**: Payment links open in new tabs to prevent Stripe skeleton loading issues
+- **Subscription Cards**: Monthly plan ($2.99) with "Most Popular" badge, Annual plan ($25.00) with "Best Value" badge
+
+**UI/UX Features**:
+- Centered enlarged PlateSync logo with consistent branding
+- Side-by-side subscription card layout with aligned buttons
+- Clear messaging about trial expiration and upgrade requirements
+- Red "Sign Out" button for easy logout access
+
+**Database Structure**:
+- `trial_end_date` field in subscriptions table tracks 30-day trial period
+- Subscription status calculated dynamically based on current date vs trial end date
+- Payment links stored in Global Admin Stripe integration settings
+
+**Page Routing & Access Control**:
+- `/expired-subscription` route only accessible when trial is expired AND user is Account Owner
+- Middleware redirects expired Account Owners to this page automatically
+- Other user roles (Admin/Standard) completely blocked from expired accounts
+- System automatically redirects back to dashboard when trial becomes active again
+
+**Troubleshooting Notes**:
+- Stripe skeleton loading issue fixed by opening payment links in new tabs instead of current window
+- Payment links fetched from `/api/stripe/payment-links` public endpoint (no auth required)
+- Trial period can be extended by updating `trial_end_date` in subscriptions table
+- System immediately detects trial status changes without requiring restart
+
+### ✅ CHURCH STATUS DATA INTEGRITY ISSUE RESOLVED (May 24, 2025)
+**Issue**: Churches table showed records with "DELETED" status while still being functional in the system.
+
+**Root Cause**: Global Admin interface filters to show only "ACTIVE" status churches by default, but database records had incorrect "DELETED" status.
+
+**Solution**: Updated church status from "DELETED" to "ACTIVE" to match actual system functionality.
+
+**Prevention**: Always verify church status consistency when debugging Global Admin visibility issues.
+
+### ✅ LOGOUT FUNCTIONALITY FIXED (May 24, 2025)
+**Issue**: Session destruction was causing crashes with "Cannot read properties of undefined (reading 'regenerate')" error during logout process.
+
+**Root Cause**: ReplitAuth system was conflicting with local authentication system, causing session management issues.
+
+**Solution**:
+1. **Completely disabled ReplitAuth system** by renaming `server/replitAuth.ts` to `server/replitAuth.ts.DISABLED`
+2. **Enhanced logout handler** with proper error handling and session checks in `server/routes.ts`
+3. **Improved session cleanup** with cookie clearing and proper error handling
+
+**Result**: 
+- ✅ Server logs now show "Logout endpoint called - destroying session"
+- ✅ Server logs show "Session destroyed and cookies cleared" 
+- ✅ Users are properly redirected to login page after registration completion
+- ✅ No more authentication system conflicts or crashes
+- ✅ Registration flow now works perfectly: Complete registration → Click "Go to Sign In" → Logout → Login page
+
+**Technical Details**:
+- Logout endpoint handles both GET and POST requests
+- Session destruction is wrapped in try-catch blocks
+- Cookie clearing happens before session destruction
+- Proper redirect logic for different request types
+
 ## Table of Contents
 1. [Planning Center Integration](#planning-center-integration)
    - [OAuth Authentication Flow](#oauth-authentication-flow)
@@ -158,6 +232,95 @@ User roles include:
 - ADMIN: Full access to all features
 - USHER: Limited access to donation counting features
 - MASTER_ADMIN: Special role for church-wide settings
+- ACCOUNT_OWNER: Special role for the main administrator of a church account
+- STANDARD_USER: Basic user with limited permissions based on assigned church
+- GLOBAL_ADMIN: Super-admin role with access to the entire system
+
+---
+
+## User Management
+
+PlateSync provides a comprehensive user management system for adding and managing users. The process includes email verification and password setup.
+
+### Adding New Users
+
+1. **User Addition Flow:**
+   - Navigate to the User Management screen
+   - Click "Add User" button
+   - Fill in required fields: First Name, Last Name, Email, and Role
+   - System sends a welcome email with verification link
+   - User clicks the verification link to set up their password
+   - User can then log in with their email and password
+
+2. **Welcome Email Process:**
+   - System uses the configured email template from the database
+   - Email includes dynamic variables:
+     - `{{firstName}}`: User's first name
+     - `{{lastName}}`: User's last name
+     - `{{role}}`: User's role (formatted for readability, e.g., "Standard User")
+     - `{{verificationLink}}`: Link to verify email and set password
+     - `{{churchName}}`: Church organization name
+
+3. **Implementation Details:**
+   - Welcome emails are sent using SendGrid API
+   - Verification tokens expire after 48 hours (configurable)
+   - Password requirements include minimum 8-character length
+   - Passwords are securely hashed using scrypt before storage
+
+### Email Verification and Password Setup
+
+1. **Verification Process:**
+   - User receives email with verification link
+   - Link format: `/verify?token=<verification_token>`
+   - User sets a password (minimum 8 characters)
+   - System validates the token and updates user record
+   - User is marked as verified in the database
+
+2. **Technical Implementation:**
+   ```typescript
+   // Sample verification endpoint implementation
+   app.post('/api/auth/verify-email', async (req, res) => {
+     const { token, password } = req.body;
+     
+     // Basic validation
+     if (!token || !password) {
+       return res.status(400).json({ message: "Token and password are required" });
+     }
+     
+     try {
+       // Find user with this token
+       const user = await findUserByResetToken(token);
+       
+       // Validate token and password
+       if (!user || user.passwordResetExpires < new Date()) {
+         return res.status(400).json({ message: "Invalid or expired token" });
+       }
+       
+       // Validate password strength
+       if (password.length < 8) {
+         return res.status(400).json({ message: "Password must be at least 8 characters long" });
+       }
+       
+       // Update user record
+       await updateUserVerification(user.id, password);
+       
+       return res.status(200).json({ message: "Email verified and password set successfully" });
+     } catch (error) {
+       console.error("Error during verification:", error);
+       return res.status(500).json({ message: "An error occurred while verifying your email" });
+     }
+   });
+   ```
+
+3. **Troubleshooting:**
+   - If users don't receive verification emails, check:
+     - Spam/junk folders
+     - Correct email address in the system
+     - SendGrid API configuration and limits
+   - If verification fails, check:
+     - Token expiration (default 48 hours)
+     - Password requirements (minimum 8 characters)
+     - Database connection and update permissions
 
 ---
 
@@ -175,6 +338,7 @@ PlateSync uses a PostgreSQL database with the following key tables:
 See `shared/schema.ts` for complete database schema definitions.
 
 ---
+
 
 ## Email Templates
 
@@ -249,6 +413,81 @@ Only ADMIN users can manage email templates for their church.
 1. The template with ID 2 (PASSWORD_RESET) is specifically assigned to church_id 644128517 to ensure all users receive a professional password reset email with the PlateSync logo
 2. Template customization should preserve the variables (enclosed in double curly braces) to ensure dynamic content works correctly
 3. To test email templates, use the `/api/test-email` endpoint which sends a test email without affecting real data
+=======
+## Church Logo Management
+
+Proper handling of church logos is essential to ensure all users within a church organization see the same branding.
+
+### Logo Storage and Synchronization
+
+1. **Dual Storage Strategy:**
+   - **Local Storage:** Church logos are stored in the `/public/logos` directory on the server filesystem
+   - **Cloud Storage:** Logos are also uploaded to AWS S3 bucket (`repl-plates-image-repo`) for reliable email delivery
+   - **Database Reference:** The relative path to the logo (e.g., `/logos/church-logo-123456789.png`) is stored in the `church_logo_url` column in the `users` table
+   - **Consistency:** Every user associated with a church must have the same logo URL in their user record
+
+2. **Logo Upload and Storage Flow:**
+   - When an Account Owner uploads a new church logo:
+     - Logo is saved locally to `/public/logos/{timestamp}-{random}.png`
+     - Same logo is uploaded to AWS S3 bucket with a matching key
+     - The logo URL in the database uses a relative path (`/logos/filename.png`) for web display
+     - S3 URL is used for email templates to ensure consistent display across email clients
+     - The same logo URL is propagated to all users with the same `church_id`
+
+3. **S3 Integration Details:**
+   - AWS Region is automatically extracted from environment variables
+   - S3 bucket name is defined in AWS_S3_BUCKET environment variable
+   - S3 keys follow the same naming convention as local files for consistency
+   - S3 service provides fallback to local URL if S3 upload fails
+
+4. **Implementation Details:**
+   ```sql
+   -- SQL query to synchronize logo URL across all users in a church
+   UPDATE users 
+   SET church_logo_url = '/logos/church-logo-example.png' 
+   WHERE church_id = '12345';
+   ```
+
+5. **Display Optimization:**
+   - **Cache Busting:** Logo URLs include timestamp query parameters to prevent browser caching issues
+   - **Error Handling:** Robust error handling for logo loading failures with clean fallback to church name
+   - **Relative Paths:** Web app displays use relative paths for more reliable internal routing
+   - **Absolute URLs:** Email templates use S3 URLs for better cross-client compatibility
+
+6. **Common Issues and Solutions:**
+   - **Issue:** Logo appears for Account Owner but not for other users
+     - **Solution:** Ensure the logo URL is copied to all users with the same `church_id`
+   - **Issue:** Logo disappears after user profile updates
+     - **Solution:** Preserve the `church_logo_url` field during any user record updates
+   - **Issue:** Different users see different logos
+     - **Solution:** Run a synchronization query to update all users in the church
+   - **Issue:** Logo appears in web app but not in emails
+     - **Solution:** Verify S3 upload was successful and ONLY the S3 URL is being used in email templates
+     - **Critical:** Emails must exclusively use S3 URLs for logos (not Replit domain URLs)
+   - **Issue:** Logo fails to load in certain browsers
+     - **Solution:** Use cache-busting query parameters and check image content type headers
+
+7. **Technical Implementation:**
+   - The SharedNavigation component uses cache-busting query parameters to display the current logo
+   - The s3.ts service handles upload to AWS with proper error handling and region configuration
+   - The settingsRoutes.ts handles the multi-destination storage approach
+   - The sendgrid.ts email service prioritizes S3 URLs for reliable email image display
+
+8. **Email Logo URL Guidelines (CRITICAL):**
+   - **NEVER use Replit domain URLs in emails** - they will not display properly in most email clients
+   - **ALWAYS use AWS S3 URLs for any images in email templates** - this is non-negotiable for reliable delivery
+   - The correct URL format is: `https://{AWS_S3_BUCKET}.s3.amazonaws.com/logos/{filename}.png`
+   - Features to maintain email logo integrity:
+     - Strict validation of logo URLs before including in emails (must contain 's3.amazonaws.com')
+     - Direct database querying for logo URLs to bypass any code-level URL rewriting
+     - Clear fallback to text-only display if valid S3 URL isn't available
+     - Database logo URLs should already contain absolute S3 URLs - never try to rewrite them
+   - Code locations to check if logo issues recur:
+     - server/sendgrid.ts: Contains email generation with logo URL handling
+     - server/index.ts: Defines base URL used for database migrations
+     - server/storage.ts: Contains critical email template generation code
+     - server/upload-platesync-logo.ts: Updates image URLs in email templates
+
 
 ---
 
@@ -427,4 +666,298 @@ For a proper mobile authentication experience with Planning Center, the followin
    }
    ```
 
-*Last updated: May 10, 2025*
+## Profile Image Upload Implementation
+
+PlateSync implements a file-based profile image system using the following best practices:
+
+### Server-Side Implementation
+
+1. **Storage Configuration:**
+   - Store profile images in the `public/avatars` directory with public access
+   - Use timestamp-based unique filenames to prevent collisions
+   - Clean up old profile images when users upload new ones
+
+2. **Route Structure:**
+   - Dedicated routes for both regular and global admin profiles
+   - Proper middleware for file handling and validation
+   - Example implementation:
+
+   ```javascript
+   // Example file upload middleware configuration
+   const upload = multer({
+     storage: multer.diskStorage({
+       destination: (req, file, cb) => {
+         const avatarsDir = path.join(process.cwd(), 'public/avatars');
+         // Ensure directory exists
+         if (!fs.existsSync(avatarsDir)) {
+           fs.mkdirSync(avatarsDir, { recursive: true, mode: 0o777 });
+         }
+         cb(null, avatarsDir);
+       },
+       filename: (req, file, cb) => {
+         // Generate unique filename using timestamp and original extension
+         const timestamp = Date.now();
+         const fileExtension = file.originalname.split('.').pop();
+         const uniqueFilename = `avatar-${timestamp}-${Math.floor(Math.random() * 1000000000)}.${fileExtension}`;
+         cb(null, uniqueFilename);
+       }
+     }),
+     limits: {
+       fileSize: 5 * 1024 * 1024 // Limit to 5MB
+     },
+     fileFilter: (req, file, cb) => {
+       // Only allow images
+       if (!file.mimetype.startsWith('image/')) {
+         return cb(new Error('Only image files are allowed'));
+       }
+       cb(null, true);
+     }
+   });
+   ```
+
+3. **Image Processing:**
+   - Return relative URL paths to keep URLs consistent across environments
+   - Cleanup old images when users upload new ones
+   - Example code for returning profile image data:
+
+   ```javascript
+   // Example route handler for profile image upload
+   app.post('/api/profile/avatar', upload.single('avatar'), async (req, res) => {
+     try {
+       // Validation
+       if (!req.file) {
+         return res.status(400).json({ success: false, message: 'No file uploaded' });
+       }
+       
+       // Generate relative path to file
+       const relativeFilePath = `/avatars/${req.file.filename}`;
+       
+       // Generate full URL for client convenience
+       const fullUrl = `${req.protocol}://${req.get('host')}${relativeFilePath}`;
+       
+       // Save the profile image URL to user's profile in database
+       // ... Database code here ...
+       
+       // Get old profile image path to delete it
+       const oldImagePath = user.profileImageUrl;
+       if (oldImagePath) {
+         const oldImageFullPath = path.join(process.cwd(), 'public', oldImagePath);
+         // Delete old profile image if it exists
+         if (fs.existsSync(oldImageFullPath)) {
+           fs.unlinkSync(oldImageFullPath);
+           console.log('Deleted old profile image:', oldImageFullPath);
+         }
+       }
+       
+       // Return success with both relative and full URLs
+       return res.json({
+         success: true,
+         message: 'Profile picture updated successfully',
+         profileImageUrl: relativeFilePath,
+         fullImageUrl: fullUrl
+       });
+     } catch (error) {
+       console.error('Error uploading profile image:', error);
+       return res.status(500).json({
+         success: false,
+         message: 'Failed to update profile picture'
+       });
+     }
+   });
+   ```
+
+### Client-Side Implementation
+
+1. **Image Upload:**
+   - Use a file input with proper MIME type validation
+   - Implement size constraints (5MB limit)
+   - Hide the actual file input and use a button to trigger it
+   - Example:
+
+   ```tsx
+   // Create hidden file input with ref
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   
+   // Trigger file input click
+   const triggerFileInput = () => {
+     fileInputRef.current?.click();
+   };
+   
+   // Handle file selection and validation
+   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+     const file = event.target.files?.[0];
+     if (!file) return;
+     
+     // Validate file type
+     if (!file.type.startsWith('image/')) {
+       toast({
+         title: 'Error',
+         description: 'Please upload an image file',
+         variant: 'destructive',
+       });
+       return;
+     }
+     
+     // Validate file size
+     if (file.size > 5 * 1024 * 1024) {
+       toast({
+         title: 'Error',
+         description: 'Image file size must be less than 5MB',
+         variant: 'destructive',
+       });
+       return;
+     }
+     
+     // Upload the file
+     uploadAvatarMutation.mutate(file);
+     
+     // Reset input for reuse
+     event.target.value = '';
+   };
+   ```
+
+2. **Upload Handling with FormData:**
+   - Use FormData for multipart/form-data uploads
+   - Add proper authentication tokens if needed
+   - Example implementation with React Query:
+
+   ```tsx
+   // Upload avatar mutation
+   const uploadAvatarMutation = useMutation({
+     mutationFn: async (file: File) => {
+       setIsUploading(true);
+       
+       const formData = new FormData();
+       formData.append('avatar', file);
+       
+       // Get authentication token if needed
+       const token = localStorage.getItem("authToken");
+       
+       // Use fetch with proper headers
+       const response = await fetch('/api/profile/avatar', {
+         method: 'POST',
+         headers: {
+           'Authorization': token ? `Bearer ${token}` : '',
+           'Cache-Control': 'no-cache'
+         },
+         body: formData
+       });
+       
+       if (!response.ok) {
+         throw new Error("Failed to upload profile picture");
+       }
+       
+       return await response.json();
+     },
+     onSuccess: (data) => {
+       // Update profile data with new image URL
+       setProfileData(prev => ({
+         ...prev,
+         profileImageUrl: data.profileImageUrl
+       }));
+       
+       toast({
+         title: 'Success',
+         description: 'Profile picture updated successfully',
+       });
+     },
+     onError: (error) => {
+       toast({
+         title: 'Error',
+         description: error.message || 'Failed to update profile picture',
+         variant: 'destructive',
+       });
+     },
+     onSettled: () => {
+       setIsUploading(false);
+     }
+   });
+   ```
+
+3. **Image Display with Cache Busting:**
+   - Use cache-busting technique to prevent stale images
+   - Implement fallback for failed image loads
+   - Example:
+
+   ```tsx
+   <Avatar className="w-24 h-24">
+     {profileData.profileImageUrl ? (
+       <AvatarImage 
+         src={`${profileData.profileImageUrl}?t=${Date.now()}`} 
+         alt="Profile" 
+         onError={(e) => {
+           console.error("Image failed to load:", profileData.profileImageUrl);
+           // Force fallback if image fails to load
+           (e.target as HTMLImageElement).style.display = 'none';
+         }}
+       />
+     ) : (
+       <AvatarFallback className="bg-primary text-white text-xl">
+         {profileData.firstName && profileData.lastName 
+           ? `${profileData.firstName[0]}${profileData.lastName[0]}`
+           : "U"}
+       </AvatarFallback>
+     )}
+   </Avatar>
+   ```
+
+### Important Considerations
+
+1. **Folder Permissions:**
+   - The `public/avatars` directory must have write permissions for the server (777)
+   - Add this directory to version control but ignore its contents
+
+2. **Cache-Busting:**
+   - Always add a timestamp query parameter to image URLs
+   - Update image URLs in state with the timestamp to force re-render
+
+3. **Error Handling:**
+   - Provide fallback display when images fail to load
+   - Check for file existence before deletion to prevent errors
+
+4. **Static File Serving:**
+   - Ensure Express is configured to serve static files from the public directory:
+   ```javascript
+   app.use(express.static(path.join(__dirname, '..', 'public')));
+   ```
+
+5. **Storage Choice:**
+   - For production, consider using cloud storage (AWS S3, etc.)
+   - For development and smaller deployments, file-based storage is simpler
+
+---
+
+## Data Integrity & Registration Cache Issues
+
+### Logo Cache Contamination Fix (May 24, 2025)
+
+**Problem:** New church registrations were displaying logos from previously registered churches due to improper data caching and automatic syncing.
+
+**Root Causes Identified:**
+1. **Authentication Logo Syncing:** The `/api/auth/user` endpoint automatically synced existing church logos to new users during authentication
+2. **localStorage Cache Persistence:** Browser localStorage retained logo preview data (`onboardingLogoPreview`) between registrations
+3. **Cross-Church Data Leakage:** New church accounts would inherit visual assets from completely different organizations
+
+**Solution Implemented:**
+1. **Disabled Authentication Syncing:**
+   - Modified `/api/auth/user` endpoint to prevent automatic logo syncing during authentication
+   - Added explicit prevention of logo contamination with detailed logging
+   - Only allows church name syncing when appropriate, never logos
+
+2. **Comprehensive Cache Clearing:**
+   - Component initialization: Clears all cached logo data when onboarding starts
+   - Step-specific clearing: Double-clears cached data when entering logo upload step
+   - localStorage cleanup: Removes `onboardingLogoPreview` and resets all logo-related state
+
+3. **Data Isolation Enforcement:**
+   - Each church registration now starts with completely clean state
+   - Prevents visual identity contamination between different church organizations
+   - Ensures proper separation of church branding assets
+
+**Code Changes:**
+- `server/routes.ts`: Lines 3916-3947 - Replaced automatic logo syncing with contamination prevention
+- `client/src/pages/onboarding.tsx`: Added component-level and step-level cache clearing
+
+**Result:** New church registrations now display blank logo upload areas as intended, with complete data isolation between church accounts.
+
+*Last updated: May 24, 2025*

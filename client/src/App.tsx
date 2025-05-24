@@ -14,6 +14,7 @@ import LoginLocal from "@/pages/login-local";
 import Verify from "@/pages/verify";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
+import Onboarding from "@/pages/onboarding";
 import Counts from "@/pages/counts";
 import BatchDetail from "@/pages/batch-detail";
 import BatchSummary from "@/pages/batch-summary"; // New dedicated component
@@ -24,40 +25,152 @@ import Help from "@/pages/help";
 import UserManagement from "@/pages/user-management";
 import ServiceOptions from "@/pages/service-options";
 import EmailSettings from "@/pages/email-settings";
-
 import EmailTemplateEditor from "@/pages/email-template-editor";
+import Subscription from "@/pages/subscription";
+import SubscriptionPage from "@/pages/subscription-page";
+import ExpiredSubscription from "@/pages/expired-subscription";
+
+// Global Admin pages
+import GlobalAdminLogin from "@/pages/global-admin/login";
+import GlobalAdminDashboard from "@/pages/global-admin/dashboard";
+import GlobalAdminChurches from "@/pages/global-admin/churches";
+import ChurchDetail from "@/pages/global-admin/church-detail";
+import GlobalAdminProfile from "@/pages/global-admin/profile";
+import GlobalAdminUsers from "@/pages/global-admin/users";
+import GlobalAdminReports from "@/pages/global-admin/reports";
+import GlobalAdminSettings from "@/pages/global-admin/simplified-settings";
+import EditEmailTemplate from "@/pages/global-admin/edit-email-template";
+import SystemEmailEditor from "@/pages/global-admin/system-email-editor";
+
+// Global Admin Integration Pages
+import SendGridIntegration from "@/pages/global-admin/integrations/sendgrid";
+import AwsS3Integration from "@/pages/global-admin/integrations/aws-s3";
+import PlanningCenterIntegration from "@/pages/global-admin/integrations/planning-center";
+import StripeIntegration from "@/pages/global-admin/integrations/stripe";
+import StripeTestPage from "@/pages/global-admin/integrations/stripe-test";
 
 import { useAuth } from "@/hooks/useAuth";
 
 // Public paths that don't require authentication
-const PUBLIC_PATHS = ["/login", "/login-local", "/verify", "/forgot-password", "/reset-password"];
+const PUBLIC_PATHS = [
+  "/login", 
+  "/login-local", 
+  "/verify", 
+  "/forgot-password", 
+  "/reset-password", 
+  "/onboarding"
+];
+
+// Global Admin paths are handled separately
+const GLOBAL_ADMIN_PATHS = [
+  "/global-admin/login",
+  "/global-admin/dashboard",
+  "/global-admin/churches",
+  "/global-admin/church/",  // Updated to support all church detail pages with trailing slash
+  "/global-admin/profile",
+  "/global-admin/users",
+  "/global-admin/reports",
+  "/global-admin/settings",  // Added settings path
+  "/global-admin/integrations", // Added for integrations pages
+  "/global-admin/edit-email-template", // Added for email template editing
+];
 
 function isPublicPath(path: string) {
   return PUBLIC_PATHS.some(publicPath => path.startsWith(publicPath));
+}
+
+function isGlobalAdminPath(path: string) {
+  // Simpler approach: any path that starts with /global-admin/ is considered a global admin path
+  return path.startsWith('/global-admin/');
 }
 
 function Router() {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
   const [redirectInProgress, setRedirectInProgress] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
   
+  // Check subscription status for Account Owners
+  useEffect(() => {
+    if (!user || user.role !== 'ACCOUNT_OWNER' || checkingSubscription) return;
+    
+    setCheckingSubscription(true);
+    fetch('/api/subscription/status', {
+      method: 'GET',
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      setSubscriptionStatus(data);
+      setCheckingSubscription(false);
+    })
+    .catch(error => {
+      console.error('Error checking subscription status:', error);
+      setCheckingSubscription(false);
+    });
+  }, [user, checkingSubscription]);
+
   // Check authentication and redirect if needed
   useEffect(() => {
-    if (isLoading || redirectInProgress) return;
+    if (isLoading || redirectInProgress || checkingSubscription) return;
+    
+    // Skip authentication checks for Global Admin paths
+    if (isGlobalAdminPath(location)) {
+      setRedirectInProgress(false);
+      return;
+    }
     
     const currentPathIsPublic = isPublicPath(location);
+    console.log('Auth check:', { 
+      currentPath: location, 
+      isPublicPath: currentPathIsPublic, 
+      isAuthenticated: !!user,
+      redirectInProgress
+    });
     
-    if (!user && !currentPathIsPublic) {
-      setRedirectInProgress(true);
-      setLocation("/login-local");
-    } else if (user && currentPathIsPublic && location !== "/verify") {
-      // If user is logged in and on a public page (except verify), redirect to dashboard
-      setRedirectInProgress(true);
-      setLocation("/dashboard");
-    } else {
+    try {
+      if (!user && !currentPathIsPublic) {
+        // User is not authenticated and trying to access a protected route
+        console.log('Redirecting unauthenticated user to login page');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/login-local"); 
+          setRedirectInProgress(false);
+        }, 100);
+      } else if (user && user.role === 'ACCOUNT_OWNER' && subscriptionStatus?.isTrialExpired && 
+                 location !== "/expired-subscription" && location !== "/subscription" && !currentPathIsPublic) {
+        // Account Owner with expired trial trying to access protected routes
+        console.log('Redirecting Account Owner with expired trial to expired subscription page');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/expired-subscription");
+          setRedirectInProgress(false);
+        }, 100);
+      } else if (user && user.role !== 'ACCOUNT_OWNER' && subscriptionStatus?.isTrialExpired && !currentPathIsPublic) {
+        // Administrators and Standard Users are completely blocked from expired accounts
+        console.log('Blocking access for non-Account Owner with expired trial');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/login-local");
+          setRedirectInProgress(false);
+        }, 100);
+      } else if (user && currentPathIsPublic && location !== "/verify" && location !== "/onboarding") {
+        // User is authenticated and trying to access a public page (except verify and onboarding)
+        console.log('Redirecting authenticated user to dashboard');
+        setRedirectInProgress(true);
+        setTimeout(() => {
+          setLocation("/dashboard");
+          setRedirectInProgress(false);
+        }, 100);
+      } else {
+        setRedirectInProgress(false);
+      }
+    } catch (error) {
+      console.error('Error during authentication redirect:', error);
       setRedirectInProgress(false);
     }
-  }, [user, isLoading, location, setLocation, redirectInProgress]);
+  }, [user, isLoading, location, setLocation, redirectInProgress, subscriptionStatus, checkingSubscription]);
   
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -76,6 +189,7 @@ function Router() {
       <Route path="/verify" component={Verify} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/onboarding" component={Onboarding} />
       
       {/* Protected routes */}
       <Route path="/" component={Dashboard} />
@@ -95,8 +209,32 @@ function Router() {
       <Route path="/user-management" component={UserManagement} />
       <Route path="/service-options" component={ServiceOptions} />
       <Route path="/email-settings" component={EmailSettings} />
+      <Route path="/subscription" component={SubscriptionPage} />
+      <Route path="/expired-subscription" component={ExpiredSubscription} />
 
       <Route path="/email-template/:id" component={EmailTemplateEditor} />
+      
+      {/* Global Admin Routes */}
+      <Route path="/global-admin/login" component={GlobalAdminLogin} />
+      <Route path="/global-admin/dashboard" component={GlobalAdminDashboard} />
+      <Route path="/global-admin/churches" component={GlobalAdminChurches} />
+      <Route path="/global-admin/church/:id" component={ChurchDetail} />
+      <Route path="/global-admin/profile" component={GlobalAdminProfile} />
+      <Route path="/global-admin/users" component={GlobalAdminUsers} />
+      <Route path="/global-admin/reports" component={GlobalAdminReports} />
+      <Route path="/global-admin/settings" component={GlobalAdminSettings} />
+      <Route path="/global-admin/email-templates" component={GlobalAdminSettings} />
+      <Route path="/global-admin/edit-email-template/:id">
+        <EditEmailTemplate />
+      </Route>
+      <Route path="/global-admin/system-email-editor" component={SystemEmailEditor} />
+      
+      {/* Global Admin Integration Routes */}
+      <Route path="/global-admin/integrations/sendgrid" component={SendGridIntegration} />
+      <Route path="/global-admin/integrations/aws-s3" component={AwsS3Integration} />
+      <Route path="/global-admin/integrations/planning-center" component={PlanningCenterIntegration} />
+      <Route path="/global-admin/integrations/stripe" component={StripeIntegration} />
+      <Route path="/global-admin/integrations/stripe-test" component={StripeTestPage} />
       
       <Route component={NotFound} />
     </Switch>
@@ -107,10 +245,11 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [location] = useLocation();
   
-  // Don't show header/footer on public pages
+  // Don't show header/footer on public pages or global admin pages
   const currentPathIsPublic = isPublicPath(location);
+  const isGlobalAdmin = isGlobalAdminPath(location);
   
-  if (!user || currentPathIsPublic) {
+  if (!user || currentPathIsPublic || isGlobalAdmin) {
     return <>{children}</>;
   }
   

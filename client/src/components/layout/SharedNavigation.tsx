@@ -10,7 +10,8 @@ import {
   Users, 
   UserPlus,
   LogOut,
-  ChevronDown 
+  ChevronDown,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,7 +33,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
   const [_, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { user, isAdmin, isMasterAdmin } = useAuth();
+  const { user, isAdmin, isAccountOwner } = useAuth();
   
   // Toggle mobile menu
   const toggleMobileMenu = () => {
@@ -52,26 +53,15 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             <div className="flex items-center">
               <div className="h-24 w-auto overflow-hidden">
                 <img 
-                  src={user.churchLogoUrl} 
+                  src={user.churchLogoUrl.startsWith('/') 
+                    ? user.churchLogoUrl
+                    : `/${user.churchLogoUrl.split('/').slice(3).join('/')}`} 
                   alt={`${user.churchName || 'Church'} logo`} 
                   className="h-full w-auto max-h-24 object-contain"
                   onError={(e) => {
-                    console.error("Error loading logo:", e);
-                    // Fallback to church name if image fails to load
-                    e.currentTarget.style.display = 'none';
-                    // Get parent container
-                    const container = e.currentTarget.closest('.flex.items-center');
-                    if (container && user?.churchName) {
-                      // Create church name element
-                      const nameElement = document.createElement('div');
-                      nameElement.className = "flex items-center";
-                      nameElement.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 mr-2 text-[#69ad4c]"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                        <span class="text-xl font-bold">${user.churchName}</span>
-                      `;
-                      // Replace the current container content
-                      container.innerHTML = '';
-                      container.appendChild(nameElement);
+                    // If the first attempt fails, try without modifying the URL
+                    if (e.currentTarget.src !== user.churchLogoUrl) {
+                      e.currentTarget.src = user.churchLogoUrl;
                     }
                   }}
                 />
@@ -115,7 +105,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                 {user?.profileImageUrl ? (
                   <AvatarImage src={user.profileImageUrl} alt={user?.firstName || "User"} />
                 ) : (
-                  <AvatarFallback>{isMasterAdmin ? "M" : isAdmin ? "A" : "U"}</AvatarFallback>
+                  <AvatarFallback>{isAccountOwner ? "O" : isAdmin ? "A" : "S"}</AvatarFallback>
                 )}
               </Avatar>
               <div>
@@ -132,12 +122,12 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
           <div className="flex-1 flex flex-col p-0">
             {/* Administrator Label */}
             <div className="py-2 px-6 font-semibold text-xl text-center">
-              {isMasterAdmin ? (
+              {isAccountOwner ? (
                 <div className="flex items-center justify-center">
-                  <span className="mr-2">Master Admin</span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#69ad4c] text-white">M</span>
+                  <span className="mr-2">Account Owner</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#69ad4c] text-white">O</span>
                 </div>
-              ) : isAdmin ? "Administrator" : "Usher"}
+              ) : isAdmin ? "Administrator" : "Standard User"}
             </div>
             
             <div className="flex flex-col items-center justify-start">
@@ -154,6 +144,21 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
                 <span>Profile</span>
               </Button>
               
+              {/* Subscription - Only for Account Owners */}
+              {isAccountOwner && (
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center py-5 px-6 rounded-none justify-center text-lg w-full"
+                  onClick={() => {
+                    setLocation("/subscription");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <CreditCard className="mr-4 h-5 w-5" />
+                  <span>Subscription</span>
+                </Button>
+              )}
+
               {/* Help */}
               <Button 
                 variant="ghost" 
@@ -240,15 +245,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             <div className="flex items-center">
               {icon && <div className="mr-2">{icon}</div>}
               <h2 className="text-2xl font-bold font-inter text-[#2D3748]">
-                {title.includes(',') ? (
-                  <>
-                    {title.split(',')[0]}
-                    <br />
-                    <span className="text-lg font-normal text-gray-600">
-                      {title.split(',').slice(1).join(',').trim()}
-                    </span>
-                  </>
-                ) : title}
+                {title}
               </h2>
             </div>
             {action && <div>{action}</div>}

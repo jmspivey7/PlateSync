@@ -1,13 +1,22 @@
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, Users } from 'lucide-react';
+import { Upload, FileUp, CheckCircle2, AlertCircle, Loader2, Users, Clock, Link2Off } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'wouter';
+import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const CsvImporter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -16,13 +25,35 @@ const CsvImporter = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
+  const [showPlanningCenterWarning, setShowPlanningCenterWarning] = useState(false);
+  const [showImportModeDialog, setShowImportModeDialog] = useState(false);
+  const [existingMemberCount, setExistingMemberCount] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [replaceAllMode, setReplaceAllMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Fetch CSV import stats
+  const { data: importStats } = useQuery({
+    queryKey: ['/api/csv-import/stats'],
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch Planning Center connection status
+  const { data: planningCenterStatus } = useQuery({
+    queryKey: ['/api/planning-center/status'],
+    refetchOnWindowFocus: false,
+  });
+
+  const isPlanningCenterConnected = planningCenterStatus?.connected;
 
   const importMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       try {
+        // Add the replaceAll parameter to the form data
+        formData.append('replaceAll', replaceAllMode.toString());
+        
         const response = await fetch('/api/members/import', {
           method: 'POST',
           body: formData,
@@ -93,7 +124,39 @@ const CsvImporter = () => {
     }
   };
 
-  const processFile = (selectedFile: File) => {
+  const processFile = async (selectedFile: File) => {
+    // Check if Planning Center is connected before processing CSV
+    if (isPlanningCenterConnected) {
+      setShowPlanningCenterWarning(true);
+      return;
+    }
+
+    // Check if there are existing members
+    try {
+      const membersResponse = await fetch('/api/members', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (membersResponse.ok) {
+        const membersData = await membersResponse.json();
+        
+        if (Array.isArray(membersData) && membersData.length > 0) {
+          setExistingMemberCount(membersData.length);
+          setSelectedFile(selectedFile);
+          setShowImportModeDialog(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking existing members:', error);
+    }
+
+    // If no existing members, proceed directly with import
+    performImport(selectedFile, false);
+  };
+
+  const performImport = (selectedFile: File, replaceAll: boolean) => {
     if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
       setImportStatus('error');
       setStatusMessage('Please upload a valid CSV file');
@@ -104,6 +167,9 @@ const CsvImporter = () => {
     setImportStatus('idle');
     setStatusMessage(null);
     setProgress(0);
+    
+    // Store the replaceAll setting to use in the actual import
+    setReplaceAllMode(replaceAll);
     
     // Preview the CSV data
     const reader = new FileReader();
@@ -147,6 +213,12 @@ const CsvImporter = () => {
   const handleImport = async () => {
     if (!file) return;
     
+    // Double-check Planning Center connection before import
+    if (isPlanningCenterConnected) {
+      setShowPlanningCenterWarning(true);
+      return;
+    }
+    
     setImportStatus('loading');
     setProgress(10);
     
@@ -169,11 +241,17 @@ const CsvImporter = () => {
   };
 
   const handleClick = () => {
+    // Check if Planning Center is connected before allowing file selection
+    if (isPlanningCenterConnected) {
+      setShowPlanningCenterWarning(true);
+      return;
+    }
     fileInputRef.current?.click();
   };
 
   return (
-    <Card className="shadow-none border-0 pt-0">
+    <>
+      <Card className="shadow-none border-0 pt-0">
       <CardContent className="pt-0 pb-3">
         <div 
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer mb-4 
@@ -255,11 +333,11 @@ const CsvImporter = () => {
           </div>
         )}
 
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center">
           <Button
             onClick={handleImport}
             disabled={!file || importStatus === 'loading'}
-            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6"
+            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6 mb-2"
           >
             {importStatus === 'loading' ? (
               <>
@@ -273,9 +351,116 @@ const CsvImporter = () => {
               </>
             )}
           </Button>
+          
+          {/* Last import timestamp display */}
+          <div className="text-xs text-gray-500 flex items-center mt-2">
+            <Clock className="h-3 w-3 mr-1" />
+            {importStats?.lastImportDate ? (
+              <>Last import: {format(new Date(importStats.lastImportDate), 'MMM d, yyyy') + ' at ' + format(new Date(importStats.lastImportDate), 'h:mm a')}</>
+            ) : (
+              <>Last import: Never</>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
+
+    {/* Planning Center Warning Dialog */}
+    <Dialog open={showPlanningCenterWarning} onOpenChange={setShowPlanningCenterWarning}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-orange-500" />
+            Planning Center Already Connected
+          </DialogTitle>
+          <DialogDescription>
+            Your church is currently connected to Planning Center for member management. 
+            You cannot use both Planning Center and CSV file imports simultaneously.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-2">
+              <Link2Off className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-orange-800">
+                <p className="font-medium mb-1">To proceed with CSV import:</p>
+                <p>You must first disconnect from Planning Center in the Planning Center Integration section below.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowPlanningCenterWarning(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setShowPlanningCenterWarning(false);
+              // Optionally scroll to Planning Center section
+              const planningCenterSection = document.querySelector('[data-planning-center-section]');
+              if (planningCenterSection) {
+                planningCenterSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            Go to Planning Center Settings
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Import Mode Choice Dialog */}
+    <Dialog open={showImportModeDialog} onOpenChange={setShowImportModeDialog}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Choose Import Method</DialogTitle>
+          <DialogDescription>
+            You currently have {existingMemberCount} members in your database. How would you like to handle the CSV import?
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div className="space-y-3">
+            <Button 
+              onClick={() => {
+                setShowImportModeDialog(false);
+                if (selectedFile) {
+                  performImport(selectedFile, false);
+                }
+              }}
+              className="w-full p-4 h-auto flex flex-col items-start bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200"
+              variant="outline"
+            >
+              <div className="font-medium">Add to Existing Members</div>
+              <div className="text-sm text-blue-700">Keep your current {existingMemberCount} members and add new ones from the CSV file</div>
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                setShowImportModeDialog(false);
+                if (selectedFile) {
+                  performImport(selectedFile, true);
+                }
+              }}
+              className="w-full p-4 h-auto flex flex-col items-start bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200"
+              variant="outline"
+            >
+              <div className="font-medium">Merge and Update Members</div>
+              <div className="text-sm text-orange-700">Keep all {existingMemberCount} current members and update any matches with CSV data</div>
+            </Button>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowImportModeDialog(false)}>
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

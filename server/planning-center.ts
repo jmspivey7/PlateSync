@@ -390,14 +390,45 @@ export function setupPlanningCenterRoutes(app: Express) {
             return res.redirect('/settings?planningCenterError=token_storage_failed');
           }
           
-          // Successfully saved tokens - redirect based on device type
-          // Mobile devices need a more reliable redirect
-          if (isMobileDevice) {
-            // For mobile devices, use a simpler and more reliable redirect
-            return res.redirect('/settings?planningCenterConnected=true&mobile=true');
+          // Check if this is a popup window during registration
+          const deviceType = req.query.deviceType as string;
+          const isPopupFlow = deviceType === 'desktop';
+          
+          if (isPopupFlow) {
+            // For popup windows during registration, show success page and close popup
+            const successHtml = `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Planning Center Connected</title>
+                <style>
+                  body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f8fafc; }
+                  .success { color: #16a34a; font-size: 20px; margin-bottom: 15px; font-weight: 600; }
+                  .message { color: #64748b; font-size: 16px; margin-bottom: 20px; }
+                  .loading { color: #64748b; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="success">✅ Planning Center Connected Successfully!</div>
+                <div class="message">Starting member import...</div>
+                <div class="loading">This window will close automatically.</div>
+                <script>
+                  // Close popup after brief delay to show success message
+                  setTimeout(function() {
+                    window.close();
+                  }, 2000);
+                </script>
+              </body>
+              </html>
+            `;
+            return res.send(successHtml);
           } else {
-            // Desktop devices work fine with the standard redirect
-            return res.redirect('/settings?planningCenterConnected=true');
+            // For mobile devices or settings page, use redirect
+            if (isMobileDevice) {
+              return res.redirect('/settings?planningCenterConnected=true&mobile=true');
+            } else {
+              return res.redirect('/settings?planningCenterConnected=true');
+            }
           }
         } catch (tokenSaveError) {
           console.error('Error saving Planning Center tokens:', tokenSaveError);
@@ -454,8 +485,38 @@ export function setupPlanningCenterRoutes(app: Express) {
           console.log(`Cleaned up ${expiredCount} expired temporary tokens`);
         }
         
-        // Redirect with temporary key for client-side token claiming and include churchId if available
-        // Also account for mobile devices with a device type parameter
+        // Check if this is a popup flow (desktop during registration)
+        const isPopupFlow = deviceType === 'desktop';
+        
+        if (isPopupFlow) {
+          // For popup windows during registration, return a success page that closes the popup
+          const successHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Planning Center Connected</title>
+              <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                .success { color: #22c55e; font-size: 18px; margin-bottom: 20px; }
+                .loading { color: #6b7280; }
+              </style>
+            </head>
+            <body>
+              <div class="success">✅ Successfully connected to Planning Center!</div>
+              <div class="loading">Closing window...</div>
+              <script>
+                // Store success state and close popup
+                setTimeout(function() {
+                  window.close();
+                }, 1500);
+              </script>
+            </body>
+            </html>
+          `;
+          return res.send(successHtml);
+        }
+        
+        // For non-popup flows (mobile or settings page), use the redirect page
         const timestamp = Date.now(); // Generate timestamp for cache-busting
         let redirectUrl = `/planning-center-redirect.html?success=true&tempKey=${tempKey}`;
         
@@ -552,15 +613,249 @@ export function setupPlanningCenterRoutes(app: Express) {
       return res.redirect(`/settings?planningCenterError=${errorDetails}&error_description=${encodeURIComponent(errorDescription)}`);
     }
   });
+
+  // Registration-specific callback endpoint - always closes popup
+  app.get('/api/planning-center/callback-registration', async (req: Request, res: Response) => {
+    console.log('Planning Center registration callback received');
+    console.log('Callback query params:', req.query);
+    console.log('Callback session data:', {
+      planningCenterState: req.session.planningCenterState,
+      planningCenterUserId: req.session.planningCenterUserId,
+      planningCenterChurchId: req.session.planningCenterChurchId
+    });
+    
+    const { code, error, error_description } = req.query;
+    
+    if (error) {
+      console.error('Planning Center OAuth error during registration:', error, error_description);
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Connection Failed</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fef2f2; }
+            .error { color: #dc2626; font-size: 18px; margin-bottom: 20px; }
+            .message { color: #6b7280; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">❌ Connection Failed</div>
+          <div class="message">${error_description || 'Authorization was denied or failed'}</div>
+          <script>
+            setTimeout(function() {
+              window.close();
+            }, 3000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(errorHtml);
+    }
+
+    if (!code) {
+      console.error('No authorization code received during registration');
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Connection Failed</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fef2f2; }
+            .error { color: #dc2626; font-size: 18px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">❌ No authorization code received</div>
+          <script>
+            setTimeout(function() {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(errorHtml);
+    }
+
+    try {
+      // Exchange code for access token
+      const tokenResponse = await fetch(PLANNING_CENTER_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: PLANNING_CENTER_CLIENT_ID,
+          client_secret: PLANNING_CENTER_CLIENT_SECRET,
+          code: String(code),
+          redirect_uri: `${req.protocol}://${req.get('host')}/api/planning-center/callback-registration`,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+      }
+
+      const tokens = await tokenResponse.json();
+      const { access_token, refresh_token, expires_in } = tokens;
+
+      console.log('Planning Center tokens received during registration');
+
+      // Store tokens temporarily for registration flow
+      const tempKey = crypto.randomBytes(24).toString('hex');
+      app.locals.tempPlanningCenterTokens = app.locals.tempPlanningCenterTokens || {};
+      
+      // Get church ID from session data (set during auth URL generation)
+      const churchId = req.session.planningCenterChurchId || (req.query.churchId ? String(req.query.churchId) : undefined);
+      console.log('Session church ID:', req.session.planningCenterChurchId);
+      console.log('Query church ID:', req.query.churchId);
+      console.log('Final church ID for auto-claim:', churchId);
+      
+      app.locals.tempPlanningCenterTokens[tempKey] = {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresAt: new Date(Date.now() + expires_in * 1000),
+        created: new Date(),
+        churchId: churchId,
+        isRegistration: true
+      };
+
+      console.log(`Stored registration tokens with key ${tempKey.substring(0, 8)}...`);
+      console.log(`Church ID for auto-claim: ${churchId}`);
+
+      // For registration flow, immediately claim the tokens to make them permanent
+      if (churchId) {
+        try {
+          console.log(`Auto-claiming registration tokens for church ${churchId}`);
+          await storage.savePlanningCenterTokens({
+            userId: churchId,
+            churchId: churchId,
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            expiresAt: new Date(Date.now() + expires_in * 1000)
+          });
+          console.log(`Successfully stored permanent tokens for church ${churchId}`);
+        } catch (error) {
+          console.error(`Failed to auto-claim tokens for church ${churchId}:`, error);
+        }
+      }
+
+      // Return success page that closes popup
+      const successHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Planning Center Connected</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f0fdf4; }
+            .success { color: #16a34a; font-size: 20px; margin-bottom: 15px; font-weight: 600; }
+            .message { color: #64748b; font-size: 16px; margin-bottom: 20px; }
+            .loading { color: #64748b; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="success">✅ Planning Center Connected Successfully!</div>
+          <div class="message">Ready to import your members...</div>
+          <div class="loading">This window will close automatically.</div>
+          <script>
+            // Close popup after brief delay to show success message
+            setTimeout(function() {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(successHtml);
+
+    } catch (error) {
+      console.error('Error during registration Planning Center callback:', error);
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Connection Failed</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fef2f2; }
+            .error { color: #dc2626; font-size: 18px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">❌ Connection failed during setup</div>
+          <script>
+            setTimeout(function() {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `;
+      return res.send(errorHtml);
+    }
+  });
   
   // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
-    if (!req.user) {
-      console.log('No authenticated user found for Planning Center auth URL generation');
-      return res.status(401).json({ 
-        error: 'Authentication required',
-        message: 'You must be logged in to connect to Planning Center',
-        details: 'Please ensure you are logged in and try again'
+    // Check if force re-authorization is requested (during registration)
+    const forceReauth = req.query.forceReauth === 'true';
+    const isRegistration = req.query.isRegistration === 'true';
+    console.log('Planning Center auth URL requested with forceReauth:', forceReauth, 'isRegistration:', isRegistration);
+    
+    // Handle both authenticated users and registration flow
+    let churchId = '';
+    let userId = '';
+    
+    if (req.user) {
+      // Authenticated user
+      const authUrlUser = req.user as any;
+      churchId = authUrlUser.churchId || authUrlUser.id;
+      userId = authUrlUser.id;
+      console.log('Auth URL for authenticated user:', { userId, churchId });
+    } else {
+      // Registration flow - get church ID from query parameter
+      churchId = req.query.churchId as string || '';
+      userId = churchId; // Use church ID as user ID for registration
+      console.log('Auth URL for registration flow:', { userId, churchId });
+    }
+    
+    // If forceReauth is false, check if already connected and skip OAuth
+    if (!forceReauth) {
+      try {
+        const existingTokens = await storage.getPlanningCenterTokens(userId, churchId);
+        if (existingTokens) {
+          console.log('Planning Center already connected, skipping OAuth');
+          return res.json({
+            already_connected: true,
+            message: 'Planning Center is already connected',
+            skip_oauth: true
+          });
+        }
+      } catch (error) {
+        console.log('Error checking existing tokens, proceeding with OAuth');
+      }
+    } else {
+      console.log('FORCE RE-AUTHORIZATION: Skipping existing token check and proceeding with fresh OAuth flow');
+      console.log('Force reauth parameters:', { forceReauth, isRegistration, userId, churchId });
+      
+      // Clear any existing Planning Center session data when forcing reauth
+      if (isRegistration) {
+        console.log('Registration flow: Clearing existing Planning Center session data');
+        req.session.planningCenterState = undefined;
+        req.session.planningCenterUserId = undefined;
+        req.session.planningCenterChurchId = undefined;
+      }
+      
+      // Explicitly do NOT check for existing tokens when forceReauth is true
+    }
+    
+    if (!churchId) {
+      console.log('No church ID found for Planning Center auth URL generation');
+      return res.status(400).json({ 
+        error: 'Church ID required',
+        message: 'Church ID is required to connect to Planning Center',
+        details: 'Please provide a valid church ID'
       });
     }
     
@@ -672,9 +967,13 @@ export function setupPlanningCenterRoutes(app: Express) {
       let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
       const protocol = req.protocol || 'https';
       
-      // Use a fixed callback URL if provided in environment (preferred)
+      // Use different callback URLs for registration vs settings
       let redirectUri;
-      if (process.env.PLANNING_CENTER_CALLBACK_URL) {
+      if (isRegistration) {
+        // Use registration-specific callback
+        redirectUri = `${protocol}://${host}/api/planning-center/callback-registration`;
+        console.log('Using registration callback URL:', redirectUri);
+      } else if (process.env.PLANNING_CENTER_CALLBACK_URL) {
         redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
         console.log('Using fixed callback URL from env:', redirectUri);
       } else {
@@ -746,12 +1045,27 @@ export function setupPlanningCenterRoutes(app: Express) {
 
   // Endpoint to initiate the OAuth flow via redirect
   app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
-    if (!req.user) {
-      console.log('No authenticated user found for Planning Center auth');
-      return res.status(401).json({ 
-        error: 'Authentication required',
-        message: 'You must be logged in to connect to Planning Center',
-        details: 'Please ensure you are logged in and try again'
+    // Handle both authenticated users and registration flow
+    let churchId = '';
+    let userId = '';
+    
+    if (req.user) {
+      // Authenticated user
+      const authorizeUser = req.user as any;
+      churchId = authorizeUser.churchId || authorizeUser.id;
+      userId = authorizeUser.id;
+    } else {
+      // Registration flow - get church ID from query parameter
+      churchId = req.query.churchId as string || '';
+      userId = churchId; // Use church ID as user ID for registration
+    }
+    
+    if (!churchId) {
+      console.log('No church ID found for Planning Center auth');
+      return res.status(400).json({ 
+        error: 'Church ID required',
+        message: 'Church ID is required to connect to Planning Center',
+        details: 'Please provide a valid church ID'
       });
     }
     
@@ -802,11 +1116,34 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Instead of directly redirecting to Planning Center, we'll redirect to our
       // intermediate page that handles the flow more elegantly
-      console.log('Redirecting to Planning Center redirect page');
-      // Include churchId in redirect URL if available
-      const authUser = req.user as any;
-      const userChurchId = authUser.churchId || authUser.id;
-      res.redirect(`/planning-center-redirect.html${userChurchId ? `?churchId=${userChurchId}` : ''}`);
+      // Store state in session for verification during callback
+      if (req.session) {
+        req.session.planningCenterState = state;
+        req.session.planningCenterChurchId = churchId;
+        console.log('State and churchId saved in session for authorization flow');
+      }
+
+      // Build the Planning Center OAuth authorization URL
+      const redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL || 
+                         `${req.protocol}://${req.get('host')}/api/planning-center/callback`;
+      
+      const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
+      authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+      authUrl.searchParams.append('redirect_uri', redirectUri);
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('scope', 'people');
+      authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('prompt', 'login'); // Force login screen
+      
+      // Add device type for callback handling
+      const deviceType = req.query.deviceType as string || 'desktop';
+      authUrl.searchParams.append('deviceType', deviceType);
+      
+      console.log('Planning Center OAuth URL with all parameters:', authUrl.toString());
+      console.log('Redirecting directly to Planning Center OAuth server for login');
+      
+      // Redirect directly to Planning Center's OAuth server where user will see login screen
+      res.redirect(authUrl.toString());
       
     } catch (error) {
       console.error('Error starting Planning Center authorization flow:', error);
@@ -974,11 +1311,31 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       console.log('Planning Center API responded successfully');
       
-      // Return connection status with people count if available
+      // Return connection status with people count
+      // First check if we have a stored people count in the database
+      // This count is updated during imports and stays accurate between sessions
+      const databasePeopleCount = typeof tokens.peopleCount === 'number' ? tokens.peopleCount : 0;
+      
+      // Also get live count from API response
+      const livePeopleCount = peopleResponse.data.meta?.total_count || 0;
+      
+      // Use the database count if available, otherwise use the live count
+      const finalPeopleCount = databasePeopleCount > 0 ? databasePeopleCount : livePeopleCount;
+      
+      console.log('Planning Center people counts:', {
+        databaseCount: databasePeopleCount,
+        liveApiCount: livePeopleCount,
+        finalCount: finalPeopleCount
+      });
+      
+      // Make sure we explicitly convert dates to ISO strings and log the value
+      const lastSyncDateValue = tokens.lastSyncDate ? tokens.lastSyncDate.toISOString() : tokens.updatedAt?.toISOString();
+      console.log('Last import date for response:', lastSyncDateValue);
+      
       res.status(200).json({
         connected: true,
-        lastSyncDate: tokens.updatedAt?.toISOString(),
-        peopleCount: peopleResponse.data.meta?.total_count || 0
+        lastSyncDate: lastSyncDateValue,
+        peopleCount: finalPeopleCount
       });
     } catch (error) {
       console.error('Error fetching Planning Center status:', error);
@@ -990,20 +1347,67 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
   });
 
+  // Completely rewritten function for importing Planning Center members
   app.post('/api/planning-center/import', async (req: Request, res: Response) => {
     if (!req.user) {
-      return res.status(401).send('Authentication required');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
     }
     
     // Type casting to handle req.user properties
     const user = req.user as any;
-    console.log('Importing Planning Center members for user:', user.id, 'church:', user.churchId);
+    const churchId = user.churchId;
+    console.log('Importing Planning Center members for user:', user.id, 'church:', churchId);
     
     try {
-      const tokens = await storage.getPlanningCenterTokens(user.id, user.churchId);
+      // Get tokens using only the church ID, not tied to a specific user ID
+      let tokens = await storage.getPlanningCenterTokensByChurchId(churchId);
       
       if (!tokens) {
-        return res.status(403).send('Planning Center not connected');
+        return res.status(403).json({
+          success: false,
+          error: 'Planning Center not connected. Please connect your account first.'
+        });
+      }
+      
+      console.log('Planning Center tokens:', {
+        accessToken: tokens.accessToken ? `${tokens.accessToken.substring(0, 10)}...` : 'missing',
+        refreshToken: tokens.refreshToken ? `${tokens.refreshToken.substring(0, 10)}...` : 'missing',
+        expiresAt: tokens.expiresAt ? tokens.expiresAt.toISOString() : 'missing',
+        now: new Date().toISOString(),
+        isExpired: tokens.expiresAt ? (tokens.expiresAt < new Date()) : true
+      });
+      
+      // Check if token is expired and refresh if needed
+      if (!tokens.expiresAt || tokens.expiresAt < new Date()) {
+        console.log('Planning Center token expired, refreshing...');
+        try {
+          if (!tokens.refreshToken) {
+            throw new Error('No refresh token available');
+          }
+          
+          // Perform token refresh
+          const newAccessToken = await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+          console.log('Token refresh API call completed successfully');
+          
+          // Get the updated tokens after refresh
+          const refreshedTokens = await storage.getPlanningCenterTokensByChurchId(churchId);
+          
+          if (!refreshedTokens || !refreshedTokens.accessToken) {
+            throw new Error('Could not retrieve refreshed tokens');
+          }
+          
+          tokens = refreshedTokens;
+          console.log('Successfully refreshed Planning Center token');
+        } catch (refreshError) {
+          console.error('Error refreshing Planning Center token:', refreshError);
+          return res.status(401).json({
+            success: false, 
+            error: 'Your Planning Center connection has expired. Please reconnect your account.'
+          });
+        }
       }
       
       // Search for a specific test user if we're debugging
@@ -1036,114 +1440,142 @@ export function setupPlanningCenterRoutes(app: Express) {
       
       // Store all people to import
       let allPeople: any[] = [];
-      let nextPageUrl: string | null = `${PLANNING_CENTER_API_BASE}/people/v2/people?include=emails,phone_numbers&per_page=100`;
-      let pageCount = 0;
-      const MAX_PAGES = 10; // Limit to 10 pages (1000 people) for performance
+      let emailsByPersonId = new Map();
+      let phonesByPersonId = new Map();
       
-      // Fetch people from Planning Center (with pagination)
-      while (nextPageUrl && pageCount < MAX_PAGES) {
-        pageCount++;
-        console.log(`Fetching Planning Center people page ${pageCount}...`);
+      try {
+        // Make API requests with pagination to fetch all people
+        console.log('Making API request to Planning Center People API');
+        console.log(`Using access token: ${tokens.accessToken.substring(0, 10)}...`);
         
-        // Extract the path from the next page URL
-        const apiPath: string = nextPageUrl.replace(PLANNING_CENTER_API_BASE, '');
+        let nextUrl = `${PLANNING_CENTER_API_BASE}/people/v2/people?include=emails,phone_numbers&per_page=100`;
+        let hasMorePages = true;
+        const maxPages = 20; // Maximum 20 pages (up to 2,000 members)
+        let currentPage = 0;
         
-        const peopleResponse: any = await axios.get(`${PLANNING_CENTER_API_BASE}${apiPath}`, {
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-          }
-        });
-        
-        // Add this page of people to our collection
-        const people = peopleResponse.data.data;
-        allPeople = allPeople.concat(people);
-        
-        // Set up for next page if available
-        nextPageUrl = peopleResponse.data.links?.next || null;
-        
-        // Process included data for this page
-        const included = peopleResponse.data.included || [];
-        
-        // Create lookup maps for emails and phone numbers by their owner ID
-        const emailsByOwnerId = new Map();
-        const phonesByOwnerId = new Map();
-        
-        // Process included data to organize by owner
-        included.forEach((item: any) => {
-          if (item.type === 'Email') {
-            const ownerId = item.relationships?.person?.data?.id;
-            if (ownerId && item.attributes?.address) {
-              if (!emailsByOwnerId.has(ownerId)) {
-                emailsByOwnerId.set(ownerId, []);
-              }
-              emailsByOwnerId.get(ownerId).push(item.attributes.address);
+        // Fetch all pages of people
+        while (hasMorePages && nextUrl && currentPage < maxPages) {
+          currentPage++;
+          console.log(`Fetching Planning Center people page ${currentPage}`);
+          
+          // Make the API request
+          const response = await axios.get(nextUrl, {
+            headers: {
+              Authorization: `Bearer ${tokens.accessToken}`
             }
-          } else if (item.type === 'PhoneNumber') {
-            const ownerId = item.relationships?.person?.data?.id;
-            if (ownerId && item.attributes?.number) {
-              if (!phonesByOwnerId.has(ownerId)) {
-                phonesByOwnerId.set(ownerId, []);
-              }
-              phonesByOwnerId.get(ownerId).push(item.attributes.number);
-            }
-          }
-        });
-        
-        // Look for any with the name "Testerly" in this batch
-        const testerlyInThisBatch = people.filter((p: any) => 
-          p.attributes.first_name?.toLowerCase() === 'testerly' || 
-          p.attributes.last_name?.toLowerCase() === 'jones');
-        
-        if (testerlyInThisBatch.length > 0) {
-          console.log('Found Testerly in this batch of people!');
-          testerlyInThisBatch.forEach((p: any) => {
-            const personId = p.id;
-            const emails = emailsByOwnerId.get(personId) || [];
-            console.log(`- ${p.attributes.first_name} ${p.attributes.last_name} (ID: ${personId}, Email: ${emails.length > 0 ? emails[0] : 'none'})`);
           });
+          
+          if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+            throw new Error('Invalid response format from Planning Center API');
+          }
+          
+          // Add people from this page to our collection
+          allPeople = [...allPeople, ...response.data.data];
+          
+          // Process included data for emails and phone numbers
+          if (response.data.included && Array.isArray(response.data.included)) {
+            response.data.included.forEach((item: any) => {
+              if (!item || !item.type) return;
+              
+              if (item.type === 'Email') {
+                const personId = item.relationships?.person?.data?.id;
+                if (personId && item.attributes?.address) {
+                  if (!emailsByPersonId.has(personId)) {
+                    emailsByPersonId.set(personId, []);
+                  }
+                  emailsByPersonId.get(personId).push(item.attributes.address);
+                }
+              } else if (item.type === 'PhoneNumber') {
+                const personId = item.relationships?.person?.data?.id;
+                if (personId && item.attributes?.number) {
+                  if (!phonesByPersonId.has(personId)) {
+                    phonesByPersonId.set(personId, []);
+                  }
+                  phonesByPersonId.get(personId).push(item.attributes.number);
+                }
+              }
+            });
+          }
+          
+          // Check if there are more pages
+          nextUrl = response.data.links?.next || null;
+          hasMorePages = !!nextUrl;
+          
+          console.log(`Retrieved ${response.data.data.length} more people (total so far: ${allPeople.length})`);
+          
+          // If this is the first page, log the total count if available
+          if (currentPage === 1 && response.data.meta?.total_count) {
+            console.log(`Planning Center reports a total of ${response.data.meta.total_count} people`);
+          }
         }
         
-        // Count people with contact information in this batch
-        console.log(`Found ${emailsByOwnerId.size} people with emails and ${phonesByOwnerId.size} people with phone numbers`);
+        console.log(`Planning Center API requests complete, retrieved ${allPeople.length} total people`);
+        console.log(`Processed ${emailsByPersonId.size} people with emails and ${phonesByPersonId.size} with phones`);
+      } catch (apiError: any) {
+        console.error('Error fetching people from Planning Center:', apiError.message);
         
-        // We want to import all members - don't stop for test users
-        // Log the Testerly findings but continue with all pages
-        
-        // No longer limiting to first page, import all members
-        // Set a reasonable upper limit to prevent infinite loops
-        if (pageCount >= 20) { // This would be 2000 members at 100 per page
-          console.log('Reached maximum page limit (20 pages / ~2000 members)');
-          break;
+        // Handle 401 Unauthorized errors by refreshing the token once
+        if (apiError.response?.status === 401) {
+          console.log('Received 401 Unauthorized error from Planning Center API');
+          
+          try {
+            console.log('Attempting to refresh token...');
+            await refreshPlanningCenterToken(tokens, tokens.userId, tokens.churchId);
+            const refreshedTokens = await storage.getPlanningCenterTokensByChurchId(churchId);
+            
+            if (!refreshedTokens) {
+              throw new Error('Could not retrieve refreshed tokens');
+            }
+            
+            console.log('Token refreshed successfully, please try the import again.');
+            return res.status(401).json({
+              success: false,
+              error: 'Your Planning Center session was refreshed. Please try importing again.'
+            });
+          } catch (refreshError) {
+            console.error('Failed to refresh token:', refreshError);
+            return res.status(401).json({
+              success: false,
+              error: 'Your Planning Center session has expired. Please reconnect your account.'
+            });
+          }
         }
+        
+        // For other errors, return a 500 response
+        return res.status(500).json({
+          success: false,
+          error: apiError.message || 'Error connecting to Planning Center'
+        });
       }
       
-      console.log(`Finished fetching ${pageCount} pages, found ${allPeople.length} total people`);
+      console.log(`Finished processing ${allPeople.length} total people from Planning Center`);
       
-      // Check if we found Testerly Jones
+      // Check if we found any test accounts for debugging
       const foundTesterly = allPeople.some(person => 
-        person.attributes.first_name?.toLowerCase() === 'testerly' || 
-        person.attributes.last_name?.toLowerCase() === 'jones'
+        person.attributes?.first_name?.toLowerCase()?.includes('test') || 
+        person.attributes?.last_name?.toLowerCase()?.includes('test')
       );
       
       if (foundTesterly) {
-        console.log('Successfully found Testerly Jones in the imported data!');
+        console.log('Found test account in Planning Center data for import validation');
       }
       
-      // Convert Planning Center people to PlateSync members
+      // Convert Planning Center people to PlateSync members using the gathered data
       const members = allPeople.map((person: any) => {
-        const attributes = person.attributes;
+        const attributes = person.attributes || {};
         const personId = person.id;
         
-        // Find the included data for this person - need to refetch from API
-        // Since we're using pagination, we need to make a separate request
+        // Get email and phone from our processed maps
+        const personEmails = emailsByPersonId.get(personId) || [];
+        const personPhones = phonesByPersonId.get(personId) || [];
         
         return {
-          firstName: attributes.first_name,
-          lastName: attributes.last_name,
-          email: attributes.primary_email_address,  // Use the contact info from attributes if available
-          phone: attributes.primary_phone_number,   // Use the contact info from attributes if available
+          firstName: attributes.first_name || '',
+          lastName: attributes.last_name || '',
+          email: personEmails.length > 0 ? personEmails[0] : null,
+          phone: personPhones.length > 0 ? personPhones[0] : null,
           isVisitor: false,
-          churchId: req.user?.churchId || user.churchId,
+          churchId,
           externalId: personId,
           externalSystem: 'PLANNING_CENTER'
         };
@@ -1166,24 +1598,39 @@ export function setupPlanningCenterRoutes(app: Express) {
         });
       }
       
-      // For each member, check if one has name "Testerly Jones"
-      const testerly = potentialMembers.find(m => 
-        m.firstName?.toLowerCase() === 'testerly' && 
-        m.lastName?.toLowerCase() === 'jones');
-        
-      if (testerly) {
-        console.log('Found Testerly Jones in the list to import!', testerly);
+      // Log some sample members that will be imported
+      if (potentialMembers.length > 0) {
+        const sampleMembers = potentialMembers.slice(0, 3);
+        console.log(`Sample members to import (showing ${sampleMembers.length} of ${potentialMembers.length}):`);
+        sampleMembers.forEach(member => {
+          console.log(`- ${member.firstName} ${member.lastName} (Email: ${member.email || 'None'}, Phone: ${member.phone || 'None'}, ID: ${member.externalId})`);
+        });
       } else {
-        console.log('Testerly Jones was NOT found in the members to import.');
+        console.log('No valid members found to import. Please check Planning Center permissions and make sure members exist.');
       }
       
-      // Import members into the database
-      const importedCount = await storage.bulkImportMembers(members, req.user?.churchId || user.churchId);
+      // Filter out invalid members before import (must have both first and last name)
+      const validMembers = members.filter(m => m.firstName && m.lastName);
+      console.log(`Found ${validMembers.length} valid members to import`);
       
-      // Update last sync date
-      await storage.updatePlanningCenterLastSync(req.user?.id || user.id, req.user?.churchId || user.churchId);
+      // Import valid members using the dedicated import helper that properly handles duplicates
+      const { importMembers } = await import('./import-members');
+      const importResult = await importMembers(validMembers, churchId);
+      const importedCount = importResult.importedCount;
+      console.log(`Successfully imported ${importedCount} members`);
       
-      res.json({ success: true, importedCount, totalPeopleFound: allPeople.length });
+      // Update last sync date 
+      await storage.updatePlanningCenterLastSync(user.id, churchId);
+      
+      // Update connection status with successful import details
+      await storage.updatePlanningCenterImportStats(churchId, validMembers.length);
+      
+      res.json({ 
+        success: true, 
+        importedCount, 
+        totalPeopleFound: allPeople.length,
+        validMembersCount: validMembers.length
+      });
     } catch (error) {
       console.error('Error importing Planning Center members:', error);
       res.status(500).json({ 
@@ -1244,7 +1691,17 @@ export function setupPlanningCenterRoutes(app: Express) {
       }
       
       // Remove tokens from our database regardless of API revocation outcome
-      await storage.deletePlanningCenterTokens(user.id, user.churchId);
+      console.log(`Attempting to delete Planning Center tokens for user: ${user.id}, church: ${user.churchId}`);
+      
+      try {
+        await storage.deletePlanningCenterTokens(user.id, user.churchId);
+        console.log('Planning Center tokens deleted successfully');
+      } catch (deleteError) {
+        console.error('Error deleting Planning Center tokens:', deleteError);
+        // Try alternative deletion with user.id as churchId
+        console.log(`Trying alternative deletion with user.id: ${user.id} as churchId`);
+        await storage.deletePlanningCenterTokens(user.id, user.id);
+      }
       
       res.json({ 
         success: true, 

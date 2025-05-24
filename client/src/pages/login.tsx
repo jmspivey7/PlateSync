@@ -42,7 +42,7 @@ export default function Login() {
     setError("");
     
     try {
-      const response = await fetch("/api/login", {
+      const response = await fetch("/api/login-local", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,23 +56,13 @@ export default function Login() {
         window.location.href = "/dashboard"; // Use window.location for full page refresh
       } else {
         const data = await response.json().catch(() => ({ message: "Invalid credentials" }));
-        setError(data.message || "Login failed");
-        
-        toast({
-          title: "Login Failed",
-          description: data.message || "Invalid email or password",
-          variant: "destructive",
-        });
+        // Use only the inline error message for a cleaner UX, no toast
+        setError(data.message || "Invalid email or password. Please check your credentials and try again.");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("An error occurred. Please try again.");
-      
-      toast({
-        title: "Error",
-        description: "An error occurred during login. Please try again.",
-        variant: "destructive",
-      });
+      // Use only the inline error message, no toast
+      setError("An error occurred during login. Please try again later.");
     } finally {
       setIsLoading(false);
     }

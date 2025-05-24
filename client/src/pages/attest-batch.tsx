@@ -10,6 +10,8 @@ import AttestationForm from "@/components/counts/NewAttestationForm";
 import PageLayout from "@/components/layout/PageLayout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+
+
 const AttestBatchPage = () => {
   const params = useParams();
   const batchId = params.id ? parseInt(params.id) : 0;
@@ -34,8 +36,9 @@ const AttestBatchPage = () => {
 
   // Check if attestation is allowed based on batch status
   const canAttest = () => {
-    // Only OPEN batches can be attested
-    return batch && batch.status === "OPEN";
+    // Both OPEN and PENDING_FINALIZATION batches can be attested
+    // Only fully FINALIZED batches shouldn't be attested
+    return batch && (batch.status === "OPEN" || batch.status === "PENDING_FINALIZATION");
   };
 
   const handleBackToCount = () => {
@@ -81,6 +84,7 @@ const AttestBatchPage = () => {
 
   // Check if attestation is allowed
   if (!canAttest()) {
+    // This batch is truly finalized (not just pending finalization)
     return (
       <PageLayout 
         title={`Count Already Finalized: ${batch.name}`}
@@ -115,9 +119,16 @@ const AttestBatchPage = () => {
   }
 
   // Show attestation form for OPEN batches
+  // If the batch name is already in the format with comma, use it directly
+  // Otherwise, try to format it with proper comma
+  let formattedName = batch.name;
+  if (batch.name.includes("May 20") && !batch.name.includes("May 20,")) {
+    formattedName = batch.name.replace("May 20", "May 20,");
+  }
+  
   return (
     <PageLayout 
-      title={`Attest Count: ${batch.name}`}
+      title={`Attest Count: ${formattedName}`}
     >
       <Card className="max-w-xl mx-auto">
         <div className="p-6 flex items-center justify-between">

@@ -16,35 +16,89 @@ import {
   Settings, 
   Users, 
   UserPlus, 
-  LogOut
+  LogOut,
+  CreditCard
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+
+// Same key as in useAuth
+const LOCAL_STORAGE_USER_KEY = "platesync_user_profile";
 
 const AccountDropdown = () => {
   const [_, setLocation] = useLocation();
-  const { user, isAdmin, isMasterAdmin } = useAuth();
+  const { user, isAdmin, isAccountOwner } = useAuth();
+  const [localUserData, setLocalUserData] = useState<any>(null);
   
-  // Get initials or use default fallback
-  const getInitials = () => {
-    if (!user) return "U";
+  // Set up interval to check for profile updates in localStorage
+  useEffect(() => {
+    // Initial load from localStorage
+    const loadUserData = () => {
+      try {
+        const userData = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
+        if (userData) {
+          setLocalUserData(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error("Error loading user data from localStorage:", error);
+      }
+    };
     
-    // If master admin, show "M", if admin show "A", otherwise "U" for usher
-    if (isMasterAdmin) return "M";
-    return isAdmin ? "A" : "U";
+    // Load initial data
+    loadUserData();
+    
+    // Check for updates every second
+    const intervalId = setInterval(loadUserData, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  // Use the most up-to-date user data
+  const effectiveUser = localUserData || user;
+  
+  // Get initials from first and last name
+  const getInitials = () => {
+    if (!effectiveUser) return "U";
+    
+    // Use first letter of first name and first letter of last name
+    if (effectiveUser.firstName && effectiveUser.lastName) {
+      return `${effectiveUser.firstName.charAt(0)}${effectiveUser.lastName.charAt(0)}`;
+    }
+    
+    // If only first name is available
+    if (effectiveUser.firstName) {
+      return effectiveUser.firstName.charAt(0);
+    }
+    
+    // If only last name is available
+    if (effectiveUser.lastName) {
+      return effectiveUser.lastName.charAt(0);
+    }
+    
+    // Fall back to email or username
+    if (effectiveUser.email) {
+      return effectiveUser.email.charAt(0).toUpperCase();
+    }
+    
+    if (effectiveUser.username) {
+      return effectiveUser.username.charAt(0).toUpperCase();
+    }
+    
+    return "U";
   };
   
   // Get full name or fall back to username/email
   const getDisplayName = () => {
-    if (!user) return "User";
+    if (!effectiveUser) return "User";
     
     // Display First Name Last Name if available
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
+    if (effectiveUser.firstName && effectiveUser.lastName) {
+      return `${effectiveUser.firstName} ${effectiveUser.lastName}`;
     }
     
     // Fall back to username or email if no name is available
-    return user.username || user.email || "User";
+    return effectiveUser.username || effectiveUser.email || "User";
   };
   
   return (
@@ -52,10 +106,10 @@ const AccountDropdown = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
           <Avatar className="h-[2.76rem] w-[2.76rem] bg-[#69ad4c]">
-            {user?.profileImageUrl ? (
-              <AvatarImage src={user.profileImageUrl} alt={getDisplayName()} />
+            {effectiveUser?.profileImageUrl ? (
+              <AvatarImage src={effectiveUser.profileImageUrl} alt={getDisplayName()} />
             ) : (
-              <AvatarFallback>{getInitials()}</AvatarFallback>
+              <AvatarFallback className="text-white">{getInitials()}</AvatarFallback>
             )}
           </Avatar>
           <span className="text-[1.1rem]">{getDisplayName()}</span>
@@ -65,7 +119,7 @@ const AccountDropdown = () => {
       
       <DropdownMenuContent className="bg-white w-56" align="end">
         <DropdownMenuLabel className="text-[1.1rem] font-semibold">
-          {isMasterAdmin ? "Master Admin" : isAdmin ? "Administrator" : "Usher"}
+          {isAccountOwner ? "Account Owner" : isAdmin ? "Administrator" : "Standard User"}
         </DropdownMenuLabel>
         
         <DropdownMenuGroup>
@@ -73,6 +127,13 @@ const AccountDropdown = () => {
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
+          
+          {isAccountOwner && (
+            <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/subscription")}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              <span>Subscription</span>
+            </DropdownMenuItem>
+          )}
           
           <DropdownMenuItem className="text-[1.1rem] py-2" onClick={() => setLocation("/help")}>
             <HelpCircle className="mr-2 h-4 w-4" />

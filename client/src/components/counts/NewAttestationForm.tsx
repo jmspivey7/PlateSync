@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Batch, Donation, Member, User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +55,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [_, setLocation] = useLocation();
   
   // Log when the attestation form is mounted
   useEffect(() => {
@@ -135,7 +137,13 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   // Update step based on attestation status when batch updates
   useEffect(() => {
     if (batch) {
-      if (batch.primaryAttestorId && batch.secondaryAttestorId) {
+      // Check if the batch status is PENDING_FINALIZATION (meaning it has both attestations but needs final confirmation)
+      if (batch.status === "PENDING_FINALIZATION") {
+        // Show confirmation step for batches that need final confirmation
+        if (step !== 'confirmation') {
+          setStep('confirmation');
+        }
+      } else if (batch.primaryAttestorId && batch.secondaryAttestorId) {
         // If we're coming from 'print' step don't go back to confirmation
         if (step !== 'print' && step !== 'confirmation') {
           setStep('print');
@@ -161,10 +169,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Primary attestation complete",
-        description: "Please select a second attestor to continue.",
-      });
+      // Removed toast notification as requested
       refetchBatch();
       setStep('secondary');
     },
@@ -196,10 +201,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Secondary attestation complete",
-        description: "Please print a report for the money bag before finalizing.",
-      });
+      // Removed toast notification as requested
       refetchBatch();
       setStep('print');
     },
@@ -231,22 +233,51 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Count finalized",
-        description: "The count has been successfully finalized and attested.",
-      });
+      // Invalidate all relevant queries to ensure fresh data on dashboard
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/batches/latest-finalized'] });
+      
+      // Set step to complete to update the UI
       setStep('complete');
-      if (onComplete) {
-        onComplete();
-      }
+      
+      // Use direct navigation without reloading the page
+      setLocation(`/batch-summary/${batchId}?finalized=true`);
+      
+      // No need to call onComplete since we're directly navigating
     },
     onError: (error) => {
+      // Check for database connection issues
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      const isConnectionError = 
+        errorMessage.includes("connect") || 
+        errorMessage.includes("connection") || 
+        errorMessage.includes("compute node");
+      
       toast({
         title: "Finalization failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description: isConnectionError 
+          ? "Database connection error. Please try again in a few moments." 
+          : errorMessage,
         variant: "destructive",
       });
+
+      // Add retry button to toast if it's a connection error
+      if (isConnectionError) {
+        toast({
+          title: "Action required",
+          description: "The database connection was temporarily unavailable. Would you like to try again?",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => confirmAttestationMutation.mutate()}
+              className="mt-2"
+            >
+              Retry
+            </Button>
+          ),
+        });
+      }
     },
   });
   
@@ -588,10 +619,13 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               This count has been finalized and is now locked.
             </p>
             <Button
-              onClick={onComplete}
+              onClick={() => {
+                // Direct the user to the batch summary page instead of going back to counts list
+                window.location.href = `/batch-summary/${batchId}?finalized=true`;
+              }}
               className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
             >
-              Return to Count List
+              View Count Summary
             </Button>
           </div>
         </CardContent>

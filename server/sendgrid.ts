@@ -6,13 +6,45 @@ import { storage } from './storage';
 import { format } from 'date-fns';
 import { generateCountReportPDF } from './pdf-generator';
 
-if (!process.env.SENDGRID_API_KEY) {
-  console.warn("SENDGRID_API_KEY environment variable is not set. Email notifications will not be sent.");
+// Helper function to format currency with proper commas and decimal places
+function formatCurrency(amount: string | number): string {
+  // Convert to number
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  
+  // Format with 2 decimal places and commas for thousands separators
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(numAmount);
 }
 
+// Check for SendGrid API key and log status
+console.log("\n📧 Initializing SendGrid email service...");
+
+if (!process.env.SENDGRID_API_KEY) {
+  console.warn("❌ SENDGRID_API_KEY environment variable is not set. Email notifications will not be sent.");
+} else {
+  // Mask API key for secure logging
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+  console.log(`✅ SendGrid API Key found: ${maskedKey}`);
+}
+
+if (!process.env.SENDGRID_FROM_EMAIL) {
+  console.warn("❌ SENDGRID_FROM_EMAIL environment variable is not set. Using fallback email which may cause delivery issues.");
+} else {
+  console.log(`✅ SendGrid sender email configured: ${process.env.SENDGRID_FROM_EMAIL}`);
+}
+
+// Initialize SendGrid Mail Service
 const mailService = new MailService();
 if (process.env.SENDGRID_API_KEY) {
-  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+  try {
+    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log("✅ SendGrid API client initialized successfully");
+  } catch (error) {
+    console.error("❌ Error initializing SendGrid client:", error);
+  }
 }
 
 /**
@@ -83,43 +115,59 @@ interface EmailParams {
 export async function sendEmail(
   params: EmailParams
 ): Promise<boolean> {
+  // Always check for API key
   if (!process.env.SENDGRID_API_KEY) {
-    console.warn("Cannot send email: SENDGRID_API_KEY is not set");
+    console.warn("⚠️ Cannot send email: SENDGRID_API_KEY is not set");
     return false;
   }
   
+  // Ensure we have valid sender email
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || params.from;
+  if (!fromEmail) {
+    console.warn("⚠️ Cannot send email: No sender email provided");
+    return false;
+  }
+  
+  // Ensure we have valid recipient
+  if (!params.to) {
+    console.warn("⚠️ Cannot send email: No recipient email provided");
+    return false;
+  }
+  
+  // Set a unique ID for easier tracking in the logs
+  const emailId = Math.random().toString(36).substring(2, 10);
+  
   try {
-    // We'll attempt to actually send the email in any environment (dev or prod)
-    // But first show a preview in the console
-    console.log('\n📧 ========== DONATION EMAIL PREVIEW ==========');
-    console.log('📧 To:      ', params.to);
-    console.log('📧 From:    ', params.from);
-    console.log('📧 Subject: ', params.subject);
+    // Log a preview with the email ID for tracking
+    console.log(`\n📧 [Email ${emailId}] ========== EMAIL PREVIEW ==========`);
+    console.log(`📧 [Email ${emailId}] To:      `, params.to);
+    console.log(`📧 [Email ${emailId}] From:    `, fromEmail);
+    console.log(`📧 [Email ${emailId}] Subject: `, params.subject);
     
     // Show shortened text version for preview
     if (params.text) {
-      console.log('\n📧 ----- TEXT VERSION PREVIEW -----');
+      console.log(`\n📧 [Email ${emailId}] ----- TEXT VERSION PREVIEW -----`);
       // Show first 20 lines or so of text content
-      const textPreview = params.text.split('\n').slice(0, 15).join('\n');
+      const textPreview = params.text.split('\n').slice(0, 10).join('\n');
       console.log(textPreview + '\n...(text continues)');
     }
     
-    console.log('\n📧 HTML version would be displayed properly in email clients');
+    console.log(`\n📧 [Email ${emailId}] HTML version would be displayed properly in email clients`);
     
     // Show attachment info in preview
     if (params.attachments && params.attachments.length > 0) {
-      console.log('\n📧 ----- ATTACHMENTS -----');
+      console.log(`\n📧 [Email ${emailId}] ----- ATTACHMENTS -----`);
       params.attachments.forEach((attachment, index) => {
-        console.log(`📧 Attachment ${index + 1}: ${attachment.filename} (${attachment.type})`);
+        console.log(`📧 [Email ${emailId}] Attachment ${index + 1}: ${attachment.filename} (${attachment.type})`);
       });
     }
     
-    console.log('📧 ============ END EMAIL PREVIEW ============\n');
+    console.log(`📧 [Email ${emailId}] ============ END EMAIL PREVIEW ============`);
     
-    // In production, actually send the email
+    // Prepare email data for sending
     const emailData: any = {
       to: params.to,
-      from: params.from,
+      from: fromEmail, // Use the verified sender
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
@@ -127,13 +175,20 @@ export async function sendEmail(
     
     // Add attachments if any
     if (params.attachments && params.attachments.length > 0) {
-      console.log(`Including ${params.attachments.length} attachments in the email`);
+      console.log(`📧 [Email ${emailId}] Including ${params.attachments.length} attachments in the email`);
       emailData.attachments = params.attachments;
     }
     
+    // Add tracking settings for better delivery metrics
+    emailData.trackingSettings = {
+      clickTracking: { enable: true },
+      openTracking: { enable: true }
+    };
+    
+    console.log(`📧 [Email ${emailId}] Sending email now...`);
     await mailService.send(emailData);
     
-    console.log(`Email sent successfully to ${params.to}`);
+    console.log(`✅ [Email ${emailId}] Email sent successfully to ${params.to}`);
     return true;
   } catch (error: any) {
     // Log all error details for debugging
@@ -195,14 +250,22 @@ export async function sendDonationNotification(params: DonationNotificationParam
   // Note: In production, you MUST set SENDGRID_FROM_EMAIL to a verified sender
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'donations@example.com';
   
+  // Generate unique ID for this donation notification for tracking
+  const notificationId = Math.random().toString(36).substring(2, 8);
+  
+  // Log information about the donation notification
+  console.log(`\n📧 [Donation-${notificationId}] Preparing donation receipt to ${params.donorName}`);
+  console.log(`📧 [Donation-${notificationId}] Amount: $${params.amount}`);
+  console.log(`📧 [Donation-${notificationId}] Recipient email: ${params.to}`);
+  
   // Log information about the sender email configuration
-  console.log('\n📧 Sender Email Configuration:');
+  console.log(`📧 [Donation-${notificationId}] Sender Email Configuration:`);
   if (process.env.SENDGRID_FROM_EMAIL) {
-    console.log(`📧 Using configured sender email: ${process.env.SENDGRID_FROM_EMAIL}`);
+    console.log(`📧 [Donation-${notificationId}] Using configured sender email: ${process.env.SENDGRID_FROM_EMAIL}`);
   } else {
-    console.log('⚠️ Warning: SENDGRID_FROM_EMAIL environment variable is not set.');
-    console.log('⚠️ Using fallback address, which may cause delivery failures in production.');
-    console.log('⚠️ The sender email MUST be verified in your SendGrid account.');
+    console.log(`⚠️ [Donation-${notificationId}] Warning: SENDGRID_FROM_EMAIL environment variable is not set.`);
+    console.log(`⚠️ [Donation-${notificationId}] Using fallback address, which may cause delivery failures in production.`);
+    console.log(`⚠️ [Donation-${notificationId}] The sender email MUST be verified in your SendGrid account.`);
   }
 
   // Generate a random donation ID if one is not provided
@@ -220,38 +283,79 @@ export async function sendDonationNotification(params: DonationNotificationParam
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
-      // Replace template variables
+      // Format amount with comma separators
+      const formattedAmount = formatCurrency(params.amount);
+      
+      // Initialize replacements with standard parameters
       const replacements: Record<string, string> = {
         '{{donorName}}': params.donorName,
-        '{{amount}}': params.amount,
+        '{{amount}}': formattedAmount,
         '{{date}}': params.date,
         '{{churchName}}': params.churchName,
         '{{donationId}}': donationId,
-        '{{churchLogoUrl}}': 'https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/ba699d4e-a589-4014-a0d7-923e8ba814d6/redeemer+logos_all+colors_2020.11_black.png',
       };
       
-      // Special handling for churchLogoUrl
-      if (params.churchLogoUrl) {
-        // Include the church logo if available
-        html = html.replace('{{churchLogoUrl}}', params.churchLogoUrl);
-      } else {
-        // If no logo, replace with a generic transparent 1px image to avoid broken image
-        const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        html = html.replace('{{churchLogoUrl}}', fallbackImgSrc);
+      // CRITICAL: ONLY use S3 URLs for logos in emails - NO EXCEPTIONS!
+      let logoUrl = '';
+      
+      try {
+        // Get the church logo URL directly from the database - this is the ONLY trusted source
+        if (params.churchId) {
+          console.log(`📧 [Donation-${notificationId}] STRICT: Getting S3 logo URL directly from database`);
+          
+          // Import here to avoid circular dependencies
+          const { db } = await import('./db');
+          const { churches } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          // Query the database directly for the S3 URL
+          const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
+          
+          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+            // ONLY use the S3 URL from the database - no conversions
+            logoUrl = church.logoUrl;
+            console.log(`📧 [Donation-${notificationId}] SUCCESS: Using S3 URL from database: ${logoUrl}`);
+          } else {
+            // If no valid S3 URL in database, use NO LOGO (empty string)
+            console.log(`📧 [Donation-${notificationId}] WARNING: No valid S3 URL in database, using NO LOGO`);
+            logoUrl = '';
+          }
+        } else {
+          // If no church ID, use NO LOGO (empty string)
+          console.log(`📧 [Donation-${notificationId}] WARNING: No church ID provided, using NO LOGO`);
+          logoUrl = '';
+        }
         
-        // Add CSS to hide the image when using the fallback
-        html = html.replace('<img src="{{churchLogoUrl}}"', '<img src="{{churchLogoUrl}}" style="display:none;"');
-        
-        // Add the church name as text for cases with no logo
-        html = html.replace('<p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>', 
-          `<h1 style="margin: 0; font-size: 28px; color: #2D3748;">${params.churchName}</h1>
-           <p style="margin: 10px 0 0; font-size: 18px;">Donation Receipt</p>`);
+        // CRITICAL: Never use Replit domain URLs in emails - they won't work
+        if (logoUrl.includes('replit.app')) {
+          console.log(`📧 [Donation-${notificationId}] ERROR: Found Replit domain URL - replacing with empty string`);
+          logoUrl = '';
+        }
+      } catch (error) {
+        console.error(`📧 [Donation-${notificationId}] ERROR getting logo from database:`, error);
+        logoUrl = '';
       }
       
+      // Add the logo URL to replacements
+      replacements['{{churchLogoUrl}}'] = logoUrl;
+      console.log(`📧 [Donation-${notificationId}] FINAL LOGO URL: ${logoUrl}`);
+      
+      // CRITICAL: Handle empty logo URL or ensure we show church name appropriately
+      if (!logoUrl || logoUrl === '') {
+        // Remove the image tag completely if no logo URL
+        html = html.replace(/<img src="{{churchLogoUrl}}".*?>/g, '');
+        
+        // Add the church name prominently since we have no logo
+        html = html.replace('<p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>', 
+          `<h1 style="margin: 0; font-size: 28px; color: #2D3748;">${params.churchName}</h1>
+           <p style="margin: 10px 0 0; font-size: 20px; font-weight: bold;">Donation Receipt</p>`);
+      }
+      
+      // Apply all replacements to the template
       Object.entries(replacements).forEach(([key, value]) => {
-        subject = subject.replace(new RegExp(key, 'g'), value);
-        text = text.replace(new RegExp(key, 'g'), value);
-        html = html.replace(new RegExp(key, 'g'), value);
+        subject = subject.replace(new RegExp(key, 'g'), value || '');
+        text = text.replace(new RegExp(key, 'g'), value || '');
+        html = html.replace(new RegExp(key, 'g'), value || '');
       });
       
       return await sendEmail({
@@ -267,14 +371,17 @@ export async function sendDonationNotification(params: DonationNotificationParam
       // Default subject if no template found
       const subject = `Thank You for Your Donation to ${params.churchName}`;
       
+      // Format amount with comma separators
+      const formattedAmount = formatCurrency(params.amount);
+      
       // Plain text version of the email (fallback)
       const text = `
 Dear ${params.donorName},
 
-Thank you for your donation of $${params.amount} on ${params.date} to ${params.churchName}.
+Thank you for your donation of ${formattedAmount} on ${params.date} to ${params.churchName}.
 
 Donation Details:
-- Amount: $${params.amount}
+- Amount: ${formattedAmount}
 - Date: ${params.date}
 - Donation ID: #${donationId}
 
@@ -300,13 +407,65 @@ please contact the church office directly.
       // HTML version with template that properly handles church logo
       let html = '';
       
+      // Use ONLY the S3 URL for logos in emails to avoid encoding/display issues
+      let logoUrl = '';
+      
+      // Force use of S3 URL if available, no conversions or manipulations
+      if (params.churchLogoUrl) {
+        if (params.churchLogoUrl.includes('s3.amazonaws.com')) {
+          // Use the S3 URL directly - no string manipulation needed
+          logoUrl = params.churchLogoUrl;
+          console.log(`📧 [DonationReceipt] Using clean S3 logo URL: ${logoUrl}`);
+        } else {
+          // We need to fetch the correct S3 URL from storage for this church
+          try {
+            // Extract church ID from the URL or params
+            const churchId = params.churchId;
+            
+            if (churchId) {
+              console.log(`📧 [DonationReceipt] Looking up correct S3 logo URL for church ${churchId}`);
+              
+              // Import here to avoid circular dependencies
+              const { db } = await import('./db');
+              const { churches } = await import('@shared/schema');
+              const { eq } = await import('drizzle-orm');
+              
+              // Get the church record directly from the database to get the correct URL
+              const [church] = await db.select().from(churches).where(eq(churches.id, churchId));
+              
+              if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+                logoUrl = church.logoUrl;
+                console.log(`📧 [DonationReceipt] Found S3 logo URL in database: ${logoUrl}`);
+              } else {
+                console.log(`📧 [DonationReceipt] Could not find S3 URL in database, using fallback`);
+                logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+              }
+            } else {
+              console.log(`📧 [DonationReceipt] No church ID available to look up correct logo URL`);
+              logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+            }
+          } catch (error) {
+            console.error('📧 [DonationReceipt] Error looking up S3 logo URL:', error);
+            // Use a default logo in case of error
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+          }
+        }
+      } else {
+        // No logo URL provided, use default
+        logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+        console.log(`📧 [DonationReceipt] No logo URL provided, using default PlateSync logo`);
+      }
+      
+      console.log(`📧 [DonationReceipt] Final logo URL for email: ${logoUrl}`);
+      
+      
       if (params.churchLogoUrl) {
         // Version with church logo
         html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
   <!-- Header with Church Logo -->
   <div style="padding: 25px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
+    <img src="${logoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
     <p style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: 500;">Donation Receipt</p>
   </div>
         `;
@@ -336,7 +495,7 @@ please contact the church office directly.
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
           <td style="padding: 8px 0; width: 40%; color: #718096;">Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${params.amount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">${formattedAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Date:</td>
@@ -395,6 +554,7 @@ interface WelcomeEmailParams {
   churchId: string;
   verificationToken: string;
   verificationUrl: string;
+  role?: string;
 }
 
 export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
@@ -412,9 +572,22 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    // First try to fetch the custom email template from the database
-    console.log(`📧 Looking for WELCOME template for church ID: ${params.churchId}`);
-    const template = await storage.getEmailTemplateByType('WELCOME', params.churchId);
+    // Get specifically the Global Admin template with ID = 1
+    console.log('📧 Looking for Global Admin welcome template with ID = 1');
+    
+    // Get the template directly by ID
+    let template = await storage.getEmailTemplateById(1);
+    
+    if (template) {
+      console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
+    } else {
+      console.log('📧 No Global Admin welcome template found');
+    }
+    
+    // Additional debugging to see what we found
+    if (template) {
+      console.log(`📧 Found welcome template with id: ${template.id}`);
+    }
     
     if (template) {
       console.log('📧 Using custom welcome template from database');
@@ -424,12 +597,30 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
-      // Replace template variables
+      // Get PlateSync logo URL from system configuration
+      const plateSyncLogoUrl = await storage.getSystemConfig('platesync_logo_url') || 'https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png';
+      
+      // Replace template variables with both formats (old and new)
+      const formattedUserRole = params.role === 'STANDARD_USER' ? 'Standard User' 
+                              : params.role === 'ACCOUNT_OWNER' ? 'Account Owner' 
+                              : params.role === 'USHER' ? 'Usher' 
+                              : params.role === 'ADMIN' ? 'Administrator' 
+                              : params.role || 'User';
+                              
       const replacements: Record<string, string> = {
         '{{firstName}}': params.firstName,
         '{{lastName}}': params.lastName,
+        '{{USER_NAME}}': `${params.firstName} ${params.lastName}`,
         '{{churchName}}': params.churchName,
+        '{{CHURCH_NAME}}': params.churchName,
         '{{verificationUrl}}': params.verificationUrl,
+        '{{verificationToken}}': params.verificationToken,
+        '{{resetLink}}': `${params.verificationUrl}?token=${params.verificationToken}`,
+        '{{USER_EMAIL}}': params.to,
+        '{{USER_ROLE}}': params.role || 'User',
+        '{{formattedUserRole}}': formattedUserRole,
+        '{{userName}}': `${params.firstName} ${params.lastName}`,
+        '{{plateSyncLogoUrl}}': plateSyncLogoUrl,
       };
       
       Object.entries(replacements).forEach(([key, value]) => {
@@ -470,12 +661,23 @@ Sincerely,
 ${params.churchName} Admin Team
       `;
       
-      // HTML version that matches the app's UI - using green header
+      // HTML version that matches the app's UI - using green header with logo
+      // Check if AWS S3 bucket is configured to use logo from there
+      let plateSyncLogoUrl = '';
+      if (process.env.AWS_S3_BUCKET) {
+        plateSyncLogoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+        console.log(`📧 Using PlateSync logo from S3: ${plateSyncLogoUrl}`);
+      } else {
+        console.log('📧 AWS S3 bucket not configured for PlateSync logo');
+      }
+      
       const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
+    ${plateSyncLogoUrl ? 
+      `<img src="${plateSyncLogoUrl}" alt="PlateSync" style="max-width: 200px; height: auto; margin-bottom: 15px;" />` : 
+      `<h1 style="margin: 0; font-size: 24px;">PlateSync</h1>`}
     <p style="margin: 10px 0 0; font-size: 18px;">Welcome to ${params.churchName}</p>
   </div>
   
@@ -526,7 +728,185 @@ ${params.churchName} Admin Team
 
 interface PasswordResetEmailParams {
   to: string;
-  resetUrl: string;
+  resetUrl: string;  // Changed from resetLink to resetUrl to match existing code
+  firstName?: string;
+  lastName?: string;
+}
+
+export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<boolean> {
+  console.log('\n📧 Starting password reset email function...');
+  
+  // First try to get SendGrid settings from database (Global Admin settings)
+  const dbApiKey = await storage.getSystemConfig('SENDGRID_API_KEY');
+  const dbFromEmail = await storage.getSystemConfig('SENDGRID_FROM_EMAIL');
+  
+  // Use database values or fall back to environment variables
+  const apiKey = dbApiKey || process.env.SENDGRID_API_KEY;
+  const fromEmail = dbFromEmail || process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
+  
+  // Check if SendGrid API key is available
+  if (!apiKey) {
+    console.error('❌ SendGrid API key is not set in Global Admin settings or environment! Cannot send password reset email.');
+    return false;
+  }
+  
+  console.log(`📧 Using sender email from Global Admin settings: ${fromEmail}`);
+  console.log(`📧 Sending to: ${params.to}`);
+  
+  // We'll use direct SendGrid API approach for reliable email delivery
+  let sendgridDirectMode = true;
+  
+  try {
+    // First try to fetch the global admin password reset template from the database
+    console.log('📧 Looking for global password reset template');
+    // First get all password reset templates
+    const allResetTemplates = await storage.getAllEmailTemplatesByType('PASSWORD_RESET');
+    // Find the global admin template (has churchId = '0')
+    const globalTemplate = allResetTemplates.find(t => t.churchId === '0');
+    
+    if (globalTemplate) {
+      console.log('📧 Using global password reset template from Global Admin settings');
+      
+      // Format name for personalization
+      const userName = params.firstName ? 
+        `${params.firstName}${params.lastName ? ' ' + params.lastName : ''}` : 
+        'Church Member';
+      
+      // Replace template variables with actual values
+      let subject = globalTemplate.subject || 'Reset Your PlateSync Password';
+      let text = globalTemplate.bodyText || '';
+      let html = globalTemplate.bodyHtml || '';
+      
+      // Get PlateSync logo URL from system configuration
+      const plateSyncLogoUrl = await storage.getSystemConfig('platesync_logo_url') || 'https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png';
+      
+      // Replace placeholder variables
+      const replacements: Record<string, string> = {
+        '{{userName}}': userName,
+        '{{resetUrl}}': params.resetUrl,
+        '{{recipientName}}': userName,
+        '{{plateSyncLogoUrl}}': plateSyncLogoUrl,
+      };
+      
+      // Apply all replacements
+      Object.entries(replacements).forEach(([key, value]) => {
+        subject = subject.replace(new RegExp(key, 'g'), value);
+        text = text.replace(new RegExp(key, 'g'), value);
+        html = html.replace(new RegExp(key, 'g'), value);
+      });
+      
+      // Send the email using the template from Global Admin settings
+      const emailSent = await sendEmail({
+        to: params.to,
+        from: fromEmail,
+        subject,
+        text,
+        html
+      });
+      
+      if (emailSent) {
+        console.log(`✅ Password reset email sent successfully to ${params.to}`);
+      } else {
+        console.error(`❌ Failed to send password reset email to ${params.to}`);
+      }
+      
+      return emailSent;
+    }
+    
+    // Fallback to default template if global template not found
+    console.log('⚠️ Global password reset template not found, using default template');
+    
+    // Format name for personalization
+    const userName = params.firstName ? 
+      `${params.firstName}${params.lastName ? ' ' + params.lastName : ''}` : 
+      'Church Member';
+    
+    const subject = 'Reset Your PlateSync Password';
+    
+    // Text version of the email
+    const text = `
+Hello ${userName},
+      
+We received a request to reset your password for PlateSync. If you did not make this request, please ignore this email.
+      
+To reset your password, please click on the link below:
+${params.resetUrl}
+      
+This link will expire in 1 hour.
+      
+If you have any issues, please contact your church administrator.
+      
+Sincerely,
+The PlateSync Team
+    `;
+    
+    // HTML version of the email with PlateSync branding (logo and green color scheme)
+    // Check if AWS S3 bucket is configured to use logo from there
+    let plateSyncLogoUrl = '';
+    // CRITICAL: Always use S3 for ALL logos in emails
+    if (process.env.AWS_S3_BUCKET) {
+      plateSyncLogoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/logo-with-text.png`;
+      console.log(`📧 Using PlateSync logo from S3: ${plateSyncLogoUrl}`);
+    } else {
+      // No fallback - just don't use a logo if S3 isn't available
+      plateSyncLogoUrl = '';
+      console.log(`📧 WARNING: No S3 bucket configured - no PlateSync logo will be shown in email`);
+    }
+    
+    const html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+  <div style="padding: 20px; text-align: center;">
+    <img src="${plateSyncLogoUrl}" alt="PlateSync Logo" style="width: 270px; margin: 0 auto;">
+  </div>
+  
+  <!-- Main Content -->
+  <div style="padding: 0 30px 30px;">
+    <p style="margin-top: 0;">Hello ${userName},</p>
+    
+    <p>We received a request to reset the password for your PlateSync account.</p>
+    
+    <p>To set a new password, please click the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${params.resetUrl}" 
+         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
+    </div>
+    
+    <p>Or copy and paste this link into your browser:</p>
+    <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 14px;">${params.resetUrl}</p>
+    
+    <p><strong>Note:</strong> This link will expire in 1 hour for security reasons.</p>
+    
+    <p>If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.</p>
+    
+    <p style="margin-bottom: 0;">Sincerely,<br>
+    <strong>The PlateSync Team</strong></p>
+  </div>
+</div>
+    `;
+    
+    // Send the email
+    const emailSent = await sendEmail({
+      to: params.to,
+      from: fromEmail,
+      subject,
+      text,
+      html
+    });
+    
+    if (emailSent) {
+      console.log(`✅ Password reset email sent successfully to ${params.to}`);
+    } else {
+      console.error(`❌ Failed to send password reset email to ${params.to}`);
+    }
+    
+    return emailSent;
+  } catch (error) {
+    console.error('❌ Error sending password reset email:', error);
+    return false;
+  }
 }
 
 interface CountReportParams {
@@ -539,7 +919,11 @@ interface CountReportParams {
   cashAmount: string;
   checkAmount: string;
   donationCount: number;
+  churchId?: string;
   churchLogoUrl?: string;
+  primaryAttestor?: string;
+  secondaryAttestor?: string;
+  attestationTime?: string;
   donations?: Array<{
     memberId: number | null;
     memberName: string;
@@ -563,28 +947,80 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
     if (params.donations && params.donations.length > 0) {
       console.log('Generating PDF attachment for count report...');
       
-      // Extract logo path from URL if available
+      // CRITICAL: Get the church logo directly from the database for PDF generation
       let churchLogoPath: string | undefined;
-      if (params.churchLogoUrl) {
+      let s3LogoUrl: string | undefined;
+      
+      // First try to get the logo directly from database if churchId is available
+      if (params.churchId) {
         try {
-          // Convert relative URL to absolute file path
-          const urlParts = params.churchLogoUrl.split('/');
-          const filename = urlParts[urlParts.length - 1];
+          console.log(`📊 [CountReport] Fetching logo directly from database for church ID: ${params.churchId}`);
           
-          // Assuming public logos are stored in public/logos
-          churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
+          // Import here to avoid circular dependencies
+          const { db } = await import('./db');
+          const { churches } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
           
-          console.log(`Looking for church logo at: ${churchLogoPath}`);
+          // Get the church record directly to access the proper S3 URL
+          const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
           
-          // Check if the file exists
-          if (!fs.existsSync(churchLogoPath)) {
-            console.log(`Church logo file not found at: ${churchLogoPath}`);
-            churchLogoPath = undefined;
+          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+            // Store the S3 URL for email template
+            s3LogoUrl = church.logoUrl;
+            console.log(`📊 [CountReport] Using S3 URL from database: ${s3LogoUrl}`);
+            
+            // Also extract filename for local PDF generation
+            const parts = church.logoUrl.split('/logos/');
+            if (parts.length > 1) {
+              const filename = parts[1];
+              churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
+              
+              // Verify file exists locally
+              if (fs.existsSync(churchLogoPath)) {
+                console.log(`📊 [CountReport] Found local logo file at: ${churchLogoPath}`);
+              } else {
+                console.log(`📊 [CountReport] Local logo file not found at: ${churchLogoPath}`);
+                churchLogoPath = undefined;
+              }
+            }
+          }
+        } catch (dbError) {
+          console.error('📊 [CountReport] Error fetching logo from database:', dbError);
+        }
+      } 
+      // Fallback to using provided URL if database fetch failed
+      else if (params.churchLogoUrl) {
+        try {
+          // Store S3 URL for email template if it's already in S3 format
+          if (params.churchLogoUrl.includes('s3.amazonaws.com')) {
+            s3LogoUrl = params.churchLogoUrl;
+            console.log(`📊 [CountReport] Using provided S3 URL: ${s3LogoUrl}`);
+          }
+          
+          // Extract filename for local PDF generation
+          let filename = '';
+          if (params.churchLogoUrl.includes('/logos/')) {
+            const parts = params.churchLogoUrl.split('/logos/');
+            if (parts.length > 1) {
+              filename = parts[1];
+            }
           } else {
-            console.log(`Found church logo at: ${churchLogoPath}`);
+            const urlParts = params.churchLogoUrl.split('/');
+            filename = urlParts[urlParts.length - 1];
+          }
+          
+          // Look for the file locally
+          if (filename) {
+            churchLogoPath = path.join(process.cwd(), 'public', 'logos', filename);
+            if (fs.existsSync(churchLogoPath)) {
+              console.log(`📊 [CountReport] Found local logo file at: ${churchLogoPath}`);
+            } else {
+              console.log(`📊 [CountReport] Local logo file not found at: ${churchLogoPath}`);
+              churchLogoPath = undefined;
+            }
           }
         } catch (logoError) {
-          console.error('Error processing logo URL:', logoError);
+          console.error('📊 [CountReport] Error processing logo URL:', logoError);
           churchLogoPath = undefined;
         }
       }
@@ -607,6 +1043,9 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
           totalAmount: params.totalAmount,
           cashAmount: params.cashAmount, 
           checkAmount: params.checkAmount,
+          primaryAttestor: params.primaryAttestor,
+          secondaryAttestor: params.secondaryAttestor,
+          confirmationTime: params.attestationTime,
           donations: params.donations
         });
         
@@ -661,8 +1100,19 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
               : format(new Date(donation.date), 'MM/dd/yyyy');
           }
           
-          // Format member name - escape any commas in the name
-          const memberName = donation.memberName ? `"${donation.memberName.replace(/"/g, '""')}"` : 'Anonymous';
+          // Format member name - escape any commas in the name and ensure we always show a real name
+          let memberName = 'Anonymous';
+          
+          // First try to get name from donation.memberName
+          if (donation.memberName) {
+            memberName = `"${donation.memberName.replace(/"/g, '""')}"`;
+            console.log(`Using memberName directly: ${memberName}`);
+          }
+          // If we have memberId but no name, use member ID
+          else if (donation.memberId) {
+            console.log(`Using member ID: ${donation.memberId}`);
+            memberName = `Member #${donation.memberId}`;
+          }
           
           // Format donation type
           const donationType = donation.donationType || '';
@@ -724,22 +1174,108 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       let text = template.bodyText || '';
       let html = template.bodyHtml || '';
       
+      // Use ONLY the S3 URL for logos in emails to avoid encoding/display issues
+      let logoUrl = '';
+      
+      // Force use of S3 URL if available, no conversions or manipulations
+      if (params.churchLogoUrl) {
+        if (params.churchLogoUrl.includes('s3.amazonaws.com')) {
+          // Use the S3 URL directly - no string manipulation needed
+          logoUrl = params.churchLogoUrl;
+          console.log(`📧 [CountReport] Using clean S3 logo URL: ${logoUrl}`);
+        } else {
+          // We need to fetch the correct S3 URL from storage for this church
+          try {
+            // Extract church ID directly from params
+            const churchId = params.churchId || '';
+            
+            if (churchId) {
+              console.log(`📧 [CountReport] Looking up correct S3 logo URL for church ${churchId}`);
+              
+              // Import here to avoid circular dependencies
+              const { db } = await import('./db');
+              const { churches } = await import('@shared/schema');
+              const { eq } = await import('drizzle-orm');
+              
+              // Get the church record directly from the database to get the correct URL
+              const [church] = await db.select().from(churches).where(eq(churches.id, churchId));
+              
+              if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+                logoUrl = church.logoUrl;
+                console.log(`📧 [CountReport] Found S3 logo URL in database: ${logoUrl}`);
+              } else {
+                console.log(`📧 [CountReport] Could not find S3 URL in database, using fallback`);
+                logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+              }
+            } else {
+              console.log(`📧 [CountReport] No church ID available to look up correct logo URL`);
+              logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+            }
+          } catch (error) {
+            console.error('📧 [CountReport] Error looking up S3 logo URL:', error);
+            // Use a default logo in case of error
+            logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+          }
+        }
+      } else {
+        // No logo URL provided, use default
+        logoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/logos/platesync-logo.png`;
+        console.log(`📧 [CountReport] No logo URL provided, using default PlateSync logo`);
+      }
+      
+      console.log(`📧 [CountReport] Final logo URL for email: ${logoUrl}`);
+      
+      // Format currency values with proper comma separators
+      const formattedTotalAmount = formatCurrency(params.totalAmount);
+      const formattedCashAmount = formatCurrency(params.cashAmount);
+      const formattedCheckAmount = formatCurrency(params.checkAmount);
+      
+      // Fix issue with the primary attestor name, using a safe default if undefined
+      const safelyFormattedPrimaryAttestor = params.primaryAttestor || "Unknown";
+      const safelyFormattedSecondaryAttestor = params.secondaryAttestor || "";
+      
+      // Log important values for debugging
+      console.log(`📧 [CountReport] Sending email with these values:`);
+      console.log(`📧 [CountReport] Primary Attestor: "${safelyFormattedPrimaryAttestor}"`);
+      console.log(`📧 [CountReport] Secondary Attestor: "${safelyFormattedSecondaryAttestor}"`);
+      console.log(`📧 [CountReport] Cash Amount: $${formattedCashAmount}`);
+      console.log(`📧 [CountReport] Check Amount: $${formattedCheckAmount}`);
+      console.log(`📧 [CountReport] Total Amount: $${formattedTotalAmount}`);
+      
+      // Create attestation information string if available
+      let attestationInfo = '';
+      if (safelyFormattedPrimaryAttestor) {
+        attestationInfo = `Primary Attestor: ${safelyFormattedPrimaryAttestor}`;
+        
+        if (safelyFormattedSecondaryAttestor) {
+          attestationInfo += `\nSecondary Attestor: ${safelyFormattedSecondaryAttestor}`;
+        }
+        
+        if (params.attestationTime) {
+          attestationInfo += `\nFinalized on: ${params.attestationTime}`;
+        }
+      }
+      
       // Replace template variables
       const replacements: Record<string, string> = {
         '{{recipientName}}': params.recipientName,
         '{{churchName}}': params.churchName,
         '{{batchName}}': params.batchName,
         '{{batchDate}}': params.batchDate,
-        '{{totalAmount}}': params.totalAmount,
-        '{{cashAmount}}': params.cashAmount,
-        '{{checkAmount}}': params.checkAmount,
+        '{{churchLogoUrl}}': logoUrl,
+        '{{totalAmount}}': formattedTotalAmount,
+        '{{cashAmount}}': formattedCashAmount,
+        '{{checkAmount}}': formattedCheckAmount,
         '{{donationCount}}': params.donationCount.toString(),
+        '{{primaryAttestor}}': safelyFormattedPrimaryAttestor,
+        '{{secondaryAttestor}}': safelyFormattedSecondaryAttestor,
+        '{{attestationInfo}}': attestationInfo || 'No attestation information available',
       };
       
       // Special handling for churchLogoUrl
-      if (params.churchLogoUrl) {
+      if (logoUrl) {
         // Include the church logo if available
-        html = html.replace(/{{churchLogoUrl}}/g, params.churchLogoUrl);
+        html = html.replace(/{{churchLogoUrl}}/g, logoUrl);
       } else {
         // If no logo, replace with a generic transparent 1px image to avoid broken image
         const fallbackImgSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -780,6 +1316,11 @@ export async function sendCountReport(params: CountReportParams): Promise<boolea
       // Default subject
       const subject = `Count Report: ${params.batchName} - ${params.churchName}`;
       
+      // Format currency values with proper comma separators
+      const formattedTotalAmount = formatCurrency(params.totalAmount);
+      const formattedCashAmount = formatCurrency(params.cashAmount);
+      const formattedCheckAmount = formatCurrency(params.checkAmount);
+      
       // Plain text version of the email
       const text = `
 Dear ${params.recipientName},
@@ -789,11 +1330,16 @@ A count has been finalized for ${params.churchName}, and a Detailed Count Report
 Count Details:
 - Count: ${params.batchName}
 - Date: ${params.batchDate}
-- Total Amount: $${params.totalAmount}
-- Cash: $${params.cashAmount}
-- Checks: $${params.checkAmount}
+- Total Amount: ${formattedTotalAmount}
+- Cash: ${formattedCashAmount}
+- Checks: ${formattedCheckAmount}
 - Number of Donations: ${params.donationCount}
 
+${params.primaryAttestor ? `Attestation Information:
+- Primary Attestor: ${params.primaryAttestor}${params.secondaryAttestor ? `
+- Secondary Attestor: ${params.secondaryAttestor}` : ''}${params.attestationTime ? `
+- Finalized on: ${params.attestationTime}` : ''}
+` : ''}
 This report is automatically generated by PlateSync when a count is finalized after attestation.
 
 Sincerely,
@@ -803,13 +1349,43 @@ PlateSync Reporting System
       // HTML version with template that properly handles church logo
       let html = '';
       
-      if (params.churchLogoUrl) {
+      // CRITICAL: Get S3 URL directly from database for final count report email
+      let s3LogoUrl = '';
+      
+      // Try to get church logo S3 URL from database (the ONLY reliable source)
+      if (params.churchId) {
+        try {
+          console.log(`📊 [FinalCountReport] Getting S3 logo URL directly from database for church: ${params.churchId}`);
+          
+          // Import required modules
+          const { db } = await import('./db');
+          const { churches } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          // Get church record to access correct S3 URL
+          const [church] = await db.select().from(churches).where(eq(churches.id, params.churchId));
+          
+          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+            // ONLY use S3 URL from database
+            s3LogoUrl = church.logoUrl;
+            console.log(`📊 [FinalCountReport] SUCCESS: Using S3 URL from database: ${s3LogoUrl}`);
+          } else {
+            console.log(`📊 [FinalCountReport] WARNING: No valid S3 URL in database`);
+          }
+        } catch (error) {
+          console.error(`📊 [FinalCountReport] ERROR: Failed to get logo from database:`, error);
+        }
+      }
+      
+      // Check if we have a valid S3 URL (ignore any non-S3 URLs completely)
+      if (s3LogoUrl && s3LogoUrl.includes('s3.amazonaws.com')) {
+        console.log(`📊 [FinalCountReport] Using S3 logo URL in email: ${s3LogoUrl}`);
         // Version with church logo - matching Donation Receipt clean style
         html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Church Logo (clean white style) -->
   <div style="padding: 25px; text-align: center; background-color: white; border-radius: 8px 8px 0 0; border: 1px solid #e2e8f0;">
-    <img src="${params.churchLogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
+    <img src="${s3LogoUrl}" alt="${params.churchName} Logo" style="max-width: 375px; max-height: 120px;">
     <h2 style="margin: 20px 0 0; font-size: 18px; color: #2D3748; font-weight: bold;">Final Count Report</h2>
   </div>
         `;
@@ -847,15 +1423,15 @@ PlateSync Reporting System
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Total Amount:</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #48BB78;">$${params.totalAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #22c55e;">${formattedTotalAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Cash:</td>
-          <td style="padding: 8px 0;">$${params.cashAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold;">${formattedCashAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Checks:</td>
-          <td style="padding: 8px 0;">$${params.checkAmount}</td>
+          <td style="padding: 8px 0; font-weight: bold;">${formattedCheckAmount}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #718096;">Number of Donations:</td>
@@ -863,6 +1439,31 @@ PlateSync Reporting System
         </tr>
       </table>
     </div>
+    
+    ${params.primaryAttestor ? `
+    <!-- Attestation Information Box -->
+    <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h2 style="margin-top: 0; color: #4299E1; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Attestation Information</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; width: 40%; color: #718096;">Primary Attestor:</td>
+          <td style="padding: 8px 0;">${params.primaryAttestor || 'Unknown'}</td>
+        </tr>
+        ${params.secondaryAttestor ? `
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Secondary Attestor:</td>
+          <td style="padding: 8px 0;">${params.secondaryAttestor}</td>
+        </tr>
+        ` : ''}
+        ${params.attestationTime ? `
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Finalized on:</td>
+          <td style="padding: 8px 0;">${params.attestationTime}</td>
+        </tr>
+        ` : ''}
+      </table>
+    </div>
+    ` : ''}
     
     <p>This report is automatically generated by PlateSync when a count is finalized after attestation.</p>
     
@@ -975,137 +1576,3 @@ PlateSync Reporting System
   }
 }
 
-export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<boolean> {
-  console.log('\n📧 Starting password reset email function...');
-  
-  // Check if SendGrid API key is set
-  if (!process.env.SENDGRID_API_KEY) {
-    console.error('❌ SendGrid API key is not set! Cannot send password reset email.');
-    return false;
-  }
-  
-  // Get sender email from environment variable with fallback
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@platesync.com';
-  console.log(`📧 Using sender email: ${fromEmail}`);
-  console.log(`📧 Sending to: ${params.to}`);
-  
-  try {
-    // First try to fetch the custom email template from the database
-    // We'll need to get the church ID from a user lookup based on email
-    console.log(`📧 Looking for user with email: ${params.to}`);
-    const user = await storage.getUserByEmail(params.to);
-    
-    if (!user || !user.churchId) {
-      console.warn(`⚠️ Could not find user or church ID for email: ${params.to}`);
-      console.warn(`⚠️ Will use default template as fallback`);
-    }
-    
-    // Try to get the custom template for this church (if we have a church ID)
-    let template;
-    if (user && user.churchId) {
-      console.log(`📧 Looking for PASSWORD_RESET template for church ID: ${user.churchId}`);
-      template = await storage.getEmailTemplateByType('PASSWORD_RESET', user.churchId);
-    }
-    
-    if (template) {
-      console.log('📧 Using custom password reset template from database');
-      
-      // Replace template variables with actual values
-      let subject = template.subject || `PlateSync Password Reset Request`;
-      let text = template.bodyText || '';
-      let html = template.bodyHtml || '';
-      
-      // Replace resetUrl placeholder with actual URL
-      const replacements: Record<string, string> = {
-        '{{resetUrl}}': params.resetUrl
-      };
-      
-      Object.entries(replacements).forEach(([key, value]) => {
-        subject = subject.replace(new RegExp(key, 'g'), value);
-        text = text.replace(new RegExp(key, 'g'), value);
-        html = html.replace(new RegExp(key, 'g'), value);
-      });
-      
-      return await sendEmail({
-        to: params.to,
-        from: fromEmail,
-        subject,
-        text,
-        html
-      });
-    } else {
-      // If no custom template found, use default template as fallback
-      console.log('⚠️ No custom password reset template found, using fallback template');
-      
-      const subject = `PlateSync Password Reset Request`;
-      
-      // Plain text version of the email
-      const text = `
-Hello,
-
-We received a request to reset your password for your PlateSync account.
-
-Please click on the following link to reset your password:
-${params.resetUrl}
-
-This link will expire in 1 hour for security reasons.
-
-If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.
-
-Sincerely,
-The PlateSync Team
-      `;
-      
-      // HTML version that matches the app's UI - using green header
-      const html = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
-  <!-- Header with Logo and Title -->
-  <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
-    <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
-  </div>
-  
-  <!-- Main Content -->
-  <div style="background-color: #ffffff; padding: 30px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-    <p style="margin-top: 0;">Hello,</p>
-    
-    <p>We received a request to reset the password for your PlateSync account.</p>
-    
-    <p>To set a new password, please click the button below:</p>
-    
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${params.resetUrl}" 
-         style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
-        Reset Password
-      </a>
-    </div>
-    
-    <p>This link will expire in 1 hour for security reasons.</p>
-    
-    <p>If you did not request a password reset, please ignore this email or contact your administrator if you have concerns.</p>
-    
-    <p style="margin-bottom: 0;">Sincerely,<br>
-    <strong>The PlateSync Team</strong></p>
-  </div>
-  
-  <!-- Footer -->
-  <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 14px; color: #718096; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p style="margin: 0;">This is an automated message from PlateSync.</p>
-    <p style="margin: 8px 0 0;">Please do not reply to this email.</p>
-  </div>
-</div>
-      `;
-      
-      return await sendEmail({
-        to: params.to,
-        from: fromEmail,
-        subject,
-        text,
-        html
-      });
-    }
-  } catch (error) {
-    console.error('Error preparing password reset email:', error);
-    return false;
-  }
-}

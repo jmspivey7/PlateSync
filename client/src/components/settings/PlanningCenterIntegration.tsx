@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, Link as LinkIcon, UserPlus, Users, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, Link as LinkIcon, UserPlus, Users, CheckCircle, AlertCircle, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+// Import the Planning Center logo directly
+import planningCenterLogo from "@assets/planning-center-full-color.png";
 
 // Planning Center brand color
 const PLANNING_CENTER_BLUE = "#2176FF";
@@ -24,12 +34,36 @@ const PlanningCenterIntegration = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   // Removed unused state variables for troubleshooting features
   const [connectionStatus, setConnectionStatus] = useState<'success' | 'error' | null>(null);
+  const [showCsvWarning, setShowCsvWarning] = useState(false);
   
   // Hook to get current user and access church information
   const { user } = useAuth();
 
+  // Query to check CSV import status
+  const { data: csvImportStats } = useQuery({
+    queryKey: ['/api/csv-import/stats'],
+    retry: false,
+  });
+
+  // Function to proceed with Planning Center connection (bypassing CSV warning)
+  const proceedWithConnection = async () => {
+    setShowCsvWarning(false);
+    await connectToPlanningCenter();
+  };
+
   // Function to handle Planning Center connection
   const handleConnectPlanningCenter = async () => {
+    // Check if there are existing CSV imports
+    if (csvImportStats?.lastImportDate) {
+      setShowCsvWarning(true);
+      return;
+    }
+
+    await connectToPlanningCenter();
+  };
+
+  // Actual connection function
+  const connectToPlanningCenter = async () => {
     try {
       setIsConnecting(true);
       
@@ -194,12 +228,17 @@ const PlanningCenterIntegration = () => {
     queryFn: async () => {
       try {
         const response = await apiRequest('/api/planning-center/status', 'GET');
+        console.log('Planning Center status response:', response);
         return response;
       } catch (error) {
         // If we get a 403, it means Planning Center is not connected
+        console.error('Planning Center status error:', error);
         return { connected: false };
       }
     },
+    // Force refetch after successful import
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // We'll use a dedicated redirect page that's meant to handle Planning Center auth
@@ -214,9 +253,10 @@ const PlanningCenterIntegration = () => {
       return response;
     },
     onSuccess: (data) => {
+      const importedCount = data?.importedCount || data?.imported || 0;
       toast({
         title: "Members Imported",
-        description: `Successfully imported ${data.importedCount} members from Planning Center.`,
+        description: `Successfully imported ${importedCount} members from Planning Center.`,
         className: "text-white",
         style: { backgroundColor: PLANNING_CENTER_BLUE },
       });
@@ -257,12 +297,12 @@ const PlanningCenterIntegration = () => {
         className: "bg-[#69ad4c] text-white",
       });
       
-      // Force a delay before allowing reconnection to ensure token revocation completes
-      setIsConnecting(true);
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
-        setIsConnecting(false);
-      }, 2000);
+      // Immediately invalidate and refetch the status
+      queryClient.invalidateQueries({ queryKey: ['/api/planning-center/status'] });
+      queryClient.refetchQueries({ queryKey: ['/api/planning-center/status'] });
+      
+      // Also invalidate CSV import stats in case they need updating
+      queryClient.invalidateQueries({ queryKey: ['/api/csv-import/stats'] });
     },
     onError: (error) => {
       toast({
@@ -281,7 +321,7 @@ const PlanningCenterIntegration = () => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <img 
-            src="/planning-center-logo.png" 
+            src={planningCenterLogo} 
             alt="Planning Center Logo" 
             className="h-8 mr-2" 
           />
@@ -381,7 +421,7 @@ const PlanningCenterIntegration = () => {
               onClick={() => disconnectMutation.mutate()}
               disabled={disconnectMutation.isPending}
               className="w-full md:w-64 text-white hover:opacity-90"
-              style={{ backgroundColor: `${PLANNING_CENTER_BLUE}80`, borderColor: PLANNING_CENTER_BLUE }}
+              style={{ backgroundColor: "#e11d48", borderColor: "#e11d48" }}
             >
               {disconnectMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -407,7 +447,9 @@ const PlanningCenterIntegration = () => {
               <span className="text-xs text-gray-500 mt-1 text-center">
                 {status.lastSyncDate 
                   ? `Last import: ${new Date(status.lastSyncDate).toLocaleDateString()} at ${new Date(status.lastSyncDate).toLocaleTimeString()}`
-                  : "No members imported yet"}
+                  : isImporting ? "Import in progress..." : importMembersMutation.isSuccess 
+                      ? "Import completed successfully" 
+                      : "No members imported yet"}
               </span>
             </div>
           </div>
@@ -415,6 +457,64 @@ const PlanningCenterIntegration = () => {
           {/* Troubleshooting section removed */}
         </div>
       )}
+
+      {/* CSV Import Warning Dialog */}
+      <Dialog open={showCsvWarning} onOpenChange={setShowCsvWarning}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              Switching to Planning Center
+            </DialogTitle>
+            <DialogDescription>
+              Your church currently has member data imported from a CSV file. 
+              Connecting to Planning Center will merge this data and switch to Planning Center as your primary source.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-2">
+                <FileText className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-orange-800">
+                  <p className="font-medium mb-1">What will happen:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>Planning Center will become your primary member data source</li>
+                    <li>Existing CSV member data will be merged with Planning Center data</li>
+                    <li>Donation history will be preserved for all members</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">After connecting to Planning Center:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>Member data will sync automatically from Planning Center</li>
+                    <li>Updates in Planning Center will reflect in PlateSync</li>
+                    <li>You can manually refresh member data anytime</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCsvWarning(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={proceedWithConnection}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Yes, Connect to Planning Center
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

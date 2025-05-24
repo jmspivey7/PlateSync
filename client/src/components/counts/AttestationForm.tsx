@@ -160,6 +160,18 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         },
         body: JSON.stringify({ name }),
       });
+      
+      if (!response.ok) {
+        // Check if the response is JSON
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Attestation failed");
+        } else {
+          throw new Error(`Server error: ${response.status}`);
+        }
+      }
+      
       return await response.json();
     },
     onSuccess: () => {
@@ -167,10 +179,14 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         title: "Primary attestation complete",
         description: "Please select a second attestor to continue.",
       });
-      refetchBatch();
-      setStep('secondary');
+      // Refetch batch data first to ensure we have the latest data
+      refetchBatch().then(() => {
+        // Only change step after we have confirmed updated data
+        setStep('secondary');
+      });
     },
     onError: (error) => {
+      console.error("Primary attestation error:", error);
       toast({
         title: "Attestation failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -221,10 +237,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Count finalized",
-        description: "The count has been successfully finalized.",
-      });
+      // Removed toast notification as requested
       
       // Invalidate queries first to ensure data is fresh
       queryClient.invalidateQueries({ queryKey: ['/api/batches'] });
@@ -233,8 +246,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
       // Set step to complete
       setStep('complete');
       
-      // Force navigation to the dedicated summary page
-      window.location.href = `/batch-summary/${batchId}`;
+      // Force navigation to the dedicated summary page with a flag to indicate this is a fresh finalization
+      window.location.href = `/batch-summary/${batchId}?finalized=true`;
       
       // Only call onComplete if we don't navigate (as a backup)
       if (onComplete) {
@@ -558,10 +571,13 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               This count has been finalized.
             </p>
             <Button
-              onClick={onComplete}
+              onClick={() => {
+                // Direct the user to the batch summary page instead of going back to counts list
+                window.location.href = `/batch-summary/${batchId}?finalized=true`;
+              }}
               className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
             >
-              Return to Counts
+              View Count Summary
             </Button>
           </div>
         </CardContent>

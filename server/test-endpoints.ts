@@ -1,5 +1,5 @@
 import { Express, Request, Response } from 'express';
-import { isAuthenticated } from './replitAuth';
+// REMOVED: import { isAuthenticated } from './replitAuth'; // Using local auth instead
 import { storage } from './storage';
 import { testSendGridConfiguration, sendCountReport } from './sendgrid';
 import { users } from '@shared/schema';
@@ -8,6 +8,135 @@ import { db } from './db';
 import crypto from 'crypto';
 
 export function setupTestEndpoints(app: Express) {
+  // DELETE Test User endpoint - allows cleaning up test user data
+  app.delete('/api/dev/delete-test-user', async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email parameter is required"
+        });
+      }
+      
+      console.log(`Attempting to delete test user with email: ${email}`);
+      
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found with this email"
+        });
+      }
+      
+      // Get all relationships for this user
+      const userId = user.id;
+      console.log(`Found user with ID: ${userId}`);
+      
+      // Use a transaction to ensure all deletions happen together
+      try {
+        await db.transaction(async (tx) => {
+          console.log("Starting transaction for test user deletion");
+          
+          // 1. Delete subscriptions related to this user's church
+          // Note: this uses CASCADE for churchId -> churches.id
+          console.log("Cleaning up subscriptions...");
+          await tx.execute(
+            sql`DELETE FROM subscriptions WHERE church_id = ${userId}`
+          );
+          
+          // 2. Delete batches and their dependencies (donations)
+          console.log("Cleaning up batches and donations...");
+          await tx.execute(
+            sql`DELETE FROM donations WHERE church_id = ${userId}`
+          );
+          await tx.execute(
+            sql`DELETE FROM batches WHERE church_id = ${userId}`
+          );
+          
+          // 3. Delete service options
+          console.log("Cleaning up service options...");
+          await tx.execute(
+            sql`DELETE FROM service_options WHERE church_id = ${userId}`
+          );
+          
+          // 4. Delete members
+          console.log("Cleaning up members...");
+          await tx.execute(
+            sql`DELETE FROM members WHERE church_id = ${userId}`
+          );
+          
+          // 5. Delete report recipients (uses cascade)
+          console.log("Cleaning up report recipients...");
+          await tx.execute(
+            sql`DELETE FROM report_recipients WHERE church_id = ${userId}`
+          );
+          
+          // 6. Delete email templates (uses cascade)
+          console.log("Cleaning up email templates...");
+          await tx.execute(
+            sql`DELETE FROM email_templates WHERE church_id = ${userId}`
+          );
+          
+          // 7. Delete planning center tokens (uses cascade)
+          console.log("Cleaning up planning center tokens...");
+          await tx.execute(
+            sql`DELETE FROM planning_center_tokens WHERE church_id = ${userId}`
+          );
+          
+          // 8. Delete verification codes
+          console.log("Cleaning up verification codes...");
+          await tx.execute(
+            sql`DELETE FROM verification_codes WHERE church_id = ${userId}`
+          );
+          
+          // 9. Handle churches table - check if this user is an account owner
+          console.log("Handling church relationship...");
+          const accountOwnerResult = await tx.execute(
+            sql`SELECT * FROM churches WHERE account_owner_id = ${userId}`
+          );
+          
+          const isAccountOwner = accountOwnerResult.rows.length > 0;
+          
+          // Delete the church if this user is the account owner
+          if (isAccountOwner) {
+            console.log(`User ${email} is an account owner for ${accountOwnerResult.rows.length} churches`);
+            await tx.execute(
+              sql`DELETE FROM churches WHERE id = ${userId}`
+            );
+            console.log(`Deleted church with ID: ${userId}`);
+          }
+          
+          // 10. Finally delete the user
+          console.log("Deleting user...");
+          await tx.delete(users).where(eq(users.id, userId));
+          
+          console.log(`Successfully deleted test user: ${email} and all related data`);
+        });
+        
+        return res.json({
+          success: true,
+          message: `Successfully deleted user with email: ${email} and all related data`
+        });
+      } catch (txError) {
+        console.error("Transaction error:", txError);
+        throw txError; // Re-throw to be caught by the outer try/catch
+      }
+    } catch (error) {
+      console.error("Error deleting test user:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error deleting test user"
+      });
+    }
+  });
+  
   // Generate new verification token for an existing user
   app.post('/api/regenerate-verification-token', async (req, res) => {
     try {
@@ -122,7 +251,7 @@ export function setupTestEndpoints(app: Express) {
     }
   });
   // Test SendGrid configuration
-  app.get('/api/test-sendgrid', isAuthenticated, async (_req: Request, res: Response) => {
+  app.get('/api/test-sendgrid', async (_req: Request, res: Response) => {
     try {
       const result = await testSendGridConfiguration();
       
@@ -147,7 +276,7 @@ export function setupTestEndpoints(app: Express) {
   });
   
   // Test Count Report Email
-  app.get('/api/test-count-report', isAuthenticated, async (req: any, res: Response) => {
+  app.get('/api/test-count-report', async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);

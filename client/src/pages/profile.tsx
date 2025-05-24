@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User } from "lucide-react";
+import { Loader2, Save, Upload, Camera, ImageIcon, Key, Lock, User, Eye, EyeOff, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import PageLayout from "@/components/layout/PageLayout";
@@ -24,6 +24,8 @@ import { z } from "zod";
 
 // Define Zod schemas for validation
 const profileSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   churchName: z.string().optional(),
   role: z.string().optional(),
   emailNotificationsEnabled: z.boolean().default(false),
@@ -49,16 +51,22 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const Profile = () => {
   const { toast } = useToast();
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading, updateLocalProfile } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemovingPicture, setIsRemovingPicture] = useState(false);
   const [activeTab, setActiveTab] = useState("profile"); // "profile" or "password"
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Set up profile form with default values
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
       churchName: user?.churchName || "",
       role: user?.role || "",
       emailNotificationsEnabled: user?.emailNotificationsEnabled || false,
@@ -77,16 +85,40 @@ const Profile = () => {
   
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: ProfileFormValues) => {
-      return apiRequest('/api/profile', 'POST', data);
+    mutationFn: async (data: ProfileFormValues) => {
+      // Log the data being sent
+      console.log('Updating profile with data:', data);
+      
+      // Make the API request
+      const response = await apiRequest<{success: boolean, message: string}>('/api/profile', 'POST', data);
+      
+      // Return the response data
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      console.log('Profile update successful:', data);
+      
+      // Show success toast
       toast({
         title: 'Success',
         description: 'Your profile has been updated successfully',
       });
+      
+      // Update localStorage directly for instant UI updates
+      // This ensures the profile changes are reflected immediately across all components
+      if (updateLocalProfile) {
+        updateLocalProfile({
+          firstName: profileForm.getValues().firstName,
+          lastName: profileForm.getValues().lastName
+        });
+      }
+      
+      // Still invalidate the query cache to ensure it refreshes on next fetch
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Profile update error:', error);
+      
       toast({
         title: 'Error',
         description: 'Failed to update your profile',
@@ -122,6 +154,37 @@ const Profile = () => {
       }
     },
   });
+  
+  // Remove profile picture mutation
+  const removeProfilePictureMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        await apiRequest('/api/profile/avatar/remove', 'POST');
+        
+        // Invalidate user query to refresh the avatar
+        queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+        
+        toast({
+          title: 'Success',
+          description: 'Your profile picture has been removed',
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to remove profile picture',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsRemovingPicture(false);
+      }
+    },
+  });
+  
+  // Function to handle profile picture removal
+  const removeProfilePicture = () => {
+    setIsRemovingPicture(true);
+    removeProfilePictureMutation.mutate();
+  };
   
   // Handle file change for avatar upload
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,7 +280,7 @@ const Profile = () => {
           <CardContent className="pt-6">
             {/* Profile header with avatar */}
             <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
-              <div className="relative">
+              <div>
                 <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
                   {user?.profileImageUrl ? (
                     <AvatarImage src={user.profileImageUrl} alt="Profile" />
@@ -229,17 +292,6 @@ const Profile = () => {
                     </AvatarFallback>
                   )}
                 </Avatar>
-                
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute bottom-0 right-0 rounded-full bg-white"
-                  onClick={triggerFileInput}
-                  disabled={isUploading}
-                >
-                  <Camera className="h-4 w-4" />
-                  <span className="sr-only">Upload profile picture</span>
-                </Button>
                 
                 <input 
                   type="file"
@@ -260,7 +312,7 @@ const Profile = () => {
                   {user?.isMasterAdmin ? "Master Admin" : user?.role === "ADMIN" ? "Administrator" : "Usher"}
                 </p>
                 
-                <div className="mt-2">
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -280,6 +332,28 @@ const Profile = () => {
                       </>
                     )}
                   </Button>
+                  
+                  {user?.profileImageUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-sm text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                      onClick={removeProfilePicture}
+                      disabled={isUploading || isRemovingPicture}
+                    >
+                      {isRemovingPicture ? (
+                        <>
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Removing...
+                        </>
+                      ) : (
+                        <>
+                          <X className="mr-1 h-3 w-3" />
+                          Remove picture
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -304,26 +378,30 @@ const Profile = () => {
               </TabsList>
               
               <TabsContent value="profile" className="space-y-6">
-                <div className="space-y-4">
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName" className="font-bold">First Name:</Label>
                       <Input 
                         id="firstName" 
-                        value={user?.firstName || ""} 
-                        disabled
+                        {...profileForm.register("firstName")}
                       />
+                      {profileForm.formState.errors.firstName && (
+                        <p className="text-red-500 text-sm">{profileForm.formState.errors.firstName.message}</p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="lastName" className="font-bold">Last Name:</Label>
                       <Input 
                         id="lastName" 
-                        value={user?.lastName || ""} 
-                        disabled
+                        {...profileForm.register("lastName")}
                       />
+                      {profileForm.formState.errors.lastName && (
+                        <p className="text-red-500 text-sm">{profileForm.formState.errors.lastName.message}</p>
+                      )}
                     </div>
-                    
+                  
                     <div className="space-y-2">
                       <Label htmlFor="email" className="font-bold">Email:</Label>
                       <Input 
@@ -338,12 +416,40 @@ const Profile = () => {
                       <Label htmlFor="role" className="font-bold">Role:</Label>
                       <Input 
                         id="role" 
-                        value={user?.isMasterAdmin ? "Master Admin" : user?.role === "ADMIN" ? "Administrator" : "Usher"} 
+                        value={
+                          user?.isMasterAdmin 
+                            ? "Master Admin" 
+                            : user?.role === "ACCOUNT_OWNER" 
+                              ? "Account Owner" 
+                              : user?.role === "ADMIN" 
+                                ? "Administrator" 
+                                : "Standard User"
+                        } 
                         disabled
                       />
                     </div>
                   </div>
-                </div>
+                  
+                  <div className="flex justify-end mt-4">
+                    <Button 
+                      type="submit" 
+                      disabled={updateProfileMutation.isPending}
+                      className="bg-[#69ad4c] hover:bg-[#5c9941] text-white"
+                    >
+                      {updateProfileMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
               </TabsContent>
               
               <TabsContent value="password" className="space-y-6">
@@ -351,11 +457,27 @@ const Profile = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="currentPassword" className="font-bold">Current Password:</Label>
-                      <Input 
-                        id="currentPassword" 
-                        type="password"
-                        {...passwordForm.register("currentPassword")}
-                      />
+                      <div className="relative">
+                        <Input 
+                          id="currentPassword" 
+                          type={showCurrentPassword ? "text" : "password"}
+                          className="pr-10 [text-security:disc]"
+                          placeholder="••••••••"
+                          {...passwordForm.register("currentPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          tabIndex={-1}
+                        >
+                          {showCurrentPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
                       {passwordForm.formState.errors.currentPassword && (
                         <p className="text-sm text-red-500 mt-1">
                           {passwordForm.formState.errors.currentPassword.message}
@@ -365,11 +487,27 @@ const Profile = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="newPassword" className="font-bold">New Password:</Label>
-                      <Input 
-                        id="newPassword" 
-                        type="password"
-                        {...passwordForm.register("newPassword")}
-                      />
+                      <div className="relative">
+                        <Input 
+                          id="newPassword" 
+                          type={showNewPassword ? "text" : "password"}
+                          className="pr-10 [text-security:disc]"
+                          placeholder="••••••••"
+                          {...passwordForm.register("newPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          tabIndex={-1}
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
                       {passwordForm.formState.errors.newPassword && (
                         <p className="text-sm text-red-500 mt-1">
                           {passwordForm.formState.errors.newPassword.message}
@@ -382,11 +520,27 @@ const Profile = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword" className="font-bold">Confirm New Password:</Label>
-                      <Input 
-                        id="confirmPassword" 
-                        type="password"
-                        {...passwordForm.register("confirmPassword")}
-                      />
+                      <div className="relative">
+                        <Input 
+                          id="confirmPassword" 
+                          type={showConfirmPassword ? "text" : "password"}
+                          className="pr-10 [text-security:disc]"
+                          placeholder="••••••••"
+                          {...passwordForm.register("confirmPassword")}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
                       {passwordForm.formState.errors.confirmPassword && (
                         <p className="text-sm text-red-500 mt-1">
                           {passwordForm.formState.errors.confirmPassword.message}
@@ -398,7 +552,7 @@ const Profile = () => {
                   <div className="pt-4">
                     <Button 
                       type="submit" 
-                      className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                      className="bg-[#69ad4c] hover:bg-[#588f3f] text-white"
                       disabled={changePasswordMutation.isPending}
                     >
                       {changePasswordMutation.isPending ? (
@@ -408,7 +562,7 @@ const Profile = () => {
                         </>
                       ) : (
                         <>
-                          <Lock className="mr-2 h-4 w-4" />
+                          <Key className="mr-2 h-4 w-4" />
                           Change Password
                         </>
                       )}

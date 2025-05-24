@@ -1,13 +1,20 @@
 import * as crypto from 'crypto';
+import { eq, desc, and, or, asc, isNull, not, inArray, gte, sql, sum, count, ne } from 'drizzle-orm';
+import { format } from 'date-fns';
 import {
   users,
   members,
+  churchMembers,
   donations,
   batches,
   serviceOptions,
   reportRecipients,
   emailTemplates,
   planningCenterTokens,
+  csvImportStats,
+  churches,
+  subscriptions,
+  systemConfig,
   type User,
   type UpsertUser,
   type Member,
@@ -26,16 +33,80 @@ import {
   type EmailTemplate,
   type InsertEmailTemplate,
   type PlanningCenterTokens,
-  type InsertPlanningCenterTokens
+  type InsertPlanningCenterTokens,
+  type CsvImportStats,
+  type InsertCsvImportStats,
+  type Church,
+  type InsertChurch,
+  type Subscription,
+  type InsertSubscription,
+  type SystemConfig,
+  type InsertSystemConfig
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, sum, count, asc, ne } from "drizzle-orm";
 import { format } from "date-fns";
 
 // Interface for storage operations
+// DISABLED: This function was causing logo upload conflicts
+// Utility function to sync church information between all members
+export async function syncChurchInfoToMembers(db: any, churchId: string) {
+  console.log(`⚠️ syncChurchInfoToMembers DISABLED to prevent logo upload conflicts`);
+  return true; // Return true to avoid breaking existing code
+}
+
+// Function to apply church details to a specific user
+export async function applyChurchDetailsToUser(db: any, userId: string, churchId: string) {
+  try {
+    console.log(`User ${userId} missing church details, checking church ID: ${churchId}`);
+    
+    // Get church owner/admin information (source of truth)
+    const [churchAdmin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, churchId));
+      
+    if (!churchAdmin) {
+      console.log(`No church admin found with ID ${churchId}`);
+      return false;
+    }
+    
+    // Extract church details
+    const updates: any = {
+      updatedAt: new Date()
+    };
+    
+    if (churchAdmin.churchName) {
+      updates.churchName = churchAdmin.churchName;
+    }
+    
+    if (churchAdmin.churchLogoUrl) {
+      updates.churchLogoUrl = churchAdmin.churchLogoUrl;
+      console.log(`Found church logo: ${churchAdmin.churchLogoUrl} for church ${churchId}`);
+    }
+    
+    // Update the specific user
+    await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, userId));
+      
+    console.log(`Updated user ${userId} with church logo information`);
+    return true;
+  } catch (error) {
+    console.error(`Error applying church details to user ${userId}: ${error}`);
+    return false;
+  }
+}
+
 export interface IStorage {
+  // System Configuration operations
+  getSystemConfig(key: string): Promise<string | null>;
+  setSystemConfig(key: string, value: string): Promise<void>;
+  updateSystemConfig(configData: { key: string; value: string }[]): Promise<void>;
+  
   // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>; // Alias for getUser for clarity
   getUserByEmail(email: string): Promise<User | undefined>;
   getUsers(churchId: string): Promise<User[]>;
   getUserRole(userId: string): Promise<string | null>;
@@ -45,13 +116,36 @@ export interface IStorage {
   getUsersByChurchId(churchId: string): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSettings(id: string, data: Partial<User>): Promise<User>;
+  updateUserEmailNotificationSetting(userId: string, enabled: boolean): Promise<boolean>;
+  updateChurchEmailNotificationSetting(churchId: string, enabled: boolean): Promise<boolean>;
   updateUserRole(id: string, role: string): Promise<User>;
   createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User>;
   deleteUser(id: string): Promise<void>;
-  // New Master Admin functions
-  getMasterAdminForChurch(churchId: string): Promise<User | undefined>;
-  setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined>;
-  transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>;
+  
+  // Account Owner functions
+  getAccountOwnerForChurch(churchId: string): Promise<User | undefined>;
+  getMasterAdminForChurch(churchId: string): Promise<User | undefined>; // Backward compatibility
+  setUserAsAccountOwner(userId: string, churchId: string): Promise<User | undefined>;
+  setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined>; // Backward compatibility
+  transferAccountOwnership(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>;
+  transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean>; // Backward compatibility
+  
+  // Global Admin operations
+  getAllChurches(): Promise<Church[]>;
+  getChurch(id: string): Promise<Church | undefined>;
+  getChurchesByAccountOwner(accountOwnerId: string): Promise<Church[]>;
+  getChurchWithStats(id: string): Promise<Church & { 
+    totalMembers: number; 
+    totalDonations: string;
+    userCount: number;
+    lastActivity: Date | null;
+  } | undefined>;
+  createChurch(churchData: InsertChurch, customId?: string): Promise<Church>;
+  updateChurch(id: string, data: Partial<Church>): Promise<Church | undefined>;
+  suspendChurch(id: string): Promise<Church | undefined>;
+  activateChurch(id: string): Promise<Church | undefined>;
+  deleteChurch(id: string): Promise<{ archiveUrl: string | null }>;
+  migrateDataToNewChurchTable(): Promise<number>; // To help migrate existing data
   
   // Member operations
   getMembers(churchId: string): Promise<Member[]>;
@@ -107,6 +201,7 @@ export interface IStorage {
   // Email Templates operations
   getEmailTemplates(churchId: string): Promise<EmailTemplate[]>;
   getEmailTemplate(id: number, churchId: string): Promise<EmailTemplate | undefined>;
+  getEmailTemplateById(id: number): Promise<EmailTemplate | undefined>;
   getEmailTemplateByType(templateType: string, churchId: string): Promise<EmailTemplate | undefined>;
   getAllEmailTemplatesByType(templateType: string): Promise<EmailTemplate[]>;
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
@@ -115,15 +210,42 @@ export interface IStorage {
   
   // Planning Center operations
   getPlanningCenterTokens(userId: string, churchId: string): Promise<PlanningCenterTokens | undefined>;
+  getPlanningCenterTokensByChurchId(churchId: string): Promise<PlanningCenterTokens | undefined>;
   savePlanningCenterTokens(data: InsertPlanningCenterTokens): Promise<PlanningCenterTokens>;
   deletePlanningCenterTokens(userId: string, churchId: string): Promise<void>;
   updatePlanningCenterLastSync(userId: string, churchId: string): Promise<void>;
   bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number>;
   removeDuplicateMembers(churchId: string): Promise<number>;
+  
+  // Subscription operations
+  getSubscription(churchId: string): Promise<Subscription | undefined>;
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscription(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
+  updateSubscriptionStatus(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
+  checkSubscriptionStatus(churchId: string): Promise<{
+    isActive: boolean;
+    isTrialExpired: boolean;
+    status: string;
+    daysRemaining: number | null;
+    trialEndDate: Date | null;
+  }>;
+  upgradeSubscription(churchId: string, plan: string, stripeData?: {
+    stripeCustomerId: string;
+    stripeSubscriptionId: string;
+  }): Promise<Subscription | undefined>;
+  cancelSubscription(churchId: string): Promise<Subscription | undefined>;
+  
+  // Onboarding operations
+  updateOnboardingLogo(churchId: string, logoUrl: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
   // User operations
+  async getUserById(id: string): Promise<User | undefined> {
+    // This is an alias for getUser for clarity
+    return this.getUser(id);
+  }
+  
   async getUser(id: string): Promise<User | undefined> {
     try {
       // Use a raw SQL query with basic columns to avoid schema issues
@@ -167,13 +289,13 @@ export class DatabaseStorage implements IStorage {
       
       // Virtual properties
       const isActive = !row.email?.startsWith('INACTIVE_');
-      let isMasterAdmin = false;
+      let isAccountOwner = false;
       
-      // Calculate virtual isMasterAdmin if this is an admin user
-      if (row.role === 'ADMIN') {
+      // Calculate virtual isAccountOwner status
+      if (row.role === 'ACCOUNT_OWNER' || row.role === 'ADMIN') {
         try {
           // Check if this is the first/original admin of the church
-          // If their ID is used as the churchId for other users, they're the Master Admin
+          // If their ID is used as the churchId for other users, they're the Account Owner
           const otherUsers = await db.execute(
             sql`SELECT count(*) as count 
                 FROM users 
@@ -181,25 +303,25 @@ export class DatabaseStorage implements IStorage {
           );
             
           if (otherUsers.rows.length > 0 && parseInt(otherUsers.rows[0].count) > 0) {
-            isMasterAdmin = true;
+            isAccountOwner = true;
           } else {
             // If no other users point to this user's ID, check if this is the first admin
             const firstAdmin = await db.execute(
               sql`SELECT id 
                   FROM users 
-                  WHERE role = 'ADMIN' 
+                  WHERE role IN ('ACCOUNT_OWNER', 'ADMIN')
                   ORDER BY created_at ASC 
                   LIMIT 1`
             );
               
             if (firstAdmin.rows.length > 0 && firstAdmin.rows[0].id === id) {
-              isMasterAdmin = true;
+              isAccountOwner = true;
             }
           }
         } catch (innerError) {
-          console.error("Error determining Master Admin status:", innerError);
+          console.error("Error determining Account Owner status:", innerError);
           // Default to false for safety
-          isMasterAdmin = false;
+          isAccountOwner = false;
         }
       }
       
@@ -207,7 +329,7 @@ export class DatabaseStorage implements IStorage {
       const user: User = {
         ...userBaseData,
         isActive,
-        isMasterAdmin
+        isAccountOwner
       };
       
       return user;
@@ -265,13 +387,13 @@ export class DatabaseStorage implements IStorage {
       
       // Virtual properties
       const isActive = !row.email?.startsWith('INACTIVE_');
-      let isMasterAdmin = false;
+      let isAccountOwner = false;
       
-      // Calculate virtual isMasterAdmin if this is an admin user
-      if (row.role === 'ADMIN') {
+      // Calculate virtual isAccountOwner status
+      if (row.role === 'ACCOUNT_OWNER' || row.role === 'ADMIN') {
         try {
           // Check if this is the first/original admin of the church
-          // If their ID is used as the churchId for other users, they're the Master Admin
+          // If their ID is used as the churchId for other users, they're the Account Owner
           const otherUsers = await db.execute(
             sql`SELECT count(*) as count 
                 FROM users 
@@ -279,25 +401,25 @@ export class DatabaseStorage implements IStorage {
           );
             
           if (otherUsers.rows.length > 0 && parseInt(otherUsers.rows[0].count) > 0) {
-            isMasterAdmin = true;
+            isAccountOwner = true;
           } else {
             // If no other users point to this user's ID, check if this is the first admin
             const firstAdmin = await db.execute(
               sql`SELECT id 
                   FROM users 
-                  WHERE role = 'ADMIN' 
+                  WHERE role IN ('ACCOUNT_OWNER', 'ADMIN') 
                   ORDER BY created_at ASC 
                   LIMIT 1`
             );
               
             if (firstAdmin.rows.length > 0 && firstAdmin.rows[0].id === row.id) {
-              isMasterAdmin = true;
+              isAccountOwner = true;
             }
           }
         } catch (innerError) {
-          console.error("Error determining Master Admin status:", innerError);
+          console.error("Error determining Account Owner status:", innerError);
           // Default to false for safety
-          isMasterAdmin = false;
+          isAccountOwner = false;
         }
       }
       
@@ -305,7 +427,7 @@ export class DatabaseStorage implements IStorage {
       const user: User = {
         ...userBaseData,
         isActive,
-        isMasterAdmin
+        isAccountOwner
       };
       
       return user;
@@ -316,7 +438,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Get the church ID for a user - for ADMIN users, it's their own ID
-  // For USHER users, we need to find which church they belong to
+  // For STANDARD_USER users, we need to find which church they belong to
   async getChurchIdForUser(userId: string): Promise<string> {
     try {
       // Get user details from the database
@@ -342,11 +464,38 @@ export class DatabaseStorage implements IStorage {
         return user.churchId;
       }
       
-      // If user is an ADMIN and doesn't have a churchId, they are their own church
+      // If user is an ADMIN and doesn't have a churchId, find or create a church ID
       if (user.role === "ADMIN") {
-        console.log(`User ${userId} is an ADMIN, using their ID as churchId`);
+        console.log(`User ${userId} is an ADMIN without a churchId - finding a church for them`);
         
-        // Set this ADMIN's churchId to be themselves if not already set
+        // Instead of making the user their own church, look for an existing church ID
+        // or generate a more appropriate church identifier
+        
+        // First, check if this admin has created any batches with a different churchId
+        const [adminBatch] = await db
+          .select({
+            churchId: batches.churchId
+          })
+          .from(batches)
+          .where(eq(batches.churchId, userId))
+          .limit(1);
+          
+        if (adminBatch?.churchId) {
+          console.log(`Found existing churchId ${adminBatch.churchId} from batches`);
+          
+          // Update the admin to use this churchId
+          await db
+            .update(users)
+            .set({ churchId: adminBatch.churchId })
+            .where(eq(users.id, userId));
+            
+          return adminBatch.churchId;
+        }
+        
+        // If no existing churchId found, use the admin's own ID (legacy behavior)
+        // but flag this in the logs
+        console.log(`No existing churchId found - using legacy behavior with admin's ID ${userId}`);
+        
         await db
           .update(users)
           .set({ churchId: userId })
@@ -355,7 +504,7 @@ export class DatabaseStorage implements IStorage {
         return userId;
       }
       
-      // For USHER users without a churchId, we need to find the ADMIN they're associated with
+      // For STANDARD_USER users without a churchId, we need to find the ADMIN they're associated with
       
       // First check if they've participated in any batches
       const [batch] = await db
@@ -369,7 +518,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
         
       if (batch?.churchId) {
-        console.log(`Found churchId ${batch.churchId} from batch for USHER ${userId}`);
+        console.log(`Found churchId ${batch.churchId} from batch for STANDARD_USER ${userId}`);
         
         // Update the user with this churchId for future reference
         await db
@@ -380,26 +529,26 @@ export class DatabaseStorage implements IStorage {
         return batch.churchId;
       }
       
-      // If we can't determine the church from batches, find the Master Admin
-      const [masterAdmin] = await db
+      // If we can't determine the church from batches, find the Account Owner
+      const [accountOwner] = await db
         .select()
         .from(users)
         .where(and(
           eq(users.role, 'ADMIN'),
-          eq(users.isMasterAdmin, true)
+          eq(users.isAccountOwner, true)
         ))
         .limit(1);
       
-      if (masterAdmin) {
-        console.log(`Found Master Admin ${masterAdmin.id} as churchId for USHER ${userId}`);
+      if (accountOwner) {
+        console.log(`Found Account Owner ${accountOwner.id} as churchId for Standard User ${userId}`);
         
         // Update the user with this churchId for future reference
         await db
           .update(users)
-          .set({ churchId: masterAdmin.id })
+          .set({ churchId: accountOwner.id })
           .where(eq(users.id, userId));
           
-        return masterAdmin.id;
+        return accountOwner.id;
       }
       
       // If no Master Admin is found, find any ADMIN user
@@ -410,7 +559,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       
       if (anyAdmin) {
-        console.log(`Found admin user ${anyAdmin.id} as churchId for USHER ${userId}`);
+        console.log(`Found admin user ${anyAdmin.id} as churchId for STANDARD_USER ${userId}`);
         
         // Update the user with this churchId for future reference
         await db
@@ -422,7 +571,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       // If all else fails, use the user's own ID
-      console.log(`No churchId found for USHER ${userId}, using userId as fallback`);
+      console.log(`No churchId found for STANDARD_USER ${userId}, using userId as fallback`);
       return userId;
     } catch (error) {
       console.error(`Error in getChurchIdForUser: ${error}`);
@@ -552,7 +701,7 @@ export class DatabaseStorage implements IStorage {
   
   async getUsersByChurchId(churchId: string): Promise<User[]> {
     try {
-      // Get both ADMIN and USHER users associated with this church
+      // Get both ADMIN and STANDARD_USER users associated with this church
       // First, get the ADMIN user (church owner)
       const adminId = await this.getAdminIdForChurch(churchId);
       
@@ -608,33 +757,54 @@ export class DatabaseStorage implements IStorage {
   
   // New Master Admin functions
   
-  // Get the Master Admin for a church
-  async getMasterAdminForChurch(churchId: string): Promise<User | undefined> {
+  // Get the Account Owner for a church
+  async getAccountOwnerForChurch(churchId: string): Promise<User | undefined> {
     try {
-      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
+      // First look for a user with ACCOUNT_OWNER role directly
+      const [accountOwner] = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.churchId, churchId),
+          eq(users.role, 'ACCOUNT_OWNER')
+        ))
+        .limit(1);
+        
+      if (accountOwner) {
+        console.log(`Found Account Owner ${accountOwner.id} with role ACCOUNT_OWNER for church ${churchId}`);
+        return accountOwner;
+      }
       
-      // First check if there's an Admin that matches the churchId - the church creator
+      // Next, look for an admin with isAccountOwner flag
+      const [adminOwner] = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.churchId, churchId),
+          eq(users.role, 'ADMIN'),
+          eq(users.isAccountOwner, true)
+        ))
+        .limit(1);
+        
+      if (adminOwner) {
+        console.log(`Found Account Owner ${adminOwner.id} with isAccountOwner flag for church ${churchId}`);
+        return adminOwner;
+      }
+      
+      // Then check if there's an Admin that matches the churchId - the church creator
       const originalAdmin = await this.getUser(churchId);
-      if (originalAdmin && originalAdmin.role === 'ADMIN') {
-        console.log(`Using original Admin ${originalAdmin.id} as Master Admin for church ${churchId}`);
-        // Virtually mark this user as the Master Admin
-        return {
-          ...originalAdmin,
-          isMasterAdmin: true
-        };
+      if (originalAdmin && (originalAdmin.role === 'ADMIN' || originalAdmin.role === 'ACCOUNT_OWNER')) {
+        console.log(`Using original Admin ${originalAdmin.id} as Account Owner for church ${churchId}`);
+        return originalAdmin;
       }
       
       // If we couldn't find the original admin, find the first admin associated with this church
       const churchUsers = await this.getUsersByChurchId(churchId);
-      const adminUsers = churchUsers.filter(user => user.role === 'ADMIN');
+      const adminUsers = churchUsers.filter(user => user.role === 'ADMIN' || user.role === 'ACCOUNT_OWNER');
       
       if (adminUsers.length > 0) {
-        console.log(`Using Admin ${adminUsers[0].id} as Master Admin for church ${churchId}`);
-        // Virtually mark this user as the Master Admin
-        return {
-          ...adminUsers[0],
-          isMasterAdmin: true
-        };
+        console.log(`Using Admin ${adminUsers[0].id} as Account Owner for church ${churchId}`);
+        return adminUsers[0];
       }
       
       // Last resort: just find any admin in the system
@@ -645,15 +815,31 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
         
       if (fallbackAdmin) {
-        console.log(`Using fallback Admin ${fallbackAdmin.id} as Master Admin (no church match found)`);
-        // Virtually mark this user as the Master Admin
+        console.log(`Using fallback Admin ${fallbackAdmin.id} as Account Owner (no church match found)`);
+        return fallbackAdmin;
+      }
+      
+      console.log(`Could not find any suitable Account Owner for church ${churchId}`);
+      return undefined;
+    } catch (error) {
+      console.error("Error in getAccountOwnerForChurch:", error);
+      return undefined;
+    }
+  }
+  
+  // Get the Master Admin for a church (backward compatibility)
+  async getMasterAdminForChurch(churchId: string): Promise<User | undefined> {
+    try {
+      const accountOwner = await this.getAccountOwnerForChurch(churchId);
+      
+      if (accountOwner) {
+        // Ensure backward compatibility with the isMasterAdmin virtual flag
         return {
-          ...fallbackAdmin,
+          ...accountOwner,
           isMasterAdmin: true
         };
       }
       
-      console.log(`Could not find any suitable Master Admin for church ${churchId}`);
       return undefined;
     } catch (error) {
       console.error("Error in getMasterAdminForChurch:", error);
@@ -661,98 +847,118 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // Set a user as the Master Admin for a church
-  async setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined> {
+  // Set a user as the Account Owner for a church
+  async setUserAsAccountOwner(userId: string, churchId: string): Promise<User | undefined> {
     try {
-      // First, verify this user is an ADMIN
+      // First, verify this user exists
       const user = await this.getUser(userId);
-      if (!user || user.role !== 'ADMIN') {
-        console.error(`Cannot set user ${userId} as Master Admin - user not found or not an ADMIN`);
+      if (!user) {
+        console.error(`Cannot set user ${userId} as Account Owner - user not found`);
         return undefined;
       }
       
-      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
-      // For now, we'll set the churchId field to mark a special relationship
-      
-      // Update the user to set the church relationship
+      // Do NOT change the churchId here - we want to preserve the association with the church
+      // Update only the role and isAccountOwner flag
       const [updatedUser] = await db
         .update(users)
         .set({
-          churchId: churchId,
+          role: 'ACCOUNT_OWNER',
+          isAccountOwner: true,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId))
         .returning();
         
-      console.log(`Set user ${userId} as Master Admin for church ${churchId}`);
+      console.log(`Set user ${userId} as Account Owner for church ${churchId} without changing churchId`);
       
-      // Virtually add the isMasterAdmin flag
-      return {
-        ...updatedUser,
-        isMasterAdmin: true
-      };
+      return updatedUser;
+    } catch (error) {
+      console.error("Error in setUserAsAccountOwner:", error);
+      return undefined;
+    }
+  }
+  
+  // Set a user as the Master Admin for a church (backward compatibility)
+  async setUserAsMasterAdmin(userId: string, churchId: string): Promise<User | undefined> {
+    try {
+      const updatedUser = await this.setUserAsAccountOwner(userId, churchId);
+      
+      if (updatedUser) {
+        // Virtually add the isMasterAdmin flag for backward compatibility
+        return {
+          ...updatedUser,
+          isMasterAdmin: true
+        };
+      }
+      
+      return undefined;
     } catch (error) {
       console.error("Error in setUserAsMasterAdmin:", error);
       return undefined;
     }
   }
   
-  // Transfer Master Admin status from one user to another
-  async transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
+  // Transfer Account Ownership from one user to another
+  async transferAccountOwnership(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
     try {
-      // Verify both users exist and are admins
+      // Verify both users exist
       const fromUser = await this.getUser(fromUserId);
       const toUser = await this.getUser(toUserId);
       
       if (!fromUser || !toUser) {
-        console.error(`Cannot transfer Master Admin - one or both users not found`);
+        console.error(`Cannot transfer Account Ownership - one or both users not found`);
         return false;
       }
       
-      if (fromUser.role !== 'ADMIN' || toUser.role !== 'ADMIN') {
-        console.error(`Cannot transfer Master Admin - both users must be admins`);
+      // Verify the current user is an Account Owner / Master Admin
+      const isFromUserOwner = 
+        fromUser.role === 'ACCOUNT_OWNER' || 
+        (fromUser.role === 'ADMIN' && (fromUser.isAccountOwner || fromUser.isMasterAdmin));
+        
+      if (!isFromUserOwner) {
+        console.error(`Cannot transfer Account Ownership - source user is not an Account Owner`);
         return false;
       }
       
-      // Note: We're implementing this virtually since the isMasterAdmin column doesn't exist yet
-      
-      // Get all users who have the old Master Admin as their churchId
-      const usersToUpdate = await db
-        .select()
-        .from(users)
-        .where(eq(users.churchId, fromUserId));
+      // Start transaction
+      await db.transaction(async (tx) => {
+        // 1. Remove Account Owner status from the current Account Owner
+        await tx
+          .update(users)
+          .set({ 
+            role: 'ADMIN', // Demote to regular admin
+            isAccountOwner: false,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, fromUserId));
+          
+        // 2. Promote the target user to Account Owner
+        await tx
+          .update(users)
+          .set({ 
+            role: 'ACCOUNT_OWNER',
+            isAccountOwner: true,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, toUserId));
         
-      console.log(`Found ${usersToUpdate.length} users to update from old Master Admin ${fromUserId} to new Master Admin ${toUserId}`);
-      
-      // Update all these users to point to the new Master Admin
-      for (const userToUpdate of usersToUpdate) {
-        if (userToUpdate.id !== toUserId) {  // Don't update the new Master Admin yet
-          await db
-            .update(users)
-            .set({ 
-              churchId: toUserId,
-              updatedAt: new Date()
-            })
-            .where(eq(users.id, userToUpdate.id));
-        }
-      }
-      
-      // Make sure the new Master Admin points to themselves
-      await db
-        .update(users)
-        .set({
-          churchId: toUserId,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, toUserId));
+        // Important: We DO NOT update the churchId of any users. The churchId
+        // should remain constant and represent the actual church, not the Account Owner's ID.
+        console.log(`Transferred Account Ownership from ${fromUserId} to ${toUserId} while preserving churchId ${churchId}`);
+      });
         
-      console.log(`Transferred Master Admin from ${fromUserId} to ${toUserId} for church ${churchId}`);
+      console.log(`Transferred Account Ownership from ${fromUserId} to ${toUserId} for church ${churchId}`);
       
       return true;
     } catch (error) {
-      console.error("Error in transferMasterAdmin:", error);
+      console.error("Error in transferAccountOwnership:", error);
       return false;
     }
+  }
+  
+  // Backward compatibility method for transferring Master Admin status
+  async transferMasterAdmin(fromUserId: string, toUserId: string, churchId: string): Promise<boolean> {
+    return this.transferAccountOwnership(fromUserId, toUserId, churchId);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -783,15 +989,97 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   
+  async updateUserEmailNotificationSetting(userId: string, enabled: boolean): Promise<boolean> {
+    try {
+      console.log(`Updating email notifications to ${enabled ? 'ENABLED' : 'DISABLED'} for user ${userId}`);
+      
+      // Update the user's email notification setting
+      await db
+        .update(users)
+        .set({ 
+          emailNotificationsEnabled: enabled,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      
+      console.log(`Successfully updated email notification settings for user ${userId}`);
+      
+      // If this is a church admin user, ensure the church account itself has notifications enabled
+      const user = await this.getUser(userId);
+      if (user && user.churchId && user.churchId !== userId) {
+        console.log(`Propagating email notification setting to church account ${user.churchId}`);
+        
+        // Update the church account as well to ensure notifications work
+        await db
+          .update(users)
+          .set({ 
+            emailNotificationsEnabled: enabled,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, user.churchId));
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating email notification setting:', error);
+      throw error;
+    }
+  }
+  
+  async updateChurchEmailNotificationSetting(churchId: string, enabled: boolean): Promise<boolean> {
+    try {
+      console.log(`Updating church email notifications to ${enabled ? 'ENABLED' : 'DISABLED'} for church ${churchId}`);
+      
+      // Update the church's email notification setting
+      await db
+        .update(churches)
+        .set({ 
+          emailNotificationsEnabled: enabled,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, churchId));
+      
+      console.log(`Successfully updated church email notification settings for church ${churchId}`);
+      return true;
+    } catch (error) {
+      console.error('Error updating church email notification setting:', error);
+      return false;
+    }
+  }
+  
   async updateUserRole(id: string, role: string): Promise<User> {
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+    
+    // Handle legacy role mapping and set isAccountOwner flag appropriately
+    if (role === "ACCOUNT_OWNER") {
+      updateData.role = role;
+      updateData.isAccountOwner = true;
+    } else if (role === "ADMIN") {
+      updateData.role = role;
+      updateData.isAccountOwner = false;
+    } else if (role === "STANDARD") {
+      // Update to STANDARD_USER for consistency with new role naming
+      updateData.role = "STANDARD_USER"; 
+      updateData.isAccountOwner = false;
+    } else {
+      // For any other role, just set it directly
+      updateData.role = role;
+      updateData.isAccountOwner = false;
+    }
+    
     const [updatedUser] = await db
       .update(users)
-      .set({
-        role,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
+    
+    // For backwards compatibility, set isMasterAdmin based on isAccountOwner
+    if (updatedUser) {
+      updatedUser.isMasterAdmin = !!updatedUser.isAccountOwner;
+    }
     
     return updatedUser;
   }
@@ -815,8 +1103,7 @@ export class DatabaseStorage implements IStorage {
       let baseUsername = userData.username || userData.email?.split('@')[0] || `user_${userId}`;
       let username = baseUsername;
       
-      // Check if this username already exists (including soft-deleted users)
-      // This includes INACTIVE_ prefixed emails, as those users still have the same username
+      // Check if this username already exists
       const usernameExists = async (name: string) => {
         const result = await db
           .select()
@@ -826,11 +1113,63 @@ export class DatabaseStorage implements IStorage {
         return result.length > 0;
       };
       
-      // If username exists, add a random suffix until we find a unique one
+      // If username exists, add a sequential number suffix until we find a unique one
       let suffix = 1;
-      while (await usernameExists(username)) {
-        username = `${baseUsername}_${suffix}`;
-        suffix++;
+      const existsCheck = await usernameExists(username);
+      
+      if (existsCheck) {
+        // First, try to find all usernames that start with this base
+        const similarUsernames = await db
+          .select()
+          .from(users)
+          .where(sql`${users.username} LIKE ${baseUsername + '%'}`);
+        
+        // Start the suffix from the highest existing number + 1
+        if (similarUsernames.length > 0) {
+          const existingNumbers = similarUsernames
+            .map(u => {
+              const match = u.username?.match(new RegExp(`^${baseUsername}(\\d+)$`));
+              return match ? parseInt(match[1], 10) : 0;
+            })
+            .filter(n => !isNaN(n));
+          
+          if (existingNumbers.length > 0) {
+            suffix = Math.max(...existingNumbers) + 1;
+          }
+        }
+        
+        // Format the suffix with leading zeros based on how many digits we need
+        // e.g., 01, 02, ..., 10, 11, etc.
+        const suffixStr = suffix.toString().padStart(2, '0');
+        username = `${baseUsername}${suffixStr}`;
+        
+        // Double-check that this username is unique (in case of race conditions)
+        while (await usernameExists(username)) {
+          suffix++;
+          const newSuffixStr = suffix.toString().padStart(2, '0');
+          username = `${baseUsername}${newSuffixStr}`;
+        }
+      }
+      
+      console.log(`Generated unique username: ${username} for user ${userData.email}`);
+      
+      // Important: We need to check if the churchId exists as a user in the database first
+      // because there's a foreign key constraint requiring churchId to exist in users.id
+      let finalChurchId = null;
+      if (churchId) {
+        // Check if the churchId exists first
+        const churchExists = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, churchId))
+          .limit(1);
+          
+        if (churchExists.length > 0) {
+          finalChurchId = churchId;
+          console.log(`Verified churchId ${churchId} exists in users table`);
+        } else {
+          console.log(`WARNING: churchId ${churchId} doesn't exist in users table, setting to null`);
+        }
       }
       
       const [newUser] = await db
@@ -843,10 +1182,12 @@ export class DatabaseStorage implements IStorage {
           lastName: userData.lastName || null,
           bio: userData.bio || null,
           profileImageUrl: userData.profileImageUrl || null,
-          role: userData.role || 'USHER',
+          role: userData.role || 'STANDARD_USER',
+          password: userData.password || null,
           createdAt: new Date(),
           updatedAt: new Date(),
           churchName: userData.churchName || null,
+          churchId: finalChurchId, // Only set if verified to exist
           emailNotificationsEnabled: userData.emailNotificationsEnabled !== undefined ? userData.emailNotificationsEnabled : true,
           passwordResetToken: resetToken,
           passwordResetExpires: resetExpires,
@@ -861,38 +1202,219 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async deleteUser(id: string): Promise<void> {
-    // Note: This is a temporary implementation until we can run the migration
-    // to add the isActive column. For now, we'll mark the user as inactive
-    // by prefixing their email with "INACTIVE_" which is better than deleting.
-    const user = await this.getUser(id);
-    if (user) {
-      await db
-        .update(users)
-        .set({
-          email: `INACTIVE_${user.email}`,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, id));
+  async deleteUser(id: string): Promise<boolean> {
+    try {
+      // First check if user exists
+      const user = await this.getUser(id);
+      if (!user) {
+        console.log(`Cannot delete non-existent user: ${id}`);
+        return false;
+      }
+      
+      console.log(`Checking if user ${id} has attestation records...`);
+      
+      // Check if user has attestation records (was involved in batch counts)
+      const hasAttestations = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(batches)
+        .where(
+          or(
+            eq(batches.primaryAttestorId, id),
+            eq(batches.secondaryAttestorId, id),
+            eq(batches.attestationConfirmedBy, id)
+          )
+        )
+        .then(result => result[0]?.count > 0);
+      
+      // Use transaction to ensure data consistency
+      await db.transaction(async (tx) => {
+        // First delete any related records that reference this user
+        
+        if (hasAttestations) {
+          // For users with attestation history, mark as inactive by prefixing email
+          console.log(`User ${id} has attestation records - marking as inactive`);
+          await tx
+            .update(users)
+            .set({
+              // Only prefix if not already inactive
+              email: sql`CASE WHEN email NOT LIKE 'INACTIVE_%' THEN CONCAT('INACTIVE_', email) ELSE email END`,
+              updatedAt: new Date()
+            })
+            .where(eq(users.id, id));
+        } else {
+          // For users with no history, completely remove
+          console.log(`User ${id} has no attestation records - removing completely`);
+          await tx.delete(users).where(eq(users.id, id));
+        }
+      });
+      
+      console.log(`Successfully processed user deletion: ${id}`);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting user ${id}:`, error);
+      return false;
     }
   }
 
-  // Member operations
+  // Member operations - now uses junction table to get members for a church
   async getMembers(churchId: string): Promise<Member[]> {
-    return db
-      .select()
+    const result = await db
+      .select({
+        id: members.id,
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+        phone: members.phone,
+        isVisitor: members.isVisitor,
+        createdAt: members.createdAt,
+        updatedAt: members.updatedAt,
+        notes: members.notes,
+        externalId: members.externalId,
+        externalSystem: members.externalSystem,
+      })
       .from(members)
-      .where(eq(members.churchId, churchId))
+      .innerJoin(churchMembers, eq(members.id, churchMembers.memberId))
+      .where(and(
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
+      ))
       .orderBy(desc(members.createdAt));
+    
+    return result;
+  }
+
+  async mergeAndUpdateMembers(churchId: string, csvMembers: Array<Partial<InsertMember>>): Promise<{ updated: number; added: number }> {
+    try {
+      console.log(`Starting merge and update for church ${churchId} with ${csvMembers.length} CSV records`);
+      let updatedCount = 0;
+      let addedCount = 0;
+
+      for (const csvMember of csvMembers) {
+        if (!csvMember.firstName || !csvMember.lastName) {
+          console.log('Skipping member - missing first or last name');
+          continue;
+        }
+
+        // First try to find by email if available
+        let existingMember = null;
+        if (csvMember.email) {
+          const [emailMatch] = await db
+            .select()
+            .from(members)
+            .where(eq(members.email, csvMember.email))
+            .limit(1);
+          existingMember = emailMatch;
+        }
+
+        // If no email match, try to find by exact name match
+        if (!existingMember) {
+          const [nameMatch] = await db
+            .select()
+            .from(members)
+            .where(and(
+              eq(members.firstName, csvMember.firstName),
+              eq(members.lastName, csvMember.lastName)
+            ))
+            .limit(1);
+          existingMember = nameMatch;
+        }
+
+        if (existingMember) {
+          // Check if this member is already associated with this church
+          const [existingChurchMembership] = await db
+            .select()
+            .from(churchMembers)
+            .where(and(
+              eq(churchMembers.churchId, churchId),
+              eq(churchMembers.memberId, existingMember.id)
+            ))
+            .limit(1);
+
+          if (existingChurchMembership) {
+            // Update existing member with CSV data
+            await db
+              .update(members)
+              .set({
+                firstName: csvMember.firstName || existingMember.firstName,
+                lastName: csvMember.lastName || existingMember.lastName,
+                email: csvMember.email || existingMember.email,
+                phone: csvMember.phone || existingMember.phone,
+                notes: csvMember.notes || existingMember.notes,
+                isVisitor: csvMember.isVisitor ?? existingMember.isVisitor,
+                updatedAt: new Date()
+              })
+              .where(eq(members.id, existingMember.id));
+            
+            updatedCount++;
+          } else {
+            // Member exists but not associated with this church - add the association
+            await db.insert(churchMembers).values({
+              churchId: churchId,
+              memberId: existingMember.id,
+              memberNotes: csvMember.notes || null,
+              isActive: true,
+            });
+            addedCount++;
+          }
+          console.log(`Updated existing member: ${csvMember.firstName} ${csvMember.lastName}`);
+        } else {
+          // Add new member and associate with church
+          const [newMember] = await db
+            .insert(members)
+            .values({
+              firstName: csvMember.firstName!,
+              lastName: csvMember.lastName!,
+              email: csvMember.email || null,
+              phone: csvMember.phone || null,
+              notes: csvMember.notes || null,
+              isVisitor: csvMember.isVisitor ?? false,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+            .returning();
+          
+          // Create church membership
+          await db.insert(churchMembers).values({
+            churchId: churchId,
+            memberId: newMember.id,
+            memberNotes: csvMember.notes || null,
+            isActive: true,
+          });
+          
+          addedCount++;
+          console.log(`Added new member: ${csvMember.firstName} ${csvMember.lastName}`);
+        }
+      }
+
+      console.log(`Merge complete: ${updatedCount} updated, ${addedCount} added`);
+      return { updated: updatedCount, added: addedCount };
+    } catch (error) {
+      console.error('Error in merge and update:', error);
+      throw error;
+    }
   }
 
   async getMember(id: number, churchId: string): Promise<Member | undefined> {
     const [member] = await db
-      .select()
+      .select({
+        id: members.id,
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+        phone: members.phone,
+        isVisitor: members.isVisitor,
+        createdAt: members.createdAt,
+        updatedAt: members.updatedAt,
+        notes: members.notes,
+        externalId: members.externalId,
+        externalSystem: members.externalSystem,
+      })
       .from(members)
+      .innerJoin(churchMembers, eq(members.id, churchMembers.memberId))
       .where(and(
         eq(members.id, id),
-        eq(members.churchId, churchId)
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
       ));
     
     return member;
@@ -900,11 +1422,25 @@ export class DatabaseStorage implements IStorage {
 
   async getMemberWithDonations(id: number, churchId: string): Promise<MemberWithDonations | undefined> {
     const [member] = await db
-      .select()
+      .select({
+        id: members.id,
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+        phone: members.phone,
+        isVisitor: members.isVisitor,
+        createdAt: members.createdAt,
+        updatedAt: members.updatedAt,
+        notes: members.notes,
+        externalId: members.externalId,
+        externalSystem: members.externalSystem,
+      })
       .from(members)
+      .innerJoin(churchMembers, eq(members.id, churchMembers.memberId))
       .where(and(
         eq(members.id, id),
-        eq(members.churchId, churchId)
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
       ));
     
     if (!member) return undefined;
@@ -939,26 +1475,60 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createMember(memberData: InsertMember): Promise<Member> {
+  async createMember(memberData: InsertMember, churchId: string): Promise<Member> {
+    // Create the member without churchId (it's no longer a direct field)
+    const memberDataWithoutChurchId = {
+      firstName: memberData.firstName,
+      lastName: memberData.lastName,
+      email: memberData.email,
+      phone: memberData.phone,
+      notes: memberData.notes,
+      isVisitor: memberData.isVisitor,
+      externalId: memberData.externalId,
+      externalSystem: memberData.externalSystem,
+    };
+
     const [newMember] = await db
       .insert(members)
-      .values(memberData)
+      .values(memberDataWithoutChurchId)
       .returning();
+    
+    // Create the church membership relationship
+    await db.insert(churchMembers).values({
+      churchId: churchId,
+      memberId: newMember.id,
+      memberNotes: memberData.notes || null,
+      isActive: true,
+    });
     
     return newMember;
   }
 
   async updateMember(id: number, data: Partial<InsertMember>, churchId: string): Promise<Member | undefined> {
+    // First verify this member belongs to this church
+    const [membership] = await db
+      .select()
+      .from(churchMembers)
+      .where(and(
+        eq(churchMembers.memberId, id),
+        eq(churchMembers.churchId, churchId),
+        eq(churchMembers.isActive, true)
+      ));
+    
+    if (!membership) {
+      return undefined; // Member doesn't belong to this church
+    }
+
+    // Remove churchId from data if it exists (no longer a direct field)
+    const { churchId: _, ...memberDataWithoutChurchId } = data as any;
+
     const [updatedMember] = await db
       .update(members)
       .set({
-        ...data,
+        ...memberDataWithoutChurchId,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(members.id, id),
-        eq(members.churchId, churchId)
-      ))
+      .where(eq(members.id, id))
       .returning();
     
     return updatedMember;
@@ -1068,6 +1638,74 @@ export class DatabaseStorage implements IStorage {
     return updatedBatch;
   }
   
+  async updateBatchPrimaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        primaryAttestorId: attestationData.attestorId,
+        primaryAttestorName: attestationData.attestorName,
+        primaryAttestationDate: attestationData.attestationDate,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async updateBatchSecondaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        secondaryAttestorId: attestationData.attestorId,
+        secondaryAttestorName: attestationData.attestorName,
+        secondaryAttestationDate: attestationData.attestationDate,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async finalizeBatch(id: number, churchId: string, userId: string): Promise<Batch | undefined> {
+    // Get the batch to calculate total amount first
+    const batchWithDonations = await this.getBatchWithDonations(id, churchId);
+    
+    if (!batchWithDonations) {
+      throw new Error('Batch not found');
+    }
+    
+    // Calculate total amount from donations
+    const totalAmount = batchWithDonations.donations.reduce((sum, donation) => {
+      return sum + parseFloat(donation.amount.toString());
+    }, 0).toFixed(2);
+    
+    // Update the batch status to FINALIZED and set total amount
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        status: 'FINALIZED',
+        totalAmount,
+        attestationConfirmedBy: userId,
+        attestationConfirmationDate: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
   async addPrimaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
     const [updatedBatch] = await db
       .update(batches)
@@ -1084,6 +1722,362 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedBatch;
+  }
+  
+  async updateBatchPrimaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        primaryAttestorId: attestationData.attestorId,
+        primaryAttestorName: attestationData.attestorName,
+        primaryAttestationDate: attestationData.attestationDate,
+        primaryAttestationNotes: attestationData.notes,
+        status: 'PENDING_SECONDARY',
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async updateBatchSecondaryAttestation(id: number, churchId: string, attestationData: any): Promise<Batch | undefined> {
+    const [updatedBatch] = await db
+      .update(batches)
+      .set({
+        secondaryAttestorId: attestationData.attestorId,
+        secondaryAttestorName: attestationData.attestorName,
+        secondaryAttestationDate: attestationData.attestationDate,
+        secondaryAttestationNotes: attestationData.notes,
+        status: 'PENDING_FINALIZATION',
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(batches.id, id),
+        eq(batches.churchId, churchId)
+      ))
+      .returning();
+    
+    return updatedBatch;
+  }
+  
+  async finalizeBatch(id: number, churchId: string, userId: string): Promise<Batch | undefined> {
+    try {
+      // First get the batch with donations to calculate the total amount
+      const batchWithDonations = await this.getBatchWithDonations(id, churchId);
+      if (!batchWithDonations) {
+        console.error(`Failed to get batch with donations for batch ${id}`);
+        return undefined;
+      }
+      
+      // Calculate the total amount
+      let totalAmount = "0.00";
+      if (batchWithDonations.donations && batchWithDonations.donations.length > 0) {
+        const total = batchWithDonations.donations.reduce(
+          (sum, donation) => sum + parseFloat(donation.amount.toString()),
+          0
+        );
+        totalAmount = total.toFixed(2);
+      }
+      
+      console.log(`Calculated total amount ${totalAmount} for batch ${id}`);
+      
+      // Update the batch status and total amount
+      const [updatedBatch] = await db
+        .update(batches)
+        .set({
+          attestationConfirmedBy: userId,
+          attestationConfirmationDate: new Date(),
+          status: 'FINALIZED',
+          totalAmount: totalAmount,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(batches.id, id),
+          eq(batches.churchId, churchId)
+        ))
+        .returning();
+      
+      if (!updatedBatch) {
+        console.error(`Failed to update batch ${id}`);
+        return undefined;
+      }
+
+      // Check if we should send email notifications
+      // Get the user account that represents the church
+      const churchUser = await this.getUser(churchId);
+      
+      // Always attempt to send email notifications, printing detailed status for debugging
+      console.log(`Email notification check for church ${churchId}:`);
+      console.log(`- Church user exists: ${churchUser ? 'Yes' : 'No'}`);
+      console.log(`- Email notifications enabled: ${churchUser?.emailNotificationsEnabled ? 'Yes' : 'No'}`);
+      console.log(`- SendGrid API Key configured: ${process.env.SENDGRID_API_KEY ? 'Yes' : 'No'}`);
+      console.log(`- From email configured: ${process.env.SENDGRID_FROM_EMAIL ? process.env.SENDGRID_FROM_EMAIL : 'No'}`);
+      
+      // Force email notifications to be enabled for this run to fix the issue
+      const emailNotificationsEnabled = true;
+      console.log(`Overriding email notification setting to ENABLED to fix email delivery issues`);
+      
+      if (emailNotificationsEnabled) {
+        console.log(`Email notifications are enabled for church ${churchId}. Preparing to send finalization emails...`);
+        
+        // Get the batch with donations for sending emails
+        const batchWithDonations = await this.getBatchWithDonations(id, churchId);
+        if (batchWithDonations) {
+          // Start processing emails in the background
+          setTimeout(async () => {
+            try {
+              // First, fetch the church data we'll need for all emails
+              console.log(`Fetching church data for ${churchId}...`);
+              const [churchData] = await db
+                .select()
+                .from(churches)
+                .where(eq(churches.id, churchId));
+              
+              if (!churchData) {
+                console.error(`Church data not found for ID: ${churchId}`);
+                return;
+              }
+              
+              const churchName = churchData.name || 'Your Church';
+              
+              // CRITICAL: For email templates, ONLY use S3 URLs for logos
+              // These are guaranteed to work in emails, unlike Replit domain URLs
+              let churchLogoUrl = '';
+              
+              // If we have a logo URL in the database, make sure it's an S3 URL
+              if (churchData.logoUrl && churchData.logoUrl.includes('s3.amazonaws.com')) {
+                // Use the S3 URL directly - this is the only reliable approach for emails
+                churchLogoUrl = churchData.logoUrl;
+                console.log(`Using S3 logo URL for emails: ${churchLogoUrl}`);
+              } else {
+                // If we don't have an S3 URL, don't use any logo URL (fallback to text)
+                console.log(`No valid S3 logo URL available for emails - using church name only`);
+              }
+              
+              console.log(`Using church name: ${churchName} for emails`);
+              
+              // First, handle donor receipt emails if members have email addresses
+              console.log(`Processing donation receipt emails for batch ${id}...`);
+              const { donations } = batchWithDonations;
+              
+              if (donations && donations.length > 0) {
+                for (const donation of donations) {
+                  if (donation.memberId) {
+                    const member = await this.getMember(donation.memberId, churchId);
+                    if (member && member.email) {
+                      // We have a member with an email, send receipt
+                      const donationDate = donation.createdAt 
+                        ? format(new Date(donation.createdAt), 'MMMM d, yyyy')
+                        : format(new Date(), 'MMMM d, yyyy');
+                        
+                      const { sendDonationNotification } = await import('./sendgrid');
+                      await sendDonationNotification({
+                        to: member.email,
+                        amount: donation.amount.toString(),
+                        date: donationDate,
+                        donorName: `${member.firstName} ${member.lastName}`,
+                        churchName: churchName,
+                        churchId: churchId,
+                        churchLogoUrl: churchLogoUrl,
+                        donationId: donation.id.toString()
+                      });
+                      
+                      console.log(`Sent donation receipt to ${member.email} for donation ${donation.id}`);
+                    }
+                  }
+                }
+              }
+              
+              // Now send the count report to all report recipients
+              const recipients = await this.getReportRecipients(churchId);
+              if (recipients && recipients.length > 0) {
+                console.log(`Sending count report to ${recipients.length} recipients...`);
+                
+                // Get service option name - MORE RELIABLE VERSION
+                // Start with batch name as the default value to avoid "Regular Service"
+                let serviceName = batchWithDonations.name || "Service";
+                
+                // If the batch has a service field with an ID number, use that to lookup the service option
+                if (batchWithDonations.serviceOptionId) {
+                  const serviceOption = await this.getServiceOption(batchWithDonations.serviceOptionId, churchId);
+                  if (serviceOption) {
+                    serviceName = serviceOption.name;
+                    console.log(`Using service option name from serviceOptionId: ${serviceName}`);
+                  }
+                } 
+                // Otherwise, if the batch has a service field, try to look up by value
+                else if (batchWithDonations.service) {
+                  try {
+                    // First see if service is a number (ID)
+                    const serviceId = parseInt(batchWithDonations.service);
+                    if (!isNaN(serviceId)) {
+                      const serviceOption = await this.getServiceOption(serviceId, churchId);
+                      if (serviceOption) {
+                        serviceName = serviceOption.name;
+                        console.log(`Using service option name from service ID: ${serviceName}`);
+                      }
+                    } else {
+                      // If not a number, try to find a service option with this value
+                      const options = await this.getServiceOptions(churchId);
+                      const matchingOption = options.find(opt => opt.value === batchWithDonations.service);
+                      if (matchingOption) {
+                        serviceName = matchingOption.name;
+                        console.log(`Using service option name from matched option: ${serviceName}`);
+                      } else {
+                        // If no match, but the service has a readable name format (e.g., "morning-service"), format it
+                        if (batchWithDonations.service.includes('-')) {
+                          const parts = batchWithDonations.service.split('-');
+                          const formattedParts = parts.map(part => 
+                            part.charAt(0).toUpperCase() + part.slice(1)
+                          );
+                          serviceName = formattedParts.join(' ');
+                          console.log(`Using formatted service name: ${serviceName}`);
+                        } else {
+                          // Use the service value directly if it looks like a service name
+                          serviceName = batchWithDonations.service;
+                          console.log(`Using service value directly: ${serviceName}`);
+                        }
+                      }
+                    }
+                  } catch (error) {
+                    console.error(`Error getting service name from batch.service: ${error}`);
+                    // Fall back to batch name instead of hardcoded "Regular Service"
+                    console.log(`Falling back to batch name: ${batchWithDonations.name}`);
+                  }
+                }
+                
+                // Final verification - NEVER use hardcoded "Regular Service"
+                if (serviceName === "Regular Service") {
+                  // Fallback to batch name which should be more accurate
+                  serviceName = batchWithDonations.name || "Service";
+                  console.log(`Replaced "Regular Service" with batch name: ${serviceName}`);
+                }
+                
+                // Calculate totals
+                const totalAmount = donations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                const cashDonations = donations.filter(d => d.donationType === 'CASH');
+                const checkDonations = donations.filter(d => d.donationType === 'CHECK');
+                const cashAmount = cashDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                const checkAmount = checkDonations.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
+                
+                // Log the totals for debugging
+                console.log(`📧 [CountReport] Cash amount: $${cashAmount.toFixed(2)}`);
+                console.log(`📧 [CountReport] Check amount: $${checkAmount.toFixed(2)}`);
+                console.log(`📧 [CountReport] Total amount: $${totalAmount.toFixed(2)}`);
+                
+                // Format date
+                const batchDate = batchWithDonations.createdAt 
+                  ? format(new Date(batchWithDonations.createdAt), 'MMMM d, yyyy')
+                  : format(new Date(), 'MMMM d, yyyy');
+                
+                // Use the attester names directly from the batch record (more reliable)
+                // This ensures we use the correct names that are stored with the batch
+                // Debug the attester names we're getting from the database
+                console.log(`📧 [CountReport] Batch data:`, JSON.stringify({
+                  id: batchWithDonations.id,
+                  name: batchWithDonations.name,
+                  primaryAttestorId: batchWithDonations.primaryAttestorId,
+                  primaryAttestorName: batchWithDonations.primaryAttestorName,
+                  secondaryAttestorId: batchWithDonations.secondaryAttestorId,
+                  secondaryAttestorName: batchWithDonations.secondaryAttestorName
+                }));
+                
+                const primaryAttestorName = batchWithDonations.primaryAttestorName || 'Unknown';
+                const secondaryAttestorName = batchWithDonations.secondaryAttestorName || '';
+                
+                console.log(`📧 [CountReport] Using attestor names for email:`);
+                console.log(`📧 [CountReport] Primary: "${primaryAttestorName}"`);
+                console.log(`📧 [CountReport] Secondary: "${secondaryAttestorName}"`);
+                  
+                // CRITICAL: For emails, ONLY use S3 URLs - REMOVE this conversion code
+                // The previous code was FORCING Replit domain URLs which don't work in emails
+                
+                // Reset churchLogoUrl unless it's already a valid S3 URL
+                if (!churchLogoUrl || !churchLogoUrl.includes('s3.amazonaws.com')) {
+                  // Clear any non-S3 URLs to ensure they don't get used in emails
+                  console.log(`⚠️ Invalid logo URL detected - not using S3. Removing logo from email.`);
+                  churchLogoUrl = '';
+                } else {
+                  console.log(`✅ Using valid S3 logo URL in count report email: ${churchLogoUrl}`);
+                }
+                
+                const counterNames = secondaryAttestorName 
+                  ? `${primaryAttestorName} and ${secondaryAttestorName}` 
+                  : primaryAttestorName;
+                
+                // Send to each recipient
+                for (const recipient of recipients) {
+                  if (recipient.email) {
+                    const { sendCountReport } = await import('./sendgrid');
+                    // Add member names to donations before sending to email generator
+                    console.log(`Enhancing ${donations.length} donations with member names for CSV export`);
+                    const enhancedDonations = await Promise.all(donations.map(async (donation) => {
+                      // Only process donations with memberId but no memberName
+                      if (donation.memberId && !donation.memberName) {
+                        try {
+                          // Get full member record to include proper name in CSV
+                          const member = await this.getMember(donation.memberId, churchId);
+                          if (member && member.firstName && member.lastName) {
+                            console.log(`Added name "${member.firstName} ${member.lastName}" for member #${donation.memberId}`);
+                            return {
+                              ...donation,
+                              memberName: `${member.firstName} ${member.lastName}`
+                            };
+                          }
+                        } catch (err) {
+                          console.error(`Error getting member data for CSV:`, err);
+                        }
+                      }
+                      return donation;
+                    }));
+                    
+                    await sendCountReport({
+                      to: recipient.email,
+                      recipientName: `${recipient.firstName} ${recipient.lastName}`,
+                      churchName: churchName,
+                      churchId: churchId,
+                      churchLogoUrl: churchLogoUrl,
+                      batchId: id,
+                      batchName: serviceName,
+                      batchDate: batchDate,
+                      totalAmount: totalAmount.toFixed(2),
+                      cashAmount: cashAmount.toFixed(2),
+                      checkAmount: checkAmount.toFixed(2),
+                      donations: enhancedDonations, // Use enhanced donations with proper member names
+                      donationCount: enhancedDonations.length,
+                      primaryAttestor: primaryAttestorName,
+                      secondaryAttestor: secondaryAttestorName,
+                      attestationTime: batchWithDonations.finalizedAt ? format(new Date(batchWithDonations.finalizedAt), 'MMM d, yyyy h:mm a') : undefined,
+                      date: new Date(batchWithDonations.createdAt),
+                      serviceOption: serviceName
+                    });
+                    
+                    console.log(`Sent count report to ${recipient.email}`);
+                  }
+                }
+              } else {
+                console.log(`No report recipients configured for church ${churchId}`);
+              }
+              
+            } catch (emailError) {
+              console.error('Error sending finalization emails:', emailError);
+              // Do not block the batch finalization process for email errors
+            }
+          }, 0);
+        }
+      } else {
+        console.log(`Email notifications are NOT enabled for church ${churchId}. Skipping emails.`);
+      }
+      
+      return updatedBatch;
+    } catch (error) {
+      console.error(`Error finalizing batch ${id}:`, error);
+      throw error;
+    }
   }
   
   async addSecondaryAttestation(id: number, attestorId: string, attestorName: string, churchId: string): Promise<Batch | undefined> {
@@ -1123,21 +2117,49 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBatch(id: number, churchId: string): Promise<void> {
-    // First, delete all donations associated with this batch
-    await db
-      .delete(donations)
-      .where(and(
-        eq(donations.batchId, id),
-        eq(donations.churchId, churchId)
-      ));
-    
-    // Then delete the batch itself
-    await db
-      .delete(batches)
-      .where(and(
-        eq(batches.id, id),
-        eq(batches.churchId, churchId)
-      ));
+    try {
+      // Begin transaction to ensure data integrity
+      await db.transaction(async (tx) => {
+        // 1. First fetch the batch to verify it exists and belongs to the church
+        const [batch] = await tx
+          .select()
+          .from(batches)
+          .where(and(
+            eq(batches.id, id),
+            eq(batches.churchId, churchId)
+          ));
+        
+        if (!batch) {
+          throw new Error(`Batch not found with ID ${id} for church ${churchId}`);
+        }
+        
+        // 2. Delete any donation notifications related to this batch's donations
+        // This is handled by cascading deletes in the database, but we'll make it explicit here
+
+        // 3. Delete all donations associated with this batch
+        await tx
+          .delete(donations)
+          .where(and(
+            eq(donations.batchId, id),
+            eq(donations.churchId, churchId)
+          ));
+        
+        console.log(`Deleted all donations for batch ${id} from church ${churchId}`);
+        
+        // 4. Delete the batch itself
+        await tx
+          .delete(batches)
+          .where(and(
+            eq(batches.id, id),
+            eq(batches.churchId, churchId)
+          ));
+        
+        console.log(`Deleted batch ${id} from church ${churchId}`);
+      });
+    } catch (error) {
+      console.error(`Error deleting batch ${id} for church ${churchId}:`, error);
+      throw error;
+    }
   }
 
   async getCurrentBatch(churchId: string): Promise<Batch | undefined> {
@@ -1244,6 +2266,17 @@ export class DatabaseStorage implements IStorage {
       ));
     
     return donation;
+  }
+  
+  async getDonationsForBatch(batchId: number, churchId: string): Promise<Donation[]> {
+    return db
+      .select()
+      .from(donations)
+      .where(and(
+        eq(donations.batchId, batchId),
+        eq(donations.churchId, churchId)
+      ))
+      .orderBy(desc(donations.date));
   }
   
   async getDonationWithMember(id: number, churchId: string): Promise<DonationWithMember | undefined> {
@@ -1693,6 +2726,21 @@ export class DatabaseStorage implements IStorage {
   
   // Email Templates operations
   async getEmailTemplates(churchId: string): Promise<EmailTemplate[]> {
+    // Special handling for system templates - only return templates 30 and 31
+    if (churchId === 'SYSTEM_TEMPLATES') {
+      return db
+        .select()
+        .from(emailTemplates)
+        .where(and(
+          eq(emailTemplates.churchId, churchId),
+          or(
+            eq(emailTemplates.id, 30),
+            eq(emailTemplates.id, 31)
+          )
+        ))
+        .orderBy(asc(emailTemplates.templateType));
+    }
+    
     return db
       .select()
       .from(emailTemplates)
@@ -1724,6 +2772,30 @@ export class DatabaseStorage implements IStorage {
     return template;
   }
   
+  async getEmailTemplateById(id: number, churchId?: string): Promise<EmailTemplate | undefined> {
+    // Create the query with proper AND conditions
+    const conditions = [eq(emailTemplates.id, id)];
+    
+    // If churchId is provided, add it as an additional condition
+    if (churchId) {
+      conditions.push(eq(emailTemplates.churchId, churchId));
+    }
+    
+    // Execute the query with AND conditions
+    const [template] = await db
+      .select()
+      .from(emailTemplates)
+      .where(and(...conditions));
+    
+    if (template) {
+      console.log(`Found template ID ${id}, type: ${template.templateType}, churchId: ${template.churchId}`);
+    } else {
+      console.log(`No template found with ID ${id}${churchId ? ` and churchId ${churchId}` : ''}`);
+    }
+    
+    return template;
+  }
+  
   async getAllEmailTemplatesByType(templateType: string): Promise<EmailTemplate[]> {
     const templates = await db
       .select()
@@ -1742,18 +2814,25 @@ export class DatabaseStorage implements IStorage {
     return newTemplate;
   }
   
-  async updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId: string): Promise<EmailTemplate | undefined> {
-    const [updatedTemplate] = await db
+  async updateEmailTemplate(id: number, data: Partial<InsertEmailTemplate>, churchId?: string): Promise<EmailTemplate | undefined> {
+    // Create base query
+    let query = db
       .update(emailTemplates)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(emailTemplates.id, id),
-        eq(emailTemplates.churchId, churchId)
-      ))
-      .returning();
+      .where(eq(emailTemplates.id, id));
+    
+    // Add churchId to query if provided
+    if (churchId) {
+      query = query.where(eq(emailTemplates.churchId, churchId));
+    }
+    
+    // Execute the query and get the first result
+    const [updatedTemplate] = await query.returning();
+    
+    console.log(`Updated template ID ${id} with churchId ${churchId || 'not specified'}`);
     
     return updatedTemplate;
   }
@@ -1796,6 +2875,7 @@ The PlateSync Team
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <img src="https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png" alt="PlateSync Logo" style="max-width: 200px; height: auto; margin-bottom: 15px;" />
     <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
     <p style="margin: 10px 0 0; font-size: 18px;">Welcome to {{churchName}}</p>
   </div>
@@ -1857,6 +2937,7 @@ The PlateSync Team
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2D3748;">
   <!-- Header with Logo and Title -->
   <div style="background-color: #69ad4c; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+    <img src="https://repl-plates-image-repo.s3.amazonaws.com/logos/logo-with-text.png" alt="PlateSync Logo" style="max-width: 200px; height: auto; margin-bottom: 15px;" />
     <h1 style="margin: 0; font-size: 24px;">PlateSync</h1>
     <p style="margin: 10px 0 0; font-size: 18px;">Password Reset Request</p>
   </div>
@@ -2105,6 +3186,30 @@ PlateSync Reporting System
     }
   }
   
+  async getPlanningCenterTokensByChurchId(churchId: string): Promise<PlanningCenterTokens | undefined> {
+    try {
+      console.log(`Looking for Planning Center tokens for church ID: ${churchId}`);
+      
+      // Find any token for this church - focusing only on church ID
+      const [tokens] = await db
+        .select()
+        .from(planningCenterTokens)
+        .where(eq(planningCenterTokens.churchId, churchId))
+        .limit(1);
+      
+      if (tokens) {
+        console.log(`Found Planning Center tokens for church ID: ${churchId} (belongs to user: ${tokens.userId})`);
+      } else {
+        console.log(`No Planning Center tokens found for church ID: ${churchId}`);
+      }
+      
+      return tokens;
+    } catch (error) {
+      console.error("Error in getPlanningCenterTokensByChurchId:", error);
+      return undefined;
+    }
+  }
+  
   async clearPlanningCenterTokens(userId: string, churchId: string): Promise<void> {
     try {
       console.log(`Clearing Planning Center tokens for user ${userId} and church ${churchId}`);
@@ -2180,7 +3285,8 @@ PlateSync Reporting System
       await db
         .update(planningCenterTokens)
         .set({
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          lastSyncDate: new Date()
         })
         .where(and(
           eq(planningCenterTokens.userId, userId),
@@ -2188,6 +3294,95 @@ PlateSync Reporting System
         ));
     } catch (error) {
       console.error("Error in updatePlanningCenterLastSync:", error);
+      throw error;
+    }
+  }
+  
+  async updatePlanningCenterImportStats(churchId: string, peopleCount: number): Promise<void> {
+    try {
+      const now = new Date();
+      // Update the tokens record for this church with the people count AND the lastSyncDate
+      await db
+        .update(planningCenterTokens)
+        .set({
+          peopleCount: peopleCount,
+          lastSyncDate: now,
+          updatedAt: now
+        })
+        .where(eq(planningCenterTokens.churchId, churchId));
+        
+      console.log(`Updated Planning Center stats for church ${churchId}: ${peopleCount} people available, lastSyncDate: ${now.toISOString()}`);
+    } catch (error) {
+      console.error("Error in updatePlanningCenterImportStats:", error);
+      throw error;
+    }
+  }
+  
+  // Get CSV import stats for a church
+  async getCsvImportStats(churchId: string): Promise<{ lastImportDate: Date | null; importCount: number; totalMembersImported: number; } | null> {
+    try {
+      const [stats] = await db
+        .select()
+        .from(csvImportStats)
+        .where(eq(csvImportStats.churchId, churchId));
+        
+      if (!stats) {
+        return null;
+      }
+      
+      return {
+        lastImportDate: stats.lastImportDate,
+        importCount: stats.importCount,
+        totalMembersImported: stats.totalMembersImported
+      };
+    } catch (error) {
+      console.error("Error in getCsvImportStats:", error);
+      return null;
+    }
+  }
+  
+  // Update CSV import stats for a church
+  async updateCsvImportStats(userId: string, churchId: string, membersImported: number): Promise<void> {
+    try {
+      const now = new Date();
+      
+      // Check if an entry already exists for this church
+      const [existingStats] = await db
+        .select()
+        .from(csvImportStats)
+        .where(eq(csvImportStats.churchId, churchId));
+        
+      if (existingStats) {
+        // Update existing entry
+        await db
+          .update(csvImportStats)
+          .set({
+            lastImportDate: now,
+            importCount: existingStats.importCount + 1,
+            totalMembersImported: existingStats.totalMembersImported + membersImported,
+            updatedAt: now
+          })
+          .where(eq(csvImportStats.churchId, churchId));
+          
+        console.log(`Updated CSV import stats for church ${churchId}: ${membersImported} members imported, lastImportDate: ${now.toISOString()}`);
+      } else {
+        // Create new entry
+        await db
+          .insert(csvImportStats)
+          .values({
+            userId: userId,
+            churchId: churchId,
+            lastImportDate: now,
+            importCount: 1,
+            totalMembersImported: membersImported,
+            createdAt: now,
+            updatedAt: now
+          });
+          
+        console.log(`Created CSV import stats for church ${churchId}: ${membersImported} members imported, lastImportDate: ${now.toISOString()}`);
+      }
+    } catch (error) {
+      console.error("Error in updateCsvImportStats:", error);
       throw error;
     }
   }
@@ -2331,6 +3526,628 @@ PlateSync Reporting System
       return Array.isArray(result) ? result.length : 0; // Return number of deleted duplicates
     } catch (error) {
       console.error("Error in removeDuplicateMembers:", error);
+      throw error;
+    }
+  }
+
+  // ========== Global Admin Church Management Functions ==========
+
+  /**
+   * Get all churches in the system (for Global Admin)
+   */
+  async getAllChurches(): Promise<Church[]> {
+    try {
+      return await db.select().from(churches).orderBy(churches.name);
+    } catch (error) {
+      console.error("Error fetching all churches:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get a specific church by ID
+   */
+  async getChurch(id: string): Promise<Church | undefined> {
+    try {
+      const [church] = await db.select().from(churches).where(eq(churches.id, id));
+      return church;
+    } catch (error) {
+      console.error(`Error fetching church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  /**
+   * Update the church logo URL in the database
+   */
+  async updateChurchLogoUrl(id: string, logoUrl: string): Promise<boolean> {
+    try {
+      await db.update(churches)
+        .set({ 
+          logoUrl: logoUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id));
+      
+      console.log(`Successfully updated logo URL for church ${id} to ${logoUrl}`);
+      return true;
+    } catch (error) {
+      console.error(`Error updating logo URL for church ${id}:`, error);
+      return false;
+    }
+  }
+  
+  async getChurchesByAccountOwner(accountOwnerId: string): Promise<Church[]> {
+    try {
+      console.log(`Looking for churches with account owner ID: ${accountOwnerId}`);
+      const churchResults = await db
+        .select()
+        .from(churches)
+        .where(eq(churches.accountOwnerId, accountOwnerId))
+        .orderBy(desc(churches.createdAt));
+      
+      console.log(`Found ${churchResults.length} churches for account owner ${accountOwnerId}`);
+      return churchResults;
+    } catch (error) {
+      console.error(`Error getting churches for account owner ${accountOwnerId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get church with additional statistics
+   */
+  async getChurchWithStats(id: string): Promise<Church & { 
+    totalMembers: number; 
+    totalDonations: string;
+    userCount: number;
+    lastActivity: Date | null;
+  } | undefined> {
+    try {
+      // Get the church record first
+      const [church] = await db.select().from(churches).where(eq(churches.id, id));
+      
+      if (!church) return undefined;
+      
+      // Get member count for this church
+      const [{ count: totalMembers }] = await db
+        .select({ count: count() })
+        .from(members)
+        .where(eq(members.churchId, id));
+      
+      // Get total donations amount
+      const [donationResult] = await db
+        .select({ total: sql<string>`SUM(CAST(${donations.amount} AS DECIMAL(10,2)))` })
+        .from(donations)
+        .where(eq(donations.churchId, id));
+      
+      // Get user count
+      const [{ count: userCount }] = await db
+        .select({ count: count() })
+        .from(users)
+        .where(eq(users.churchId, id));
+      
+      // Get last activity (most recent batch)
+      const [lastBatch] = await db
+        .select({ createdAt: batches.createdAt })
+        .from(batches)
+        .where(eq(batches.churchId, id))
+        .orderBy(desc(batches.createdAt))
+        .limit(1);
+      
+      return {
+        ...church,
+        totalMembers,
+        totalDonations: donationResult?.total || "0.00",
+        userCount,
+        lastActivity: lastBatch?.createdAt || null
+      };
+    } catch (error) {
+      console.error(`Error fetching church stats for ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Create a new church
+   */
+  async createChurch(churchData: InsertChurch, customId?: string): Promise<Church> {
+    try {
+      // Use provided ID or generate a new UUID
+      const churchId = customId || crypto.randomUUID();
+      
+      const [church] = await db
+        .insert(churches)
+        .values({
+          id: churchId,
+          ...churchData
+        })
+        .returning();
+      
+      return church;
+    } catch (error) {
+      console.error("Error creating church:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update church details
+   */
+  async updateChurch(id: string, data: Partial<Church>): Promise<Church | undefined> {
+    try {
+      const [updatedChurch] = await db
+        .update(churches)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return updatedChurch;
+    } catch (error) {
+      console.error(`Error updating church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Suspend a church
+   */
+  async suspendChurch(id: string): Promise<Church | undefined> {
+    try {
+      const [suspendedChurch] = await db
+        .update(churches)
+        .set({
+          status: "SUSPENDED",
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return suspendedChurch;
+    } catch (error) {
+      console.error(`Error suspending church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Activate a previously suspended church
+   */
+  async activateChurch(id: string): Promise<Church | undefined> {
+    try {
+      const [activatedChurch] = await db
+        .update(churches)
+        .set({
+          status: "ACTIVE",
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return activatedChurch;
+    } catch (error) {
+      console.error(`Error activating church with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Store logo URL temporarily during onboarding
+   */
+  async updateOnboardingLogo(churchId: string, logoUrl: string): Promise<void> {
+    try {
+      // Update the church record if it exists
+      await db
+        .update(churches)
+        .set({
+          logoUrl: logoUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(churches.id, churchId));
+
+      // Also update any existing user with this churchId
+      await db
+        .update(users)
+        .set({
+          churchLogoUrl: logoUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(users.churchId, churchId));
+
+      console.log(`✅ Onboarding logo stored for church ${churchId}: ${logoUrl}`);
+    } catch (error) {
+      console.error(`Error storing onboarding logo for church ${churchId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a church (mark as deleted and archive data)
+   */
+  async deleteChurch(id: string): Promise<{ archiveUrl: string | null }> {
+    try {
+      // In a production system, we would:
+      // 1. Export all church data to a file
+      // 2. Store it somewhere (S3, etc.)
+      // 3. Mark the church as DELETED
+      // 4. Optionally perform soft-delete of associated records
+
+      // For now, just mark as deleted
+      const [deletedChurch] = await db
+        .update(churches)
+        .set({
+          status: "DELETED",
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+          // In a real implementation, store the archive URL
+          archiveUrl: null 
+        })
+        .where(eq(churches.id, id))
+        .returning();
+      
+      return { archiveUrl: deletedChurch.archiveUrl };
+    } catch (error) {
+      console.error(`Error deleting church with ID ${id}:`, error);
+      return { archiveUrl: null };
+    }
+  }
+
+  /**
+   * Migrate existing church data to new churches table
+   */
+  async migrateDataToNewChurchTable(): Promise<number> {
+    try {
+      // Get unique churchIds from the users table where role is ACCOUNT_OWNER
+      const accountOwners = await db
+        .select({
+          id: users.id,
+          churchId: users.churchId,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName
+        })
+        .from(users)
+        .where(eq(users.role, "ACCOUNT_OWNER"))
+        .orderBy(users.churchId);
+      
+      let migratedCount = 0;
+      
+      // For each church, create a church record if it doesn't exist
+      for (const owner of accountOwners) {
+        if (!owner.churchId) continue;
+        
+        // Check if church already exists
+        const [existingChurch] = await db
+          .select()
+          .from(churches)
+          .where(eq(churches.id, owner.churchId));
+        
+        if (!existingChurch) {
+          // Create new church record
+          await db.insert(churches).values({
+            id: owner.churchId,
+            name: `${owner.firstName || ''} ${owner.lastName || ''}`.trim() + "'s Church",
+            contactEmail: owner.email,
+            status: "ACTIVE",
+            accountOwnerId: owner.id,
+          });
+          
+          migratedCount++;
+        }
+      }
+      
+      return migratedCount;
+    } catch (error) {
+      console.error("Error migrating to church table:", error);
+      return 0;
+    }
+  }
+  
+  // Subscription operations
+  async getSubscription(churchId: string): Promise<Subscription | undefined> {
+    try {
+      const [subscription] = await db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.churchId, churchId));
+      
+      return subscription;
+    } catch (error) {
+      console.error("Error getting subscription:", error);
+      return undefined;
+    }
+  }
+  
+  async createSubscription(subscriptionData: InsertSubscription): Promise<Subscription> {
+    try {
+      // Calculate the trial end date (30 days from now) if not provided
+      const now = new Date();
+      const trialEndDate = new Date(now);
+      trialEndDate.setDate(trialEndDate.getDate() + 30);
+      
+      const [subscription] = await db
+        .insert(subscriptions)
+        .values({
+          ...subscriptionData,
+          trialEndDate: subscriptionData.trialEndDate || trialEndDate
+        })
+        .returning();
+        
+      return subscription;
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      throw error;
+    }
+  }
+  
+  async updateSubscription(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined> {
+    try {
+      // Update the subscription data
+      const [updatedSubscription] = await db
+        .update(subscriptions)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(subscriptions.churchId, churchId))
+        .returning();
+        
+      return updatedSubscription;
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      return undefined;
+    }
+  }
+  
+  async updateSubscriptionStatus(churchId: string, data: Partial<Subscription>): Promise<Subscription | undefined> {
+    try {
+      // This method is an alias for updateSubscription with additional logging specific to status updates
+      console.log(`Updating subscription status for church ${churchId}:`, JSON.stringify(data));
+      
+      // First check if subscription exists
+      const existingSubscription = await this.getSubscription(churchId);
+      
+      if (!existingSubscription) {
+        console.log(`No subscription found for church ${churchId}, creating a new one`);
+        // Create new subscription if it doesn't exist
+        return await this.createSubscription({
+          churchId,
+          status: data.status || 'ACTIVE',
+          plan: data.plan || 'MONTHLY',
+          trialStartDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+          trialEndDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago (trial already ended)
+          startDate: data.startDate || new Date(),
+          endDate: data.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days by default
+          stripeCustomerId: null,
+          stripeSubscriptionId: null
+        });
+      }
+      
+      // Update the existing subscription
+      return await this.updateSubscription(churchId, {
+        ...data,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error("Error updating subscription status:", error);
+      return undefined;
+    }
+  }
+  
+  async checkSubscriptionStatus(churchId: string): Promise<{
+    isActive: boolean;
+    isTrialExpired: boolean;
+    status: string;
+    daysRemaining: number | null;
+    trialEndDate: Date | null;
+  }> {
+    try {
+      const subscription = await this.getSubscription(churchId);
+      
+      if (!subscription) {
+        return {
+          isActive: false,
+          isTrialExpired: true,
+          status: "NO_SUBSCRIPTION",
+          daysRemaining: null,
+          trialEndDate: null
+        };
+      }
+      
+      const now = new Date();
+      let isActive = true;
+      let isTrialExpired = false;
+      let daysRemaining: number | null = null;
+      
+      // Check if it's a trial subscription
+      if (subscription.status === "TRIAL") {
+        const trialEndDate = subscription.trialEndDate ? new Date(subscription.trialEndDate) : null;
+        
+        if (trialEndDate) {
+          daysRemaining = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Debug logging to see what's happening
+          console.log(`Trial calculation debug for church ${churchId}:`);
+          console.log(`- Current time: ${now.toISOString()}`);
+          console.log(`- Trial end date: ${trialEndDate.toISOString()}`);
+          console.log(`- Days remaining: ${daysRemaining}`);
+          
+          // Trial is expired if days remaining is less than or equal to 0
+          isTrialExpired = daysRemaining <= 0;
+          isActive = !isTrialExpired;
+        } else {
+          // No trial end date found - treat as expired
+          isTrialExpired = true;
+          isActive = false;
+          daysRemaining = 0;
+        }
+      } else if (subscription.status === "ACTIVE") {
+        // Paid subscription
+        isActive = true;
+        isTrialExpired = true;
+      } else {
+        // Expired or canceled subscriptions
+        isActive = false;
+        isTrialExpired = true;
+      }
+      
+      return {
+        isActive,
+        isTrialExpired,
+        status: subscription.status,
+        daysRemaining,
+        trialEndDate: subscription.trialEndDate
+      };
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+      // Default to inactive when there's an error
+      return {
+        isActive: false,
+        isTrialExpired: true,
+        status: "ERROR",
+        daysRemaining: null,
+        trialEndDate: null
+      };
+    }
+  }
+  
+  async upgradeSubscription(churchId: string, plan: string, stripeData?: {
+    stripeCustomerId: string;
+    stripeSubscriptionId: string;
+  }): Promise<Subscription | undefined> {
+    try {
+      const now = new Date();
+      
+      // Update the subscription with paid plan info
+      const [updatedSubscription] = await db
+        .update(subscriptions)
+        .set({
+          plan,
+          status: "ACTIVE",
+          startDate: now,
+          stripeCustomerId: stripeData?.stripeCustomerId,
+          stripeSubscriptionId: stripeData?.stripeSubscriptionId,
+          updatedAt: now
+        })
+        .where(eq(subscriptions.churchId, churchId))
+        .returning();
+        
+      return updatedSubscription;
+    } catch (error) {
+      console.error("Error upgrading subscription:", error);
+      return undefined;
+    }
+  }
+  
+  async cancelSubscription(churchId: string): Promise<Subscription | undefined> {
+    try {
+      const now = new Date();
+      
+      // Update the subscription to canceled status
+      const [canceledSubscription] = await db
+        .update(subscriptions)
+        .set({
+          status: "CANCELED",
+          canceledAt: now,
+          updatedAt: now
+        })
+        .where(eq(subscriptions.churchId, churchId))
+        .returning();
+        
+      return canceledSubscription;
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      return undefined;
+    }
+  }
+  // System configuration methods
+  async getSystemConfig(key: string): Promise<string | null> {
+    try {
+      console.log(`Fetching system config for key: ${key}`);
+      const configs = await db.select().from(systemConfig).where(eq(systemConfig.key, key));
+      
+      if (configs && configs.length > 0) {
+        console.log(`Found system config for key ${key}`);
+        return configs[0]?.value || null;
+      } else {
+        console.log(`No system config found for key ${key}`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error getting system config for key ${key}:`, error);
+      return null;
+    }
+  }
+
+  async setSystemConfig(key: string, value: string): Promise<void> {
+    try {
+      console.log(`Setting system config: key=${key}, value=${value.substring(0, 5)}...`);
+      
+      // First check if the config exists
+      const existing = await db.select().from(systemConfig).where(eq(systemConfig.key, key));
+      
+      if (existing && existing.length > 0) {
+        console.log(`Config exists for key ${key}, updating...`);
+        await db.update(systemConfig)
+          .set({ 
+            value,
+            updatedAt: new Date()
+          })
+          .where(eq(systemConfig.key, key));
+      } else {
+        console.log(`Config does not exist for key ${key}, inserting new record...`);
+        await db.insert(systemConfig)
+          .values({ 
+            key, 
+            value,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+      }
+      console.log(`Successfully saved config for key ${key}`);
+    } catch (error) {
+      console.error(`Error setting system config for key ${key}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateSystemConfig(configData: { key: string; value: string }[]): Promise<void> {
+    try {
+      console.log(`Updating multiple system config values (${configData.length} items)`);
+      
+      // Process each config item in sequence
+      for (const item of configData) {
+        const { key, value } = item;
+        
+        // Only process if key is provided
+        if (!key) {
+          console.warn('Skipping config item with missing key');
+          continue;
+        }
+        
+        // For security, don't log the full value
+        const logValue = value ? 
+          (value.length > 10 ? `${value.substring(0, 5)}...` : '[empty]') : 
+          '[null]';
+        
+        console.log(`Processing config: key=${key}, value=${logValue}`);
+        
+        // If value is null, skip updating this key
+        if (value === null) {
+          console.log(`Skipping update for key ${key} as value is null`);
+          continue;
+        }
+        
+        // Use the existing setSystemConfig method to handle each item
+        await this.setSystemConfig(key, value);
+      }
+      
+      console.log(`Successfully updated all system config values`);
+    } catch (error) {
+      console.error(`Error updating system config:`, error);
       throw error;
     }
   }

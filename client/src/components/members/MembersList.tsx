@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -41,26 +41,32 @@ const MembersList = ({}: MembersListProps) => {
     queryKey: ['/api/members'],
   });
   
-  // No longer needed - duplicate removal is now done automatically
+  // Handle error in useEffect to prevent infinite re-renders
+  useEffect(() => {
+    if (isError) {
+      toast({
+        title: "Error",
+        description: "Failed to load members",
+        variant: "destructive",
+      });
+    }
+  }, [isError, toast]);
   
-  if (isError) {
-    toast({
-      title: "Error",
-      description: "Failed to load members",
-      variant: "destructive",
-    });
-  }
+  // Check if members is an array before filtering
+  const isValidMembersArray = Array.isArray(members);
   
-  // Filter and sort members
-  const filteredMembers = members?.filter(member => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      member.firstName.toLowerCase().includes(searchLower) ||
-      member.lastName.toLowerCase().includes(searchLower) ||
-      (member.email && member.email.toLowerCase().includes(searchLower)) ||
-      (member.phone && member.phone.toLowerCase().includes(searchLower))
-    );
-  }) || [];
+  // Filter members if it's a valid array, otherwise use empty array
+  const filteredMembers = isValidMembersArray 
+    ? members.filter(member => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          member.firstName.toLowerCase().includes(searchLower) ||
+          member.lastName.toLowerCase().includes(searchLower) ||
+          (member.email && member.email.toLowerCase().includes(searchLower)) ||
+          (member.phone && member.phone.toLowerCase().includes(searchLower))
+        );
+      }) 
+    : [];
   
   // Sort members based on the selected option
   const sortedMembers = [...filteredMembers].sort((a, b) => {
