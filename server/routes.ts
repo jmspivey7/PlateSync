@@ -218,8 +218,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth middleware and routes
   setupSessionMiddleware(app);
   
-  // Add logout routes (supports both GET and POST)
+  // Add logout routes (supports both GET and POST) - BEFORE auth middleware
   const handleLogout = (req: Request, res: Response) => {
+    console.log("Logout endpoint called - destroying session");
+    
+    // Use passport logout if available
+    if (req.logout) {
+      req.logout((err) => {
+        if (err) {
+          console.error("Passport logout error:", err);
+        }
+      });
+    }
+    
     // Completely destroy the session
     req.session.destroy((err) => {
       if (err) {
@@ -228,6 +239,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Clear all cookies
       res.clearCookie('connect.sid');
+      
+      console.log("Session destroyed and cookies cleared");
       
       // For GET requests or if 'redirect' is true in the POST body, redirect to login
       const isGetRequest = req.method === 'GET';
@@ -241,6 +254,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   };
+  
+  // Register logout routes BEFORE any auth middleware
+  app.get("/api/logout", handleLogout);
+  app.post("/api/logout", handleLogout);
   
   // Purge onboarding data endpoint (no auth required for cancellation) - MUST be before other routes
   app.delete('/api/purge-onboarding/:id', async (req: any, res) => {
