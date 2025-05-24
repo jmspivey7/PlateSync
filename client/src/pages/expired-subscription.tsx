@@ -85,64 +85,62 @@ export default function ExpiredSubscription() {
           )}
 
           {/* Subscription Plans */}
-          <div className="space-y-6 mb-8">
+          <div className="mb-8">
             <h3 className="text-2xl font-bold text-gray-900 text-center mb-6">Choose Your Plan</h3>
             
-            {/* Monthly Plan */}
-            <Card className="border-2 border-gray-200 hover:border-[#69ad4c] transition-colors cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h4 className="text-xl font-semibold text-gray-900">Monthly Plan</h4>
-                    <p className="text-gray-600">Perfect for getting started</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Monthly Plan */}
+              <Card className="border-2 border-gray-200 hover:border-[#69ad4c] transition-colors cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="text-center mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-1">Monthly Plan</h4>
+                    <p className="text-sm text-gray-600 mb-3">Perfect for getting started</p>
+                    <div className="mb-4">
+                      <p className="text-2xl font-bold text-gray-900">$2.99</p>
+                      <p className="text-sm text-gray-600">per month</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold text-gray-900">$2.99</p>
-                    <p className="text-gray-600">per month</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={() => handleSubscribe('monthly')}
-                  disabled={isRedirecting}
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9140] text-white"
-                  size="lg"
-                >
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  {isRedirecting ? 'Redirecting...' : 'Subscribe Monthly'}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button 
+                    onClick={() => handleSubscribe('monthly')}
+                    disabled={isRedirecting}
+                    className="w-full bg-[#69ad4c] hover:bg-[#5a9140] text-white"
+                    size="sm"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    {isRedirecting ? 'Redirecting...' : 'Subscribe Monthly'}
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Annual Plan */}
-            <Card className="border-2 border-[#69ad4c] bg-green-50 hover:bg-green-100 transition-colors cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <h4 className="text-xl font-semibold text-gray-900 mr-3">Annual Plan</h4>
-                      <Badge className="bg-[#69ad4c] text-white hover:bg-[#5a9140]">
+              {/* Annual Plan */}
+              <Card className="border-2 border-[#69ad4c] bg-green-50 hover:bg-green-100 transition-colors cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="text-center mb-4">
+                    <div className="flex items-center justify-center mb-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mr-2">Annual Plan</h4>
+                      <Badge className="bg-[#69ad4c] text-white hover:bg-[#5a9140] text-xs">
                         Save 30%
                       </Badge>
                     </div>
-                    <p className="text-gray-600">Best value for your church</p>
+                    <p className="text-sm text-gray-600 mb-3">Best value for your church</p>
+                    <div className="mb-4">
+                      <p className="text-2xl font-bold text-gray-900">$25.00</p>
+                      <p className="text-sm text-gray-600">per year</p>
+                      <p className="text-xs text-[#69ad4c] font-medium">Only $2.08/month</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold text-gray-900">$25.00</p>
-                    <p className="text-gray-600">per year</p>
-                    <p className="text-sm text-[#69ad4c] font-medium">Only $2.08/month</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={() => handleSubscribe('annual')}
-                  disabled={isRedirecting}
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9140] text-white"
-                  size="lg"
-                >
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  {isRedirecting ? 'Redirecting...' : 'Subscribe Annually'}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button 
+                    onClick={() => handleSubscribe('annual')}
+                    disabled={isRedirecting}
+                    className="w-full bg-[#69ad4c] hover:bg-[#5a9140] text-white"
+                    size="sm"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    {isRedirecting ? 'Redirecting...' : 'Subscribe Annually'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Features Included */}
