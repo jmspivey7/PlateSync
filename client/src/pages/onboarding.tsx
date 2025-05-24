@@ -800,6 +800,10 @@ export default function Onboarding() {
         console.log('Logout API call error:', error);
       }
       
+      // Wait for session to be fully destroyed before redirecting
+      console.log('Waiting for session cleanup...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       // Force complete page reload to ensure all state is cleared
       console.log('Redirecting to login page...');
       window.location.href = "/login-local";
