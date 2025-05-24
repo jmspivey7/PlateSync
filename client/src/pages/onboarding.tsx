@@ -809,7 +809,10 @@ export default function Onboarding() {
       }
       
       // Force complete browser reload to clear all cached state and redirect to login
-      window.location.replace("/login-local");
+      // Use a longer delay to ensure all authentication data is completely cleared
+      setTimeout(() => {
+        window.location.replace("/login-local");
+      }, 1500);
     }
   };
   
