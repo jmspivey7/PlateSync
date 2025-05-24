@@ -65,17 +65,10 @@ export default function ExpiredSubscription() {
         <div className="max-w-2xl mx-auto">
           {/* Trial Expired Header */}
           <div className="text-center mb-8">
-            <div className="mx-auto w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6">
-              <AlertTriangle className="w-10 h-10 text-orange-600" />
-            </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Trial Expired</h2>
             <p className="text-lg text-gray-600 mb-6">
               Your 30-day free trial has ended. Please upgrade to continue using PlateSync.
             </p>
-            <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 px-4 py-2">
-              <Clock className="w-4 h-4 mr-2" />
-              Trial Period Ended
-            </Badge>
           </div>
 
           {/* Church/User Info */}
