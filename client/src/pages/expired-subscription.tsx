@@ -76,7 +76,7 @@ export default function ExpiredSubscription() {
             <Card className="mb-8">
               <CardContent className="p-6">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-1">Account Owner</p>
+                  <p className="text-sm text-gray-500 mb-1">Account Owner: {(user as any).email}</p>
                   <p className="text-xl font-semibold text-gray-900">{(user as any).churchName}</p>
                   <p className="text-red-600 font-medium">Trial Expired: May 1, 2025</p>
                 </div>
