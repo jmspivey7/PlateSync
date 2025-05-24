@@ -1111,23 +1111,27 @@ export default function Onboarding() {
               </p>
             </div>
             
-            <div className="flex justify-between pt-4 border-t">
-              <Button 
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => setShowCancelDialog(true)}
-                disabled={isCanceling}
-              >
-                {isCanceling ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Canceling...
-                  </>
-                ) : (
-                  'Cancel'
-                )}
-              </Button>
-              
-              <div>
+            {/* Mobile-responsive button layout */}
+            <div className="pt-4 border-t space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 order-2 sm:order-1">
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Canceling...
+                      </>
+                    ) : (
+                      'Cancel'
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="order-1 sm:order-2">
                 <Button 
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                   onClick={verifyCode}
@@ -1460,55 +1464,63 @@ export default function Onboarding() {
               </div>
             </div>
             
-            <div className="flex justify-between pt-4 border-t">
-              <div className="flex space-x-3">
-                <Button 
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => setShowCancelDialog(true)}
-                  disabled={isCanceling}
-                >
-                  {isCanceling ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Canceling...
-                    </>
-                  ) : (
-                    'Cancel'
-                  )}
-                </Button>
+            {/* Mobile-responsive button layout */}
+            <div className="pt-4 border-t space-y-3 sm:space-y-0">
+              {/* Mobile: Stack buttons vertically, Desktop: Side by side */}
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                {/* Left side buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 order-2 sm:order-1">
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Canceling...
+                      </>
+                    ) : (
+                      'Cancel'
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full sm:w-auto"
+                    onClick={handleBackStep}
+                  >
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                </div>
                 
-                <Button 
-                  variant="outline" 
-                  onClick={handleBackStep}
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                </Button>
-              </div>
-              
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={handleSkip}
-                >
-                  Skip for now
-                </Button>
-                
-                <Button 
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  onClick={handleNextStep}
-                  disabled={donorNotificationMutation.isPending}
-                >
-                  {donorNotificationMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
+                {/* Right side buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={handleSkip}
+                  >
+                    Skip for now
+                  </Button>
+                  
+                  <Button 
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
+                    onClick={handleNextStep}
+                    disabled={donorNotificationMutation.isPending}
+                  >
+                    {donorNotificationMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
