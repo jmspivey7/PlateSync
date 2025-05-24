@@ -136,6 +136,44 @@ export default function GlobalAdminReports() {
     return percentChange.toFixed(2);
   }, [revenueData]);
 
+  // Download Excel report functions
+  const downloadReport = async (reportType: 'churches' | 'users' | 'revenue') => {
+    try {
+      setDownloadingReport(reportType);
+      const token = localStorage.getItem("globalAdminToken");
+      
+      const response = await fetch(`/api/global-admin/reports/export/${reportType}?period=${selectedPeriod}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download report');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${reportType}-report-${selectedPeriod}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download report. Please try again.');
+    } finally {
+      setDownloadingReport(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -221,9 +259,19 @@ export default function GlobalAdminReports() {
               </p>
             </CardContent>
             <CardFooter className="pt-0 pb-3">
-              <Button variant="outline" size="sm" className="w-full">
-                <Download className="h-3.5 w-3.5 mr-2" />
-                Download Report
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => downloadReport('churches')}
+                disabled={downloadingReport === 'churches'}
+              >
+                {downloadingReport === 'churches' ? (
+                  <div className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full mr-2" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                )}
+                {downloadingReport === 'churches' ? 'Generating...' : 'Download Report'}
               </Button>
             </CardFooter>
           </Card>
@@ -244,9 +292,19 @@ export default function GlobalAdminReports() {
               </p>
             </CardContent>
             <CardFooter className="pt-0 pb-3">
-              <Button variant="outline" size="sm" className="w-full">
-                <Download className="h-3.5 w-3.5 mr-2" />
-                Download Report
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => downloadReport('users')}
+                disabled={downloadingReport === 'users'}
+              >
+                {downloadingReport === 'users' ? (
+                  <div className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full mr-2" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                )}
+                {downloadingReport === 'users' ? 'Generating...' : 'Download Report'}
               </Button>
             </CardFooter>
           </Card>
@@ -271,9 +329,19 @@ export default function GlobalAdminReports() {
               </p>
             </CardContent>
             <CardFooter className="pt-0 pb-3">
-              <Button variant="outline" size="sm" className="w-full">
-                <Download className="h-3.5 w-3.5 mr-2" />
-                Download Report
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => downloadReport('revenue')}
+                disabled={downloadingReport === 'revenue'}
+              >
+                {downloadingReport === 'revenue' ? (
+                  <div className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full mr-2" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                )}
+                {downloadingReport === 'revenue' ? 'Generating...' : 'Download Report'}
               </Button>
             </CardFooter>
           </Card>
@@ -338,9 +406,17 @@ export default function GlobalAdminReports() {
             </ChartContainer>
           </CardContent>
           <CardFooter className="flex justify-center pb-4 pt-0">
-            <Button className="bg-[#69ad4c] hover:bg-[#5a9740] text-white">
-              <Download className="h-4 w-4 mr-2" />
-              Download Revenue Report
+            <Button 
+              className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+              onClick={() => downloadReport('revenue')}
+              disabled={downloadingReport === 'revenue'}
+            >
+              {downloadingReport === 'revenue' ? (
+                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              {downloadingReport === 'revenue' ? 'Generating Revenue Report...' : 'Download Revenue Report'}
             </Button>
           </CardFooter>
         </Card>
