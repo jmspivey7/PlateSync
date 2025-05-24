@@ -791,20 +791,13 @@ export default function Onboarding() {
       
       // Force logout through API
       try {
-        await Promise.all([
-          fetch('/api/logout-local', { 
-            method: 'POST', 
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-          }),
-          fetch('/api/logout', { 
-            method: 'POST', 
-            credentials: 'include', 
-            headers: { 'Content-Type': 'application/json' }
-          })
-        ]);
+        await fetch('/api/logout', { 
+          method: 'POST', 
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
       } catch (error) {
-        console.log('Logout API calls completed');
+        console.log('Logout API call completed');
       }
       
       // Force complete page reload to ensure all state is cleared
