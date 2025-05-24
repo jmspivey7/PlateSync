@@ -1,34 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Clock, CreditCard, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import plateSyncLogo from "@assets/PlateSync Logo.png";
 
 export default function ExpiredSubscription() {
   const { user } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
+  // Fetch Stripe payment links from public endpoint
+  const { data: paymentLinks, isLoading: isLoadingPaymentLinks } = useQuery<{
+    monthlyPaymentLink: string;
+    annualPaymentLink: string;
+  }>({
+    queryKey: ["/api/stripe/payment-links"],
+    retry: false,
+  });
+
   const handleSubscribe = async (plan: 'monthly' | 'annual') => {
     setIsRedirecting(true);
     
     try {
-      // Redirect to Stripe payment links
-      const paymentLinks = {
-        monthly: import.meta.env.VITE_STRIPE_MONTHLY_PAYMENT_LINK,
-        annual: import.meta.env.VITE_STRIPE_ANNUAL_PAYMENT_LINK
-      };
+      // Use payment links from public endpoint
+      const paymentLink = plan === 'monthly' 
+        ? paymentLinks?.monthlyPaymentLink 
+        : paymentLinks?.annualPaymentLink;
       
-      console.log('Payment links:', paymentLinks);
-      console.log(`Attempting to redirect to ${plan} plan:`, paymentLinks[plan]);
+      console.log('Payment links data:', paymentLinks);
+      console.log(`Attempting to redirect to ${plan} plan:`, paymentLink);
       
-      const paymentLink = paymentLinks[plan];
       if (paymentLink) {
         console.log('Redirecting to:', paymentLink);
         window.location.href = paymentLink;
       } else {
-        console.error(`Payment link not configured for ${plan} plan`);
+        console.error(`Payment link not configured for ${plan} plan in Global Admin settings`);
         console.error('Available payment links:', paymentLinks);
         setIsRedirecting(false);
       }

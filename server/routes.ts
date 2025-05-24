@@ -3025,6 +3025,36 @@ Sincerely,
     }
   });
   
+  // Public endpoint to get Stripe payment links for expired subscription page
+  app.get('/api/stripe/payment-links', async (req, res) => {
+    try {
+      console.log('Fetching Stripe payment links for expired subscription...');
+      
+      // Direct SQL query to get payment links from system config
+      const query = `SELECT * FROM system_config WHERE key IN ('STRIPE_MONTHLY_PAYMENT_LINK', 'STRIPE_ANNUAL_PAYMENT_LINK')`;
+      const { rows } = await db.$client.query(query);
+      
+      console.log('Found payment link entries:', rows.length);
+      
+      // Convert rows to a map for easier access
+      const configMap = {};
+      rows.forEach(row => {
+        configMap[row.key] = row.value;
+      });
+      
+      const response = {
+        monthlyPaymentLink: configMap['STRIPE_MONTHLY_PAYMENT_LINK'] || '',
+        annualPaymentLink: configMap['STRIPE_ANNUAL_PAYMENT_LINK'] || ''
+      };
+      
+      console.log('Returning payment links:', response);
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching Stripe payment links:', error);
+      res.status(500).json({ message: 'Error fetching payment links' });
+    }
+  });
+
   // Church registration endpoint
   app.post('/api/register-church', async (req, res) => {
     try {
