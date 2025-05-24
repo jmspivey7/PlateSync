@@ -28,9 +28,30 @@ This document contains essential information for developers working on the Plate
 - Red "Sign Out" button for easy logout access
 
 **Database Structure**:
-- `trial_end_date` field in churches table tracks 30-day trial period
+- `trial_end_date` field in subscriptions table tracks 30-day trial period
 - Subscription status calculated dynamically based on current date vs trial end date
 - Payment links stored in Global Admin Stripe integration settings
+
+**Page Routing & Access Control**:
+- `/expired-subscription` route only accessible when trial is expired AND user is Account Owner
+- Middleware redirects expired Account Owners to this page automatically
+- Other user roles (Admin/Standard) completely blocked from expired accounts
+- System automatically redirects back to dashboard when trial becomes active again
+
+**Troubleshooting Notes**:
+- Stripe skeleton loading issue fixed by opening payment links in new tabs instead of current window
+- Payment links fetched from `/api/stripe/payment-links` public endpoint (no auth required)
+- Trial period can be extended by updating `trial_end_date` in subscriptions table
+- System immediately detects trial status changes without requiring restart
+
+### ✅ CHURCH STATUS DATA INTEGRITY ISSUE RESOLVED (May 24, 2025)
+**Issue**: Churches table showed records with "DELETED" status while still being functional in the system.
+
+**Root Cause**: Global Admin interface filters to show only "ACTIVE" status churches by default, but database records had incorrect "DELETED" status.
+
+**Solution**: Updated church status from "DELETED" to "ACTIVE" to match actual system functionality.
+
+**Prevention**: Always verify church status consistency when debugging Global Admin visibility issues.
 
 ### ✅ LOGOUT FUNCTIONALITY FIXED (May 24, 2025)
 **Issue**: Session destruction was causing crashes with "Cannot read properties of undefined (reading 'regenerate')" error during logout process.
