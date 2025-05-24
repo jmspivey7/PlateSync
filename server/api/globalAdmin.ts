@@ -1,9 +1,9 @@
 import express from "express";
 import { Router } from "express";
 import { db } from "../db";
-import { churches, users, members, donations } from "@shared/schema";
+import { churches, users, members, donations, subscriptions, batches } from "@shared/schema";
 import { validateSchema } from "../middleware/validationMiddleware";
-import { eq, desc, and, asc, SQL, ilike, sql, ne } from "drizzle-orm";
+import { eq, desc, and, asc, SQL, ilike, sql, ne, count, sum, gte } from "drizzle-orm";
 import { z } from "zod";
 import { generateId, scryptHash, verifyPassword, generateToken } from "../util";
 import { requireGlobalAdmin } from "../middleware/globalAdminMiddleware";
@@ -514,6 +514,110 @@ router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
   } catch (error) {
     console.error("Error fetching church users:", error);
     res.status(500).json({ message: "Failed to fetch church users" });
+  }
+});
+
+// Dashboard analytics endpoint - fetches real data for Global Admin dashboard
+router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
+  try {
+    // Get church statistics
+    const churchStats = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total_churches,
+        COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END) as active_churches,
+        COUNT(CASE WHEN status = 'SUSPENDED' THEN 1 END) as suspended_churches,
+        COUNT(CASE WHEN status = 'DELETED' THEN 1 END) as deleted_churches
+      FROM churches
+    `);
+
+    // Get subscription statistics
+    const subscriptionStats = await db.execute(sql`
+      SELECT 
+        COUNT(CASE WHEN plan = 'TRIAL' THEN 1 END) as trial_subscriptions,
+        COUNT(CASE WHEN plan = 'MONTHLY' THEN 1 END) as monthly_subscriptions,
+        COUNT(CASE WHEN plan = 'ANNUAL' THEN 1 END) as annual_subscriptions,
+        COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END) as active_subscriptions,
+        COUNT(CASE WHEN status = 'TRIAL' THEN 1 END) as trial_active
+      FROM subscriptions
+    `);
+
+    // Get donation statistics
+    const donationStats = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total_donations,
+        COALESCE(SUM(amount), 0) as total_amount,
+        COUNT(DISTINCT church_id) as churches_with_donations
+      FROM donations
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+    `);
+
+    // Get batch statistics
+    const batchStats = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total_batches,
+        COUNT(CASE WHEN status = 'FINALIZED' THEN 1 END) as finalized_batches,
+        COUNT(CASE WHEN status = 'OPEN' THEN 1 END) as open_batches
+      FROM batches
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+    `);
+
+    // Get monthly subscription trends (last 6 months)
+    const subscriptionTrends = await db.execute(sql`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        COUNT(CASE WHEN plan = 'TRIAL' THEN 1 END) as trial_count,
+        COUNT(CASE WHEN plan IN ('MONTHLY', 'ANNUAL') THEN 1 END) as paid_count
+      FROM subscriptions
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY month
+    `);
+
+    // Get donation trends (last 6 months)
+    const donationTrends = await db.execute(sql`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        COUNT(*) as donation_count,
+        COALESCE(SUM(amount), 0) as total_amount
+      FROM donations
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY month
+    `);
+
+    // Format the data for frontend consumption
+    const analytics = {
+      churchStats: churchStats.rows[0] || {
+        total_churches: 0,
+        active_churches: 0,
+        suspended_churches: 0,
+        deleted_churches: 0
+      },
+      subscriptionStats: subscriptionStats.rows[0] || {
+        trial_subscriptions: 0,
+        monthly_subscriptions: 0,
+        annual_subscriptions: 0,
+        active_subscriptions: 0,
+        trial_active: 0
+      },
+      donationStats: donationStats.rows[0] || {
+        total_donations: 0,
+        total_amount: 0,
+        churches_with_donations: 0
+      },
+      batchStats: batchStats.rows[0] || {
+        total_batches: 0,
+        finalized_batches: 0,
+        open_batches: 0
+      },
+      subscriptionTrends: subscriptionTrends.rows || [],
+      donationTrends: donationTrends.rows || []
+    };
+
+    res.json(analytics);
+  } catch (error) {
+    console.error("Error fetching dashboard analytics:", error);
+    res.status(500).json({ message: "Failed to fetch dashboard analytics" });
   }
 });
 
