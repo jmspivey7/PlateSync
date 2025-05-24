@@ -517,6 +517,88 @@ router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
   }
 });
 
+// Reports analytics endpoint - fetches detailed data for Global Admin reports
+router.get("/reports/analytics", requireGlobalAdmin, async (req, res) => {
+  try {
+    const { period = '30days' } = req.query;
+    
+    // Convert period to SQL interval
+    let interval = '30 days';
+    switch (period) {
+      case '7days': interval = '7 days'; break;
+      case '30days': interval = '30 days'; break;
+      case '90days': interval = '90 days'; break;
+      case '6months': interval = '6 months'; break;
+    }
+
+    // Get revenue data by subscription type and month
+    const revenueData = await db.execute(sql`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        plan,
+        COUNT(*) as subscription_count,
+        CASE 
+          WHEN plan = 'MONTHLY' THEN COUNT(*) * 2.99
+          WHEN plan = 'ANNUAL' THEN COUNT(*) * 25.00
+          ELSE 0
+        END as revenue
+      FROM subscriptions
+      WHERE created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+        AND plan IN ('MONTHLY', 'ANNUAL')
+      GROUP BY DATE_TRUNC('month', created_at), plan
+      ORDER BY month
+    `);
+
+    // Get detailed church statistics
+    const detailedChurchStats = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total_churches,
+        COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END) as active_churches,
+        COUNT(CASE WHEN status = 'SUSPENDED' THEN 1 END) as suspended_churches,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '${sql.raw(interval)}' THEN 1 END) as new_churches
+      FROM churches
+    `);
+
+    // Get user growth statistics
+    const userGrowthStats = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total_users,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '${sql.raw(interval)}' THEN 1 END) as new_users,
+        COUNT(CASE WHEN role = 'ACCOUNT_OWNER' THEN 1 END) as account_owners,
+        COUNT(CASE WHEN role = 'ADMIN' THEN 1 END) as admins
+      FROM users
+      WHERE role != 'GLOBAL_ADMIN'
+    `);
+
+    // Get subscription summary
+    const subscriptionSummary = await db.execute(sql`
+      SELECT 
+        plan,
+        status,
+        COUNT(*) as count,
+        CASE 
+          WHEN plan = 'MONTHLY' THEN COUNT(*) * 2.99
+          WHEN plan = 'ANNUAL' THEN COUNT(*) * 25.00
+          ELSE 0
+        END as total_revenue
+      FROM subscriptions
+      WHERE created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+      GROUP BY plan, status
+    `);
+
+    res.json({
+      period,
+      revenueData: revenueData.rows || [],
+      churchStats: detailedChurchStats.rows[0] || {},
+      userStats: userGrowthStats.rows[0] || {},
+      subscriptionSummary: subscriptionSummary.rows || []
+    });
+  } catch (error) {
+    console.error("Error fetching reports analytics:", error);
+    res.status(500).json({ message: "Failed to fetch reports analytics" });
+  }
+});
+
 // Dashboard analytics endpoint - fetches real data for Global Admin dashboard
 router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
   try {

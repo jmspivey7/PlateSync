@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import { 
   Card,
@@ -45,16 +46,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-// Revenue tracking data for the bar chart
-const revenueData = [
-  { month: "Jan", monthly: 120, annual: 45 },
-  { month: "Feb", monthly: 175, annual: 60 },
-  { month: "Mar", monthly: 140, annual: 90 },
-  { month: "Apr", monthly: 210, annual: 120 },
-  { month: "May", monthly: 250, annual: 150 },
-  { month: "Jun", monthly: 300, annual: 170 },
-];
-
 // Configuration for the revenue chart with our green color scheme
 const chartConfig = {
   monthly: {
@@ -68,7 +59,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 // Format dollar values for display
-const formatDollar = (value: number) => `$${value}`;
+const formatDollar = (value: number) => `$${value.toLocaleString()}`;
+
+// Format month names
+const formatMonth = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+};
 
 export default function GlobalAdminReports() {
   const [_, setLocation] = useLocation();
@@ -81,6 +78,66 @@ export default function GlobalAdminReports() {
       setLocation("/global-admin/login");
     }
   }, [setLocation]);
+
+  // Fetch real reports data
+  const { data: reportsData, isLoading, error } = useQuery({
+    queryKey: ["/api/global-admin/reports/analytics", selectedPeriod],
+    queryFn: async () => {
+      const token = localStorage.getItem("globalAdminToken");
+      const response = await fetch(`/api/global-admin/reports/analytics?period=${selectedPeriod}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch reports data');
+      return response.json();
+    }
+  });
+
+  // Transform revenue data for the chart
+  const revenueData = useMemo(() => {
+    if (!reportsData?.revenueData) return [];
+    
+    // Group by month and combine monthly/annual data
+    const monthlyData: { [key: string]: { month: string, monthly: number, annual: number } } = {};
+    
+    reportsData.revenueData.forEach((item: any) => {
+      const monthKey = formatMonth(item.month);
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { month: monthKey, monthly: 0, annual: 0 };
+      }
+      
+      if (item.plan === 'MONTHLY') {
+        monthlyData[monthKey].monthly = parseFloat(item.revenue) || 0;
+      } else if (item.plan === 'ANNUAL') {
+        monthlyData[monthKey].annual = parseFloat(item.revenue) || 0;
+      }
+    });
+    
+    return Object.values(monthlyData);
+  }, [reportsData]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-[#69ad4c] border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p>Loading reports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Failed to load reports data</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
