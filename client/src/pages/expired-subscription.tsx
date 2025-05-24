@@ -54,14 +54,8 @@ export default function ExpiredSubscription() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <img src={plateSyncLogo} alt="PlateSync" className="h-8 w-auto mr-3" />
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">PlateSync</h1>
-                <p className="text-sm text-gray-500">Church Donation Management</p>
-              </div>
-            </div>
+          <div className="flex justify-center items-center py-6">
+            <img src={plateSyncLogo} alt="PlateSync" className="h-12 w-auto" />
           </div>
         </div>
       </div>
