@@ -114,8 +114,26 @@ export default function GlobalAdminReports() {
       }
     });
     
-    return Object.values(monthlyData);
+    return Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
   }, [reportsData]);
+
+  // Calculate month-over-month revenue percentage change
+  const revenuePercentageChange = useMemo(() => {
+    if (revenueData.length < 2) return "0.00";
+    
+    const currentMonth = revenueData[revenueData.length - 1];
+    const previousMonth = revenueData[revenueData.length - 2];
+    
+    const currentTotal = currentMonth.monthly + currentMonth.annual;
+    const previousTotal = previousMonth.monthly + previousMonth.annual;
+    
+    if (previousTotal === 0) {
+      return currentTotal > 0 ? "100.00" : "0.00";
+    }
+    
+    const percentChange = ((currentTotal - previousTotal) / previousTotal) * 100;
+    return percentChange.toFixed(2);
+  }, [revenueData]);
 
   if (isLoading) {
     return (
@@ -268,8 +286,12 @@ export default function GlobalAdminReports() {
                 <DollarSign className="h-5 w-5 text-[#69ad4c]" />
                 Revenue Tracking
               </div>
-              <div className="flex items-center gap-1 text-sm font-medium text-green-600">
-                <span>+16.7%</span>
+              <div className={`flex items-center gap-1 text-sm font-medium ${
+                parseFloat(revenuePercentageChange) >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                <span>
+                  {parseFloat(revenuePercentageChange) >= 0 ? '+' : ''}{revenuePercentageChange}%
+                </span>
                 <TrendingUp className="h-4 w-4" />
               </div>
             </CardTitle>
