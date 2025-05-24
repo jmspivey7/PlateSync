@@ -121,10 +121,10 @@ export default function ExpiredSubscription() {
 
               {/* Annual Plan */}
               <Card className="border border-green-200 shadow-sm flex flex-col">
-                <CardHeader className="pb-2 bg-green-50 rounded-t-lg">
+                <CardHeader className="pb-2">
                   <Badge className="w-fit bg-green-600 text-white mb-2">Best Value</Badge>
                   <CardTitle className="text-xl">Annual Plan</CardTitle>
-                  <CardDescription>Get 2 months free</CardDescription>
+                  <CardDescription>Pay annually, save more</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col">
                   <p className="text-3xl font-bold mb-2">$25.00<span className="text-base font-normal text-gray-500">/year</span></p>
