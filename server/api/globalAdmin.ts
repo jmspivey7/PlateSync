@@ -404,6 +404,12 @@ router.delete("/churches/:id/purge", requireGlobalAdmin, async (req, res) => {
       );
       console.log(`Deleted report recipients`);
       
+      // Delete email templates for this church
+      await db.execute(
+        `DELETE FROM email_templates WHERE church_id = '${id}'`
+      );
+      console.log(`Deleted email templates`);
+      
       // Delete donations first to maintain referential integrity
       await db.execute(
         `DELETE FROM donations WHERE church_id = '${id}'`
