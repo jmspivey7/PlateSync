@@ -1235,13 +1235,7 @@ export default function Onboarding() {
                     )}
                   </Button>
                   
-                  <Button 
-                    variant="outline" 
-                    className="w-full sm:w-auto"
-                    onClick={handleBackStep}
-                  >
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                  </Button>
+                  {/* No Back button for Step 2 - it's the first interactive step */}
                 </div>
                 
                 {/* Right side buttons - shown first on mobile */}
