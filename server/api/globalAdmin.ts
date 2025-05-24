@@ -762,7 +762,7 @@ router.get("/reports/export/churches", requireGlobalAdmin, async (req, res) => {
       SELECT 
         c.id,
         c.name,
-        c.email,
+        c.contact_email,
         c.status,
         c.created_at,
         COUNT(DISTINCT u.id) as user_count,
@@ -774,7 +774,7 @@ router.get("/reports/export/churches", requireGlobalAdmin, async (req, res) => {
       LEFT JOIN donations d ON d.church_id = c.id 
         AND d.created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
       WHERE c.created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
-      GROUP BY c.id, c.name, c.email, c.status, c.created_at
+      GROUP BY c.id, c.name, c.contact_email, c.status, c.created_at
       ORDER BY c.created_at DESC
     `);
 
@@ -782,7 +782,7 @@ router.get("/reports/export/churches", requireGlobalAdmin, async (req, res) => {
     const excelData = churchData.rows.map((church: any) => ({
       'Church ID': church.id,
       'Church Name': church.name,
-      'Email': church.email,
+      'Contact Email': church.contact_email,
       'Status': church.status,
       'Created Date': new Date(church.created_at).toLocaleDateString(),
       'Total Users': parseInt(church.user_count) || 0,
@@ -894,7 +894,7 @@ router.get("/reports/export/revenue", requireGlobalAdmin, async (req, res) => {
         s.status,
         s.created_at,
         c.name as church_name,
-        c.email as church_email,
+        c.contact_email as church_email,
         CASE 
           WHEN s.plan = 'MONTHLY' THEN 2.99
           WHEN s.plan = 'ANNUAL' THEN 25.00
