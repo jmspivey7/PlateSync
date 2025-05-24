@@ -573,6 +573,34 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
       ORDER BY month
     `);
 
+    // Calculate conversion rates (trials that became paid subscriptions)
+    const conversionRates = await db.execute(sql`
+      SELECT 
+        DATE_TRUNC('month', s1.created_at) as month,
+        COUNT(CASE WHEN s1.plan = 'TRIAL' THEN 1 END) as trial_starts,
+        COUNT(CASE WHEN s1.plan = 'TRIAL' AND s2.id IS NOT NULL THEN 1 END) as conversions
+      FROM subscriptions s1
+      LEFT JOIN subscriptions s2 ON s1.church_id = s2.church_id 
+        AND s2.plan IN ('MONTHLY', 'ANNUAL') 
+        AND s2.created_at > s1.created_at
+      WHERE s1.created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', s1.created_at)
+      ORDER BY month
+    `);
+
+    // Calculate churn rates (subscriptions that were canceled or expired)
+    const churnRates = await db.execute(sql`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        COUNT(CASE WHEN plan IN ('MONTHLY', 'ANNUAL') THEN 1 END) as total_paid,
+        COUNT(CASE WHEN plan IN ('MONTHLY', 'ANNUAL') AND canceled_at IS NOT NULL THEN 1 END) as churned,
+        COUNT(CASE WHEN plan = 'TRIAL' AND status = 'EXPIRED' THEN 1 END) as trial_expired
+      FROM subscriptions
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY month
+    `);
+
     // Get donation trends (last 6 months)
     const donationTrends = await db.execute(sql`
       SELECT 
@@ -611,7 +639,8 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
         open_batches: 0
       },
       subscriptionTrends: subscriptionTrends.rows || [],
-      donationTrends: donationTrends.rows || []
+      conversionRates: conversionRates.rows || [],
+      churnRates: churnRates.rows || []
     };
 
     res.json(analytics);

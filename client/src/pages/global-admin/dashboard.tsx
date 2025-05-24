@@ -116,11 +116,16 @@ export default function GlobalAdminDashboard() {
     subscriber: parseInt(trend.paid_count) || 0,
   })) || [];
 
-  // Transform donation trends data
-  const donationData = analytics?.donationTrends?.map((trend: any) => ({
-    name: formatMonth(trend.month),
-    amount: parseFloat(trend.total_amount) || 0,
-    count: parseInt(trend.donation_count) || 0,
+  // Transform conversion rate data
+  const conversionData = analytics?.conversionRates?.map((rate: any) => ({
+    month: formatMonth(rate.month),
+    rate: rate.trial_starts > 0 ? ((parseInt(rate.conversions) / parseInt(rate.trial_starts)) * 100).toFixed(1) : 0
+  })) || [];
+
+  // Transform churn rate data
+  const churnData = analytics?.churnRates?.map((rate: any) => ({
+    month: formatMonth(rate.month),
+    rate: rate.total_paid > 0 ? ((parseInt(rate.churned) / parseInt(rate.total_paid)) * 100).toFixed(1) : 0
   })) || [];
 
   // Subscription type breakdown from real data
@@ -267,53 +272,89 @@ export default function GlobalAdminDashboard() {
             </div>
 
             {/* Charts - Second Row */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
-                <CardHeader>
-                  <CardTitle>Donation Trends</CardTitle>
-                  <CardDescription>Monthly donation amounts and volume over time</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>Conversion Rate</CardTitle>
+                    <CardDescription>% of trials that convert to paid subscriptions</CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-[#69ad4c]">
+                      {conversionData.length > 0 ? `${conversionData[conversionData.length - 1]?.rate || 0}%` : '0%'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Current conversion</div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  {donationData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={donationData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  {conversionData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={conversionData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis yAxisId="left" tickFormatter={(value: number) => `$${value.toLocaleString()}`} />
-                        <YAxis yAxisId="right" orientation="right" />
-                        <Tooltip 
-                          formatter={(value: number, name: string) => [
-                            name === 'amount' ? `$${value.toLocaleString()}` : value,
-                            name === 'amount' ? 'Total Amount' : 'Donation Count'
-                          ]}
-                        />
+                        <XAxis dataKey="month" />
+                        <YAxis tickFormatter={(value: number) => `${value}%`} />
+                        <Tooltip formatter={(value: number) => [`${value}%`, 'Conversion Rate']} />
                         <Legend />
                         <Line 
-                          yAxisId="left"
                           type="monotone" 
-                          dataKey="amount" 
-                          name="Total Amount" 
+                          dataKey="rate" 
+                          name="Conversion Rate (%)" 
                           stroke="#69ad4c" 
-                          strokeWidth={2}
-                          activeDot={{ r: 8 }} 
-                        />
-                        <Line 
-                          yAxisId="right"
-                          type="monotone" 
-                          dataKey="count" 
-                          name="Donation Count" 
-                          stroke="#132433" 
                           strokeWidth={2}
                           activeDot={{ r: 8 }} 
                         />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    <div className="h-[250px] flex items-center justify-center text-gray-500">
                       <div className="text-center">
-                        <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p>No donation data available yet</p>
-                        <p className="text-sm">Charts will appear as churches start processing donations</p>
+                        <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No conversion data available yet</p>
+                        <p className="text-sm">Charts will appear as trials convert to paid plans</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>Churn Rate</CardTitle>
+                    <CardDescription>% of subscribers who cancel or don't renew</CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-[#ff6b6b]">
+                      {churnData.length > 0 ? `${churnData[churnData.length - 1]?.rate || 0}%` : '0%'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Current churn</div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {churnData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={churnData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis tickFormatter={(value: number) => `${value}%`} />
+                        <Tooltip formatter={(value: number) => [`${value}%`, 'Churn Rate']} />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="rate" 
+                          name="Churn Rate (%)" 
+                          stroke="#ff6b6b" 
+                          strokeWidth={2}
+                          activeDot={{ r: 8 }} 
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[250px] flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <Percent className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No churn data available yet</p>
+                        <p className="text-sm">Charts will appear as subscription patterns develop</p>
                       </div>
                     </div>
                   )}
