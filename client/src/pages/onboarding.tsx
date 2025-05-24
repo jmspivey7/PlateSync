@@ -546,15 +546,15 @@ export default function Onboarding() {
         throw new Error(errorData.message || 'Invalid verification code');
       }
       
-      // Successful verification means user is now authenticated
+      // Email verification successful - but DON'T auto-login user during registration
       const data = await response.json();
       
-      // Store the userId in localStorage if provided in the response
+      // Store the userId for onboarding completion but don't create session
       if (data.userId) {
         localStorage.setItem('userId', data.userId);
         console.log('User ID stored during verification:', data.userId);
         
-        // Also store the verified status for this user
+        // Store verified status for onboarding flow only
         localStorage.setItem('userVerified', 'true');
       }
       

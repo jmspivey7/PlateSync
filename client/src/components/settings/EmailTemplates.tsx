@@ -100,12 +100,7 @@ export default function EmailTemplates() {
       }
     },
     onSuccess: () => {
-      toast({
-        title: "Templates initialized",
-        description: "Default email templates have been created successfully.",
-        variant: "default",
-        className: "bg-white"
-      });
+      // Silently initialize templates without showing toast notification
       queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
       setInitialized(true);
     },
