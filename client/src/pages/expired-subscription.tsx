@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, CreditCard } from "lucide-react";
+import { AlertTriangle, Clock, CreditCard, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import plateSyncLogo from "@assets/PlateSync Logo.png";
