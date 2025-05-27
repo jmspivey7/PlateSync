@@ -2253,10 +2253,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const churchId = req.user.churchId || userId;
-      const church = await storage.getChurch(churchId);
       
-      if (!church) {
-        return res.status(404).json({ message: 'Church not found' });
+      // Get church details from user record (since churchId references users.id)
+      const churchUser = await storage.getUser(churchId);
+      if (!churchUser) {
+        return res.status(404).json({ message: 'Church user not found' });
       }
       
       // Check if templates already exist - only get church templates, not system templates
