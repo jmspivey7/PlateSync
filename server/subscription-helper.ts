@@ -9,8 +9,8 @@ export async function createTrialSubscriptionForOnboarding(
   churchId: string,
   churchName?: string,
 ): Promise<Subscription> {
-  // First, check if the church exists
-  let church = await storage.getChurch(churchId);
+  // First, check if the church user exists
+  let church = await storage.getUser(churchId);
   
   // If church doesn't exist, create it with minimal information
   if (!church) {

@@ -892,8 +892,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = user.id || '';
         
         // Check if church access is suspended for authenticated users
-        const church = await storage.getChurch(churchId);
-        if (church && church.subscriptionStatus === 'suspended') {
+        const churchUser = await storage.getUser(churchId);
+        if (churchUser && churchUser.subscriptionStatus === 'suspended') {
           return res.status(403).json({ 
             message: 'Church access is suspended. Please update your subscription to continue using PlateSync.' 
           });
@@ -1704,13 +1704,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Get the church info for the logo
-          const church = await storage.getChurch(churchId);
+          const churchUser = await storage.getUser(churchId);
           let logoPath = null;
           
           // First try to find a local file based on the S3 URL
-          if (church && church.logoUrl && church.logoUrl.includes('s3.amazonaws.com')) {
+          if (churchUser && churchUser.churchLogoUrl && churchUser.churchLogoUrl.includes('s3.amazonaws.com')) {
             // Extract filename from S3 URL
-            const urlParts = church.logoUrl.split('/');
+            const urlParts = churchUser.churchLogoUrl.split('/');
             const filename = urlParts[urlParts.length - 1];
             const localPath = `${process.cwd()}/public/logos/${filename}`;
             
@@ -4822,8 +4822,8 @@ Sincerely,
           console.log("Finding church details with ID:", churchId);
           
           try {
-            // Get church details directly from the church record
-            const church = await storage.getChurch(churchId);
+            // Get church details from the user record (since churchId references users.id)
+            const church = await storage.getUser(churchId);
             
             if (church) {
               console.log("Found church details for logo sync:", church.name);
