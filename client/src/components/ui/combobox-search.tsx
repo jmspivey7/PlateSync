@@ -44,6 +44,7 @@ export function ComboboxSearch({
   useEffect(() => {
     if (search.trim() === '') {
       setFilteredOptions([]);
+      setIsOpen(false);
       return;
     }
     
@@ -52,9 +53,11 @@ export function ComboboxSearch({
     );
     setFilteredOptions(filtered);
     
-    // Only show dropdown if we have search text and matches
-    if (search.trim() !== '') {
+    // Show dropdown if we have search text and matches
+    if (search.trim() !== '' && filtered.length > 0) {
       setIsOpen(true);
+    } else if (filtered.length === 0) {
+      setIsOpen(false);
     }
   }, [search, options]);
   
@@ -75,10 +78,8 @@ export function ComboboxSearch({
     const newValue = e.target.value;
     setSearch(newValue);
     
-    // Close dropdown if input is empty
+    // Clear the selected value when input is cleared
     if (newValue.trim() === '') {
-      setIsOpen(false);
-      // Clear the selected value when input is cleared
       onValueChange('');
     }
   };
