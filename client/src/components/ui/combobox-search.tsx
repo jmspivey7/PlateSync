@@ -65,7 +65,8 @@ export function ComboboxSearch({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (comboboxRef.current && !comboboxRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        // Small delay to prevent flickering when clicking on items
+        setTimeout(() => setIsOpen(false), 100);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -88,6 +89,12 @@ export function ComboboxSearch({
     setSearch(option.label);
     onValueChange(option.value);
     setIsOpen(false);
+  };
+
+  const handleFocus = () => {
+    if (search.trim() !== '' && filteredOptions.length > 0) {
+      setIsOpen(true);
+    }
   };
   
   return (
@@ -115,7 +122,10 @@ export function ComboboxSearch({
                 className={`cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center hover:bg-green-50 ${
                   option.value === value ? 'bg-green-50' : ''
                 }`}
-                onClick={() => handleOptionClick(option)}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // Prevent focus loss
+                  handleOptionClick(option);
+                }}
               >
                 <User className="flex-shrink-0 h-5 w-5 text-gray-400 mr-3" />
                 <span className={`truncate ${option.value === value ? 'font-medium' : 'font-normal'}`}>
