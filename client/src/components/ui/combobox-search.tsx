@@ -34,6 +34,9 @@ export function ComboboxSearch({
       if (selectedOption) {
         setSearch(selectedOption.label);
       }
+    } else {
+      // Clear search when value is cleared
+      setSearch('');
     }
   }, [value, options]);
   
@@ -69,11 +72,14 @@ export function ComboboxSearch({
   }, []);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
+    const newValue = e.target.value;
+    setSearch(newValue);
     
     // Close dropdown if input is empty
-    if (e.target.value.trim() === '') {
+    if (newValue.trim() === '') {
       setIsOpen(false);
+      // Clear the selected value when input is cleared
+      onValueChange('');
     }
   };
   
