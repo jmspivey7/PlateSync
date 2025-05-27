@@ -4152,12 +4152,23 @@ Sincerely,
         return res.status(409).json({ message: 'A user with this email already exists' });
       }
       
-      // Get church details for the welcome email first
-      const churchDetails = await storage.getChurch(userChurchId);
-      const churchName = churchDetails?.name || 'Your Church';
-      const churchLogoUrl = churchDetails?.logoUrl || null;
+      // Get church details from the current user (since churchId references users.id)
+      let churchName = 'Your Church';
+      let churchLogoUrl = null;
+      
+      if (userChurchId) {
+        try {
+          const churchUser = await storage.getUser(userChurchId);
+          if (churchUser) {
+            churchName = churchUser.churchName || 'Your Church';
+            churchLogoUrl = churchUser.churchLogoUrl || null;
+          }
+        } catch (err) {
+          console.log('Could not get church details, using defaults');
+        }
+      }
 
-      // Create the user with the church logo URL
+      // Create the user with the church details
       const newUser = await storage.createUser({
         email,
         firstName,
