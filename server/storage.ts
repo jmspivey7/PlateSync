@@ -1575,10 +1575,18 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(donations.date));
     
-    // Get all unique member IDs
+    // Get all unique member IDs and ensure they are proper integers
     const memberIds = Array.from(new Set(batchDonations
       .filter(d => d.memberId !== null)
-      .map(d => d.memberId)));
+      .map(d => {
+        // Parse the member ID to ensure it's a proper integer
+        const id = typeof d.memberId === 'string' ? 
+          parseInt(d.memberId.replace(/,/g, ''), 10) : 
+          d.memberId;
+        return isNaN(id) ? null : id;
+      })
+      .filter(id => id !== null)));
+    
     // Fetch all members in a single query if there are member IDs
     let membersMap: Record<number, Member> = {};
     if (memberIds.length > 0) {
