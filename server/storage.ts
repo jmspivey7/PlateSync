@@ -1593,7 +1593,7 @@ export class DatabaseStorage implements IStorage {
       const membersList = await db
         .select()
         .from(members)
-        .where(sql`${members.id} IN (${memberIds.join(',')})`);
+        .where(inArray(members.id, memberIds));
       
       // Create a map for quick member lookup
       membersMap = membersList.reduce((acc, member) => {
