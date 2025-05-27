@@ -893,7 +893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if church access is suspended for authenticated users
         const churchUser = await storage.getUser(churchId);
-        if (churchUser && churchUser.subscriptionStatus === 'suspended') {
+        if (churchUser && churchUser.status === 'suspended') {
           return res.status(403).json({ 
             message: 'Church access is suspended. Please update your subscription to continue using PlateSync.' 
           });
