@@ -761,18 +761,16 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         <FormLabel className="font-bold">Select Member:</FormLabel>
                         <FormControl>
                           {members && members.length > 0 ? (
-                            <Select value={field.value || ""} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a member..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {members.map(member => (
-                                  <SelectItem key={member.id} value={member.id.toString()}>
-                                    {member.firstName} {member.lastName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <ComboboxSearch
+                              options={members.map(member => ({
+                                value: member.id.toString(),
+                                label: `${member.firstName} ${member.lastName}`
+                              }))}
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                              placeholder="Type to search for members..."
+                              className="w-full"
+                            />
                           ) : (
                             <div className="border rounded-md p-3 bg-amber-50 border-amber-200">
                               <p className="text-sm text-amber-800">
