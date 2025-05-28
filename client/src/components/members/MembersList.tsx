@@ -54,13 +54,25 @@ const MembersList = ({}: MembersListProps) => {
     queryKey: ['/api/members'],
   });
 
-  // Delete member mutation
+  // Delete member mutation (updated endpoint)
   const deleteMemberMutation = useMutation({
+    mutationKey: ['delete-member'],
     mutationFn: async (memberId: number) => {
-      const response = await apiRequest("POST", `/api/member-delete/${memberId}`);
+      console.log(`Attempting to delete member ${memberId} using POST /api/delete-member/${memberId}`);
+      const response = await fetch(`/api/members/${memberId}/remove`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (!response.ok) {
-        throw new Error("Failed to delete member");
+        const errorText = await response.text();
+        console.error('Delete member failed:', response.status, errorText);
+        throw new Error(`Failed to delete member: ${response.status} ${errorText}`);
       }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -72,6 +84,7 @@ const MembersList = ({}: MembersListProps) => {
       });
     },
     onError: (error) => {
+      console.error('Delete mutation error:', error);
       toast({
         title: "Error",
         description: `Failed to delete member: ${error instanceof Error ? error.message : 'Unknown error'}`,
