@@ -57,7 +57,7 @@ const MembersList = ({}: MembersListProps) => {
   // Delete member mutation
   const deleteMemberMutation = useMutation({
     mutationFn: async (memberId: number) => {
-      const response = await apiRequest("DELETE", `/api/members/${memberId}`);
+      const response = await apiRequest("DELETE", `/api/member-delete/${memberId}`);
       if (!response.ok) {
         throw new Error("Failed to delete member");
       }
