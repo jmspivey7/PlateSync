@@ -252,7 +252,7 @@ const MembersList = ({}: MembersListProps) => {
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => deleteMemberMutation.mutate(member.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="bg-red-600 hover:bg-red-700 text-white"
                               >
                                 Delete Member
                               </AlertDialogAction>
