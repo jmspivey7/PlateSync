@@ -382,11 +382,18 @@ const UserManagement = () => {
     mutate({ userId, role });
   };
   
-  // Handle resend welcome email
+  // Handle resend welcome email - Direct fetch to bypass cache
   const handleResendWelcomeEmail = async (userId: string) => {
     setIsResendingEmail(true);
     try {
-      const response = await apiRequest("POST", `/api/users/${userId}/resend-welcome-email`, {});
+      const response = await fetch(`/api/users/${userId}/resend-welcome-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({})
+      });
       const data = await response.json();
       
       if (response.ok) {
