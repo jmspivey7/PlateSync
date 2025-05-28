@@ -943,6 +943,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simple check: can this member be deleted?
+  app.get('/api/members/:memberId/can-delete', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const memberId = parseInt(req.params.memberId);
+      const churchId = req.user.id;
+      
+      // Direct query: find donations for this member in open counts
+      const openCountsWithDonations = await storage.getOpenCountsWithMemberDonations(memberId, churchId);
+      
+      if (openCountsWithDonations.length > 0) {
+        res.json({
+          canDelete: false,
+          reason: 'HAS_OPEN_DONATIONS',
+          openCounts: openCountsWithDonations
+        });
+      } else {
+        res.json({
+          canDelete: true,
+          reason: null,
+          openCounts: []
+        });
+      }
+    } catch (error) {
+      console.error('Error checking if member can be deleted:', error);
+      res.status(500).json({ message: 'Failed to check member deletion status' });
+    }
+  });
+
   // Delete Member endpoint (soft delete with force option)
   app.post('/api/members/:memberId/remove', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {

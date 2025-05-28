@@ -2439,6 +2439,29 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(donations.date));
   }
   
+  async getOpenCountsWithMemberDonations(memberId: number, churchId: string): Promise<string[]> {
+    try {
+      const openCountsWithDonations = await db
+        .select({
+          countName: counts.name
+        })
+        .from(donations)
+        .innerJoin(counts, eq(donations.countId, counts.id))
+        .where(
+          and(
+            eq(donations.memberId, memberId),
+            eq(counts.churchId, churchId),
+            eq(counts.status, 'OPEN')
+          )
+        );
+
+      return [...new Set(openCountsWithDonations.map(c => c.countName))];
+    } catch (error) {
+      console.error('Error getting open counts with member donations:', error);
+      return [];
+    }
+  }
+
   async getDonationWithMember(id: number, churchId: string): Promise<DonationWithMember | undefined> {
     const [donation] = await db
       .select()
