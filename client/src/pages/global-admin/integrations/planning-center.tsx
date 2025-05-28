@@ -84,7 +84,6 @@ export default function PlanningCenterIntegration() {
               setClientSecret(data.clientSecret ? "••••••••••••••••••••••••••" : "");
               setCallbackUrl(data.callbackUrl || window.location.origin + "/api/planning-center/callback");
               setRegistrationCallbackUrl(data.registrationCallbackUrl || window.location.origin + "/api/planning-center/callback-registration");
-              setIsAuthenticated(data.isAuthenticated || false);
             } else {
               // Default callback URLs
               setCallbackUrl(window.location.origin + "/api/planning-center/callback");
@@ -96,7 +95,6 @@ export default function PlanningCenterIntegration() {
             setClientSecret("");
             setCallbackUrl(window.location.origin + "/api/planning-center/callback");
             setRegistrationCallbackUrl(window.location.origin + "/api/planning-center/callback-registration");
-            setIsAuthenticated(false);
           }
           
         } catch (err) {
