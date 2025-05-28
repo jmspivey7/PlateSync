@@ -336,7 +336,31 @@ export default function PlanningCenterIntegration() {
                     ? "border-red-500 text-red-500 hover:bg-red-50" 
                     : "bg-[#69ad4c] hover:bg-[#5a9740] text-white"}
                   onClick={isAuthenticated 
-                    ? () => console.log("Disconnect from Planning Center") 
+                    ? async () => {
+                        setIsDisconnecting(true);
+                        try {
+                          const response = await apiRequest("/api/global-admin/integrations/planning-center/disconnect", "POST");
+                          
+                          if (response.ok) {
+                            toast({
+                              title: "Disconnected Successfully",
+                              description: "Planning Center integration has been disconnected.",
+                            });
+                            setIsAuthenticated(false);
+                            loadConfiguration();
+                          } else {
+                            throw new Error("Failed to disconnect");
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Disconnect Failed", 
+                            description: "Failed to disconnect from Planning Center. Please try again.",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setIsDisconnecting(false);
+                        }
+                      }
                     : authenticateWithPlanningCenter}
                   disabled={!clientId || !clientSecret || !callbackUrl}
                 >
