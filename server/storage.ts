@@ -1534,6 +1534,29 @@ export class DatabaseStorage implements IStorage {
     return updatedMember;
   }
 
+  async softDeleteMember(memberId: number, churchId: string): Promise<boolean> {
+    try {
+      // Soft delete by setting isActive to false in the church_members junction table
+      const result = await db
+        .update(churchMembers)
+        .set({
+          isActive: false,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(churchMembers.memberId, memberId),
+          eq(churchMembers.churchId, churchId),
+          eq(churchMembers.isActive, true)
+        ))
+        .returning();
+
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error soft deleting member:', error);
+      return false;
+    }
+  }
+
   // Batch operations
   async getBatches(churchId: string): Promise<Batch[]> {
     return db

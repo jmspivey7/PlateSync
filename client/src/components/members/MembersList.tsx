@@ -23,10 +23,23 @@ import {
 } from "@/components/ui/table";
 
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Mail, Phone } from "lucide-react";
+import { Loader2, Search, Mail, Phone, Trash2 } from "lucide-react";
 import { Member } from "@shared/schema";
 import { format } from "date-fns";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface MembersListProps {}
 
@@ -39,6 +52,32 @@ const MembersList = ({}: MembersListProps) => {
   // Fetch members data
   const { data: members, isLoading, isError } = useQuery<Member[]>({
     queryKey: ['/api/members'],
+  });
+
+  // Delete member mutation
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (memberId: number) => {
+      const response = await apiRequest("DELETE", `/api/members/${memberId}`);
+      if (!response.ok) {
+        throw new Error("Failed to delete member");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/members'] });
+      toast({
+        title: "Success",
+        description: "Member deleted successfully.",
+        className: "bg-[#48BB78] text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete member: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    },
   });
   
   // Handle error in useEffect to prevent infinite re-renders
@@ -148,6 +187,7 @@ const MembersList = ({}: MembersListProps) => {
                   <TableHead className="font-bold">Email</TableHead>
                   <TableHead className="font-bold">Cell Phone</TableHead>
                   <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="font-bold w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
