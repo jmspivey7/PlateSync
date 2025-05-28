@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { eq, desc, and, or, asc, isNull, not, inArray, gte, sql, sum, count, ne } from 'drizzle-orm';
+import { eq, desc, and, or, asc, isNull, isNotNull, not, inArray, gte, sql, sum, count, ne } from 'drizzle-orm';
 import { format } from 'date-fns';
 import {
   users,
@@ -217,6 +217,7 @@ export interface IStorage {
   updatePlanningCenterLastSync(userId: string, churchId: string): Promise<void>;
   bulkImportMembers(members: Array<Partial<InsertMember>>, churchId: string): Promise<number>;
   removeDuplicateMembers(churchId: string): Promise<number>;
+  countActivePlanningCenterConnections(): Promise<number>;
   
   // Subscription operations
   getSubscription(churchId: string): Promise<Subscription | undefined>;
@@ -3514,6 +3515,20 @@ PlateSync Reporting System
     } catch (error) {
       console.error("Error in updatePlanningCenterImportStats:", error);
       throw error;
+    }
+  }
+
+  async countActivePlanningCenterConnections(): Promise<number> {
+    try {
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(planningCenterTokens)
+        .where(isNotNull(planningCenterTokens.accessToken));
+      
+      return result?.count || 0;
+    } catch (error) {
+      console.error("Error in countActivePlanningCenterConnections:", error);
+      return 0;
     }
   }
   
