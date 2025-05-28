@@ -354,7 +354,7 @@ export default function PlanningCenterIntegration() {
                               description: "Planning Center integration has been disconnected.",
                             });
                             setIsAuthenticated(false);
-                            loadConfiguration();
+                            await loadPlanningCenterConfiguration();
                           } else {
                             throw new Error("Failed to disconnect");
                           }
