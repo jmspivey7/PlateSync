@@ -334,38 +334,15 @@ const MembersList = ({}: MembersListProps) => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              disabled={deleteMemberMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Member</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete {member.firstName} {member.lastName}? 
-                                This will remove them from your member list, but their donation history will be preserved.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={async () => {
-                                  await handleDeleteClick(member);
-                                }}
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                              >
-                                Delete Member
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={deleteMemberMutation.isPending}
+                          onClick={() => handleDeleteClick(member)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                 ))}
