@@ -153,6 +153,18 @@ export function setupPlanningCenterAuth(app: Express) {
       res.redirect("/settings?planningCenterConnected=true");
     } catch (error) {
       console.error("Planning Center token exchange error:", error);
+      
+      // Log more detailed error information
+      if (error.response) {
+        console.error("Planning Center API response status:", error.response.status);
+        console.error("Planning Center API response data:", error.response.data);
+        console.error("Planning Center API response headers:", error.response.headers);
+      } else if (error.request) {
+        console.error("No response received from Planning Center:", error.request);
+      } else {
+        console.error("Error setting up Planning Center request:", error.message);
+      }
+      
       res.redirect("/settings?planningCenterError=true");
     }
   });
