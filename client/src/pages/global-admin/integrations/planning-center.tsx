@@ -339,14 +339,25 @@ export default function PlanningCenterIntegration() {
                     ? async () => {
                         setIsDisconnecting(true);
                         try {
-                          await apiRequest("/api/global-admin/integrations/planning-center/disconnect", "POST");
-                          
-                          toast({
-                            title: "Disconnected Successfully",
-                            description: "Planning Center integration has been disconnected.",
+                          const response = await fetch("/api/global-admin/integrations/planning-center/disconnect", {
+                            method: "POST",
+                            headers: {
+                              "Authorization": `Bearer ${localStorage.getItem("globalAdminToken")}`,
+                              "Content-Type": "application/json"
+                            },
+                            credentials: "include"
                           });
-                          setIsAuthenticated(false);
-                          loadConfiguration();
+                          
+                          if (response.ok) {
+                            toast({
+                              title: "Disconnected Successfully",
+                              description: "Planning Center integration has been disconnected.",
+                            });
+                            setIsAuthenticated(false);
+                            loadConfiguration();
+                          } else {
+                            throw new Error("Failed to disconnect");
+                          }
                         } catch (error) {
                           toast({
                             title: "Disconnect Failed", 
