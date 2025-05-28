@@ -4785,11 +4785,13 @@ Sincerely,
       const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID');
       const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET');
       const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL');
+      const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL');
       
       res.status(200).json({
         clientId: clientId || '',
         clientSecret: clientSecret ? 'present' : '',
         callbackUrl: callbackUrl || `${req.protocol}://${req.get('host')}/api/planning-center/callback`,
+        registrationCallbackUrl: registrationCallbackUrl || `${req.protocol}://${req.get('host')}/api/planning-center/callback-registration`,
         isAuthenticated: Boolean(clientId && clientSecret)
       });
     } catch (error) {
@@ -4804,7 +4806,7 @@ Sincerely,
   // Global Admin: Planning Center Integration - POST endpoint
   app.post('/api/global-admin/integrations/planning-center', requireGlobalAdmin, async (req, res) => {
     try {
-      const { clientId, clientSecret, callbackUrl } = req.body;
+      const { clientId, clientSecret, callbackUrl, registrationCallbackUrl } = req.body;
       
       // Validate inputs
       if (!clientId) {
@@ -4825,6 +4827,10 @@ Sincerely,
         configItems.push({ key: 'PLANNING_CENTER_CALLBACK_URL', value: callbackUrl });
       }
       
+      if (registrationCallbackUrl) {
+        configItems.push({ key: 'PLANNING_CENTER_REGISTRATION_CALLBACK_URL', value: registrationCallbackUrl });
+      }
+      
       await storage.updateSystemConfig(configItems);
       
       // Set environment variables so they're available to the current process
@@ -4834,6 +4840,9 @@ Sincerely,
       }
       if (callbackUrl) {
         process.env.PLANNING_CENTER_CALLBACK_URL = callbackUrl;
+      }
+      if (registrationCallbackUrl) {
+        process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL = registrationCallbackUrl;
       }
       
       res.status(200).json({ 

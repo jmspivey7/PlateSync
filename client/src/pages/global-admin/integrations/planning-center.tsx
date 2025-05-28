@@ -134,7 +134,8 @@ export default function PlanningCenterIntegration() {
         body: JSON.stringify({
           clientId,
           clientSecret: clientSecret.startsWith("••••") ? null : clientSecret, // Only send if it was changed
-          callbackUrl
+          callbackUrl,
+          registrationCallbackUrl
         })
       });
       
@@ -249,7 +250,7 @@ export default function PlanningCenterIntegration() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="callbackUrl">Callback URL</Label>
+                <Label htmlFor="callbackUrl">Main Callback URL</Label>
                 <Input
                   id="callbackUrl"
                   value={callbackUrl}
@@ -257,7 +258,20 @@ export default function PlanningCenterIntegration() {
                   placeholder="https://your-platesync-url.com/api/planning-center/callback"
                 />
                 <p className="text-sm text-gray-500">
-                  This URL must match exactly what you entered in Planning Center. Copy this URL to your Planning Center OAuth application settings.
+                  Used for regular Planning Center authentication. This URL must match exactly what you entered in Planning Center OAuth application settings.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="registrationCallbackUrl">Registration Callback URL</Label>
+                <Input
+                  id="registrationCallbackUrl"
+                  value={registrationCallbackUrl}
+                  onChange={(e) => setRegistrationCallbackUrl(e.target.value)}
+                  placeholder="https://your-platesync-url.com/api/planning-center/callback-registration"
+                />
+                <p className="text-sm text-gray-500">
+                  Used during new user registration flow. Add this as an additional redirect URI in your Planning Center OAuth application settings.
                 </p>
               </div>
               
@@ -265,7 +279,7 @@ export default function PlanningCenterIntegration() {
                 <Button 
                   onClick={saveConfiguration} 
                   className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
-                  disabled={isSaving || !clientId || !clientSecret || !callbackUrl}
+                  disabled={isSaving || !clientId || !clientSecret || !callbackUrl || !registrationCallbackUrl}
                 >
                   {isSaving ? (
                     <>
