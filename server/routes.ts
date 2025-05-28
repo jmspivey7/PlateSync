@@ -869,19 +869,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Add Member endpoint for quick member creation
-  app.post('/api/members', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+  // Add Member endpoint for quick member creation  
+  app.post('/api/members/create', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
+      console.log('=== POST /api/members endpoint hit ===');
+      console.log('Request body:', req.body);
+      console.log('User:', req.user);
+      
       const user = req.user;
-      const churchId = user?.churchId || '';
+      const churchId = user?.churchId || user?.id || '';
+      
+      console.log('Church ID determined:', churchId);
       
       if (!churchId) {
+        console.log('No church ID found, returning error');
         return res.status(400).json({ message: 'Church ID is required' });
       }
       
       const { firstName, lastName, email, phone } = req.body;
       
       if (!firstName || !lastName) {
+        console.log('Missing required fields, returning error');
         return res.status(400).json({ message: 'First name and last name are required' });
       }
       
@@ -895,9 +903,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, churchId);
       
       console.log(`Created new member with ID: ${newMember.id}`);
+      
+      // Set content type explicitly
+      res.setHeader('Content-Type', 'application/json');
       res.status(201).json(newMember);
     } catch (error) {
       console.error('Error creating member:', error);
+      res.setHeader('Content-Type', 'application/json');
       res.status(500).json({ message: 'Failed to create member' });
     }
   });

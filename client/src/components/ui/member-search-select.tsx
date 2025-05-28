@@ -46,7 +46,7 @@ export function MemberSearchSelect({ members, value, onValueChange, placeholder 
   // Mutation for adding new member
   const addMemberMutation = useMutation({
     mutationFn: async (memberData: { firstName: string; lastName: string; email?: string; phone?: string }) => {
-      const response = await fetch("/api/members", {
+      const response = await fetch("/api/members/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(memberData),
