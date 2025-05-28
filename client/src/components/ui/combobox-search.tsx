@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { User, Check, Search } from "lucide-react";
-import { Input } from "./input";
+import { useState, useEffect, useRef } from "react";
+import { Input } from "@/components/ui/input";
+import { Search, User, Check } from "lucide-react";
 
 interface Option {
   value: string;
@@ -17,17 +17,18 @@ interface ComboboxSearchProps {
 
 export function ComboboxSearch({
   options,
-  value = "",
+  value,
   onValueChange,
   placeholder = "Search...",
   className = "",
 }: ComboboxSearchProps) {
+  const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
   const [filteredOptions, setFilteredOptions] = useState<Option[]>([]);
   const comboboxRef = useRef<HTMLDivElement>(null);
-  
-  // Update search display when value changes (for initial load)
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Update search when value changes
   useEffect(() => {
     if (value) {
       const selectedOption = options.find(option => option.value === value);
@@ -35,7 +36,6 @@ export function ComboboxSearch({
         setSearch(selectedOption.label);
       }
     } else {
-      // Clear search when value is cleared
       setSearch('');
     }
   }, [value, options]);
@@ -56,7 +56,7 @@ export function ComboboxSearch({
     // Show dropdown if we have search text and matches
     if (search.trim() !== '' && filtered.length > 0) {
       setIsOpen(true);
-    } else if (filtered.length === 0) {
+    } else {
       setIsOpen(false);
     }
   }, [search, options]);
@@ -65,8 +65,7 @@ export function ComboboxSearch({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (comboboxRef.current && !comboboxRef.current.contains(event.target as Node)) {
-        // Small delay to prevent flickering when clicking on items
-        setTimeout(() => setIsOpen(false), 100);
+        setIsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -85,13 +84,14 @@ export function ComboboxSearch({
     }
   };
   
-  const handleOptionClick = (option: Option) => {
+  const handleOptionSelect = (option: Option) => {
     setSearch(option.label);
     onValueChange(option.value);
     setIsOpen(false);
+    inputRef.current?.blur();
   };
 
-  const handleFocus = () => {
+  const handleInputFocus = () => {
     if (search.trim() !== '' && filteredOptions.length > 0) {
       setIsOpen(true);
     }
@@ -101,12 +101,13 @@ export function ComboboxSearch({
     <div ref={comboboxRef} className={`relative w-full ${className}`}>
       <div className="relative">
         <Input
+          ref={inputRef}
           type="text"
           value={search}
           onChange={handleInputChange}
+          onFocus={handleInputFocus}
           placeholder={placeholder}
-          className="w-full bg-white"
-          onFocus={() => search.trim() !== '' && setIsOpen(true)}
+          className="w-full bg-white pr-10"
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
           <Search className="h-4 w-4 text-gray-400" />
@@ -114,31 +115,27 @@ export function ComboboxSearch({
       </div>
       
       {isOpen && filteredOptions.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-gray-200">
-          <div className="overflow-y-auto max-h-60">
-            {filteredOptions.map((option) => (
-              <div
-                key={option.value}
-                className={`cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center hover:bg-green-50 ${
-                  option.value === value ? 'bg-green-50' : ''
-                }`}
-                onMouseDown={(e) => {
-                  e.preventDefault(); // Prevent focus loss
-                  handleOptionClick(option);
-                }}
-              >
-                <User className="flex-shrink-0 h-5 w-5 text-gray-400 mr-3" />
-                <span className={`truncate ${option.value === value ? 'font-medium' : 'font-normal'}`}>
-                  {option.label}
+        <div className="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto border border-gray-200">
+          {filteredOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`w-full text-left cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center hover:bg-green-50 focus:outline-none focus:bg-green-50 ${
+                option.value === value ? 'bg-green-50' : ''
+              }`}
+              onClick={() => handleOptionSelect(option)}
+            >
+              <User className="flex-shrink-0 h-5 w-5 text-gray-400 mr-3" />
+              <span className={`truncate ${option.value === value ? 'font-medium' : 'font-normal'}`}>
+                {option.label}
+              </span>
+              {option.value === value && (
+                <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                  <Check className="h-5 w-5 text-green-600" />
                 </span>
-                {option.value === value && (
-                  <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                    <Check className="h-5 w-5 text-green-600" />
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+              )}
+            </button>
+          ))}
         </div>
       )}
     </div>
