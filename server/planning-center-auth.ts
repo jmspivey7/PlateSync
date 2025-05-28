@@ -14,10 +14,20 @@ declare module "express-session" {
   }
 }
 
-// Environment variables will be needed for actual implementation
-// Planning Center OAuth credentials (to be moved to environment variables)
-const PLANNING_CENTER_CLIENT_ID = process.env.PLANNING_CENTER_CLIENT_ID || "";
-const PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET || "";
+// Helper function to get Planning Center configuration from database
+async function getPlanningCenterConfig() {
+  try {
+    const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || process.env.PLANNING_CENTER_CLIENT_ID || '';
+    const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+    return { clientId, clientSecret };
+  } catch (error) {
+    console.error('Error getting Planning Center config from database, falling back to environment variables:', error);
+    return {
+      clientId: process.env.PLANNING_CENTER_CLIENT_ID || '',
+      clientSecret: process.env.PLANNING_CENTER_CLIENT_SECRET || ''
+    };
+  }
+}
 
 // API base URLs - Using api.planningcenteronline.com as per official docs
 const PC_OAUTH_BASE_URL = "https://api.planningcenteronline.com/oauth";
@@ -62,9 +72,12 @@ export function setupPlanningCenterAuth(app: Express) {
     
     req.session.planningCenterChurchId = user.churchId;
 
+    // Get Planning Center configuration from database
+    const config = await getPlanningCenterConfig();
+    
     // Redirect to Planning Center OAuth authorization
     const redirectUri = `${req.protocol}://${req.get("host")}/api/planning-center/callback`;
-    const authUrl = `${PC_OAUTH_BASE_URL}/authorize?client_id=${PLANNING_CENTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=people`;
+    const authUrl = `${PC_OAUTH_BASE_URL}/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=people`;
     
     res.redirect(authUrl);
   });
@@ -83,18 +96,21 @@ export function setupPlanningCenterAuth(app: Express) {
     }
 
     try {
+      // Get Planning Center configuration from database
+      const config = await getPlanningCenterConfig();
+      
       // Exchange code for access token using URLSearchParams
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
       params.append('code', code as string);
-      params.append('client_id', PLANNING_CENTER_CLIENT_ID);
-      params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+      params.append('client_id', config.clientId);
+      params.append('client_secret', config.clientSecret);
       params.append('redirect_uri', redirectUri);
       
       console.log("Planning Center token exchange params:", {
         grant_type: 'authorization_code',
         code: code,
-        client_id: PLANNING_CENTER_CLIENT_ID,
+        client_id: config.clientId,
         redirect_uri: redirectUri
       });
       

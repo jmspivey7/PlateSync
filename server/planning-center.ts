@@ -48,12 +48,23 @@ const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
 // Helper function to get Planning Center configuration from database
 async function getPlanningCenterConfig() {
-  const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || process.env.PLANNING_CENTER_CLIENT_ID || '';
-  const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || process.env.PLANNING_CENTER_CLIENT_SECRET || '';
-  const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
-  const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
-  
-  return { clientId, clientSecret, callbackUrl, registrationCallbackUrl };
+  try {
+    const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || process.env.PLANNING_CENTER_CLIENT_ID || '';
+    const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+    const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
+    const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
+    
+    return { clientId, clientSecret, callbackUrl, registrationCallbackUrl };
+  } catch (error) {
+    console.error('Error getting Planning Center config from database, falling back to environment variables:', error);
+    // Fallback to environment variables if database access fails
+    return {
+      clientId: process.env.PLANNING_CENTER_CLIENT_ID || '',
+      clientSecret: process.env.PLANNING_CENTER_CLIENT_SECRET || '',
+      callbackUrl: process.env.PLANNING_CENTER_CALLBACK_URL || '',
+      registrationCallbackUrl: process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || ''
+    };
+  }
 }
 
 // Export the setup function to be called from routes.ts
@@ -326,7 +337,7 @@ export function setupPlanningCenterRoutes(app: Express) {
         url: PLANNING_CENTER_TOKEN_URL,
         grant_type: 'authorization_code',
         code: `${String(code).substring(0, 4)}...`, // Redacted for security
-        client_id: PLANNING_CENTER_CLIENT_ID,
+        client_id: config.clientId,
         redirect_uri: redirectUri
       });
       
