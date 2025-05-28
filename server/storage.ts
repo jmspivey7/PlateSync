@@ -1536,9 +1536,9 @@ export class DatabaseStorage implements IStorage {
 
   async checkMemberHasOpenDonations(memberId: number, churchId: string): Promise<{ hasOpenDonations: boolean; openCountNames: string[] }> {
     try {
-      console.log(`DEBUG: Checking open donations for member ${memberId} in church ${churchId}`);
+      console.log(`🔥 DEBUG FIXED: Checking open donations for member ${memberId} in church ${churchId} using BATCHES table`);
       
-      // Check if member has donations in open counts (status = 'OPEN')
+      // Check if member has donations in open batches (status = 'OPEN')
       const openDonations = await db
         .select({
           batchName: batches.name,
@@ -1554,14 +1554,17 @@ export class DatabaseStorage implements IStorage {
           eq(batches.status, 'OPEN')
         ));
 
-      console.log(`DEBUG: Found ${openDonations.length} open donations for member ${memberId}:`, openDonations);
+      console.log(`🔥 DEBUG FIXED: Found ${openDonations.length} open donations for member ${memberId}:`, openDonations);
+
+      const uniqueBatchNames = [...new Set(openDonations.map(d => d.batchName))];
+      console.log(`🔥 DEBUG FIXED: Unique batch names:`, uniqueBatchNames);
 
       return {
-        hasOpenDonations: openDonations.length > 0,
-        openCountNames: openDonations.map(d => d.batchName)
+        hasOpenDonations: uniqueBatchNames.length > 0,
+        openCountNames: uniqueBatchNames
       };
     } catch (error) {
-      console.error('Error checking member open donations:', error);
+      console.error('🔥 ERROR in checkMemberHasOpenDonations:', error);
       return { hasOpenDonations: false, openCountNames: [] };
     }
   }
