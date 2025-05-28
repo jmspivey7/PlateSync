@@ -917,6 +917,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete Member endpoint (soft delete)
   app.post('/api/members/:memberId/remove', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
+      console.log('🔥🔥🔥 MEMBER DELETE ENDPOINT HIT! 🔥🔥🔥');
+      console.log('Request path:', req.path);
+      console.log('Request method:', req.method);
+      console.log('Request params:', req.params);
+      
       const user = req.user;
       const churchId = user?.churchId || user?.id || '';
       const memberId = parseInt(req.params.memberId);
