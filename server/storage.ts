@@ -2443,26 +2443,26 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`🔥 SIMPLE CHECK: Looking for donations for member ${memberId} in church ${churchId}`);
       
-      const openCountsWithDonations = await db
+      const openBatchesWithDonations = await db
         .select({
-          countName: counts.name
+          batchName: batches.name
         })
         .from(donations)
-        .innerJoin(counts, eq(donations.countId, counts.id))
+        .innerJoin(batches, eq(donations.batchId, batches.id))
         .where(
           and(
             eq(donations.memberId, memberId),
-            eq(counts.churchId, churchId),
-            eq(counts.status, 'OPEN')
+            eq(batches.churchId, churchId),
+            eq(batches.status, 'OPEN')
           )
         );
 
-      console.log(`🔥 SIMPLE CHECK: Found ${openCountsWithDonations.length} open counts with donations`);
-      console.log(`🔥 SIMPLE CHECK: Counts:`, openCountsWithDonations);
+      console.log(`🔥 SIMPLE CHECK: Found ${openBatchesWithDonations.length} open batches with donations`);
+      console.log(`🔥 SIMPLE CHECK: Batches:`, openBatchesWithDonations);
 
-      return [...new Set(openCountsWithDonations.map(c => c.countName))];
+      return [...new Set(openBatchesWithDonations.map(b => b.batchName))];
     } catch (error) {
-      console.error('Error getting open counts with member donations:', error);
+      console.error('Error getting open batches with member donations:', error);
       return [];
     }
   }
