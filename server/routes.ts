@@ -4888,6 +4888,54 @@ Sincerely,
     }
   });
 
+  // Global Admin: Planning Center Integration - Test Configuration endpoint
+  app.post('/api/global-admin/integrations/planning-center/test', requireGlobalAdmin, async (req, res) => {
+    try {
+      // Get Planning Center configuration from system settings
+      const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID');
+      const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET');
+      
+      if (!clientId || !clientSecret) {
+        return res.status(400).json({
+          success: false,
+          message: 'Planning Center credentials not configured'
+        });
+      }
+
+      // Test the API connection by making a simple request to Planning Center
+      const testUrl = 'https://api.planningcenteronline.com/people/v2/me';
+      const authHeader = 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+      
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Planning Center API returned ${response.status}: ${response.statusText}`);
+      }
+
+      // Count active Planning Center connections from our database
+      const activeConnections = await storage.countActivePlanningCenterConnections();
+
+      res.status(200).json({
+        success: true,
+        message: 'Planning Center API connection successful',
+        activeConnections: activeConnections
+      });
+
+    } catch (error) {
+      console.error('Error testing Planning Center configuration:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to test Planning Center configuration'
+      });
+    }
+  });
+
   // Global Admin: Stripe Integration - GET endpoint
   app.get('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
     try {
