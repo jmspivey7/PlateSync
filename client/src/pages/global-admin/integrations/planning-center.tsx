@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ExternalLink, CheckCircle2, RotateCw, AlertCircle, Users } from "lucide-react";
+import { ArrowLeft, ExternalLink, CheckCircle2, RotateCw, AlertCircle, Users, TestTube } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function PlanningCenterIntegration() {
@@ -18,8 +18,12 @@ export default function PlanningCenterIntegration() {
   const [callbackUrl, setCallbackUrl] = useState("");
   const [registrationCallbackUrl, setRegistrationCallbackUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isTestingConfig, setIsTestingConfig] = useState(false);
+  const [configTestResult, setConfigTestResult] = useState<{
+    success: boolean;
+    message: string;
+    activeConnections?: number;
+  } | null>(null);
   
   // Check if the global admin is authenticated
   useEffect(() => {
@@ -166,8 +170,8 @@ export default function PlanningCenterIntegration() {
   };
   
   // Authenticate with Planning Center
-  const authenticateWithPlanningCenter = () => {
-    if (!clientId || !clientSecret || !callbackUrl) {
+  const testPlanningCenterConfiguration = async () => {
+    if (!clientId || !clientSecret) {
       toast({
         title: "Missing configuration",
         description: "Please save your Planning Center configuration first",
@@ -176,9 +180,47 @@ export default function PlanningCenterIntegration() {
       return;
     }
     
-    // Redirect to Planning Center OAuth flow
-    // In a real implementation, this would redirect to Planning Center's OAuth authorization URL
-    window.open('https://api.planningcenteronline.com/oauth/authorize?client_id=' + clientId + '&redirect_uri=' + encodeURIComponent(callbackUrl) + '&response_type=code&scope=people', '_blank');
+    setIsTestingConfig(true);
+    setConfigTestResult(null);
+    
+    try {
+      const response = await fetch("/api/global-admin/integrations/planning-center/test", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("globalAdminToken")}`,
+          "Content-Type": "application/json"
+        },
+        credentials: "include"
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setConfigTestResult({
+          success: true,
+          message: "Planning Center API connection successful",
+          activeConnections: result.activeConnections || 0
+        });
+        toast({
+          title: "Configuration Test Successful",
+          description: `Found ${result.activeConnections || 0} active church connections`,
+        });
+      } else {
+        throw new Error(result.message || "Test failed");
+      }
+    } catch (error) {
+      setConfigTestResult({
+        success: false,
+        message: error.message || "Failed to connect to Planning Center API"
+      });
+      toast({
+        title: "Configuration Test Failed",
+        description: "Please check your Planning Center credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingConfig(false);
+    }
   };
   
   // Show loading spinner while checking auth
