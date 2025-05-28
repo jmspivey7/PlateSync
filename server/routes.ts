@@ -612,6 +612,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update service option' });
     }
   });
+
+  // Delete service option endpoint
+  app.delete('/api/service-options/:id', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = req.user;
+      const churchId = user?.churchId || '';
+      
+      if (!churchId) {
+        return res.status(401).json({ message: 'Church ID not found' });
+      }
+      
+      await storage.deleteServiceOption(id, churchId);
+      
+      res.status(200).json({ message: 'Service option deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting service option:', error);
+      res.status(500).json({ message: 'Failed to delete service option' });
+    }
+  });
   
   // Report Recipients endpoints
   app.get('/api/report-recipients', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
