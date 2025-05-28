@@ -154,15 +154,20 @@ const MembersList = ({}: MembersListProps) => {
         
         if (involvementData.hasInvolvement) {
           setShowEnhancedWarning(true);
+        } else {
+          // No involvement, proceed with normal deletion
+          deleteMemberMutation.mutate({ memberId: member.id, forceDelete: false });
         }
       } else {
         console.error('Failed to check member involvement');
         setMemberInvolvement(null);
+        // If check fails, proceed with normal deletion
+        deleteMemberMutation.mutate({ memberId: member.id, forceDelete: false });
       }
     } catch (error) {
       console.error('Error checking member involvement:', error);
-      // If check fails, still allow basic deletion
-      setMemberInvolvement(null);
+      // If check fails, proceed with normal deletion
+      deleteMemberMutation.mutate({ memberId: member.id, forceDelete: false });
     }
   };
 
@@ -351,7 +356,9 @@ const MembersList = ({}: MembersListProps) => {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDeleteClick(member)}
+                                onClick={async () => {
+                                  await handleDeleteClick(member);
+                                }}
                                 className="bg-red-600 hover:bg-red-700 text-white"
                               >
                                 Delete Member
