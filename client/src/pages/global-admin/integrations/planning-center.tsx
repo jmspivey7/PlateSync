@@ -263,12 +263,11 @@ export default function PlanningCenterIntegration() {
       if (response.ok) {
         setConfigTestResult({
           success: true,
-          message: "Planning Center API connection successful",
-          activeConnections: result.activeConnections || 0
+          message: result.message || "Planning Center API connection successful"
         });
         toast({
           title: "Configuration Test Successful",
-          description: `Found ${result.activeConnections || 0} active church connections`,
+          description: result.message || "Planning Center API connection successful",
         });
       } else {
         throw new Error(result.message || "Test failed");

@@ -4918,13 +4918,9 @@ Sincerely,
         throw new Error(`Planning Center API returned ${response.status}: ${response.statusText}`);
       }
 
-      // Count active Planning Center connections from our database
-      const activeConnections = await storage.countActivePlanningCenterConnections();
-
       res.status(200).json({
         success: true,
-        message: 'Planning Center API connection successful',
-        activeConnections: activeConnections
+        message: 'Configuration Valid, Planning Center API connection successful'
       });
 
     } catch (error) {
