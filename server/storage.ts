@@ -3531,6 +3531,29 @@ PlateSync Reporting System
       return 0;
     }
   }
+
+  async getActivePlanningCenterConnections(): Promise<Array<{id: string, name: string, connectedAt: string}>> {
+    try {
+      const results = await db
+        .select({
+          id: churches.id,
+          name: churches.name,
+          connectedAt: planningCenterTokens.createdAt
+        })
+        .from(planningCenterTokens)
+        .innerJoin(churches, eq(planningCenterTokens.churchId, churches.id))
+        .where(isNotNull(planningCenterTokens.accessToken));
+      
+      return results.map(result => ({
+        id: result.id,
+        name: result.name,
+        connectedAt: result.connectedAt?.toISOString() || new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error("Error in getActivePlanningCenterConnections:", error);
+      return [];
+    }
+  }
   
   // Get CSV import stats for a church
   async getCsvImportStats(churchId: string): Promise<{ lastImportDate: Date | null; importCount: number; totalMembersImported: number; } | null> {

@@ -6,8 +6,71 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ExternalLink, CheckCircle2, RotateCw, AlertCircle, Users, TestTube } from "lucide-react";
+import { ArrowLeft, ExternalLink, CheckCircle2, RotateCw, AlertCircle, Users, TestTube, Building2, Calendar } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+
+interface PlanningCenterConnection {
+  id: string;
+  name: string;
+  connectedAt: string;
+}
+
+function ActiveConnectionsList() {
+  const { data: connections, isLoading, error } = useQuery<PlanningCenterConnection[]>({
+    queryKey: ["/api/global-admin/integrations/planning-center/active-connections"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <RotateCw className="h-6 w-6 animate-spin text-gray-400" />
+        <span className="ml-2 text-sm text-gray-600">Loading connections...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <AlertCircle className="h-6 w-6 text-red-500" />
+        <span className="ml-2 text-sm text-red-600">Failed to load connections</span>
+      </div>
+    );
+  }
+
+  if (!connections || connections.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Building2 className="h-12 w-12 text-gray-300 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Connections</h3>
+        <p className="text-sm text-gray-500 max-w-sm">
+          No churches have connected to Planning Center yet. Once churches link their Planning Center accounts, they'll appear here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {connections.map((connection) => (
+        <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+          <div className="flex items-center space-x-3">
+            <Building2 className="h-5 w-5 text-[#69ad4c]" />
+            <div>
+              <h4 className="font-medium text-gray-900">{connection.name}</h4>
+              <div className="flex items-center text-sm text-gray-500">
+                <Calendar className="h-4 w-4 mr-1" />
+                Connected on {new Date(connection.connectedAt).toLocaleDateString()}
+              </div>
+            </div>
+          </div>
+          <CheckCircle2 className="h-5 w-5 text-green-500" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function PlanningCenterIntegration() {
   const [_, setLocation] = useLocation();
@@ -336,11 +399,23 @@ export default function PlanningCenterIntegration() {
           </CardContent>
         </Card>
         
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Active Connections</CardTitle>
+            <CardDescription>
+              Churches currently connected to Planning Center Online
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ActiveConnectionsList />
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader>
-            <CardTitle>Test Configuration & Active Connections</CardTitle>
+            <CardTitle>Test Configuration</CardTitle>
             <CardDescription>
-              Test the Planning Center API configuration and view churches using the integration
+              Test the Planning Center API configuration
             </CardDescription>
           </CardHeader>
           <CardContent>
