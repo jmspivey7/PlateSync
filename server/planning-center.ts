@@ -46,9 +46,15 @@ const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/aut
 const PLANNING_CENTER_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
-// Load credentials from environment variables
-const PLANNING_CENTER_CLIENT_ID = process.env.PLANNING_CENTER_CLIENT_ID || '';
-const PLANNING_CENTER_CLIENT_SECRET = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+// Helper function to get Planning Center configuration from database
+async function getPlanningCenterConfig() {
+  const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || process.env.PLANNING_CENTER_CLIENT_ID || '';
+  const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+  const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
+  const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
+  
+  return { clientId, clientSecret, callbackUrl, registrationCallbackUrl };
+}
 
 // Export the setup function to be called from routes.ts
 export function setupPlanningCenterRoutes(app: Express) {
@@ -305,12 +311,15 @@ export function setupPlanningCenterRoutes(app: Express) {
       }
       
       // Build properly formatted parameters for token request
+      // Get Planning Center configuration from database
+      const config = await getPlanningCenterConfig();
+      
       // Using URLSearchParams to ensure proper encoding and formatting
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
       params.append('code', code as string);
-      params.append('client_id', PLANNING_CENTER_CLIENT_ID);
-      params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+      params.append('client_id', config.clientId);
+      params.append('client_secret', config.clientSecret);
       params.append('redirect_uri', redirectUri);
       
       console.log('Token request to Planning Center with params:', {
@@ -679,6 +688,9 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
 
     try {
+      // Get Planning Center configuration from database
+      const config = await getPlanningCenterConfig();
+      
       // Exchange code for access token
       const tokenResponse = await fetch(PLANNING_CENTER_TOKEN_URL, {
         method: 'POST',
@@ -687,10 +699,10 @@ export function setupPlanningCenterRoutes(app: Express) {
         },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
-          client_id: PLANNING_CENTER_CLIENT_ID,
-          client_secret: PLANNING_CENTER_CLIENT_SECRET,
+          client_id: config.clientId,
+          client_secret: config.clientSecret,
           code: String(code),
-          redirect_uri: `${req.protocol}://${req.get('host')}/api/planning-center/callback-registration`,
+          redirect_uri: config.registrationCallbackUrl || `${req.protocol}://${req.get('host')}/api/planning-center/callback-registration`,
         }),
       });
 
@@ -1123,12 +1135,15 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.log('State and churchId saved in session for authorization flow');
       }
 
+      // Get Planning Center configuration from database
+      const config = await getPlanningCenterConfig();
+      
       // Build the Planning Center OAuth authorization URL
-      const redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL || 
+      const redirectUri = config.callbackUrl || 
                          `${req.protocol}://${req.get('host')}/api/planning-center/callback`;
       
       const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
-      authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+      authUrl.searchParams.append('client_id', config.clientId);
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('response_type', 'code');
       authUrl.searchParams.append('scope', 'people');
