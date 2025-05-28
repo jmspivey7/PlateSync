@@ -137,9 +137,11 @@ const MembersList = ({}: MembersListProps) => {
 
   // Handler for first delete click - checks involvement and shows appropriate warning
   const handleDeleteClick = async (member: Member) => {
+    console.log('🔥 FRONTEND: Delete click for member:', member.id, member.firstName, member.lastName);
     setMemberToDelete(member);
     
     try {
+      console.log('🔥 FRONTEND: Checking involvement for member:', member.id);
       const response = await fetch(`/api/members/${member.id}/involvement`, {
         method: 'GET',
         credentials: 'include',
@@ -150,24 +152,29 @@ const MembersList = ({}: MembersListProps) => {
       
       if (response.ok) {
         const involvementData = await response.json();
+        console.log('🔥 FRONTEND: Involvement data:', involvementData);
         setMemberInvolvement(involvementData);
         
         if (involvementData.hasInvolvement) {
+          console.log('🔥 FRONTEND: Member has involvement, showing enhanced warning');
+          // Show enhanced warning dialog - don't proceed with deletion
           setShowEnhancedWarning(true);
         } else {
+          console.log('🔥 FRONTEND: Member has no involvement, proceeding with deletion');
           // No involvement, proceed with normal deletion
           deleteMemberMutation.mutate({ memberId: member.id, forceDelete: false });
         }
       } else {
-        console.error('Failed to check member involvement');
+        console.error('Failed to check member involvement, response:', response.status);
         setMemberInvolvement(null);
-        // If check fails, proceed with normal deletion
-        deleteMemberMutation.mutate({ memberId: member.id, forceDelete: false });
+        // If check fails, show a simple confirmation dialog
+        setShowEnhancedWarning(true);
       }
     } catch (error) {
       console.error('Error checking member involvement:', error);
-      // If check fails, proceed with normal deletion
-      deleteMemberMutation.mutate({ memberId: member.id, forceDelete: false });
+      // If check fails, show a simple confirmation dialog
+      setMemberInvolvement(null);
+      setShowEnhancedWarning(true);
     }
   };
 
