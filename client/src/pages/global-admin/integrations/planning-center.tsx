@@ -19,6 +19,7 @@ export default function PlanningCenterIntegration() {
   const [registrationCallbackUrl, setRegistrationCallbackUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
   
   // Check if the global admin is authenticated
   useEffect(() => {
