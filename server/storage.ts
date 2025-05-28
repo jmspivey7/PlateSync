@@ -1566,17 +1566,97 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async softDeleteMember(memberId: number, churchId: string): Promise<{ success: boolean; error?: string; openCounts?: string[] }> {
+  // Check member involvement in counts (both open and finalized)
+  async checkMemberInvolvement(memberId: number, churchId: string): Promise<{
+    hasInvolvement: boolean;
+    openCounts: string[];
+    finalizedCounts: string[];
+    totalDonations: number;
+  }> {
     try {
-      // First check if member has donations in open counts
-      const { hasOpenDonations, openCountNames } = await this.checkMemberHasOpenDonations(memberId, churchId);
+      const donationsQuery = await db
+        .select({
+          batchName: counts.name,
+          batchStatus: counts.status,
+          donationId: donations.id,
+        })
+        .from(donations)
+        .innerJoin(counts, eq(donations.batchId, counts.id))
+        .where(and(
+          eq(donations.memberId, memberId),
+          eq(donations.churchId, churchId)
+        ));
+
+      const openCounts = [...new Set(donationsQuery
+        .filter(d => d.batchStatus === 'OPEN')
+        .map(d => d.batchName))];
       
-      if (hasOpenDonations) {
-        return {
-          success: false,
-          error: 'Member has donations in open counts',
-          openCounts: openCountNames
-        };
+      const finalizedCounts = [...new Set(donationsQuery
+        .filter(d => d.batchStatus === 'FINALIZED')
+        .map(d => d.batchName))];
+
+      return {
+        hasInvolvement: donationsQuery.length > 0,
+        openCounts,
+        finalizedCounts,
+        totalDonations: donationsQuery.length
+      };
+    } catch (error) {
+      console.error('Error checking member involvement:', error);
+      return { hasInvolvement: false, openCounts: [], finalizedCounts: [], totalDonations: 0 };
+    }
+  }
+
+  async softDeleteMember(memberId: number, churchId: string, forceDelete = false): Promise<{ success: boolean; error?: string; openCounts?: string[] }> {
+    try {
+      // Check if member has donations in open counts (unless force delete)
+      if (!forceDelete) {
+        const { hasOpenDonations, openCountNames } = await this.checkMemberHasOpenDonations(memberId, churchId);
+        
+        if (hasOpenDonations) {
+          return {
+            success: false,
+            error: 'Member has donations in open counts',
+            openCounts: openCountNames
+          };
+        }
+      }
+
+      // Get current member info first
+      const [currentMember] = await db
+        .select({
+          firstName: members.firstName,
+          lastName: members.lastName
+        })
+        .from(members)
+        .innerJoin(churchMembers, eq(members.id, churchMembers.memberId))
+        .where(and(
+          eq(churchMembers.memberId, memberId),
+          eq(churchMembers.churchId, churchId),
+          eq(churchMembers.isActive, true)
+        ));
+
+      if (!currentMember) {
+        return { success: false, error: 'Member not found' };
+      }
+
+      // If force delete and member has involvement, append (Deleted) to name
+      if (forceDelete) {
+        const involvement = await this.checkMemberInvolvement(memberId, churchId);
+        if (involvement.hasInvolvement) {
+          // Update member name to include (Deleted) suffix
+          const newFirstName = currentMember.firstName?.includes('(Deleted)') 
+            ? currentMember.firstName 
+            : `${currentMember.firstName} (Deleted)`;
+          
+          await db
+            .update(members)
+            .set({
+              firstName: newFirstName,
+              updatedAt: new Date()
+            })
+            .where(eq(members.id, memberId));
+        }
       }
 
       // Soft delete by setting isActive to false in the church_members junction table
