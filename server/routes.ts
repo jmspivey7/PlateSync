@@ -925,10 +925,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Check member involvement in counts
   app.get('/api/members/:memberId/involvement', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    console.log('🔥 API ENDPOINT HIT: /api/members/:memberId/involvement');
     try {
       const user = req.user;
       const churchId = user?.churchId || user?.id || '';
       const memberId = parseInt(req.params.memberId);
+      
+      console.log(`🔥 INVOLVEMENT CHECK: memberId=${memberId}, churchId=${churchId}`);
       
       if (!churchId) {
         return res.status(400).json({ message: 'Church ID is required' });
@@ -939,10 +942,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const involvement = await storage.checkMemberInvolvement(memberId, churchId);
+      console.log('🔥 INVOLVEMENT RESULT:', involvement);
       res.json(involvement);
     } catch (error) {
-      console.error('Error checking member involvement:', error);
-      res.status(500).json({ message: 'Failed to check member involvement' });
+      console.error('🔥 ERROR in involvement check:', error);
+      res.status(500).json({ message: 'Failed to check member involvement' });ember involvement' });
     }
   });
 
