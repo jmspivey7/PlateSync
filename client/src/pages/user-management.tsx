@@ -386,7 +386,7 @@ const UserManagement = () => {
   const handleResendWelcomeEmail = async (userId: string) => {
     setIsResendingEmail(true);
     try {
-      const response = await apiRequest(`/api/users/${userId}/resend-welcome-email`, "POST");
+      const response = await apiRequest("POST", `/api/users/${userId}/resend-welcome-email`);
       const data = await response.json();
       
       if (response.ok) {
