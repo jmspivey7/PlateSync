@@ -60,7 +60,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Loader2, Plus, Search, Trash2, UserPlus, Users } from "lucide-react";
+import { Loader2, Plus, Search, Trash2, UserPlus, Users, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -210,6 +210,9 @@ const UserManagement = () => {
   // Transfer ownership dialog state
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [userToTransferTo, setUserToTransferTo] = useState<User | null>(null);
+  
+  // Resend welcome email state
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   
   // Fetch all users - using test endpoint for guaranteed results
   const { data: users, isLoading } = useQuery<User[]>({
@@ -663,6 +666,33 @@ const UserManagement = () => {
                     )}
                   </div>
                   
+                  {/* Email Management Section */}
+                  {currentUser?.isAccountOwner === true && (
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-semibold mb-3">Email Management</h4>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleResendWelcomeEmail(selectedUser.id)}
+                          disabled={isResendingEmail}
+                          className="text-[#69ad4c] border-[#69ad4c] hover:bg-[#69ad4c] hover:text-white"
+                        >
+                          {isResendingEmail ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Resend Welcome Email
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Role Management Section */}
                   {currentUser?.id !== selectedUser.id && currentUser?.isAccountOwner === true && (
                     <div className="border-t pt-4">

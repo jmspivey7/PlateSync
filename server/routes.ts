@@ -871,6 +871,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Resend welcome email endpoint
+  app.post('/api/users/:userId/resend-welcome-email', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      const currentUser = req.user;
+      
+      // Only allow account owners to resend welcome emails
+      if (!currentUser?.isAccountOwner && currentUser?.role !== 'ACCOUNT_OWNER') {
+        return res.status(403).json({ message: 'Only account owners can resend welcome emails' });
+      }
+      
+      // Get the user to resend email to
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Get church information
+      const church = await storage.getChurch(currentUser.churchId || currentUser.id);
+      if (!church) {
+        return res.status(404).json({ message: 'Church not found' });
+      }
+      
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      // Update user with new verification token
+      await storage.updateUserVerificationToken(userId, verificationToken, tokenExpiry);
+      
+      // Prepare verification URL
+      const baseUrl = req.protocol + '://' + req.get('host');
+      const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+      
+      // Send welcome email
+      const emailSent = await sendWelcomeEmail({
+        to: targetUser.email,
+        firstName: targetUser.firstName || '',
+        lastName: targetUser.lastName || '',
+        churchName: church.name || 'Your Church',
+        verificationUrl,
+        verificationToken,
+        role: targetUser.role || 'STANDARD_USER'
+      });
+      
+      if (emailSent) {
+        console.log(`✅ Welcome email resent successfully to ${targetUser.email}`);
+        res.json({ 
+          message: 'Welcome email sent successfully',
+          email: targetUser.email
+        });
+      } else {
+        console.log(`❌ Failed to resend welcome email to ${targetUser.email}`);
+        res.status(500).json({ message: 'Failed to send welcome email' });
+      }
+      
+    } catch (error) {
+      console.error('Error resending welcome email:', error);
+      res.status(500).json({ message: 'Server error while resending welcome email' });
+    }
+  });
+
   // Add Member endpoint for quick member creation  
   app.post('/api/members/create', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
