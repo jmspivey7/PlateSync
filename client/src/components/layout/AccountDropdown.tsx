@@ -108,9 +108,8 @@ const AccountDropdown = () => {
           <Avatar className="h-[2.76rem] w-[2.76rem] bg-[#69ad4c]">
             {effectiveUser?.profileImageUrl ? (
               <AvatarImage src={effectiveUser.profileImageUrl} alt={getDisplayName()} />
-            ) : (
-              <AvatarFallback className="text-white">{getInitials()}</AvatarFallback>
-            )}
+            ) : null}
+            <AvatarFallback className="text-white bg-[#69ad4c]">{getInitials()}</AvatarFallback>
           </Avatar>
           <span className="text-[1.1rem]">{getDisplayName()}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
