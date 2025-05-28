@@ -932,7 +932,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Attempting to soft delete member ${memberId} for church ${churchId}`);
       
       // Check for open donations and attempt soft delete
+      console.log(`DEBUG: About to call softDeleteMember for member ${memberId}, church ${churchId}`);
       const result = await storage.softDeleteMember(memberId, churchId);
+      console.log(`DEBUG: softDeleteMember returned:`, result);
       
       if (!result.success) {
         if (result.error === 'Member has donations in open counts') {

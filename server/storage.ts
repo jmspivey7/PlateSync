@@ -1536,11 +1536,15 @@ export class DatabaseStorage implements IStorage {
 
   async checkMemberHasOpenDonations(memberId: number, churchId: string): Promise<{ hasOpenDonations: boolean; openCountNames: string[] }> {
     try {
+      console.log(`DEBUG: Checking open donations for member ${memberId} in church ${churchId}`);
+      
       // Check if member has donations in open counts (status = 'OPEN')
       const openDonations = await db
         .select({
           batchName: batches.name,
-          batchId: batches.id
+          batchId: batches.id,
+          donationId: donations.id,
+          amount: donations.amount
         })
         .from(donations)
         .innerJoin(batches, eq(donations.batchId, batches.id))
@@ -1549,6 +1553,8 @@ export class DatabaseStorage implements IStorage {
           eq(batches.churchId, churchId),
           eq(batches.status, 'OPEN')
         ));
+
+      console.log(`DEBUG: Found ${openDonations.length} open donations for member ${memberId}:`, openDonations);
 
       return {
         hasOpenDonations: openDonations.length > 0,
