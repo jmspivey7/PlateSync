@@ -4936,6 +4936,20 @@ Sincerely,
     }
   });
 
+  // Global Admin: Get Active Planning Center Connections
+  app.get('/api/global-admin/integrations/planning-center/active-connections', requireGlobalAdmin, async (req, res) => {
+    try {
+      const activeConnections = await storage.getActivePlanningCenterConnections();
+      res.status(200).json(activeConnections);
+    } catch (error) {
+      console.error('Error fetching active Planning Center connections:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch active Planning Center connections'
+      });
+    }
+  });
+
   // Global Admin: Stripe Integration - GET endpoint
   app.get('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
     try {
