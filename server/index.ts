@@ -122,6 +122,12 @@ app.use((req, res, next) => {
 // Import the logo URL fix migration
 import { fixLogoUrls } from './migrations/fix-logo-urls';
 
+// Add API route priority middleware to prevent Vite catch-all interference
+app.use('/api/*', (req, res, next) => {
+  console.log('🔥 API REQUEST INTERCEPTED:', req.method, req.originalUrl);
+  next();
+});
+
 (async () => {
   const server = await registerRoutes(app);
 
