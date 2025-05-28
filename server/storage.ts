@@ -119,6 +119,7 @@ export interface IStorage {
   updateUserEmailNotificationSetting(userId: string, enabled: boolean): Promise<boolean>;
   updateChurchEmailNotificationSetting(churchId: string, enabled: boolean): Promise<boolean>;
   updateUserRole(id: string, role: string): Promise<User>;
+  updateUserVerificationToken(userId: string, token: string, expiry: Date): Promise<void>;
   createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User>;
   deleteUser(id: string): Promise<void>;
   
@@ -1082,6 +1083,22 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updatedUser;
+  }
+  
+  async updateUserVerificationToken(userId: string, token: string, expiry: Date): Promise<void> {
+    try {
+      await db
+        .update(users)
+        .set({
+          passwordResetToken: token,
+          passwordResetExpires: expiry,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+    } catch (error) {
+      console.error('Error updating user verification token:', error);
+      throw error;
+    }
   }
   
   async createUser(userData: Partial<UpsertUser> & { churchId?: string }): Promise<User> {
