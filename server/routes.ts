@@ -929,13 +929,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Valid member ID is required' });
       }
       
-      console.log(`Soft deleting member ${memberId} for church ${churchId}`);
+      console.log(`Attempting to soft delete member ${memberId} for church ${churchId}`);
       
-      // Soft delete by setting isActive to false in the church_members junction table
+      // Check for open donations and attempt soft delete
       const result = await storage.softDeleteMember(memberId, churchId);
       
-      if (!result) {
-        return res.status(404).json({ message: 'Member not found or already inactive' });
+      if (!result.success) {
+        if (result.error === 'Member has donations in open counts') {
+          const countNames = result.openCounts || [];
+          const countText = countNames.length === 1 ? 'count' : 'counts';
+          const countList = countNames.join(', ');
+          
+          return res.status(400).json({ 
+            message: `Cannot delete member: They have donations in open ${countText} (${countList}). Please finalize these counts first or reassign the donations.`,
+            error: 'HAS_OPEN_DONATIONS',
+            openCounts: countNames
+          });
+        } else {
+          return res.status(404).json({ message: result.error || 'Member not found or already inactive' });
+        }
       }
       
       console.log(`Successfully soft deleted member ${memberId}`);

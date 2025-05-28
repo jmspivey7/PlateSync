@@ -1534,8 +1534,45 @@ export class DatabaseStorage implements IStorage {
     return updatedMember;
   }
 
-  async softDeleteMember(memberId: number, churchId: string): Promise<boolean> {
+  async checkMemberHasOpenDonations(memberId: number, churchId: string): Promise<{ hasOpenDonations: boolean; openCountNames: string[] }> {
     try {
+      // Check if member has donations in open counts (status = 'OPEN')
+      const openDonations = await db
+        .select({
+          batchName: batches.name,
+          batchId: batches.id
+        })
+        .from(donations)
+        .innerJoin(batches, eq(donations.batchId, batches.id))
+        .where(and(
+          eq(donations.memberId, memberId),
+          eq(batches.churchId, churchId),
+          eq(batches.status, 'OPEN')
+        ));
+
+      return {
+        hasOpenDonations: openDonations.length > 0,
+        openCountNames: openDonations.map(d => d.batchName)
+      };
+    } catch (error) {
+      console.error('Error checking member open donations:', error);
+      return { hasOpenDonations: false, openCountNames: [] };
+    }
+  }
+
+  async softDeleteMember(memberId: number, churchId: string): Promise<{ success: boolean; error?: string; openCounts?: string[] }> {
+    try {
+      // First check if member has donations in open counts
+      const { hasOpenDonations, openCountNames } = await this.checkMemberHasOpenDonations(memberId, churchId);
+      
+      if (hasOpenDonations) {
+        return {
+          success: false,
+          error: 'Member has donations in open counts',
+          openCounts: openCountNames
+        };
+      }
+
       // Soft delete by setting isActive to false in the church_members junction table
       const result = await db
         .update(churchMembers)
@@ -1550,10 +1587,10 @@ export class DatabaseStorage implements IStorage {
         ))
         .returning();
 
-      return result.length > 0;
+      return { success: result.length > 0 };
     } catch (error) {
       console.error('Error soft deleting member:', error);
-      return false;
+      return { success: false, error: 'Database error occurred' };
     }
   }
 
