@@ -1574,6 +1574,8 @@ export class DatabaseStorage implements IStorage {
     totalDonations: number;
   }> {
     try {
+      console.log(`🔥 SERVER: Checking involvement for member ${memberId} in church ${churchId}`);
+      
       const donationsQuery = await db
         .select({
           batchName: counts.name,
@@ -1587,6 +1589,8 @@ export class DatabaseStorage implements IStorage {
           eq(donations.churchId, churchId)
         ));
 
+      console.log(`🔥 SERVER: Found ${donationsQuery.length} donations for member ${memberId}:`, donationsQuery);
+
       const openCounts = [...new Set(donationsQuery
         .filter(d => d.batchStatus === 'OPEN')
         .map(d => d.batchName))];
@@ -1595,8 +1599,10 @@ export class DatabaseStorage implements IStorage {
         .filter(d => d.batchStatus === 'FINALIZED')
         .map(d => d.batchName))];
 
+      console.log(`🔥 SERVER: Open counts: ${openCounts}, Finalized counts: ${finalizedCounts}`);
+
       return {
-        hasInvolvement: donationsQuery.length > 0,
+        hasInvolvement: openCounts.length > 0 || finalizedCounts.length > 0,
         openCounts,
         finalizedCounts,
         totalDonations: donationsQuery.length
