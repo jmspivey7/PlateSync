@@ -35,102 +35,82 @@ export async function importMembers(records: MemberRecord[], churchId: string): 
       let isDuplicate = false;
       let existingMemberId: number | null = null;
 
-      // Check for duplicates by email first (if email exists)
+      // For "Add to Existing Members" mode, we need to check if this specific member
+      // is already associated with THIS church, not just if the member exists globally
+      
+      // First, check for existing church-member relationship by email
       if (memberData.email) {
-        const existingMemberByEmail = await db.select()
-          .from(members)
-          .where(eq(members.email, memberData.email));
-          
-        if (existingMemberByEmail.length > 0) {
-          existingMemberId = existingMemberByEmail[0].id;
-          
-          // Check if this member is already associated with this church
-          const existingChurchMembership = await db.select()
-            .from(churchMembers)
-            .where(
-              and(
-                eq(churchMembers.churchId, churchId),
-                eq(churchMembers.memberId, existingMemberId)
-              )
-            );
-            
-          if (existingChurchMembership.length > 0) {
-            console.log(`Skipping duplicate member with email ${memberData.email} - already associated with this church`);
-            duplicatesSkipped++;
-            isDuplicate = true;
-          } else {
-            // Member exists but not associated with this church - we'll add the association
-            console.log(`Found existing member with email ${memberData.email} - adding to church ${churchId}`);
-          }
+        const existingChurchMemberByEmail = await db.select({
+          memberId: churchMembers.memberId,
+          memberFirstName: members.firstName,
+          memberLastName: members.lastName
+        })
+        .from(churchMembers)
+        .innerJoin(members, eq(churchMembers.memberId, members.id))
+        .where(
+          and(
+            eq(churchMembers.churchId, churchId),
+            eq(members.email, memberData.email)
+          )
+        );
+        
+        if (existingChurchMemberByEmail.length > 0) {
+          console.log(`Skipping duplicate member with email ${memberData.email} - already in church ${churchId}`);
+          duplicatesSkipped++;
+          isDuplicate = true;
         }
       }
 
-      // If not found by email, check by first name and last name
-      if (!isDuplicate && !existingMemberId) {
-        const existingMemberByName = await db.select()
-          .from(members)
-          .where(
-            and(
-              eq(members.firstName, memberData.firstName),
-              eq(members.lastName, memberData.lastName)
-            )
-          );
-          
-        if (existingMemberByName.length > 0) {
-          existingMemberId = existingMemberByName[0].id;
-          
-          // Check if this member is already associated with this church
-          const existingChurchMembership = await db.select()
-            .from(churchMembers)
-            .where(
-              and(
-                eq(churchMembers.churchId, churchId),
-                eq(churchMembers.memberId, existingMemberId)
-              )
-            );
-            
-          if (existingChurchMembership.length > 0) {
-            console.log(`Skipping duplicate member with name ${memberData.firstName} ${memberData.lastName} - already associated with this church`);
-            duplicatesSkipped++;
-            isDuplicate = true;
-          } else {
-            // Member exists but not associated with this church - we'll add the association
-            console.log(`Found existing member with name ${memberData.firstName} ${memberData.lastName} - adding to church ${churchId}`);
-          }
+      // If not found by email, check by first name and last name within this church
+      if (!isDuplicate) {
+        const existingChurchMemberByName = await db.select({
+          memberId: churchMembers.memberId,
+          memberFirstName: members.firstName,
+          memberLastName: members.lastName
+        })
+        .from(churchMembers)
+        .innerJoin(members, eq(churchMembers.memberId, members.id))
+        .where(
+          and(
+            eq(churchMembers.churchId, churchId),
+            eq(members.firstName, memberData.firstName),
+            eq(members.lastName, memberData.lastName)
+          )
+        );
+        
+        if (existingChurchMemberByName.length > 0) {
+          console.log(`Skipping duplicate member with name ${memberData.firstName} ${memberData.lastName} - already in church ${churchId}`);
+          duplicatesSkipped++;
+          isDuplicate = true;
         }
       }
       
-      // If not a duplicate, process the member
+      // If not a duplicate, create new member and associate with church
       if (!isDuplicate) {
         try {
-          // If we found an existing member, use their ID, otherwise create new member
-          if (existingMemberId) {
-            // Add existing member to this church
-            await db.insert(churchMembers).values({
-              churchId: churchId,
-              memberId: existingMemberId,
-              notes: record.notes || null,
-              isActive: true,
-            });
-            console.log(`✅ Successfully added existing member to church: ${memberData.firstName} ${memberData.lastName}`);
-          } else {
-            // Create new member and associate with church
-            const [newMember] = await db.insert(members).values(memberData).returning();
-            
-            await db.insert(churchMembers).values({
-              churchId: churchId,
-              memberId: newMember.id,
-              notes: record.notes || null,
-              isActive: true,
-            });
-            console.log(`✅ Successfully imported new member: ${memberData.firstName} ${memberData.lastName}`);
-          }
+          // Create new member
+          const [newMember] = await db.insert(members).values(memberData).returning();
           
+          // Associate member with this church
+          await db.insert(churchMembers).values({
+            churchId: churchId,
+            memberId: newMember.id,
+            notes: record.notes || null,
+            isActive: true,
+          });
+          
+          console.log(`✅ Successfully imported new member: ${memberData.firstName} ${memberData.lastName} (ID: ${newMember.id})`);
           importedCount++;
         } catch (insertError: any) {
           // Handle unique constraint violations as duplicates
-          if (insertError.code === '23505' && insertError.constraint === 'members_email_unique') {
-            console.log(`Skipping duplicate member with email ${memberData.email} (constraint violation)`);
+          if (insertError.code === '23505') {
+            if (insertError.constraint === 'members_email_unique') {
+              console.log(`Skipping duplicate member with email ${memberData.email} (email constraint violation)`);
+            } else if (insertError.constraint === 'church_members_church_id_member_id_unique') {
+              console.log(`Skipping duplicate member ${memberData.firstName} ${memberData.lastName} (already in church)`);
+            } else {
+              console.log(`Skipping duplicate member ${memberData.firstName} ${memberData.lastName} (constraint: ${insertError.constraint})`);
+            }
             duplicatesSkipped++;
           } else {
             console.error(`Error importing member ${record.firstName} ${record.lastName}:`, insertError);
