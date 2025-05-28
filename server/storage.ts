@@ -1625,7 +1625,7 @@ export class DatabaseStorage implements IStorage {
         if (hasOpenDonations) {
           return {
             success: false,
-            error: 'Member has donations in open counts',
+            error: 'Member has donations in open batches',
             openCounts: openCountNames
           };
         }

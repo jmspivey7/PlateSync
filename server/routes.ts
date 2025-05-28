@@ -1001,13 +1001,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`DEBUG: softDeleteMember returned:`, result);
       
       if (!result.success) {
-        if (result.error === 'Member has donations in open counts') {
+        if (result.error === 'Member has donations in open batches') {
           const countNames = result.openCounts || [];
           const countText = countNames.length === 1 ? 'count' : 'counts';
           const countList = countNames.join(', ');
           
           return res.status(400).json({ 
-            message: `Cannot delete member: They have donations in open ${countText} (${countList}). Please finalize these counts first or use force delete.`,
+            message: `Cannot delete member: They have donations in open batch${countNames.length === 1 ? '' : 'es'} (${countList}). Please finalize these batches first or use force delete.`,
             error: 'HAS_OPEN_DONATIONS',
             openCounts: countNames
           });
