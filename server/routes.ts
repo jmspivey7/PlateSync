@@ -4857,6 +4857,37 @@ Sincerely,
     }
   });
 
+  // Global Admin: Planning Center Integration - Disconnect endpoint
+  app.post('/api/global-admin/integrations/planning-center/disconnect', requireGlobalAdmin, async (req, res) => {
+    try {
+      // Clear Planning Center configuration from system settings
+      const configItems = [
+        { key: 'PLANNING_CENTER_CLIENT_ID', value: '' },
+        { key: 'PLANNING_CENTER_CLIENT_SECRET', value: '' },
+        { key: 'PLANNING_CENTER_CALLBACK_URL', value: '' },
+        { key: 'PLANNING_CENTER_REGISTRATION_CALLBACK_URL', value: '' }
+      ];
+      
+      await storage.updateSystemConfig(configItems);
+      
+      // Clear environment variables
+      delete process.env.PLANNING_CENTER_CLIENT_ID;
+      delete process.env.PLANNING_CENTER_CLIENT_SECRET;
+      delete process.env.PLANNING_CENTER_CALLBACK_URL;
+      delete process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL;
+      
+      res.status(200).json({ 
+        message: 'Planning Center integration disconnected successfully' 
+      });
+    } catch (error) {
+      console.error('Error disconnecting Planning Center:', error);
+      res.status(500).json({ 
+        message: 'Failed to disconnect Planning Center',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Global Admin: Stripe Integration - GET endpoint
   app.get('/api/global-admin/integrations/stripe', requireGlobalAdmin, async (req, res) => {
     try {
