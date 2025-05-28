@@ -2441,6 +2441,8 @@ export class DatabaseStorage implements IStorage {
   
   async getOpenCountsWithMemberDonations(memberId: number, churchId: string): Promise<string[]> {
     try {
+      console.log(`🔥 SIMPLE CHECK: Looking for donations for member ${memberId} in church ${churchId}`);
+      
       const openCountsWithDonations = await db
         .select({
           countName: counts.name
@@ -2454,6 +2456,9 @@ export class DatabaseStorage implements IStorage {
             eq(counts.status, 'OPEN')
           )
         );
+
+      console.log(`🔥 SIMPLE CHECK: Found ${openCountsWithDonations.length} open counts with donations`);
+      console.log(`🔥 SIMPLE CHECK: Counts:`, openCountsWithDonations);
 
       return [...new Set(openCountsWithDonations.map(c => c.countName))];
     } catch (error) {
