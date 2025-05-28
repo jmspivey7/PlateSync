@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Mail, Phone, Trash2 } from "lucide-react";
+import { Loader2, Search, Mail, Phone, Trash2, AlertTriangle } from "lucide-react";
 import { Member } from "@shared/schema";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -40,6 +40,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface MembersListProps {}
 
@@ -49,22 +57,53 @@ const MembersList = ({}: MembersListProps) => {
   const [sortOption, setSortOption] = useState("lastNameAsc");
   const [_, setLocation] = useLocation();
   
+  // Enhanced deletion state management
+  const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
+  const [showEnhancedWarning, setShowEnhancedWarning] = useState(false);
+  const [memberInvolvement, setMemberInvolvement] = useState<{
+    hasInvolvement: boolean;
+    openCounts: string[];
+    finalizedCounts: string[];
+    totalDonations: number;
+  } | null>(null);
+  
   // Fetch members data
   const { data: members, isLoading, isError } = useQuery<Member[]>({
     queryKey: ['/api/members'],
   });
 
-  // Delete member mutation (updated endpoint)
+  // Check member involvement mutation
+  const checkInvolvementMutation = useMutation({
+    mutationKey: ['check-member-involvement'],
+    mutationFn: async (memberId: number) => {
+      const response = await fetch(`/api/members/${memberId}/involvement`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to check member involvement');
+      }
+      
+      return response.json();
+    },
+  });
+
+  // Delete member mutation with force option
   const deleteMemberMutation = useMutation({
     mutationKey: ['delete-member'],
-    mutationFn: async (memberId: number) => {
-      console.log(`🔥 FRONTEND: Attempting to delete member ${memberId} using POST /api/members/${memberId}/remove`);
+    mutationFn: async ({ memberId, forceDelete = false }: { memberId: number; forceDelete?: boolean }) => {
+      console.log(`🔥 FRONTEND: Attempting to delete member ${memberId} using POST /api/members/${memberId}/remove, force: ${forceDelete}`);
       const response = await fetch(`/api/members/${memberId}/remove`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ forceDelete }),
       });
       
       if (!response.ok) {
@@ -77,6 +116,9 @@ const MembersList = ({}: MembersListProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/members'] });
+      setMemberToDelete(null);
+      setShowEnhancedWarning(false);
+      setMemberInvolvement(null);
       toast({
         title: "Success",
         description: "Member deleted successfully.",
@@ -92,6 +134,51 @@ const MembersList = ({}: MembersListProps) => {
       });
     },
   });
+
+  // Handler for first delete click - checks involvement and shows appropriate warning
+  const handleDeleteClick = async (member: Member) => {
+    setMemberToDelete(member);
+    
+    try {
+      const response = await fetch(`/api/members/${member.id}/involvement`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const involvementData = await response.json();
+        setMemberInvolvement(involvementData);
+        
+        if (involvementData.hasInvolvement) {
+          setShowEnhancedWarning(true);
+        }
+      } else {
+        console.error('Failed to check member involvement');
+        setMemberInvolvement(null);
+      }
+    } catch (error) {
+      console.error('Error checking member involvement:', error);
+      // If check fails, still allow basic deletion
+      setMemberInvolvement(null);
+    }
+  };
+
+  // Handler for force delete (from enhanced warning dialog)
+  const handleForceDelete = () => {
+    if (memberToDelete) {
+      deleteMemberMutation.mutate({ memberId: memberToDelete.id, forceDelete: true });
+    }
+  };
+
+  // Handler for normal delete (from basic warning dialog)
+  const handleNormalDelete = () => {
+    if (memberToDelete) {
+      deleteMemberMutation.mutate({ memberId: memberToDelete.id, forceDelete: false });
+    }
+  };
   
   // Handle error in useEffect to prevent infinite re-renders
   useEffect(() => {
@@ -264,7 +351,7 @@ const MembersList = ({}: MembersListProps) => {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => deleteMemberMutation.mutate(member.id)}
+                                onClick={() => handleDeleteClick(member)}
                                 className="bg-red-600 hover:bg-red-700 text-white"
                               >
                                 Delete Member
@@ -279,7 +366,85 @@ const MembersList = ({}: MembersListProps) => {
             </Table>
           </div>
           
-
+          {/* Enhanced Warning Dialog for members with donations */}
+          <Dialog open={showEnhancedWarning} onOpenChange={setShowEnhancedWarning}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Warning: Member Has Active Donations
+                </DialogTitle>
+                <DialogDescription className="text-base pt-2">
+                  {memberToDelete && memberInvolvement && (
+                    <div className="space-y-4">
+                      <p>
+                        <strong>{memberToDelete.firstName} {memberToDelete.lastName}</strong> has donations 
+                        in active counts. Deleting this member will affect the following:
+                      </p>
+                      
+                      {memberInvolvement.openCounts.length > 0 && (
+                        <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                          <h4 className="font-medium text-red-800 mb-2">Open Counts ({memberInvolvement.openCounts.length})</h4>
+                          <ul className="list-disc list-inside text-red-700 space-y-1">
+                            {memberInvolvement.openCounts.map((countName, index) => (
+                              <li key={index}>{countName}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {memberInvolvement.finalizedCounts.length > 0 && (
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                          <h4 className="font-medium text-yellow-800 mb-2">Finalized Counts ({memberInvolvement.finalizedCounts.length})</h4>
+                          <ul className="list-disc list-inside text-yellow-700 space-y-1">
+                            {memberInvolvement.finalizedCounts.map((countName, index) => (
+                              <li key={index}>{countName}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 className="font-medium text-blue-800 mb-2">What happens when you delete:</h4>
+                        <ul className="list-disc list-inside text-blue-700 space-y-1">
+                          <li>The member will be marked as "(Deleted)" in donation records</li>
+                          <li>All existing donation data will be preserved</li>
+                          <li>The member will be removed from your member list</li>
+                          <li>This action cannot be undone</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEnhancedWarning(false);
+                    setMemberToDelete(null);
+                    setMemberInvolvement(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleForceDelete}
+                  disabled={deleteMemberMutation.isPending}
+                >
+                  {deleteMemberMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Member"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
         </>
       )}

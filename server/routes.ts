@@ -923,14 +923,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete Member endpoint (soft delete)
-  app.post('/api/members/:memberId/remove', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+  // Check member involvement in counts
+  app.get('/api/members/:memberId/involvement', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
-      console.log('🔥🔥🔥 MEMBER DELETE ENDPOINT HIT! 🔥🔥🔥');
-      console.log('Request path:', req.path);
-      console.log('Request method:', req.method);
-      console.log('Request params:', req.params);
-      
       const user = req.user;
       const churchId = user?.churchId || user?.id || '';
       const memberId = parseInt(req.params.memberId);
@@ -943,11 +938,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Valid member ID is required' });
       }
       
-      console.log(`Attempting to soft delete member ${memberId} for church ${churchId}`);
+      const involvement = await storage.checkMemberInvolvement(memberId, churchId);
+      res.json(involvement);
+    } catch (error) {
+      console.error('Error checking member involvement:', error);
+      res.status(500).json({ message: 'Failed to check member involvement' });
+    }
+  });
+
+  // Delete Member endpoint (soft delete with force option)
+  app.post('/api/members/:memberId/remove', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      console.log('🔥🔥🔥 MEMBER DELETE ENDPOINT HIT! 🔥🔥🔥');
+      console.log('Request path:', req.path);
+      console.log('Request method:', req.method);
+      console.log('Request params:', req.params);
+      console.log('Request body:', req.body);
       
-      // Check for open donations and attempt soft delete
-      console.log(`DEBUG: About to call softDeleteMember for member ${memberId}, church ${churchId}`);
-      const result = await storage.softDeleteMember(memberId, churchId);
+      const user = req.user;
+      const churchId = user?.churchId || user?.id || '';
+      const memberId = parseInt(req.params.memberId);
+      const { forceDelete = false } = req.body;
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      if (!memberId || isNaN(memberId)) {
+        return res.status(400).json({ message: 'Valid member ID is required' });
+      }
+      
+      console.log(`Attempting to soft delete member ${memberId} for church ${churchId}, force: ${forceDelete}`);
+      
+      // Attempt soft delete with optional force flag
+      console.log(`DEBUG: About to call softDeleteMember for member ${memberId}, church ${churchId}, force: ${forceDelete}`);
+      const result = await storage.softDeleteMember(memberId, churchId, forceDelete);
       console.log(`DEBUG: softDeleteMember returned:`, result);
       
       if (!result.success) {
@@ -957,7 +982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const countList = countNames.join(', ');
           
           return res.status(400).json({ 
-            message: `Cannot delete member: They have donations in open ${countText} (${countList}). Please finalize these counts first or reassign the donations.`,
+            message: `Cannot delete member: They have donations in open ${countText} (${countList}). Please finalize these counts first or use force delete.`,
             error: 'HAS_OPEN_DONATIONS',
             openCounts: countNames
           });
