@@ -4940,6 +4940,7 @@ Sincerely,
   app.get('/api/global-admin/integrations/planning-center/active-connections', requireGlobalAdmin, async (req, res) => {
     try {
       const activeConnections = await storage.getActivePlanningCenterConnections();
+      console.log('Active connections found:', activeConnections.length, activeConnections);
       res.status(200).json(activeConnections);
     } catch (error) {
       console.error('Error fetching active Planning Center connections:', error);
