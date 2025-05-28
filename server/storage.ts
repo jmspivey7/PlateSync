@@ -2865,24 +2865,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Create default service options for new users
-  async createDefaultServiceOptions(churchId: string): Promise<void> {
-    const defaultOptions = [
-      { name: "Sunday Morning", value: "sunday-morning", isDefault: true, churchId },
-      { name: "Sunday Evening", value: "sunday-evening", isDefault: false, churchId },
-      { name: "Wednesday Night", value: "wednesday-night", isDefault: false, churchId },
-      { name: "Special Event", value: "special-event", isDefault: false, churchId }
-    ];
-    
-    // Check if options already exist for this church
-    const existingOptions = await this.getServiceOptions(churchId);
-    
-    // Only create defaults if no options exist
-    if (existingOptions.length === 0) {
-      for (const option of defaultOptions) {
-        await this.createServiceOption(option);
-      }
-    }
-  }
+  // Removed automatic default service options creation
+  // Service options should only be created manually by users
   
   // Report Recipients operations
   async getReportRecipients(churchId: string): Promise<ReportRecipient[]> {

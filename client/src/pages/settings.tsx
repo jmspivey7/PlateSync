@@ -310,29 +310,7 @@ const Settings = () => {
     }
   });
   
-  // Initialize service options mutation
-  const initializeServiceOptionsMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("/api/service-options/initialize", {
-        method: "POST"
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
-      toast({
-        title: "Default Options Created",
-        description: "Default service options have been initialized successfully.",
-        className: "bg-[#48BB78] text-white",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to initialize options: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    }
-  });
+  // Removed automatic service options initialization - users should create their own service options
   
   // Create report recipient
   const createReportRecipientMutation = useMutation({
@@ -1342,20 +1320,6 @@ const Settings = () => {
                     <p className="text-sm text-gray-400 mt-1">
                       Add your first service option using the field above
                     </p>
-                    <Button 
-                      onClick={() => initializeServiceOptionsMutation.mutate()}
-                      disabled={initializeServiceOptionsMutation.isPending}
-                      className="mt-4 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
-                    >
-                      {initializeServiceOptionsMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Initializing...
-                        </>
-                      ) : (
-                        "Initialize Default Options"
-                      )}
-                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
