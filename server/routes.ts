@@ -872,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add Member endpoint for quick member creation  
   app.post('/api/members/create', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
-      console.log('=== POST /api/members endpoint hit ===');
+      console.log('=== POST /api/members/create endpoint hit ===');
       console.log('Request body:', req.body);
       console.log('User:', req.user);
       
