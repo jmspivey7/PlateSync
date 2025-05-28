@@ -4941,6 +4941,12 @@ Sincerely,
     try {
       const activeConnections = await storage.getActivePlanningCenterConnections();
       console.log('Active connections found:', activeConnections.length, activeConnections);
+      
+      // Prevent caching to ensure fresh data
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       res.status(200).json(activeConnections);
     } catch (error) {
       console.error('Error fetching active Planning Center connections:', error);
