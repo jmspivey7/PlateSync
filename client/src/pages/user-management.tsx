@@ -382,6 +382,33 @@ const UserManagement = () => {
     mutate({ userId, role });
   };
   
+  // Handle resend welcome email
+  const handleResendWelcomeEmail = async (userId: string) => {
+    setIsResendingEmail(true);
+    try {
+      const response = await apiRequest(`/api/users/${userId}/resend-welcome-email`, "POST");
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: "Welcome email sent",
+          description: `Welcome email has been resent to ${data.email}`,
+        });
+      } else {
+        throw new Error(data.message || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error('Error resending welcome email:', error);
+      toast({
+        title: "Failed to send email",
+        description: error instanceof Error ? error.message : 'An error occurred while sending the email',
+        variant: "destructive",
+      });
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+  
   // Filter users based on search query and active status
   const filteredUsers = users?.filter(user => {
     // First filter out inactive users (with INACTIVE_ email prefix)
