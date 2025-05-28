@@ -914,6 +914,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete Member endpoint (soft delete)
+  app.delete('/api/members/:memberId', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const churchId = user?.churchId || user?.id || '';
+      const memberId = parseInt(req.params.memberId);
+      
+      if (!churchId) {
+        return res.status(400).json({ message: 'Church ID is required' });
+      }
+      
+      if (!memberId || isNaN(memberId)) {
+        return res.status(400).json({ message: 'Valid member ID is required' });
+      }
+      
+      console.log(`Soft deleting member ${memberId} for church ${churchId}`);
+      
+      // Soft delete by setting isActive to false in the church_members junction table
+      const result = await storage.softDeleteMember(memberId, churchId);
+      
+      if (!result) {
+        return res.status(404).json({ message: 'Member not found or already inactive' });
+      }
+      
+      console.log(`Successfully soft deleted member ${memberId}`);
+      res.json({ message: 'Member deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      res.status(500).json({ message: 'Failed to delete member' });
+    }
+  });
+
   // CSV Member Import endpoint
   const upload = multer({ 
     storage: multer.memoryStorage(),
