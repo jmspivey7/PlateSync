@@ -45,10 +45,8 @@ function ActiveConnectionsList() {
 
   if (!connections || !Array.isArray(connections) || connections.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Building2 className="h-12 w-12 text-gray-300 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Connections</h3>
-        <p className="text-sm text-gray-500 max-w-sm">
+      <div className="text-center py-8">
+        <p className="text-sm text-gray-500">
           No churches have connected to Planning Center yet. Once churches link their Planning Center accounts, they'll appear here.
         </p>
       </div>
@@ -56,22 +54,31 @@ function ActiveConnectionsList() {
   }
 
   return (
-    <div className="space-y-4">
-      {connections.map((connection) => (
-        <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-          <div className="flex items-center space-x-3">
-            <Building2 className="h-5 w-5 text-[#69ad4c]" />
-            <div>
-              <h4 className="font-medium text-gray-900">{connection.name}</h4>
-              <div className="flex items-center text-sm text-gray-500">
-                <Calendar className="h-4 w-4 mr-1" />
-                Connected on {new Date(connection.connectedAt).toLocaleDateString()}
-              </div>
-            </div>
-          </div>
-          <CheckCircle2 className="h-5 w-5 text-green-500" />
-        </div>
-      ))}
+    <div className="overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Church Name
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Connected On
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {connections.map((connection) => (
+            <tr key={connection.id}>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {connection.name}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {format(new Date(connection.connectedAt), 'MMM d, yyyy')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
