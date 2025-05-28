@@ -238,14 +238,7 @@ function setupSessionMiddleware(app: Express) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Add comprehensive API request logging FIRST
-  app.use('/api/*', (req, res, next) => {
-    console.log(`🔥🔥🔥 API REQUEST: ${req.method} ${req.path} 🔥🔥🔥`);
-    console.log(`🔥 Headers:`, req.headers);
-    console.log(`🔥 Body:`, req.body);
-    console.log(`🔥 Params:`, req.params);
-    next();
-  });
+
 
   // CRITICAL: Onboarding endpoint MUST be first, before any middleware
   app.post('/api/onboard-email-setting', express.json(), (req: any, res) => {
@@ -946,7 +939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(involvement);
     } catch (error) {
       console.error('🔥 ERROR in involvement check:', error);
-      res.status(500).json({ message: 'Failed to check member involvement' });ember involvement' });
+      res.status(500).json({ message: 'Failed to check member involvement' });
     }
   });
 
