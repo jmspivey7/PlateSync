@@ -149,8 +149,17 @@ export function setupPlanningCenterAuth(app: Express) {
       // Clear session data
       delete req.session.planningCenterChurchId;
 
-      // Redirect to settings page with success message
-      res.redirect("/settings?planningCenterConnected=true");
+      // Check if this is a Global Admin connection or regular church connection
+      // For Global Admin, redirect to Global Admin Planning Center page
+      // For regular churches, redirect to settings page
+      const isGlobalAdmin = req.headers.referer?.includes('/global-admin/') || 
+                           req.query.context === 'global-admin';
+      
+      if (isGlobalAdmin) {
+        res.redirect("/global-admin/integrations/planning-center?planningCenterConnected=true");
+      } else {
+        res.redirect("/settings?planningCenterConnected=true");
+      }
     } catch (error) {
       console.error("Planning Center token exchange error:", error);
       

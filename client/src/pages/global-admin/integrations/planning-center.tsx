@@ -298,82 +298,73 @@ export default function PlanningCenterIntegration() {
         
         <Card>
           <CardHeader>
-            <CardTitle>Connect to Planning Center</CardTitle>
+            <CardTitle>Test Configuration & Active Connections</CardTitle>
             <CardDescription>
-              Authenticate with Planning Center to enable member data synchronization
+              Test the Planning Center API configuration and view churches using the integration
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {isAuthenticated ? (
-                <div className="bg-green-50 border border-green-100 rounded-md p-4 flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="text-sm font-medium text-green-800">Connected to Planning Center</h4>
-                    <p className="text-sm text-green-700 mt-1">
-                      Your PlateSync account is successfully connected to Planning Center.
-                      You can now sync member data from Planning Center to PlateSync.
-                    </p>
-                  </div>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-sm font-medium">Configuration Status</h4>
+                  <p className="text-sm text-gray-600">
+                    Test API connectivity and view active Planning Center connections
+                  </p>
                 </div>
-              ) : (
-                <div className="bg-amber-50 border border-amber-100 rounded-md p-4 flex items-start">
-                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="text-sm font-medium text-amber-800">Not Connected</h4>
-                    <p className="text-sm text-amber-700 mt-1">
-                      Your PlateSync account is not currently connected to Planning Center.
-                      Click the button below to start the authentication process.
-                    </p>
+                <Button
+                  onClick={testPlanningCenterConfiguration}
+                  disabled={!clientId || !clientSecret || isTestingConfig}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isTestingConfig ? (
+                    <>
+                      <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="h-4 w-4 mr-2" />
+                      Test Configuration
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {configTestResult && (
+                <div className={`rounded-md p-4 ${
+                  configTestResult.success 
+                    ? "bg-green-50 border border-green-100" 
+                    : "bg-red-50 border border-red-100"
+                }`}>
+                  <div className="flex items-start">
+                    {configTestResult.success ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                    )}
+                    <div>
+                      <h4 className={`text-sm font-medium ${
+                        configTestResult.success ? "text-green-800" : "text-red-800"
+                      }`}>
+                        {configTestResult.success ? "Configuration Valid" : "Configuration Error"}
+                      </h4>
+                      <p className={`text-sm mt-1 ${
+                        configTestResult.success ? "text-green-700" : "text-red-700"
+                      }`}>
+                        {configTestResult.message}
+                      </p>
+                      {configTestResult.activeConnections && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-green-800">
+                            Active Connections: {configTestResult.activeConnections}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
-              
-              <div className="flex justify-end">
-                <Button 
-                  variant={isAuthenticated ? "outline" : "default"}
-                  className={isAuthenticated 
-                    ? "border-red-500 text-red-500 hover:bg-red-50" 
-                    : "bg-[#69ad4c] hover:bg-[#5a9740] text-white"}
-                  onClick={isAuthenticated 
-                    ? async () => {
-                        setIsDisconnecting(true);
-                        try {
-                          const response = await fetch("/api/global-admin/integrations/planning-center/disconnect", {
-                            method: "POST",
-                            headers: {
-                              "Authorization": `Bearer ${localStorage.getItem("globalAdminToken")}`,
-                              "Content-Type": "application/json"
-                            },
-                            credentials: "include"
-                          });
-                          
-                          if (response.ok) {
-                            toast({
-                              title: "Disconnected Successfully",
-                              description: "Planning Center integration has been disconnected.",
-                            });
-                            setIsAuthenticated(false);
-                            await loadPlanningCenterConfiguration();
-                          } else {
-                            throw new Error("Failed to disconnect");
-                          }
-                        } catch (error) {
-                          toast({
-                            title: "Disconnect Failed", 
-                            description: "Failed to disconnect from Planning Center. Please try again.",
-                            variant: "destructive",
-                          });
-                        } finally {
-                          setIsDisconnecting(false);
-                        }
-                      }
-                    : authenticateWithPlanningCenter}
-                  disabled={!clientId || !clientSecret || !callbackUrl}
-                >
-                  {isAuthenticated ? "Disconnect from Planning Center" : "Connect to Planning Center"}
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
