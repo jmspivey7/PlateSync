@@ -1007,7 +1007,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Make sure we're following Planning Center OAuth spec exactly
       // https://developer.planning.center/docs/#/overview/authentication
       const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
-      authUrl.searchParams.append('client_id', PLANNING_CENTER_CLIENT_ID);
+      authUrl.searchParams.append('client_id', config.clientId);
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('response_type', 'code');
       
@@ -1683,9 +1683,10 @@ export function setupPlanningCenterRoutes(app: Express) {
         
         try {
           // Try to revoke tokens via Planning Center API
+          const config = await getPlanningCenterConfig();
           const revokeResponse = await axios.post('https://api.planningcenteronline.com/oauth/revoke', {
-            client_id: process.env.PLANNING_CENTER_CLIENT_ID,
-            client_secret: process.env.PLANNING_CENTER_CLIENT_SECRET,
+            client_id: config.clientId,
+            client_secret: config.clientSecret,
             token: tokens.accessToken,
           }, {
             headers: {
@@ -1698,8 +1699,8 @@ export function setupPlanningCenterRoutes(app: Express) {
           if (tokens.refreshToken) {
             // Also try to revoke the refresh token
             const refreshRevokeResponse = await axios.post('https://api.planningcenteronline.com/oauth/revoke', {
-              client_id: process.env.PLANNING_CENTER_CLIENT_ID,
-              client_secret: process.env.PLANNING_CENTER_CLIENT_SECRET,
+              client_id: config.clientId,
+              client_secret: config.clientSecret,
               token: tokens.refreshToken,
             }, {
               headers: {
@@ -1779,8 +1780,8 @@ export function setupPlanningCenterRoutes(app: Express) {
             // Correctly format token revocation data
             // Planning Center requires the token as form data, not JSON
             const formDataAccess = new URLSearchParams();
-            formDataAccess.append('client_id', PLANNING_CENTER_CLIENT_ID);
-            formDataAccess.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+            formDataAccess.append('client_id', config.clientId);
+            formDataAccess.append('client_secret', config.clientSecret);
             formDataAccess.append('token', tokens.accessToken);
             
             // Make request with proper Content-Type
@@ -1798,8 +1799,8 @@ export function setupPlanningCenterRoutes(app: Express) {
             if (tokens.refreshToken) {
               // Create new form data for refresh token
               const formDataRefresh = new URLSearchParams();
-              formDataRefresh.append('client_id', PLANNING_CENTER_CLIENT_ID);
-              formDataRefresh.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+              formDataRefresh.append('client_id', config.clientId);
+              formDataRefresh.append('client_secret', config.clientSecret);
               formDataRefresh.append('token', tokens.refreshToken);
               
               console.log('Revoking refresh token with Planning Center...');
@@ -1985,9 +1986,14 @@ export function setupPlanningCenterRoutes(app: Express) {
   });
   
   // Check if credentials are configured
-  app.use((req, res, next) => {
-    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
-      console.warn('Planning Center credentials not properly configured');
+  app.use(async (req, res, next) => {
+    try {
+      const config = await getPlanningCenterConfig();
+      if (!config.clientId || !config.clientSecret) {
+        console.warn('Planning Center credentials not properly configured');
+      }
+    } catch (error) {
+      console.warn('Unable to check Planning Center configuration:', error);
     }
     next();
   });
@@ -2043,15 +2049,16 @@ export async function refreshPlanningCenterToken(
     const params = new URLSearchParams();
     params.append('grant_type', 'refresh_token');
     params.append('refresh_token', tokens.refreshToken);
-    params.append('client_id', PLANNING_CENTER_CLIENT_ID);
-    params.append('client_secret', PLANNING_CENTER_CLIENT_SECRET);
+    const config = await getPlanningCenterConfig();
+    params.append('client_id', config.clientId);
+    params.append('client_secret', config.clientSecret);
     
     console.log('Planning Center token refresh request details:', {
       url: PLANNING_CENTER_TOKEN_URL,
       grant_type: 'refresh_token',
       refresh_token_present: !!tokens.refreshToken,
-      client_id_present: !!PLANNING_CENTER_CLIENT_ID,
-      client_secret_present: !!PLANNING_CENTER_CLIENT_SECRET
+      client_id_present: !!config.clientId,
+      client_secret_present: !!config.clientSecret
     });
     
     const tokenResponse = await axios.post(PLANNING_CENTER_TOKEN_URL, params.toString(), {
