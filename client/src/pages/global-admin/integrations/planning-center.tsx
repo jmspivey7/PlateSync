@@ -18,7 +18,9 @@ interface PlanningCenterConnection {
 
 function ActiveConnectionsList() {
   const { data: connections, isLoading, error } = useQuery<PlanningCenterConnection[]>({
-    queryKey: ["/api/global-admin/integrations/planning-center/active-connections"],
+    queryKey: ["/api/global-admin/integrations/planning-center/active-connections", Date.now()],
+    staleTime: 0,
+    gcTime: 0,
   });
 
   if (isLoading) {
