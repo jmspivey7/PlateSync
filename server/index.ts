@@ -6,15 +6,9 @@ import fs from "fs";
 
 const app = express();
 
-// CRITICAL FIX: Register API routes FIRST before any other middleware
-// This prevents Vite catch-all from intercepting API requests
-console.log('🚀 CRITICAL FIX: Registering API routes before all middleware...');
-(async () => {
-  const server = await registerRoutes(app);
-  
-  // Now add other middleware AFTER API routes are registered
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+// CRITICAL: Parse JSON BEFORE registering routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Serve the logos directory for uploaded church logos with proper permissions
 const logosDir = path.join(process.cwd(), 'public/logos');
@@ -130,11 +124,11 @@ app.use((req, res, next) => {
 // Import the logo URL fix migration
 import { fixLogoUrls } from './migrations/fix-logo-urls';
 
-// CRITICAL: Register API routes FIRST before any other middleware
-// This prevents Vite catch-all from intercepting API requests
+// Move all remaining setup inside the async function
 (async () => {
-  console.log('🚀 Registering API routes BEFORE all other middleware...');
+  // Register API routes first
   const server = await registerRoutes(app);
+  console.log('✅ API routes registered successfully');
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
