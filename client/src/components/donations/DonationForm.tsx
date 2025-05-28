@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { ComboboxSearch } from "@/components/ui/combobox-search";
+import { MemberSearchSelect } from "@/components/ui/member-search-select";
 import { 
   Card, 
   CardContent, 
@@ -761,18 +761,12 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         <FormLabel className="font-bold">Select Member:</FormLabel>
                         <FormControl>
                           {members && members.length > 0 ? (
-                            <Select value={field.value || ""} onValueChange={field.onChange}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a member..." />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-60">
-                                {members.map(member => (
-                                  <SelectItem key={member.id} value={member.id.toString()}>
-                                    {member.firstName} {member.lastName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <MemberSearchSelect
+                              members={members}
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                              placeholder="Type to search for members..."
+                            />
                           ) : (
                             <div className="border rounded-md p-3 bg-amber-50 border-amber-200">
                               <p className="text-sm text-amber-800">
