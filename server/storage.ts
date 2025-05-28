@@ -3538,15 +3538,18 @@ PlateSync Reporting System
         .select({
           id: churches.id,
           name: churches.name,
-          connectedAt: planningCenterTokens.createdAt
+          connectedAt: planningCenterTokens.createdAt,
+          churchId: planningCenterTokens.churchId
         })
         .from(planningCenterTokens)
-        .innerJoin(churches, eq(planningCenterTokens.churchId, churches.id))
+        .leftJoin(churches, eq(planningCenterTokens.churchId, churches.id))
         .where(isNotNull(planningCenterTokens.accessToken));
       
+      console.log("Raw query results:", results);
+      
       return results.map(result => ({
-        id: result.id,
-        name: result.name,
+        id: result.id || result.churchId || 'unknown',
+        name: result.name || `Church ${result.churchId || 'Unknown'}`,
         connectedAt: result.connectedAt?.toISOString() || new Date().toISOString()
       }));
     } catch (error) {
