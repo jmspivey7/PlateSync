@@ -1566,7 +1566,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Check member involvement in counts (both open and finalized)
+  // Check member involvement in batches (both open and finalized)
   async checkMemberInvolvement(memberId: number, churchId: string): Promise<{
     hasInvolvement: boolean;
     openCounts: string[];
@@ -1578,12 +1578,12 @@ export class DatabaseStorage implements IStorage {
       
       const donationsQuery = await db
         .select({
-          batchName: counts.name,
-          batchStatus: counts.status,
+          batchName: batches.name,
+          batchStatus: batches.status,
           donationId: donations.id,
         })
         .from(donations)
-        .innerJoin(counts, eq(donations.batchId, counts.id))
+        .innerJoin(batches, eq(donations.batchId, batches.id))
         .where(and(
           eq(donations.memberId, memberId),
           eq(donations.churchId, churchId)
