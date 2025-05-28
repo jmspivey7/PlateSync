@@ -58,7 +58,7 @@ const MembersList = ({}: MembersListProps) => {
   const deleteMemberMutation = useMutation({
     mutationKey: ['delete-member'],
     mutationFn: async (memberId: number) => {
-      console.log(`Attempting to delete member ${memberId} using POST /api/delete-member/${memberId}`);
+      console.log(`🔥 FRONTEND: Attempting to delete member ${memberId} using POST /api/members/${memberId}/remove`);
       const response = await fetch(`/api/members/${memberId}/remove`, {
         method: 'POST',
         credentials: 'include',
