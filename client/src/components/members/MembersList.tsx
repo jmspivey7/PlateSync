@@ -135,14 +135,14 @@ const MembersList = ({}: MembersListProps) => {
     },
   });
 
-  // Handler for first delete click - checks involvement and shows appropriate warning
+  // Handler for first delete click - checks if member can be deleted
   const handleDeleteClick = async (member: Member) => {
     console.log('🔥 FRONTEND: Delete click for member:', member.id, member.firstName, member.lastName);
     setMemberToDelete(member);
     
     try {
-      console.log('🔥 FRONTEND: Checking involvement for member:', member.id);
-      const response = await fetch(`/api/members/${member.id}/involvement`, {
+      console.log('🔥 FRONTEND: Checking if member can be deleted:', member.id);
+      const response = await fetch(`/api/members/${member.id}/can-delete`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -151,27 +151,33 @@ const MembersList = ({}: MembersListProps) => {
       });
       
       if (response.ok) {
-        const involvementData = await response.json();
-        console.log('🔥 FRONTEND: Involvement data:', involvementData);
-        setMemberInvolvement(involvementData);
+        const canDeleteData = await response.json();
+        console.log('🔥 FRONTEND: Can delete data:', canDeleteData);
         
-        if (involvementData.hasInvolvement) {
-          console.log('🔥 FRONTEND: Member has involvement, showing enhanced warning');
-          // Show enhanced warning dialog - don't proceed with deletion
+        if (!canDeleteData.canDelete) {
+          console.log('🔥 FRONTEND: Member cannot be deleted, showing enhanced warning');
+          // Create involvement data format for the dialog
+          const involvementData = {
+            hasInvolvement: true,
+            openCounts: canDeleteData.openCounts,
+            finalizedCounts: [],
+            totalDonations: canDeleteData.openCounts.length
+          };
+          setMemberInvolvement(involvementData);
           setShowEnhancedWarning(true);
         } else {
-          console.log('🔥 FRONTEND: Member has no involvement, proceeding with deletion');
-          // No involvement, proceed with normal deletion
+          console.log('🔥 FRONTEND: Member can be deleted, proceeding with deletion');
+          // Safe to delete, proceed with normal deletion
           deleteMemberMutation.mutate({ memberId: member.id, forceDelete: false });
         }
       } else {
-        console.error('Failed to check member involvement, response:', response.status);
+        console.error('Failed to check if member can be deleted, response:', response.status);
         setMemberInvolvement(null);
         // If check fails, show a simple confirmation dialog
         setShowEnhancedWarning(true);
       }
     } catch (error) {
-      console.error('Error checking member involvement:', error);
+      console.error('Error checking if member can be deleted:', error);
       // If check fails, show a simple confirmation dialog
       setMemberInvolvement(null);
       setShowEnhancedWarning(true);
