@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 import GlobalAdminHeader from "@/components/global-admin/GlobalAdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,11 @@ function ActiveConnectionsList() {
                 {connection.name}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {format(new Date(connection.connectedAt), 'MMM d, yyyy')}
+                {new Date(connection.connectedAt).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                })}
               </td>
             </tr>
           ))}
