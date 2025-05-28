@@ -39,7 +39,7 @@ function ActiveConnectionsList() {
     );
   }
 
-  if (!connections || connections.length === 0) {
+  if (!connections || !Array.isArray(connections) || connections.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Building2 className="h-12 w-12 text-gray-300 mb-4" />
