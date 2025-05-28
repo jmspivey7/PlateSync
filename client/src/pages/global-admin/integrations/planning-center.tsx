@@ -16,6 +16,7 @@ export default function PlanningCenterIntegration() {
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [callbackUrl, setCallbackUrl] = useState("");
+  const [registrationCallbackUrl, setRegistrationCallbackUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
@@ -77,16 +78,19 @@ export default function PlanningCenterIntegration() {
               setClientId(data.clientId);
               setClientSecret(data.clientSecret ? "••••••••••••••••••••••••••" : "");
               setCallbackUrl(data.callbackUrl || window.location.origin + "/api/planning-center/callback");
+              setRegistrationCallbackUrl(data.registrationCallbackUrl || window.location.origin + "/api/planning-center/callback-registration");
               setIsAuthenticated(data.isAuthenticated || false);
             } else {
-              // Default callback URL
+              // Default callback URLs
               setCallbackUrl(window.location.origin + "/api/planning-center/callback");
+              setRegistrationCallbackUrl(window.location.origin + "/api/planning-center/callback-registration");
             }
           } catch (error) {
             console.error("Error fetching Planning Center config:", error);
             setClientId("");
             setClientSecret("");
             setCallbackUrl(window.location.origin + "/api/planning-center/callback");
+            setRegistrationCallbackUrl(window.location.origin + "/api/planning-center/callback-registration");
             setIsAuthenticated(false);
           }
           
