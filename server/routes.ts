@@ -35,7 +35,7 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   
   if (!userData || !userData.userId) {
     // Development mode bypass for testing - check for both NODE_ENV and header
-    const isDevelopment = process.env.NODE_ENV === 'development' || req.headers['x-development-auth'] === 'true';
+    const isDevelopment = process.env.NODE_ENV === 'development' || req.headers['x-development-auth'] === 'true' || req.headers['X-Development-Auth'] === 'true';
     if (isDevelopment) {
       console.log('Development mode: bypassing authentication for testing');
       // Set a mock user for development with proper structure
