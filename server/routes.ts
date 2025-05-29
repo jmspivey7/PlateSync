@@ -98,7 +98,7 @@ import * as path from "path";
 import { generateCountReportPDF } from "./pdf-generator";
 import Stripe from "stripe";
 import { createTrialSubscriptionForOnboarding } from "./subscription-helper";
-import { verifyStripeSubscription, updateSubscriptionFromStripe, cancelStripeSubscription } from "./stripe-helper";
+import { verifyStripeSubscription, updateSubscriptionFromStripe, cancelStripeSubscription, handleStripeWebhook } from "./stripe-helper";
 
 import { parse } from "csv-parse/sync";
 import { importMembers } from "./import-members";
@@ -3489,6 +3489,37 @@ Sincerely,
         message: 'Error creating checkout session',
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+
+  // Stripe webhook endpoint to handle subscription changes automatically
+  app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req: any, res) => {
+    try {
+      const sig = req.headers['stripe-signature'];
+      
+      if (!process.env.STRIPE_WEBHOOK_SECRET) {
+        console.error('Missing STRIPE_WEBHOOK_SECRET environment variable');
+        return res.status(400).send('Webhook secret not configured');
+      }
+      
+      let event;
+      
+      try {
+        event = stripe?.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      } catch (err) {
+        console.error('Webhook signature verification failed:', err);
+        return res.status(400).send(`Webhook Error: ${err}`);
+      }
+      
+      console.log(`Received Stripe webhook: ${event.type}`);
+      
+      // Handle the webhook event
+      await handleStripeWebhook(event);
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error handling Stripe webhook:', error);
+      res.status(500).json({ message: 'Error processing webhook' });
     }
   });
 
