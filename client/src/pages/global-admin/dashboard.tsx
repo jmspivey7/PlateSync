@@ -295,7 +295,7 @@ export default function GlobalAdminDashboard() {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-[#69ad4c]">
-                      {conversionData.length > 0 ? `${conversionData[conversionData.length - 1]?.rate || 0}%` : '0%'}
+                      {currentConversionRate}%
                     </div>
                     <div className="text-xs text-muted-foreground">Current conversion</div>
                   </div>
