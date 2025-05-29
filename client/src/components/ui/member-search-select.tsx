@@ -211,7 +211,7 @@ export function MemberSearchSelect({ members, value, onValueChange, placeholder 
           variant="outline"
           size="sm"
           onClick={handleAddMember}
-          className="shrink-0 h-10 px-3"
+          className="shrink-0 h-10 px-3 bg-yellow-400 border-yellow-400 text-yellow-900 hover:bg-yellow-500 hover:border-yellow-500 hover:text-yellow-900"
           title="Add new member"
         >
           <UserPlus className="h-4 w-4" />
