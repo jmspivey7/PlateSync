@@ -485,7 +485,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           throw new Error("Please provide a valid email address for new members");
         }
         
-        const memberResponse = await apiRequest('POST', '/api/members', {
+        const memberResponse = await apiRequest('/api/members', 'POST', {
           firstName: values.firstName,
           lastName: values.lastName,
           email: values.email || null, // Use null if email is empty
@@ -500,7 +500,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         const newMember = await memberResponse.json();
         
         // Now create the donation with the new member ID
-        const donationResponse = await apiRequest('POST', '/api/donations', {
+        const donationResponse = await apiRequest('/api/donations', 'POST', {
           date: values.date,
           amount: values.amount,
           donationType: values.donationType,
@@ -518,7 +518,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         return { donation: await donationResponse.json(), newMember: true };
       } else {
         // Create donation with existing member or as visitor
-        const donationResponse = await apiRequest('POST', '/api/donations', {
+        const donationResponse = await apiRequest('/api/donations', 'POST', {
           date: values.date,
           amount: values.amount,
           donationType: values.donationType,
