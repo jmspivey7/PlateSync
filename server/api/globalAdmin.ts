@@ -625,7 +625,6 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
     `);
     
     console.log("Raw subscription stats from DB:", subscriptionStats.rows[0]);
-    console.log("Conversion rates from DB:", conversionRates.rows);
 
     // Get donation statistics
     const donationStats = await db.execute(sql`
