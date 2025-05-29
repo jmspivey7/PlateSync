@@ -659,15 +659,18 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
       ORDER BY month
     `);
 
-    // Calculate conversion rates (overall paid vs trial ratio by month)
+    // Calculate conversion rates (trials that became paid subscriptions)
     const conversionRates = await db.execute(sql`
       SELECT 
-        DATE_TRUNC('month', created_at) as month,
-        COUNT(CASE WHEN plan IN ('MONTHLY', 'ANNUAL') THEN 1 END) as conversions,
-        COUNT(*) as trial_starts
-      FROM subscriptions
-      WHERE created_at >= NOW() - INTERVAL '6 months'
-      GROUP BY DATE_TRUNC('month', created_at)
+        DATE_TRUNC('month', s1.created_at) as month,
+        COUNT(CASE WHEN s1.plan = 'TRIAL' THEN 1 END) as trial_starts,
+        COUNT(CASE WHEN s1.plan = 'TRIAL' AND s2.id IS NOT NULL THEN 1 END) as conversions
+      FROM subscriptions s1
+      LEFT JOIN subscriptions s2 ON s1.church_id = s2.church_id 
+        AND s2.plan IN ('MONTHLY', 'ANNUAL') 
+        AND s2.created_at > s1.created_at
+      WHERE s1.created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', s1.created_at)
       ORDER BY month
     `);
 
