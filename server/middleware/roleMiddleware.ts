@@ -30,7 +30,12 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
 
   try {
     const user = req.user as any;
-    const userId = user.claims.sub;
+    // Support both authentication patterns: direct ID and claims.sub
+    const userId = user.id || (user.claims && user.claims.sub);
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found' });
+    }
     
     // Get the user with their role directly from database
     const userQuery = await db.execute(
@@ -69,7 +74,12 @@ export const isAccountOwner = async (req: Request, res: Response, next: NextFunc
 
   try {
     const user = req.user as any;
-    const userId = user.claims.sub;
+    // Support both authentication patterns: direct ID and claims.sub
+    const userId = user.id || (user.claims && user.claims.sub);
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found' });
+    }
     
     // Get the user with their role and account owner status directly from database
     const userQuery = await db.execute(
@@ -112,7 +122,12 @@ export const hasRole = (allowedRoles: UserRole[]) => {
 
     try {
       const user = req.user as any;
-      const userId = user.claims.sub;
+      // Support both authentication patterns: direct ID and claims.sub
+      const userId = user.id || (user.claims && user.claims.sub);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
       
       // Get the user with their role directly from database
       const userQuery = await db.execute(
@@ -156,7 +171,12 @@ export const isSameChurch = async (req: Request, res: Response, next: NextFuncti
 
   try {
     const user = req.user as any;
-    const userId = user.claims.sub;
+    // Support both authentication patterns: direct ID and claims.sub
+    const userId = user.id || (user.claims && user.claims.sub);
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found' });
+    }
     
     // Get the requested resource's churchId
     const resourceChurchId = req.params.churchId || req.body.churchId;
