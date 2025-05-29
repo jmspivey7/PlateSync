@@ -228,14 +228,23 @@ const MembersList = ({}: MembersListProps) => {
   // Sort members based on the selected option
   const sortedMembers = [...filteredMembers].sort((a, b) => {
     switch (sortOption) {
-      case "nameAsc":
-        return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
-      case "nameDesc":
-        return `${b.firstName} ${b.lastName}`.localeCompare(`${a.firstName} ${a.lastName}`);
       case "lastNameAsc":
         return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
-      case "lastNameDesc":
-        return b.lastName.localeCompare(a.lastName) || b.firstName.localeCompare(a.firstName);
+      case "firstNameAsc":
+        return a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
+      case "emailAsc":
+        const emailA = a.email || '';
+        const emailB = b.email || '';
+        return emailA.localeCompare(emailB);
+      case "createdFromAsc":
+        // Sort by "Added" first (no externalSystem), then "Import" (has externalSystem)
+        const aHasExternal = !!a.externalSystem;
+        const bHasExternal = !!b.externalSystem;
+        if (aHasExternal !== bHasExternal) {
+          return aHasExternal ? 1 : -1; // Added (false) comes before Import (true)
+        }
+        // If same type, sort by last name
+        return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
       default:
         return a.lastName.localeCompare(b.lastName); // Default to last name ascending
     }
@@ -272,9 +281,9 @@ const MembersList = ({}: MembersListProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="lastNameAsc">Last Name (A-Z)</SelectItem>
-                  <SelectItem value="lastNameDesc">Last Name (Z-A)</SelectItem>
-                  <SelectItem value="nameAsc">First Name (A-Z)</SelectItem>
-                  <SelectItem value="nameDesc">First Name (Z-A)</SelectItem>
+                  <SelectItem value="firstNameAsc">First Name (A-Z)</SelectItem>
+                  <SelectItem value="emailAsc">Email</SelectItem>
+                  <SelectItem value="createdFromAsc">Created From</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -304,7 +313,7 @@ const MembersList = ({}: MembersListProps) => {
                   <TableHead className="font-bold">Name</TableHead>
                   <TableHead className="font-bold">Email</TableHead>
                   <TableHead className="font-bold">Cell Phone</TableHead>
-                  <TableHead className="font-bold">Created From</TableHead>
+                  <TableHead className="font-bold text-center">Created From</TableHead>
                   <TableHead className="font-bold w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -341,10 +350,10 @@ const MembersList = ({}: MembersListProps) => {
                           <span className="text-gray-400">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         {member.externalSystem ? (
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Imported
+                            Import
                           </span>
                         ) : (
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
