@@ -3642,7 +3642,7 @@ Sincerely,
           ...statusData,
           status: stripeData.status,
           isActive: stripeData.isActive,
-          isTrialExpired: true, // Paid subscription, not a trial
+          isTrialExpired: false, // Paid subscription, not a trial - should be false
           plan: stripeData.plan,
           nextBillingDate: stripeData.currentPeriodEnd?.toISOString(),
           canceledAt: stripeData.canceledAt?.toISOString()
