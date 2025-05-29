@@ -34,7 +34,14 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const userData = req.session?.user;
   
   if (!userData || !userData.userId) {
-    console.log('No user session found:', req.session);
+    // For debugging: log more detail about the session state
+    console.log('No user session found:', {
+      hasSession: !!req.session,
+      sessionUser: req.session?.user,
+      isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+      hasPassportUser: !!req.user,
+      sessionId: req.sessionID
+    });
     return res.status(401).json({ message: 'Unauthorized' });
   }
   
