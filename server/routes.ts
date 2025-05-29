@@ -539,12 +539,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create service option endpoint for onboarding
-  app.post('/api/service-options', async (req: any, res) => {
+  app.post('/api/service-options', isAuthenticated, restrictSuspendedChurchAccess, async (req: any, res) => {
     try {
-      const { name, churchId } = req.body;
+      const { name } = req.body;
+      const user = req.user;
+      const churchId = user?.churchId || '';
       
-      if (!name || !churchId) {
-        return res.status(400).json({ message: 'Name and churchId are required' });
+      if (!name) {
+        return res.status(400).json({ message: 'Name is required' });
+      }
+      
+      if (!churchId) {
+        return res.status(401).json({ message: 'Church ID not found' });
       }
 
       console.log(`Creating service option "${name}" for church ID: ${churchId}`);
