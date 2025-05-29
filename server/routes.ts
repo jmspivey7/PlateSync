@@ -1599,13 +1599,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Add a new donation - bypass authentication for now due to session issues
-  app.post('/api/donations', async (req: any, res) => {
-    // Temporary bypass - set mock user for testing
-    req.user = { 
-      id: '7f09c6e88fa6e031',
-      churchId: '7f09c6e88fa6e031'
-    };
+  // Add a new donation
+  app.post('/api/donations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id || (req.user.claims && req.user.claims.sub);
       
