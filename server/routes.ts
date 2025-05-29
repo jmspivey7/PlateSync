@@ -34,29 +34,18 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const userData = req.session?.user;
   
   if (!userData || !userData.userId) {
-    // Development mode bypass for testing - check for both NODE_ENV and header
-    const isDevelopment = process.env.NODE_ENV === 'development' || req.headers['x-development-auth'] === 'true' || req.headers['X-Development-Auth'] === 'true';
-    if (isDevelopment) {
-      console.log('Development mode: bypassing authentication for testing');
-      // Set a mock user for development with proper structure
-      req.user = { 
-        id: '7f09c6e88fa6e031',
-        churchId: '7f09c6e88fa6e031',
-        claims: { sub: '7f09c6e88fa6e031' }
-      } as any;
-      return next();
-    }
-    
     // For debugging: log more detail about the session state
-    console.log('No user session found:', {
+    console.log('Authentication failed - session details:', {
       hasSession: !!req.session,
       sessionUser: req.session?.user,
       isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
       hasPassportUser: !!req.user,
       sessionId: req.sessionID,
-      developmentHeader: req.headers['x-development-auth']
+      url: req.url,
+      method: req.method,
+      cookies: req.headers.cookie
     });
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: 'Authentication required' });
   }
   
   next();

@@ -61,9 +61,6 @@ export async function apiRequest<T = any>(
   
   const isFormData = body instanceof FormData;
   
-  // For development mode, include a special header for authentication bypass
-  const isDevelopment = import.meta.env.MODE === 'development';
-  
   // Add global admin token for global admin routes
   const globalAdminToken = localStorage.getItem("globalAdminToken");
   const isGlobalAdminRoute = url.includes('/api/global-admin');
@@ -73,7 +70,6 @@ export async function apiRequest<T = any>(
     // Don't set Content-Type when using FormData - the browser will set it automatically with the correct boundary
     headers: {
       ...(body && !isFormData ? { "Content-Type": "application/json" } : {}),
-      ...(isDevelopment ? { "X-Development-Auth": "true" } : {}),
       ...(isGlobalAdminRoute && globalAdminToken ? { "Authorization": `Bearer ${globalAdminToken}` } : {}),
       ...(customHeaders || {})
     },
