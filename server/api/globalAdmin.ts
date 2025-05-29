@@ -664,7 +664,7 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
       SELECT 
         DATE_TRUNC('month', created_at) as month,
         COUNT(CASE WHEN plan IN ('MONTHLY', 'ANNUAL') THEN 1 END) as conversions,
-        COUNT(*) as total_subscriptions
+        COUNT(*) as trial_starts
       FROM subscriptions
       WHERE created_at >= NOW() - INTERVAL '6 months'
       GROUP BY DATE_TRUNC('month', created_at)

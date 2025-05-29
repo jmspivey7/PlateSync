@@ -124,7 +124,7 @@ export default function GlobalAdminDashboard() {
   // Transform conversion rate data
   const conversionData = analytics?.conversionRates?.map((rate: any) => ({
     month: formatMonth(rate.month),
-    rate: rate.total_subscriptions > 0 ? ((parseInt(rate.conversions) / parseInt(rate.total_subscriptions)) * 100).toFixed(1) : 0
+    rate: rate.trial_starts > 0 ? ((parseInt(rate.conversions) / parseInt(rate.trial_starts)) * 100).toFixed(1) : 0
   })) || [];
 
   // Transform churn rate data
