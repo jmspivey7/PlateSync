@@ -4426,8 +4426,10 @@ Sincerely,
       
       // Send welcome email with verification/password setup link
       try {
-        // Create verification URL for password setup - corrected to use /verify instead of /verify-email
-        const verificationUrl = `${req.protocol}://${req.get('host')}/verify`;
+        // Create verification URL with token parameter for password setup
+        const verificationUrl = `${req.protocol}://${req.get('host')}/verify?token=${newUser.passwordResetToken}`;
+        
+        console.log(`Sending welcome email to ${newUser.email} with verification URL: ${verificationUrl}`);
         
         await sendWelcomeEmail({
           to: newUser.email,
@@ -4439,8 +4441,10 @@ Sincerely,
           verificationUrl: verificationUrl,
           role: newUser.role
         });
+        
+        console.log(`✅ Welcome email sent successfully to ${newUser.email}`);
       } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
+        console.error('❌ Failed to send welcome email:', emailError);
         // Continue with user creation even if email fails
       }
       
