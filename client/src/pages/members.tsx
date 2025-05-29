@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, UserPlus, Settings } from "lucide-react";
 import MemberForm from "@/components/members/MemberForm";
 import MembersList from "@/components/members/MembersList";
+import { AddMemberButton } from "@/components/members/AddMemberButton";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Card, 
@@ -231,12 +232,18 @@ const Members = () => {
       subtitle="Manage your church members and their information"
       icon={<UserPlus className="h-6 w-6 text-[#69ad4c]" />}
       action={
-        <Link href="/settings">
-          <Button variant="outline" className="border-gray-400 text-gray-700">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Settings
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link href="/settings">
+            <Button variant="outline" className="border-gray-400 text-gray-700">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Settings
+            </Button>
+          </Link>
+          <AddMemberButton 
+            variant="default" 
+            className="bg-[#4299E1] hover:bg-[#3182CE] text-white"
+          />
+        </div>
       }
     >
       {content}
