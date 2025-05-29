@@ -38,8 +38,12 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     const isDevelopment = process.env.NODE_ENV === 'development' || req.headers['x-development-auth'] === 'true';
     if (isDevelopment) {
       console.log('Development mode: bypassing authentication for testing');
-      // Set a mock user for development
-      req.user = { churchId: '7f09c6e88fa6e031' } as any;
+      // Set a mock user for development with proper structure
+      req.user = { 
+        id: '7f09c6e88fa6e031',
+        churchId: '7f09c6e88fa6e031',
+        claims: { sub: '7f09c6e88fa6e031' }
+      } as any;
       return next();
     }
     
