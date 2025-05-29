@@ -485,7 +485,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           throw new Error("Please provide a valid email address for new members");
         }
         
-        const memberResponse = await apiRequest('/api/members', 'POST', {
+        const newMember = await apiRequest('/api/members', 'POST', {
           firstName: values.firstName,
           lastName: values.lastName,
           email: values.email || null, // Use null if email is empty
@@ -493,14 +493,8 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           isVisitor: false
         });
         
-        if (!memberResponse.ok) {
-          throw new Error("Failed to create member");
-        }
-        
-        const newMember = await memberResponse.json();
-        
         // Now create the donation with the new member ID
-        const donationResponse = await apiRequest('/api/donations', 'POST', {
+        const donation = await apiRequest('/api/donations', 'POST', {
           date: values.date,
           amount: values.amount,
           donationType: values.donationType,
@@ -511,14 +505,10 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           sendNotification: values.sendNotification
         });
         
-        if (!donationResponse.ok) {
-          throw new Error("Failed to create donation");
-        }
-        
-        return { donation: await donationResponse.json(), newMember: true };
+        return { donation, newMember: true };
       } else {
         // Create donation with existing member or as visitor
-        const donationResponse = await apiRequest('/api/donations', 'POST', {
+        const donation = await apiRequest('/api/donations', 'POST', {
           date: values.date,
           amount: values.amount,
           donationType: values.donationType,
@@ -529,11 +519,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           sendNotification: values.sendNotification && values.donorType === "existing"
         });
         
-        if (!donationResponse.ok) {
-          throw new Error("Failed to create donation");
-        }
-        
-        return { donation: await donationResponse.json(), existingMember: values.donorType === "existing" };
+        return { donation, existingMember: values.donorType === "existing" };
       }
     },
     onSuccess: (data) => {
