@@ -49,7 +49,7 @@ const formSchema = z.object({
   donationType: z.string().min(1, "Donation type is required"),
   checkNumber: z.string().optional(),
   notes: z.string().optional(),
-  donorType: z.enum(["existing", "new", "visitor"]),
+  donorType: z.enum(["existing", "new", "visitor", "add"]),
   memberId: z.string().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
@@ -73,7 +73,7 @@ const formSchema = z.object({
 )
 .refine(
   (data) => {
-    if (data.donorType === "new" && (!data.firstName || !data.lastName)) {
+    if ((data.donorType === "new" || data.donorType === "add") && (!data.firstName || !data.lastName)) {
       return false;
     }
     return true;
@@ -483,8 +483,8 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
         
         return donationResponse.json();
       }
-      // If donor type is new, create a member first
-      else if (values.donorType === "new") {
+      // If donor type is new or add, create a member first
+      else if (values.donorType === "new" || values.donorType === "add") {
         // For new members, we need to ensure email is valid
         if (values.email && values.email.trim() !== "" && !values.email.includes("@")) {
           throw new Error("Please provide a valid email address for new members");
@@ -708,42 +708,51 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         <ToggleGroup
                           type="single"
                           variant="outline"
-                          size="lg"
+                          size="sm"
                           value={field.value}
                           onValueChange={(value) => {
                             if (value) field.onChange(value);
                           }}
-                          className="justify-start gap-3 my-2"
+                          className="justify-start gap-2 my-2 grid grid-cols-4"
                         >
                           <ToggleGroupItem 
                             value="existing" 
-                            className={`flex items-center gap-2 flex-1 ${field.value === "existing" ? "border-green-500 bg-[#69ad4c] text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-green-50"}`}
+                            className={`flex items-center gap-1 px-2 py-1 text-sm ${field.value === "existing" ? "border-green-500 bg-[#69ad4c] text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-green-50"}`}
                             aria-label="Existing Member"
                           >
                             {/* Force icon to always be visible using solid green color */}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                               <circle cx="12" cy="8" r="5" />
                               <path d="M20 21a8 8 0 0 0-16 0" />
                             </svg>
-                            <span>Existing Member</span>
+                            <span>Existing</span>
                           </ToggleGroupItem>
                           <ToggleGroupItem 
                             value="new" 
-                            className={`flex items-center gap-2 flex-1 ${field.value === "new" ? "border-blue-500 bg-blue-500 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-blue-50"}`}
+                            className={`flex items-center gap-1 px-2 py-1 text-sm ${field.value === "new" ? "border-blue-500 bg-blue-500 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-blue-50"}`}
                             aria-label="Known Visitor"
                           >
                             {/* Force icon to display in all states */}
-                            <UserPlus className={`h-5 w-5 ${field.value === "new" ? "text-white" : "text-blue-600"}`} />
-                            <span>Known Visitor</span>
+                            <UserPlus className={`h-4 w-4 ${field.value === "new" ? "text-white" : "text-blue-600"}`} />
+                            <span>Visitor</span>
                           </ToggleGroupItem>
                           <ToggleGroupItem 
                             value="visitor" 
-                            className={`flex items-center gap-2 flex-1 ${field.value === "visitor" ? "border-slate-500 bg-slate-600 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-gray-100"}`}
+                            className={`flex items-center gap-1 px-2 py-1 text-sm ${field.value === "visitor" ? "border-slate-500 bg-slate-600 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-gray-100"}`}
                             aria-label="Cash"
                           >
                             {/* Force icon to display in all states */}
-                            <User className={`h-5 w-5 ${field.value === "visitor" ? "text-white" : "text-slate-600"}`} />
+                            <User className={`h-4 w-4 ${field.value === "visitor" ? "text-white" : "text-slate-600"}`} />
                             <span>Cash</span>
+                          </ToggleGroupItem>
+                          <ToggleGroupItem 
+                            value="add" 
+                            className={`flex items-center gap-1 px-2 py-1 text-sm ${field.value === "add" ? "border-orange-500 bg-orange-500 text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-orange-50"}`}
+                            aria-label="Add Member"
+                          >
+                            {/* Force icon to display in all states */}
+                            <UserPlus className={`h-4 w-4 ${field.value === "add" ? "text-white" : "text-orange-600"}`} />
+                            <span>Add</span>
                           </ToggleGroupItem>
                         </ToggleGroup>
                       </FormControl>
@@ -795,6 +804,69 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 
                 {/* Known Visitor Form */}
                 {formDonorType === "new" && (
+                  <div className="space-y-3 md:space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-bold">First Name:</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-bold">Last Name:</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-bold">Email Address:</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-bold">Phone Number:</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="tel" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+                
+                {/* Add Member Form */}
+                {formDonorType === "add" && (
                   <div className="space-y-3 md:space-y-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
