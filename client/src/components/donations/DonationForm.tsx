@@ -490,7 +490,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           throw new Error("Please provide a valid email address for new members");
         }
         
-        const memberResponse = await fetch("/api/members", {
+        const memberResponse = await fetch("/api/members/create", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

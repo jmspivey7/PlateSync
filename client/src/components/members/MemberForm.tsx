@@ -95,7 +95,7 @@ const MemberForm = ({ memberId, isEdit = false, onClose }: MemberFormProps) => {
         
         return response.json();
       } else {
-        const response = await apiRequest("POST", "/api/members", values);
+        const response = await apiRequest("POST", "/api/members/create", values);
         
         if (!response.ok) {
           throw new Error("Failed to create member");
