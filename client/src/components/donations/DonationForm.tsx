@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { apiRequest } from "@/lib/queryClient";
 import { MemberSearchSelect } from "@/components/ui/member-search-select";
 import { 
   Card, 
@@ -461,15 +460,21 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
       // If we're in edit mode and have a donation ID
       if (isEdit && donationId) {
         // Update existing donation
-        const donationResponse = await apiRequest('PATCH', `/api/donations/${donationId}`, {
-          date: values.date,
-          amount: values.amount,
-          donationType: values.donationType,
-          checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
-          notes: values.notes,
-          memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
-          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
-          sendNotification: values.sendNotification && values.donorType === "existing"
+        const donationResponse = await fetch(`/api/donations/${donationId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            date: values.date,
+            amount: values.amount,
+            donationType: values.donationType,
+            checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
+            notes: values.notes,
+            memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
+            batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
+            sendNotification: values.sendNotification && values.donorType === "existing"
+          })
         });
         
         if (!donationResponse.ok) {
@@ -485,41 +490,73 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           throw new Error("Please provide a valid email address for new members");
         }
         
-        const newMember = await apiRequest('/api/members', 'POST', {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email || null, // Use null if email is empty
-          phone: values.phone || null, // Use null if phone is empty
-          isVisitor: false
+        const memberResponse = await fetch("/api/members", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: values.firstName,
+            lastName: values.lastName,
+            email: values.email || null, // Use null if email is empty
+            phone: values.phone || null, // Use null if phone is empty
+            isVisitor: false
+          })
         });
+        
+        if (!memberResponse.ok) {
+          throw new Error("Failed to create member");
+        }
+        
+        const newMember = await memberResponse.json();
         
         // Now create the donation with the new member ID
-        const donation = await apiRequest('/api/donations', 'POST', {
-          date: values.date,
-          amount: values.amount,
-          donationType: values.donationType,
-          checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
-          notes: values.notes,
-          memberId: newMember.id,
-          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
-          sendNotification: values.sendNotification
+        const donationResponse = await fetch("/api/donations", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            date: values.date,
+            amount: values.amount,
+            donationType: values.donationType,
+            checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
+            notes: values.notes,
+            memberId: newMember.id,
+            batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
+            sendNotification: values.sendNotification
+          })
         });
         
-        return { donation, newMember: true };
+        if (!donationResponse.ok) {
+          throw new Error("Failed to create donation");
+        }
+        
+        return { donation: await donationResponse.json(), newMember: true };
       } else {
         // Create donation with existing member or as visitor
-        const donation = await apiRequest('/api/donations', 'POST', {
-          date: values.date,
-          amount: values.amount,
-          donationType: values.donationType,
-          checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
-          notes: values.notes || "", 
-          memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
-          batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
-          sendNotification: values.sendNotification && values.donorType === "existing"
+        const donationResponse = await fetch("/api/donations", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            date: values.date,
+            amount: values.amount,
+            donationType: values.donationType,
+            checkNumber: values.donationType === "CHECK" ? values.checkNumber : null,
+            notes: values.notes || "", 
+            memberId: values.donorType === "existing" ? parseInt(values.memberId!) : null,
+            batchId: values.batchId && values.batchId !== "none" ? parseInt(values.batchId) : null,
+            sendNotification: values.sendNotification && values.donorType === "existing"
+          })
         });
         
-        return { donation, existingMember: values.donorType === "existing" };
+        if (!donationResponse.ok) {
+          throw new Error("Failed to create donation");
+        }
+        
+        return { donation: await donationResponse.json(), existingMember: values.donorType === "existing" };
       }
     },
     onSuccess: (data) => {

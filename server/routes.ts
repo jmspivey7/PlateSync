@@ -34,18 +34,8 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const userData = req.session?.user;
   
   if (!userData || !userData.userId) {
-    // For debugging: log more detail about the session state
-    console.log('Authentication failed - session details:', {
-      hasSession: !!req.session,
-      sessionUser: req.session?.user,
-      isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
-      hasPassportUser: !!req.user,
-      sessionId: req.sessionID,
-      url: req.url,
-      method: req.method,
-      cookies: req.headers.cookie
-    });
-    return res.status(401).json({ message: 'Authentication required' });
+    console.log('No user session found:', req.session);
+    return res.status(401).json({ message: 'Unauthorized' });
   }
   
   next();
@@ -267,10 +257,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Set up app.trustProxy before any middleware
   app.set("trust proxy", 1);
-  
-  // CRITICAL: Add body parsing middleware BEFORE session middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
   
   // Setup auth middleware and routes
   setupSessionMiddleware(app);
@@ -1604,20 +1590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add a new donation
-  app.post('/api/donations', (req: any, res, next) => {
-    console.log('[DONATION POST] Request received:', {
-      method: req.method,
-      url: req.url,
-      hasSession: !!req.session,
-      sessionUser: req.session?.user,
-      isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
-      hasPassportUser: !!req.user,
-      cookies: req.headers.cookie?.substring(0, 100) + '...',
-      body: req.body
-    });
-    next();
-  }, isAuthenticated, async (req: any, res) => {
-    console.log('[DONATION POST] Inside authenticated handler');
+  app.post('/api/donations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id || (req.user.claims && req.user.claims.sub);
       
@@ -1633,25 +1606,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the churchId from the user object, or fallback to using the userId as churchId
       const churchId = user.churchId || userId;
       
-      console.log('Received donation data:', JSON.stringify(req.body, null, 2));
-      
       const donationData = {
         ...req.body,
         churchId
       };
-      
-      // Validate required fields
-      if (!donationData.amount) {
-        return res.status(400).json({ message: 'Amount is required' });
-      }
-      
-      if (!donationData.donationType) {
-        return res.status(400).json({ message: 'Donation type is required' });
-      }
-      
-      if (!donationData.batchId) {
-        return res.status(400).json({ message: 'Batch ID is required' });
-      }
       
       // If date is a string (e.g. "2025-05-19"), convert it to a proper Date object
       if (donationData.date && typeof donationData.date === 'string') {
@@ -1674,57 +1632,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Convert amount from string to number if needed
       if (donationData.amount && typeof donationData.amount === 'string') {
-        const parsedAmount = parseFloat(donationData.amount);
-        if (isNaN(parsedAmount)) {
-          return res.status(400).json({ message: 'Invalid amount format' });
-        }
-        donationData.amount = parsedAmount.toString(); // Store as string for decimal precision
-      }
-      
-      // For Known Visitor donations, ensure memberId is null or undefined (not empty string)
-      if (donationData.memberId === '' || donationData.memberId === 'null' || donationData.memberId === 'undefined') {
-        donationData.memberId = null;
-      }
-      
-      // Convert memberId to integer if it's a valid number
-      if (donationData.memberId && typeof donationData.memberId === 'string') {
-        const parsedMemberId = parseInt(donationData.memberId);
-        if (!isNaN(parsedMemberId)) {
-          donationData.memberId = parsedMemberId;
-        } else {
-          donationData.memberId = null;
-        }
-      }
-      
-      // Convert batchId to integer if it's a string
-      if (donationData.batchId && typeof donationData.batchId === 'string') {
-        const parsedBatchId = parseInt(donationData.batchId);
-        if (isNaN(parsedBatchId)) {
-          return res.status(400).json({ message: 'Invalid batch ID format' });
-        }
-        donationData.batchId = parsedBatchId;
+        donationData.amount = parseFloat(donationData.amount);
       }
       
       console.log(`Creating donation for batch ${donationData.batchId} and church ID: ${churchId}`);
-      console.log('Processed donation data:', JSON.stringify(donationData, null, 2));
-      
       const newDonation = await storage.createDonation(donationData);
       
       res.status(200).json(newDonation);
     } catch (error) {
       console.error('Error creating donation:', error);
-      console.error('Error stack:', error.stack);
-      
-      // Check for specific database constraint errors
-      if (error.message && error.message.includes('violates foreign key constraint')) {
-        return res.status(400).json({ message: 'Invalid reference: batch or member not found' });
-      }
-      
-      if (error.message && error.message.includes('violates check constraint')) {
-        return res.status(400).json({ message: 'Invalid data: check constraint violation' });
-      }
-      
-      res.status(500).json({ message: 'Failed to create donation', error: error.message });
+      res.status(500).json({ message: 'Failed to create donation' });
     }
   });
   

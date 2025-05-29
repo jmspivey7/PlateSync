@@ -101,7 +101,10 @@ const BatchDetailPage = () => {
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
     queryKey: ["/api/batches", batchId, "details"],
     queryFn: async () => {
-      const response = await apiRequest(`/api/batches/${batchId}`, "GET");
+      const response = await fetch(`/api/batches/${batchId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch count details");
+      }
       const data = await response.json();
       return {
         ...data,
