@@ -304,7 +304,7 @@ const MembersList = ({}: MembersListProps) => {
                   <TableHead className="font-bold">Name</TableHead>
                   <TableHead className="font-bold">Email</TableHead>
                   <TableHead className="font-bold">Cell Phone</TableHead>
-                  <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="font-bold">Created From</TableHead>
                   <TableHead className="font-bold w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -342,9 +342,15 @@ const MembersList = ({}: MembersListProps) => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Active
-                        </span>
+                        {member.externalSystem ? (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Imported
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Added
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button
