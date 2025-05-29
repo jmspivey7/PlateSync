@@ -495,6 +495,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include',
           body: JSON.stringify({
             firstName: values.firstName,
             lastName: values.lastName,
