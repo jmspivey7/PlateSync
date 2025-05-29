@@ -1606,10 +1606,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the churchId from the user object, or fallback to using the userId as churchId
       const churchId = user.churchId || userId;
       
+      console.log('Received donation data:', JSON.stringify(req.body, null, 2));
+      
       const donationData = {
         ...req.body,
         churchId
       };
+      
+      // Validate required fields
+      if (!donationData.amount) {
+        return res.status(400).json({ message: 'Amount is required' });
+      }
+      
+      if (!donationData.donationType) {
+        return res.status(400).json({ message: 'Donation type is required' });
+      }
+      
+      if (!donationData.batchId) {
+        return res.status(400).json({ message: 'Batch ID is required' });
+      }
       
       // If date is a string (e.g. "2025-05-19"), convert it to a proper Date object
       if (donationData.date && typeof donationData.date === 'string') {
@@ -1632,16 +1647,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Convert amount from string to number if needed
       if (donationData.amount && typeof donationData.amount === 'string') {
-        donationData.amount = parseFloat(donationData.amount);
+        const parsedAmount = parseFloat(donationData.amount);
+        if (isNaN(parsedAmount)) {
+          return res.status(400).json({ message: 'Invalid amount format' });
+        }
+        donationData.amount = parsedAmount.toString(); // Store as string for decimal precision
+      }
+      
+      // For Known Visitor donations, ensure memberId is null or undefined (not empty string)
+      if (donationData.memberId === '' || donationData.memberId === 'null' || donationData.memberId === 'undefined') {
+        donationData.memberId = null;
+      }
+      
+      // Convert memberId to integer if it's a valid number
+      if (donationData.memberId && typeof donationData.memberId === 'string') {
+        const parsedMemberId = parseInt(donationData.memberId);
+        if (!isNaN(parsedMemberId)) {
+          donationData.memberId = parsedMemberId;
+        } else {
+          donationData.memberId = null;
+        }
+      }
+      
+      // Convert batchId to integer if it's a string
+      if (donationData.batchId && typeof donationData.batchId === 'string') {
+        const parsedBatchId = parseInt(donationData.batchId);
+        if (isNaN(parsedBatchId)) {
+          return res.status(400).json({ message: 'Invalid batch ID format' });
+        }
+        donationData.batchId = parsedBatchId;
       }
       
       console.log(`Creating donation for batch ${donationData.batchId} and church ID: ${churchId}`);
+      console.log('Processed donation data:', JSON.stringify(donationData, null, 2));
+      
       const newDonation = await storage.createDonation(donationData);
       
       res.status(200).json(newDonation);
     } catch (error) {
       console.error('Error creating donation:', error);
-      res.status(500).json({ message: 'Failed to create donation' });
+      console.error('Error stack:', error.stack);
+      
+      // Check for specific database constraint errors
+      if (error.message && error.message.includes('violates foreign key constraint')) {
+        return res.status(400).json({ message: 'Invalid reference: batch or member not found' });
+      }
+      
+      if (error.message && error.message.includes('violates check constraint')) {
+        return res.status(400).json({ message: 'Invalid data: check constraint violation' });
+      }
+      
+      res.status(500).json({ message: 'Failed to create donation', error: error.message });
     }
   });
   
