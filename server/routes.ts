@@ -1600,7 +1600,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add a new donation
-  app.post('/api/donations', isAuthenticated, async (req: any, res) => {
+  app.post('/api/donations', (req: any, res, next) => {
+    console.log('[DONATION POST] Request received:', {
+      method: req.method,
+      url: req.url,
+      hasSession: !!req.session,
+      sessionUser: req.session?.user,
+      isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+      hasPassportUser: !!req.user,
+      cookies: req.headers.cookie?.substring(0, 100) + '...',
+      body: req.body
+    });
+    next();
+  }, isAuthenticated, async (req: any, res) => {
+    console.log('[DONATION POST] Inside authenticated handler');
     try {
       const userId = req.user.id || (req.user.claims && req.user.claims.sub);
       
