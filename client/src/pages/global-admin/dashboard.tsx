@@ -88,12 +88,12 @@ export default function GlobalAdminDashboard() {
 
   // Fetch real dashboard analytics data
   const { data: analytics, isLoading, error } = useQuery({
-    queryKey: ['/api/global-admin/dashboard/analytics', Date.now()],
+    queryKey: ['/api/global-admin/dashboard/analytics'],
     queryFn: async () => {
       const token = localStorage.getItem("globalAdminToken");
       if (!token) throw new Error('Authentication required');
       
-      const response = await fetch('/api/global-admin/dashboard/analytics?t=' + Date.now(), {
+      const response = await fetch('/api/global-admin/dashboard/analytics', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -102,6 +102,8 @@ export default function GlobalAdminDashboard() {
       return response.json();
     },
     retry: false,
+    staleTime: 0, // Force fresh data on every request
+    gcTime: 0, // Don't cache the data
   });
 
   // Process real data or show empty state when no data available
