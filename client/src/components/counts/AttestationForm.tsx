@@ -397,13 +397,22 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {users && users.map((u: User) => (
-                              <SelectItem key={u.id} value={u.id}>
-                                {u.lastName && u.firstName 
-                                  ? `${u.lastName}, ${u.firstName}` 
-                                  : u.username || u.email || 'Unknown user'}
-                              </SelectItem>
-                            ))}
+                            {users && users
+                              .filter((u: User) => u.id !== batch.primaryAttestorId)
+                              .filter((u: User) => u.isVerified === true) // Only show verified users
+                              .map((u: User) => (
+                                <SelectItem key={u.id} value={u.id}>
+                                  {u.lastName && u.firstName 
+                                    ? `${u.lastName}, ${u.firstName}` 
+                                    : u.username || u.email || 'Unknown user'}
+                                </SelectItem>
+                              ))
+                            }
+                            {users && users.filter((u: User) => u.id !== batch.primaryAttestorId && u.isVerified === true).length === 0 && (
+                              <div className="px-2 py-1 text-sm text-red-500">
+                                No verified attestors available. Only verified users can perform attestations.
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />

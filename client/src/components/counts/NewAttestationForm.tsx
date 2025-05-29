@@ -427,6 +427,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                           <SelectContent>
                             {users && users
                               .filter((u: User) => u.id !== batch.primaryAttestorId) // Filter out primary attestor
+                              .filter((u: User) => u.isVerified === true) // Only show verified users
                               .map((u: User) => (
                                 <SelectItem key={u.id} value={u.id}>
                                   {u.lastName && u.firstName 
@@ -435,9 +436,9 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                                 </SelectItem>
                               ))
                             }
-                            {users && users.filter((u: User) => u.id !== batch.primaryAttestorId).length === 0 && (
+                            {users && users.filter((u: User) => u.id !== batch.primaryAttestorId && u.isVerified === true).length === 0 && (
                               <div className="px-2 py-1 text-sm text-red-500">
-                                No eligible attestors available. Please add another user to the system.
+                                No verified attestors available. Only verified users can perform attestations.
                               </div>
                             )}
                           </SelectContent>

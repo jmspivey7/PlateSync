@@ -1697,6 +1697,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
       
+      // Check if user is verified
+      if (!user.isVerified) {
+        return res.status(403).json({ message: 'Only verified users can perform attestations. Please complete email verification first.' });
+      }
+      
       // Use the churchId from the user object, or fallback to using the userId as churchId
       const churchId = user.churchId || userId;
       
@@ -1734,6 +1739,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
       
+      // Check if user is verified
+      if (!user.isVerified) {
+        return res.status(403).json({ message: 'Only verified users can perform attestations. Please complete email verification first.' });
+      }
+      
       // Use the churchId from the user object, or fallback to using the userId as churchId
       const churchId = user.churchId || userId;
       
@@ -1746,6 +1756,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fetch the user with the provided attestorId to get their full name
         const secondaryAttestor = await storage.getUser(req.body.attestorId);
         if (secondaryAttestor) {
+          // Check if the secondary attestor is verified
+          if (!secondaryAttestor.isVerified) {
+            return res.status(403).json({ message: 'Selected attestor is not verified. Only verified users can perform attestations.' });
+          }
           attestorName = `${secondaryAttestor.firstName || ''} ${secondaryAttestor.lastName || ''}`.trim();
         }
       }
