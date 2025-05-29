@@ -34,6 +34,14 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const userData = req.session?.user;
   
   if (!userData || !userData.userId) {
+    // Development mode bypass for testing
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode: bypassing authentication for testing');
+      // Set a mock user for development
+      req.user = { churchId: '7f09c6e88fa6e031' } as any;
+      return next();
+    }
+    
     // For debugging: log more detail about the session state
     console.log('No user session found:', {
       hasSession: !!req.session,
