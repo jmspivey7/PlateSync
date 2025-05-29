@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { db } from './db';
-import { subscriptions } from '@shared/schema';
+import { subscriptions, users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
 // Initialize Stripe with the API key
@@ -45,6 +45,123 @@ interface SubscriptionStatusResult {
 /**
  * Verify a subscription with Stripe and update our database
  */
+/**
+ * Update subscription in database based on Stripe subscription data
+ */
+export async function updateSubscriptionFromStripe(stripeSubscription: Stripe.Subscription, churchId: string): Promise<void> {
+  try {
+    const plan = getSubscriptionPlan(stripeSubscription);
+    const status = getSubscriptionStatus(stripeSubscription);
+    
+    await db
+      .update(subscriptions)
+      .set({
+        plan,
+        status,
+        stripeSubscriptionId: stripeSubscription.id,
+        stripeCustomerId: stripeSubscription.customer as string,
+        startDate: new Date(stripeSubscription.current_period_start * 1000),
+        endDate: new Date(stripeSubscription.current_period_end * 1000),
+        canceledAt: stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
+        updatedAt: new Date()
+      })
+      .where(eq(subscriptions.churchId, churchId));
+      
+    console.log(`Updated subscription for church ${churchId} with Stripe data`);
+  } catch (error) {
+    console.error(`Error updating subscription for church ${churchId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Handle Stripe webhook events to keep database in sync
+ */
+export async function handleStripeWebhook(event: Stripe.Event): Promise<void> {
+  try {
+    switch (event.type) {
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        // Find the church associated with this customer
+        const customer = await stripe.customers.retrieve(subscription.customer as string);
+        if ('email' in customer && customer.email) {
+          // Find user by email to get church ID
+          const [user] = await db
+            .select({ churchId: users.churchId, id: users.id })
+            .from(users)
+            .where(eq(users.email, customer.email))
+            .limit(1);
+            
+          if (user) {
+            const churchId = user.churchId || user.id;
+            
+            if (event.type === 'customer.subscription.deleted') {
+              // Mark subscription as canceled
+              await db
+                .update(subscriptions)
+                .set({
+                  status: 'CANCELED',
+                  canceledAt: new Date(),
+                  updatedAt: new Date()
+                })
+                .where(eq(subscriptions.churchId, churchId));
+            } else {
+              // Update or create subscription
+              await updateSubscriptionFromStripe(subscription, churchId);
+            }
+            
+            console.log(`Processed webhook ${event.type} for church ${churchId}`);
+          }
+        }
+        break;
+      }
+      default:
+        console.log(`Unhandled webhook event type: ${event.type}`);
+    }
+  } catch (error) {
+    console.error('Error handling Stripe webhook:', error);
+    throw error;
+  }
+}
+
+function getSubscriptionPlan(stripeSubscription: Stripe.Subscription): string {
+  const priceId = stripeSubscription.items.data[0]?.price.id;
+  
+  if (priceId === process.env.STRIPE_MONTHLY_PRICE_ID) {
+    return 'MONTHLY';
+  } else if (priceId === process.env.STRIPE_ANNUAL_PRICE_ID) {
+    return 'ANNUAL';
+  }
+  
+  const interval = stripeSubscription.items.data[0]?.price.recurring?.interval;
+  if (interval === 'month') {
+    return 'MONTHLY';
+  } else if (interval === 'year') {
+    return 'ANNUAL';
+  }
+  
+  return 'MONTHLY';
+}
+
+function getSubscriptionStatus(stripeSubscription: Stripe.Subscription): string {
+  switch (stripeSubscription.status) {
+    case 'active':
+      return 'ACTIVE';
+    case 'canceled':
+      return 'CANCELED';
+    case 'past_due':
+    case 'unpaid':
+      return 'EXPIRED';
+    case 'trialing':
+      return 'TRIAL';
+    default:
+      return 'ACTIVE';
+  }
+}
+
 export async function verifyStripeSubscription(stripeSubscriptionId: string): Promise<SubscriptionStatusResult | null> {
   try {
     console.log(`Verifying Stripe subscription: ${stripeSubscriptionId}`);
