@@ -121,6 +121,15 @@ export default function GlobalAdminDashboard() {
     subscriber: parseInt(trend.paid_count) || 0,
   })) || [];
 
+  // Calculate current conversion rate from subscription stats
+  const totalSubscriptions = (analytics?.subscriptionStats?.trial_subscriptions || 0) + 
+                             (analytics?.subscriptionStats?.monthly_subscriptions || 0) + 
+                             (analytics?.subscriptionStats?.annual_subscriptions || 0);
+  const paidSubscriptions = (analytics?.subscriptionStats?.monthly_subscriptions || 0) + 
+                           (analytics?.subscriptionStats?.annual_subscriptions || 0);
+  const currentConversionRate = totalSubscriptions > 0 ? 
+    ((paidSubscriptions / totalSubscriptions) * 100).toFixed(1) : '0.0';
+
   // Transform conversion rate data
   const conversionData = analytics?.conversionRates?.map((rate: any) => ({
     month: formatMonth(rate.month),
