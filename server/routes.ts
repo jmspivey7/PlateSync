@@ -268,6 +268,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up app.trustProxy before any middleware
   app.set("trust proxy", 1);
   
+  // CRITICAL: Add body parsing middleware BEFORE session middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  
   // Setup auth middleware and routes
   setupSessionMiddleware(app);
   
