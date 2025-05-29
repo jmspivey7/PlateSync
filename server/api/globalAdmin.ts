@@ -623,6 +623,8 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
         COUNT(CASE WHEN status = 'TRIAL' THEN 1 END) as trial_active
       FROM subscriptions
     `);
+    
+    console.log("Raw subscription stats from DB:", subscriptionStats.rows[0]);
 
     // Get donation statistics
     const donationStats = await db.execute(sql`
@@ -704,12 +706,12 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
         suspended_churches: 0,
         deleted_churches: 0
       },
-      subscriptionStats: subscriptionStats.rows[0] || {
-        trial_subscriptions: 0,
-        monthly_subscriptions: 0,
-        annual_subscriptions: 0,
-        active_subscriptions: 0,
-        trial_active: 0
+      subscriptionStats: {
+        trial_subscriptions: parseInt(subscriptionStats.rows[0]?.trial_subscriptions) || 0,
+        monthly_subscriptions: parseInt(subscriptionStats.rows[0]?.monthly_subscriptions) || 0,
+        annual_subscriptions: parseInt(subscriptionStats.rows[0]?.annual_subscriptions) || 0,
+        active_subscriptions: parseInt(subscriptionStats.rows[0]?.active_subscriptions) || 0,
+        trial_active: parseInt(subscriptionStats.rows[0]?.trial_active) || 0
       },
       donationStats: donationStats.rows[0] || {
         total_donations: 0,

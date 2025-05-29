@@ -110,6 +110,9 @@ export default function GlobalAdminDashboard() {
   const formatMonth = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short' });
   };
+  
+  // Debug log to see the actual subscription values
+  console.log("Subscription stats:", analytics?.subscriptionStats);
 
   // Transform subscription trends data for charts
   const subscriptionData = analytics?.subscriptionTrends?.map((trend: any) => ({
