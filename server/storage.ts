@@ -4225,9 +4225,9 @@ PlateSync Reporting System
           daysRemaining = 0;
         }
       } else if (subscription.status === "ACTIVE") {
-        // Paid subscription
+        // Paid subscription - not a trial, so isTrialExpired should be false
         isActive = true;
-        isTrialExpired = true;
+        isTrialExpired = false;
       } else {
         // Expired or canceled subscriptions
         isActive = false;

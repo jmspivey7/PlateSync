@@ -1,1 +1,1 @@
-Testing write permissions
+Write permissions confirmed for: /home/runner/workspace/public/avatars
