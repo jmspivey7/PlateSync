@@ -272,38 +272,7 @@ export async function verifyStripeSubscription(stripeSubscriptionId: string): Pr
   }
 }
 
-/**
- * Update a church's subscription based on Stripe data
- */
-export async function updateSubscriptionFromStripe(churchId: string, stripeSubscriptionId: string): Promise<boolean> {
-  try {
-    const status = await verifyStripeSubscription(stripeSubscriptionId);
-    
-    if (!status) {
-      console.log(`No valid status returned for subscription: ${stripeSubscriptionId}`);
-      return false;
-    }
-    
-    // Update the subscription in our database
-    await db
-      .update(subscriptions)
-      .set({
-        status: status.status,
-        plan: status.plan,
-        startDate: new Date(),
-        endDate: status.currentPeriodEnd,
-        canceledAt: status.canceledAt,
-        stripeSubscriptionId,
-      })
-      .where(eq(subscriptions.churchId, churchId));
-    
-    console.log(`Updated subscription for church ${churchId} with Stripe data`);
-    return true;
-  } catch (error) {
-    console.error('Error updating subscription from Stripe:', error);
-    return false;
-  }
-}
+
 
 /**
  * Cancel a subscription in Stripe and update the database

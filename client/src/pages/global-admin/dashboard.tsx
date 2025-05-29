@@ -181,7 +181,7 @@ export default function GlobalAdminDashboard() {
               />
               <StatsCard 
                 title="Subscriptions" 
-                value={`${analytics?.subscriptionStats?.trial_active || 0} trial / ${(analytics?.subscriptionStats?.monthly_subscriptions || 0) + (analytics?.subscriptionStats?.annual_subscriptions || 0)} paid`}
+                value={`${analytics?.subscriptionStats?.trial_subscriptions || 0} trial / ${(analytics?.subscriptionStats?.monthly_subscriptions || 0) + (analytics?.subscriptionStats?.annual_subscriptions || 0)} paid`}
                 description="Trial vs paid subscriptions" 
                 icon={<TrendingUp className="h-4 w-4" />}
               />
