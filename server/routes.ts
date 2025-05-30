@@ -932,6 +932,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔐 Token stored in database for user ${userId}`);
       
+      // Verify the token was actually stored correctly
+      const verifiedUser = await storage.getUser(userId);
+      console.log(`🔐 Verification check - Token in DB: ${verifiedUser?.passwordResetToken}`);
+      console.log(`🔐 Verification check - Generated token: ${verificationToken}`);
+      console.log(`🔐 Verification check - Tokens match: ${verifiedUser?.passwordResetToken === verificationToken}`);
+      
       // Prepare verification URL
       const baseUrl = req.protocol + '://' + req.get('host');
       const verificationUrl = `${baseUrl}/verify?token=${verificationToken}`;
@@ -944,6 +950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: targetUser.firstName || '',
         lastName: targetUser.lastName || '',
         churchName: church.name || 'Your Church',
+        churchId: church.id,
         verificationUrl,
         verificationToken,
         role: targetUser.role || 'STANDARD_USER'
