@@ -4237,8 +4237,9 @@ Sincerely,
       
       console.log(`User found: ${user.id}, verifying password...`);
       
-      // Verify password
-      const passwordValid = await verifyPassword(password, user.password || '');
+      // Verify password using the utility function that handles both formats
+      const { verifyPassword: utilVerifyPassword } = await import('./util');
+      const passwordValid = await utilVerifyPassword(password, user.password || '');
       if (!passwordValid) {
         console.log(`Invalid password for user: ${user.id}`);
         return res.status(401).json({ message: 'No user found with the provided credentials.' });
@@ -5222,7 +5223,7 @@ Sincerely,
       }
       
       try {
-        // Hash the password
+        // Hash the password using the same utility function as login
         const hashedPassword = await scryptHash(password);
         
         console.log("Updating user with ID:", user.id);
