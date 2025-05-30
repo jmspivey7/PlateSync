@@ -578,16 +578,22 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
     // Get the system template directly by ID
     let template = await storage.getEmailTemplateById(30);
     
-    if (template && template.churchId === 'SYSTEM_TEMPLATES') {
-      console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
+    if (template) {
+      console.log(`📧 Found system welcome template with id: ${template.id}`);
     } else {
-      console.log('📧 No Global Admin welcome template found, checking fallback');
-      // Try to get any system template for welcome email
-      const systemTemplates = await storage.getEmailTemplates('SYSTEM_TEMPLATES');
-      template = systemTemplates.find(t => t.templateType === 'WELCOME_EMAIL');
-      if (template) {
-        console.log(`📧 Found system welcome template via fallback with id: ${template.id}`);
-      }
+      console.log('📧 System welcome template not found, creating default template');
+      // If system template doesn't exist, use built-in fallback
+      template = {
+        id: 30,
+        templateType: 'WELCOME_EMAIL' as const,
+        subject: 'Welcome to PlateSync',
+        bodyHtml: `<div>Welcome {{USER_NAME}}! Please verify your email: <a href="{{verificationUrl}}">Click here</a></div>`,
+        bodyText: 'Welcome {{USER_NAME}}! Please verify your email: {{verificationUrl}}',
+        churchId: 'SYSTEM_TEMPLATES',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      console.log('📧 Using built-in fallback welcome template');
     }
     
     if (template) {
@@ -764,7 +770,7 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     const globalTemplate = await storage.getEmailTemplateById(31);
     
     if (globalTemplate) {
-      console.log('📧 Using global password reset template from Global Admin settings');
+      console.log('📧 Using system password reset template from Global Admin settings');
       
       // Format name for personalization
       const userName = params.firstName ? 
