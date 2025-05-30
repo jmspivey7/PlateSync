@@ -181,7 +181,7 @@ export function setupTestEndpoints(app: Express) {
       
       // Get application URL from request for verification link
       const appUrl = `${req.protocol}://${req.get('host')}`;
-      const verificationUrl = `${appUrl}/verify?token=${token}`;
+      const verificationUrl = `${appUrl}/set-password?token=${token}`;
       
       return res.json({
         success: true,

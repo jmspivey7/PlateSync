@@ -3062,7 +3062,7 @@ Dear {{firstName}} {{lastName}},
 Welcome to PlateSync! You have been added as a user for {{churchName}}.
 
 Please verify your email and set up your password by clicking the following link:
-{{verificationUrl}}?token={{verificationToken}}
+{{verificationUrl}}
 
 This link will expire in 48 hours.
 
@@ -3089,7 +3089,7 @@ The PlateSync Team
     <p>To complete your account setup, please verify your email and create a password by clicking the button below:</p>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="{{verificationUrl}}?token={{verificationToken}}" 
+      <a href="{{verificationUrl}}" 
          style="background-color: #69ad4c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
         Verify Email & Set Password
       </a>

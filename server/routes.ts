@@ -4488,7 +4488,7 @@ Sincerely,
       // Send welcome email with verification/password setup link
       try {
         // Create verification URL with token parameter for password setup
-        const verificationUrl = `${req.protocol}://${req.get('host')}/verify?token=${newUser.passwordResetToken}`;
+        const verificationUrl = `${req.protocol}://${req.get('host')}/set-password?token=${newUser.passwordResetToken}`;
         
         console.log(`Sending welcome email to ${newUser.email} with verification URL: ${verificationUrl}`);
         

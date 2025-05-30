@@ -183,7 +183,7 @@ router.post("/set-password", async (req, res) => {
         password: hashedPassword,
         passwordResetToken: null,
         passwordResetExpires: null,
-        emailVerified: true, // Mark email as verified for Welcome Email flow
+        isVerified: true, // Mark email as verified for Welcome Email flow
         updatedAt: new Date()
       })
       .where(eq(users.id, user.id));
