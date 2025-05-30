@@ -155,8 +155,12 @@ function Router() {
           setLocation("/login-local");
           setRedirectInProgress(false);
         }, 100);
-      } else if (user && currentPathIsPublic && location !== "/verify" && location !== "/onboarding") {
-        // User is authenticated and trying to access a public page (except verify and onboarding)
+      } else if (user && currentPathIsPublic && 
+                 location !== "/verify" && 
+                 location !== "/onboarding" &&
+                 location !== "/forgot-password" &&
+                 location !== "/reset-password") {
+        // User is authenticated and trying to access a public page (except specific pages)
         console.log('Redirecting authenticated user to dashboard');
         setRedirectInProgress(true);
         setTimeout(() => {
