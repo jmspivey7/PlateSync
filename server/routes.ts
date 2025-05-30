@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Prepare verification URL
       const baseUrl = req.protocol + '://' + req.get('host');
-      const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+      const verificationUrl = `${baseUrl}/verify?token=${verificationToken}`;
       
       // Send welcome email
       const emailSent = await sendWelcomeEmail({
