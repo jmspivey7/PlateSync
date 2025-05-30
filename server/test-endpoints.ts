@@ -229,16 +229,27 @@ export function setupTestEndpoints(app: Express) {
       
       const user = users_with_token[0];
       
-      // Check if token is expired
+      // Check if token is expired (note: raw SQL returns snake_case column names)
       const now = new Date();
-      const isExpired = user.passwordResetExpires && now > user.passwordResetExpires;
+      const expiresAt = user.password_reset_expires;
+      let isExpired = false;
+      
+      if (expiresAt) {
+        try {
+          const expiryDate = new Date(expiresAt);
+          isExpired = now > expiryDate;
+        } catch (e) {
+          console.error("Error parsing expiry date:", expiresAt, e);
+          isExpired = true; // Assume expired if we can't parse the date
+        }
+      }
       
       return res.json({
         success: true,
         message: "User found with this token",
         userEmail: user.email,
         isExpired: isExpired,
-        expiresAt: user.passwordResetExpires,
+        expiresAt: expiresAt,
         tokenLength: token.length
       });
       
