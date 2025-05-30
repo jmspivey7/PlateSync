@@ -181,20 +181,8 @@ export default function Verify() {
               </div>
             )}
             
-            {/* When token is invalid, show regenerate button */}
-            {tokenValid === false ? (
-              <div className="pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="default"
-                  className="w-full"
-                  onClick={handleGenerateToken}
-                >
-                  Generate New Verification Token
-                </Button>
-              </div>
-            ) : (
+            {/* Always show the password form unless there's a confirmed error */}
+            {tokenValid !== false && !success && (
               <>
                 {/* Password fields - only shown when token isn't invalid */}
                 <div className="space-y-2">
@@ -258,6 +246,24 @@ export default function Verify() {
                   )}
                 </Button>
               </>
+            )}
+            
+            {/* Show regenerate token option if there's an error or token is invalid */}
+            {(tokenValid === false || error) && !success && (
+              <div className="pt-4 space-y-2">
+                <div className="text-center text-sm text-muted-foreground">
+                  Having trouble with your verification link?
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="default"
+                  className="w-full"
+                  onClick={handleGenerateToken}
+                >
+                  Generate New Verification Token
+                </Button>
+              </div>
             )}
           </CardContent>
         </form>

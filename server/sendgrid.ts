@@ -572,21 +572,22 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
   console.log(`📧 Sending to: ${params.to}`);
   
   try {
-    // Get specifically the Global Admin template with ID = 1
-    console.log('📧 Looking for Global Admin welcome template with ID = 1');
+    // Get specifically the Global Admin system template with ID = 30 (WELCOME_EMAIL)
+    console.log('📧 Looking for Global Admin welcome template with ID = 30');
     
-    // Get the template directly by ID
-    let template = await storage.getEmailTemplateById(1);
+    // Get the system template directly by ID
+    let template = await storage.getEmailTemplateById(30);
     
-    if (template) {
+    if (template && template.churchId === 'SYSTEM_TEMPLATES') {
       console.log(`📧 Found Global Admin welcome template with id: ${template.id}`);
     } else {
-      console.log('📧 No Global Admin welcome template found');
-    }
-    
-    // Additional debugging to see what we found
-    if (template) {
-      console.log(`📧 Found welcome template with id: ${template.id}`);
+      console.log('📧 No Global Admin welcome template found, checking fallback');
+      // Try to get any system template for welcome email
+      const systemTemplates = await storage.getEmailTemplates('SYSTEM_TEMPLATES');
+      template = systemTemplates.find(t => t.templateType === 'WELCOME_EMAIL');
+      if (template) {
+        console.log(`📧 Found system welcome template via fallback with id: ${template.id}`);
+      }
     }
     
     if (template) {
@@ -758,11 +759,9 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
   
   try {
     // First try to fetch the global admin password reset template from the database
-    console.log('📧 Looking for global password reset template');
-    // First get all password reset templates
-    const allResetTemplates = await storage.getAllEmailTemplatesByType('PASSWORD_RESET');
-    // Find the global admin template (has churchId = '0')
-    const globalTemplate = allResetTemplates.find(t => t.churchId === '0');
+    console.log('📧 Looking for global password reset template with ID = 31');
+    // Get the system template directly by ID
+    const globalTemplate = await storage.getEmailTemplateById(31);
     
     if (globalTemplate) {
       console.log('📧 Using global password reset template from Global Admin settings');
