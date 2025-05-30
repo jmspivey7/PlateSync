@@ -12,6 +12,7 @@ import Settings from "@/pages/settings";
 import Login from "@/pages/login";
 import LoginLocal from "@/pages/login-local";
 import Verify from "@/pages/verify";
+import SetPasswordPage from "@/pages/set-password";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Onboarding from "@/pages/onboarding";
@@ -157,6 +158,7 @@ function Router() {
         }, 100);
       } else if (user && currentPathIsPublic && 
                  location !== "/verify" && 
+                 location !== "/set-password" &&
                  location !== "/onboarding" &&
                  location !== "/forgot-password" &&
                  location !== "/reset-password") {
@@ -191,6 +193,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/login-local" component={LoginLocal} />
       <Route path="/verify" component={Verify} />
+      <Route path="/set-password" component={SetPasswordPage} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/onboarding" component={Onboarding} />
