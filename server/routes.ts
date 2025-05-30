@@ -940,7 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Prepare verification URL
       const baseUrl = req.protocol + '://' + req.get('host');
-      const verificationUrl = `${baseUrl}/verify?token=${verificationToken}`;
+      const verificationUrl = `${baseUrl}/set-password?token=${verificationToken}`;
       
       console.log(`🔗 Generated verification URL: ${verificationUrl}`);
       
