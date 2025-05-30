@@ -5211,7 +5211,7 @@ Sincerely,
       
       // Check if token is expired
       const now = new Date();
-      if (user.passwordResetExpires && now > user.passwordResetExpires) {
+      if (user.password_reset_expires && now > new Date(user.password_reset_expires)) {
         console.log("Token expired for user:", user.id);
         return res.status(400).json({ message: "Verification token has expired" });
       }
