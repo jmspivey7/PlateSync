@@ -4583,11 +4583,10 @@ Sincerely,
             return false;
           }
           
-          // Filter out any users where role is GLOBAL_ADMIN, MASTER_ADMIN, or any other admin type
+          // Filter out only Global Admin and Master Admin roles, but keep regular ADMIN users
           const isNotGlobalAdmin = 
             user.role !== "GLOBAL_ADMIN" && 
-            user.role !== "MASTER_ADMIN" &&
-            !(user.id !== userId && user.id !== churchId && user.role === "ADMIN");
+            user.role !== "MASTER_ADMIN";
           
           // Only include users that are church members and not global admins
           return isChurchMember && isNotGlobalAdmin;
