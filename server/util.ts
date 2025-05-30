@@ -38,14 +38,23 @@ export async function verifyPassword(supplied: string, stored: string): Promise<
   const separator = stored.includes(".") ? "." : ":";
   const [hashed, salt] = stored.split(separator);
   
+  console.log(`Password verification debug: separator=${separator}, hashLength=${hashed?.length}, saltLength=${salt?.length}`);
+  
   if (!salt || !hashed) {
     console.error("Invalid stored password format");
     return false;
   }
   
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  try {
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    const result = timingSafeEqual(hashedBuf, suppliedBuf);
+    console.log(`Password verification result: ${result}`);
+    return result;
+  } catch (error) {
+    console.error("Password verification error:", error);
+    return false;
+  }
 }
 
 /**
