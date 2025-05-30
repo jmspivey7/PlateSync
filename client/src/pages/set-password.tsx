@@ -259,7 +259,7 @@ export default function SetPasswordPage() {
               Password must be at least 8 characters long
             </div>
 
-            <Button type="submit" disabled={isLoading} className="w-full">
+            <Button type="submit" disabled={isLoading} className="w-full bg-green-600 hover:bg-green-700 text-white">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Set Password
             </Button>
