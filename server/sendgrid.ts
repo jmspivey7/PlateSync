@@ -559,6 +559,14 @@ interface WelcomeEmailParams {
 
 export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
   console.log('\n📧 Starting welcome email function...');
+  console.log('📧 WELCOME EMAIL PARAMS:', {
+    to: params.to,
+    firstName: params.firstName,
+    lastName: params.lastName,
+    churchName: params.churchName,
+    role: params.role,
+    hasVerificationUrl: !!params.verificationUrl
+  });
   
   // Check if SendGrid API key is set
   if (!process.env.SENDGRID_API_KEY) {
