@@ -771,6 +771,24 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     
     if (globalTemplate) {
       console.log('📧 Using system password reset template from Global Admin settings');
+    } else {
+      console.log('📧 System password reset template not found, creating default template');
+      // If system template doesn't exist, use built-in fallback
+      globalTemplate = {
+        id: 31,
+        templateType: 'PASSWORD_RESET' as const,
+        subject: 'Reset Your PlateSync Password',
+        bodyHtml: `<div>Hello {{userName}}! Please reset your password: <a href="{{resetUrl}}">Click here</a></div>`,
+        bodyText: 'Hello {{userName}}! Please reset your password: {{resetUrl}}',
+        churchId: 'SYSTEM_TEMPLATES',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      console.log('📧 Using built-in fallback password reset template');
+    }
+    
+    if (globalTemplate) {
+      console.log('📧 Using system password reset template');
       
       // Format name for personalization
       const userName = params.firstName ? 
