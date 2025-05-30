@@ -57,6 +57,7 @@ const PUBLIC_PATHS = [
   "/login", 
   "/login-local", 
   "/verify", 
+  "/set-password",
   "/forgot-password", 
   "/reset-password", 
   "/onboarding"
