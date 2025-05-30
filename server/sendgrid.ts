@@ -621,10 +621,13 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         '{{churchName}}': params.churchName,
         '{{CHURCH_NAME}}': params.churchName,
         '{{verificationUrl}}': params.verificationUrl,
+        '{{setPasswordUrl}}': params.verificationUrl,
         '{{verificationToken}}': params.verificationToken,
         '{{resetLink}}': `${params.verificationUrl}?token=${params.verificationToken}`,
         '{{USER_EMAIL}}': params.to,
+        '{{email}}': params.to,
         '{{USER_ROLE}}': params.role || 'User',
+        '{{userRole}}': formattedUserRole,
         '{{formattedUserRole}}': formattedUserRole,
         '{{userName}}': `${params.firstName} ${params.lastName}`,
         '{{plateSyncLogoUrl}}': plateSyncLogoUrl,
@@ -767,7 +770,7 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     // First try to fetch the global admin password reset template from the database
     console.log('📧 Looking for global password reset template with ID = 31');
     // Get the system template directly by ID
-    const globalTemplate = await storage.getEmailTemplateById(31);
+    let globalTemplate = await storage.getEmailTemplateById(31);
     
     if (globalTemplate) {
       console.log('📧 Using system password reset template from Global Admin settings');
