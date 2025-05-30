@@ -647,10 +647,18 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       
       Object.entries(replacements).forEach(([key, value]) => {
         console.log(`📧 Replacing "${key}" with "${value}"`);
+        const beforeHtml = html;
         // Use simple string replace instead of regex for better debugging
         subject = subject.split(key).join(value);
         text = text.split(key).join(value);
         html = html.split(key).join(value);
+        
+        if (key === '{{userRole}}' && beforeHtml !== html) {
+          console.log(`📧 ✅ Successfully replaced {{userRole}} in HTML!`);
+        } else if (key === '{{userRole}}') {
+          console.log(`📧 ❌ No {{userRole}} found in HTML template to replace`);
+          console.log('📧 HTML snippet:', html.substring(0, 1000));
+        }
       });
       
       console.log('📧 Final HTML after all replacements:', html.substring(0, 500) + '...');
