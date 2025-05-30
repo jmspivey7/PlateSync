@@ -181,8 +181,16 @@ export default function Verify() {
               </div>
             )}
             
-            {/* Always show the password form unless there's a confirmed error */}
-            {tokenValid !== false && !success && (
+            {/* Show loading state while validating, then show form if valid */}
+            {tokenValid === null && (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                <span className="ml-2 text-muted-foreground">Validating token...</span>
+              </div>
+            )}
+            
+            {/* Show the password form only when token is confirmed valid */}
+            {tokenValid === true && !success && (
               <>
                 {/* Password fields - only shown when token isn't invalid */}
                 <div className="space-y-2">
