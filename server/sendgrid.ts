@@ -633,6 +633,10 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
         '{{plateSyncLogoUrl}}': plateSyncLogoUrl,
       };
       
+      console.log('📧 DEBUG: Role parameter received:', params.role);
+      console.log('📧 DEBUG: Formatted user role:', formattedUserRole);
+      console.log('📧 DEBUG: Template variables to replace:', Object.keys(replacements));
+      
       Object.entries(replacements).forEach(([key, value]) => {
         subject = subject.replace(new RegExp(key, 'g'), value);
         text = text.replace(new RegExp(key, 'g'), value);
