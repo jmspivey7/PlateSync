@@ -4236,13 +4236,10 @@ Sincerely,
       }
       
       console.log(`User found: ${user.id}, verifying password...`);
-      console.log(`Stored password format: ${user.password?.substring(0, 20)}...`);
-      console.log(`Password verification attempt with utility function`);
       
       // Verify password using the utility function that handles both formats
       const { verifyPassword: utilVerifyPassword } = await import('./util');
       const passwordValid = await utilVerifyPassword(password, user.password || '');
-      console.log(`Password verification result: ${passwordValid}`);
       
       if (!passwordValid) {
         console.log(`Invalid password for user: ${user.id}`);
