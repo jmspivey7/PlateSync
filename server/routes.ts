@@ -924,12 +924,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
       
+      console.log(`🔐 Generated verification token for ${targetUser.email}: ${verificationToken}`);
+      console.log(`🔐 Token length: ${verificationToken.length} characters`);
+      
       // Update user with new verification token
       await storage.updateUserVerificationToken(userId, verificationToken, tokenExpiry);
+      
+      console.log(`🔐 Token stored in database for user ${userId}`);
       
       // Prepare verification URL
       const baseUrl = req.protocol + '://' + req.get('host');
       const verificationUrl = `${baseUrl}/verify?token=${verificationToken}`;
+      
+      console.log(`🔗 Generated verification URL: ${verificationUrl}`);
       
       // Send welcome email
       const emailSent = await sendWelcomeEmail({
