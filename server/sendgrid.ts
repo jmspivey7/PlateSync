@@ -638,9 +638,11 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       console.log('📧 DEBUG: Template variables to replace:', Object.keys(replacements));
       
       Object.entries(replacements).forEach(([key, value]) => {
-        subject = subject.replace(new RegExp(key, 'g'), value);
-        text = text.replace(new RegExp(key, 'g'), value);
-        html = html.replace(new RegExp(key, 'g'), value);
+        // Escape special regex characters in the key
+        const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        subject = subject.replace(new RegExp(escapedKey, 'g'), value);
+        text = text.replace(new RegExp(escapedKey, 'g'), value);
+        html = html.replace(new RegExp(escapedKey, 'g'), value);
       });
       
       return await sendEmail({
