@@ -3141,6 +3141,61 @@ The PlateSync Team
     }
   });
 
+  // Fix empty logo conditional tags in email templates
+  app.post('/api/email-templates/fix-empty-logo-conditionals', requireGlobalAdmin, async (req: any, res) => {
+    try {
+      const systemChurchId = 'SYSTEM_TEMPLATES';
+      
+      // Get all system templates
+      const templates = await storage.getEmailTemplates(systemChurchId);
+      let updatedCount = 0;
+      
+      for (const template of templates) {
+        if (template.bodyHtml) {
+          let updatedHtml = template.bodyHtml;
+          let hasChanges = false;
+          
+          // Find and fix empty logo conditional tags (with potential whitespace and paragraph tags)
+          const emptyConditionalPatterns = [
+            /\{\{#if churchLogoUrl\}\}\s*<p>\s*<\/p>\s*<p>\s*\{\{\/if\}\}/g,
+            /\{\{#if churchLogoUrl\}\}\s*\{\{\/if\}\}/g,
+            /<p>\{\{#if churchLogoUrl\}\}\s*<\/p>\s*<p>\s*\{\{\/if\}\}<\/p>/g
+          ];
+          
+          for (const pattern of emptyConditionalPatterns) {
+            if (pattern.test(updatedHtml)) {
+              // Replace empty conditional with proper logo image markup
+              updatedHtml = updatedHtml.replace(
+                pattern,
+                `{{#if churchLogoUrl}}
+<div style="text-align: center; margin-bottom: 20px;">
+  <img src="{{churchLogoUrl}}" alt="{{churchName}} Logo" style="max-width: 200px; height: auto;" />
+</div>
+{{/if}}`
+              );
+              hasChanges = true;
+            }
+          }
+          
+          if (hasChanges) {
+            await storage.updateEmailTemplate(template.id, systemChurchId, {
+              subject: template.subject,
+              bodyHtml: updatedHtml,
+              bodyText: template.bodyText
+            });
+            updatedCount++;
+            console.log(`Fixed empty logo conditional in template ID ${template.id} (${template.templateType})`);
+          }
+        }
+      }
+      
+      res.json({ message: `Fixed empty logo conditionals in ${updatedCount} email templates` });
+    } catch (error) {
+      console.error('Error fixing empty logo conditionals:', error);
+      res.status(500).json({ message: 'Failed to fix empty logo conditionals' });
+    }
+  });
+
   // Update system email template
   app.put('/api/email-templates/system/:id', requireGlobalAdmin, async (req: any, res) => {
     try {
