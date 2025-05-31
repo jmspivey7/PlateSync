@@ -30,6 +30,7 @@ export async function importMembers(records: MemberRecord[], churchId: string): 
         phone: record.phone || null,
         notes: record.notes || null,
         isVisitor: false,
+        externalSystem: 'CSV_IMPORT',
       };
 
       let isDuplicate = false;
