@@ -57,8 +57,18 @@ export function WysiwygEditor({ value, onChange, variables = [], placeholder }: 
       const editor = quillRef.current.getEditor();
       const range = editor.getSelection();
       const index = range ? range.index : editor.getLength();
-      // Insert an image with placeholder URL that can be replaced with variables
-      editor.insertEmbed(index, 'image', '{{churchLogoUrl}}');
+      // Insert placeholder image that will be replaced during save
+      const placeholderSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDIwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04NS4yNSA0NEg4Ny43NUw3OS41IDUyLjI1TDc1LjUgNDguMjVINzFWNThIODkuMjVWNTQuNUg4NS4yNVY0NFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHR4dCB4PSIxMDAiIHk9IjU1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2QjczODAiPkNodXJjaCBMb2dvPC90ZXh0Pgo8L3N2Zz4K';
+      editor.insertEmbed(index, 'image', placeholderSrc);
+      
+      // Mark this as a church logo for replacement during save
+      setTimeout(() => {
+        const images = editor.root.querySelectorAll(`img[src="${placeholderSrc}"]`);
+        images.forEach(img => {
+          img.setAttribute('data-church-logo', 'true');
+          img.setAttribute('alt', 'Church Logo');
+        });
+      }, 100);
     }
   };
 
