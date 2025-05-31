@@ -360,7 +360,7 @@ export default function EmailTemplateEditor() {
           <Button
             onClick={handleSave}
             disabled={!isFormDirty || updateTemplateMutation.isPending}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
           >
             {updateTemplateMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
