@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Save, Eye, Mail, RotateCcw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { WysiwygEditor } from '@/components/ui/wysiwyg-editor';
 
 // Template type information
 const templateTypeInfo = {
@@ -250,19 +251,30 @@ export default function EmailTemplateEditor() {
                 </div>
 
                 <div>
-                  <Label htmlFor="bodyHtml" className="text-base font-medium text-gray-900">
-                    HTML Body
-                  </Label>
-                  <Textarea
-                    id="bodyHtml"
-                    value={bodyHtml}
-                    onChange={(e) => setBodyHtml(e.target.value)}
-                    className="mt-2 min-h-[300px] font-mono text-sm"
-                    placeholder="Enter HTML content..."
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Available variables: {templateInfo.variables?.join(', ')}
-                  </p>
+                  {templateData.templateType === 'DONATION_CONFIRMATION' ? (
+                    <WysiwygEditor
+                      value={bodyHtml}
+                      onChange={setBodyHtml}
+                      variables={templateInfo.variables}
+                      placeholder="Compose your donation receipt message..."
+                    />
+                  ) : (
+                    <>
+                      <Label htmlFor="bodyHtml" className="text-base font-medium text-gray-900">
+                        HTML Body
+                      </Label>
+                      <Textarea
+                        id="bodyHtml"
+                        value={bodyHtml}
+                        onChange={(e) => setBodyHtml(e.target.value)}
+                        className="mt-2 min-h-[300px] font-mono text-sm"
+                        placeholder="Enter HTML content..."
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        Available variables: {templateInfo.variables?.join(', ')}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div>
