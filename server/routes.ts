@@ -4366,9 +4366,30 @@ Sincerely,
           }
         }
         
-        // Remove sensitive data
+        // Fetch church logo URL if user has a churchId
+        let churchLogoUrl = null;
+        if (user.churchId) {
+          try {
+            const [church] = await db
+              .select({ logoUrl: churches.logoUrl })
+              .from(churches)
+              .where(eq(churches.id, user.churchId));
+            
+            if (church && church.logoUrl) {
+              churchLogoUrl = church.logoUrl;
+            }
+          } catch (logoError) {
+            console.error(`Error fetching church logo for user ${userId}:`, logoError);
+          }
+        }
+        
+        // Remove sensitive data and include church logo URL
         const { password, ...userWithoutPassword } = user;
-        return res.status(200).json(userWithoutPassword);
+        const userWithChurchLogo = {
+          ...userWithoutPassword,
+          churchLogoUrl
+        };
+        return res.status(200).json(userWithChurchLogo);
       }
       
       // CASE 2: Check for legacy session format
@@ -4393,9 +4414,30 @@ Sincerely,
       
       console.log(`User found: ${user.id}`);
       
-      // Remove password before sending
+      // Fetch church logo URL if user has a churchId
+      let churchLogoUrl = null;
+      if (user.churchId) {
+        try {
+          const [church] = await db
+            .select({ logoUrl: churches.logoUrl })
+            .from(churches)
+            .where(eq(churches.id, user.churchId));
+          
+          if (church && church.logoUrl) {
+            churchLogoUrl = church.logoUrl;
+          }
+        } catch (logoError) {
+          console.error(`Error fetching church logo for user ${user.id}:`, logoError);
+        }
+      }
+      
+      // Remove password before sending and include church logo URL
       const { password, ...userWithoutPassword } = user;
-      return res.status(200).json(userWithoutPassword);
+      const userWithChurchLogo = {
+        ...userWithoutPassword,
+        churchLogoUrl
+      };
+      return res.status(200).json(userWithChurchLogo);
       
     } catch (err) {
       console.error('Error in /api/auth/user:', err);
