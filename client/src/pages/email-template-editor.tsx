@@ -57,7 +57,12 @@ export default function EmailTemplateEditor() {
   // Update template mutation
   const updateTemplateMutation = useMutation({
     mutationFn: async (templateData: any) => {
-      const response = await apiRequest('PUT', `/api/email-templates/${id}`, templateData);
+      const response = await fetch(`/api/email-templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templateData)
+      });
+      if (!response.ok) throw new Error('Failed to update template');
       return response.json();
     },
     onSuccess: () => {
@@ -80,7 +85,7 @@ export default function EmailTemplateEditor() {
   // Reset template mutation
   const resetTemplateMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', `/api/email-templates/${id}/reset`);
+      const response = await apiRequest(`/api/email-templates/${id}/reset`, 'POST');
       return response.json();
     },
     onSuccess: () => {
