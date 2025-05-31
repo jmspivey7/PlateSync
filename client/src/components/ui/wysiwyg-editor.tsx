@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus } from 'lucide-react';
+import { Plus, Image } from 'lucide-react';
 
 interface WysiwygEditorProps {
   value: string;
@@ -15,21 +15,22 @@ interface WysiwygEditorProps {
 export function WysiwygEditor({ value, onChange, variables = [], placeholder }: WysiwygEditorProps) {
   const quillRef = useRef<ReactQuill>(null);
 
-  // Convert HTML to visual content for the editor
-  const convertHtmlToVisual = (html: string) => {
-    // Remove email wrapper elements but keep content formatting
+  // Extract just the body content for editing
+  const getBodyContent = (html: string) => {
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch) {
+      return bodyMatch[1].trim();
+    }
+    // If no body tag, just clean up the HTML
     return html
-      .replace(/<\/?(html|head|body)[^>]*>/gi, '')
-      .replace(/<title[^>]*>.*?<\/title>/gi, '')
+      .replace(/<\/?(html|head|title|meta|style)[^>]*>/gi, '')
       .replace(/<style[^>]*>.*?<\/style>/gi, '')
       .trim();
   };
 
-  // Convert visual content back to proper email HTML
-  const convertVisualToHtml = (content: string) => {
-    // Wrap in basic email structure if it doesn't exist
-    if (!content.includes('<html>')) {
-      return `<!DOCTYPE html>
+  // Wrap content back in full HTML structure
+  const wrapInHtml = (content: string) => {
+    return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -40,8 +41,6 @@ export function WysiwygEditor({ value, onChange, variables = [], placeholder }: 
     ${content}
 </body>
 </html>`;
-    }
-    return content;
   };
 
   const insertVariable = (variable: string) => {
@@ -49,21 +48,31 @@ export function WysiwygEditor({ value, onChange, variables = [], placeholder }: 
       const editor = quillRef.current.getEditor();
       const range = editor.getSelection();
       const index = range ? range.index : editor.getLength();
-      editor.insertText(index, variable);
+      editor.insertText(index, ` ${variable} `);
+    }
+  };
+
+  const insertImage = () => {
+    if (quillRef.current) {
+      const editor = quillRef.current.getEditor();
+      const range = editor.getSelection();
+      const index = range ? range.index : editor.getLength();
+      // Insert an image with placeholder URL that can be replaced with variables
+      editor.insertEmbed(index, 'image', '{{churchLogoUrl}}');
     }
   };
 
   const handleEditorChange = (content: string) => {
-    const htmlContent = convertVisualToHtml(content);
-    onChange(htmlContent);
+    onChange(wrapInHtml(content));
   };
 
-  // Simple toolbar configuration
+  // Enhanced toolbar configuration with image support
   const modules = {
     toolbar: [
       ['bold', 'italic', 'underline'],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       [{ 'align': [] }],
+      ['image'],
       ['clean']
     ],
   };
@@ -71,47 +80,63 @@ export function WysiwygEditor({ value, onChange, variables = [], placeholder }: 
   const formats = [
     'bold', 'italic', 'underline',
     'list', 'bullet',
-    'align'
+    'align', 'image'
   ];
 
   return (
     <div className="space-y-3">
-      {/* Variable Insertion Dropdown */}
-      {variables.length > 0 && (
-        <div className="flex justify-between items-center">
-          <label className="text-base font-medium text-gray-900">Message</label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-white">
-                <Plus className="h-4 w-4 mr-1" />
-                Insert Variable
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white">
-              {variables.map((variable) => (
-                <DropdownMenuItem
-                  key={variable}
-                  onClick={() => insertVariable(variable)}
-                  className="cursor-pointer"
-                >
-                  {variable}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {/* Controls */}
+      <div className="flex justify-between items-center">
+        <label className="text-base font-medium text-gray-900">Message</label>
+        <div className="flex gap-2">
+          {/* Insert Logo Button */}
+          <Button 
+            type="button"
+            variant="outline" 
+            size="sm" 
+            onClick={insertImage}
+            className="bg-white"
+          >
+            <Image className="h-4 w-4 mr-1" />
+            Insert Logo
+          </Button>
+          
+          {/* Variable Insertion Dropdown */}
+          {variables.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="bg-white">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Insert Variable
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white">
+                {variables.map((variable) => (
+                  <DropdownMenuItem
+                    key={variable}
+                    onClick={() => insertVariable(variable)}
+                    className="cursor-pointer"
+                  >
+                    {variable}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ReactQuill Editor */}
       <div className="border rounded-md bg-white">
         <ReactQuill
           ref={quillRef}
-          value={convertHtmlToVisual(value)}
+          value={getBodyContent(value)}
           onChange={handleEditorChange}
           modules={modules}
           formats={formats}
           placeholder={placeholder || 'Start typing your message...'}
           style={{ minHeight: '300px' }}
+          theme="snow"
         />
       </div>
     </div>
