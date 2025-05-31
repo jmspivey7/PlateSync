@@ -200,9 +200,14 @@ export default function EmailTemplateEditor() {
   // Replace all variables in both HTML and subject
   Object.entries(sampleData).forEach(([key, value]) => {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-    processedHtml = processedHtml.replace(regex, value);
-    processedSubject = processedSubject.replace(regex, value);
+    const replacement = value || '';
+    processedHtml = processedHtml.replace(regex, replacement);
+    processedSubject = processedSubject.replace(regex, replacement);
   });
+
+  // Debug the HTML after variable replacement
+  console.log('HTML after variable replacement:', processedHtml.substring(0, 500));
+  console.log('Looking for churchLogoUrl in HTML:', processedHtml.includes('churchLogoUrl'));
 
   // Handle logo conditional logic
   if (!user?.churchLogoUrl) {
@@ -214,6 +219,9 @@ export default function EmailTemplateEditor() {
       .replace(/\{\{#if churchLogoUrl\}\}/g, '')
       .replace(/\{\{\/if\}\}/g, '');
   }
+
+  // Debug final HTML
+  console.log('Final processed HTML contains logo URL:', processedHtml.includes(user?.churchLogoUrl || ''));
 
   return (
     <div className="min-h-screen bg-gray-50">
