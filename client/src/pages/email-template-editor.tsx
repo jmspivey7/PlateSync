@@ -211,6 +211,23 @@ export default function EmailTemplateEditor() {
     );
   }
 
+  // Add proper spacing between sections for better WYSIWYG visual structure
+  processedHtml = processedHtml
+    // Add line breaks after church name
+    .replace(/(\{\{churchName\}\})/g, '$1<br><br>')
+    // Add line breaks after greeting
+    .replace(/(Dear \{\{donorName\}\},)/g, '$1<br><br>')
+    // Add line breaks after main thank you paragraph
+    .replace(/(continue our mission and serve our community\.)/g, '$1<br><br>')
+    // Add line breaks after donation amount
+    .replace(/(Donation Amount: \{\{amount\}\})/g, '$1<br>')
+    // Add line breaks after date
+    .replace(/(Date: \{\{date\}\})/g, '$1<br>')
+    // Add line breaks after payment method
+    .replace(/(Payment Method: \{\{paymentMethod\}\})/g, '$1<br><br>')
+    // Add line breaks before closing paragraph
+    .replace(/(Your contribution makes a difference)/g, '<br>$1');
+
   // Now replace all variables in both HTML and subject
   Object.entries(sampleData).forEach(([key, value]) => {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
