@@ -125,18 +125,9 @@ export default function EmailTemplateEditor() {
   }, [subject, bodyHtml, bodyText, templateData]);
 
   const handleSave = () => {
-    // Convert placeholder images back to variables before saving
-    const processedHtml = bodyHtml.replace(
-      /data:image\/svg\+xml;base64,[^"]*"/g, 
-      '{{churchLogoUrl}}"'
-    ).replace(
-      /data-church-logo="true"/g,
-      ''
-    );
-
     updateTemplateMutation.mutate({
       subject,
-      bodyHtml: processedHtml,
+      bodyHtml,
       bodyText,
     });
   };
