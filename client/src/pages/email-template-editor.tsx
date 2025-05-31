@@ -165,9 +165,18 @@ export default function EmailTemplateEditor() {
 
   // Process HTML for preview with sample data
   const currentYear = new Date().getFullYear();
+  
+  // Debug user data for church logo
+  console.log('User data for email template:', {
+    user,
+    churchName: user?.churchName,
+    churchLogoUrl: user?.churchLogoUrl,
+    hasChurchLogoUrl: !!user?.churchLogoUrl
+  });
+  
   const sampleData = {
     churchName: user?.churchName || 'Sample Church',
-    churchLogoUrl: user?.churchLogoUrl || null,
+    churchLogoUrl: user?.churchLogoUrl || '',
     currentYear: currentYear.toString(),
     firstName: 'John',
     lastName: 'Doe',
