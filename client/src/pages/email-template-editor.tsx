@@ -211,34 +211,31 @@ export default function EmailTemplateEditor() {
     );
   }
 
-  // Convert plain text template to properly structured HTML for WYSIWYG editor
-  if (activeTab === 'edit') {
-    // Split the content by line breaks and wrap each meaningful section in paragraphs
-    processedHtml = processedHtml
-      .split('\n')
-      .map(line => {
-        const trimmedLine = line.trim();
-        if (!trimmedLine) return '<p><br></p>'; // Empty line becomes paragraph with break
-        
-        // Special formatting for different types of content
-        if (trimmedLine.startsWith('Donation Amount:') || 
-            trimmedLine.startsWith('Date:') || 
-            trimmedLine.startsWith('Payment Method:')) {
-          return `<p><strong>${trimmedLine}</strong></p>`;
-        }
-        
-        if (trimmedLine.includes('This is an automated email')) {
-          return `<p><em>${trimmedLine}</em></p>`;
-        }
-        
-        if (trimmedLine.includes('©') && trimmedLine.includes('All rights reserved')) {
-          return `<p><small>${trimmedLine}</small></p>`;
-        }
-        
-        return `<p>${trimmedLine}</p>`;
-      })
-      .join('');
-  }
+  // Create formatted HTML for WYSIWYG editor
+  const wysiwygHtml = bodyHtml
+    .split('\n')
+    .map(line => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return '<p><br></p>'; // Empty line becomes paragraph with break
+      
+      // Special formatting for different types of content
+      if (trimmedLine.startsWith('Donation Amount:') || 
+          trimmedLine.startsWith('Date:') || 
+          trimmedLine.startsWith('Payment Method:')) {
+        return `<p><strong>${trimmedLine}</strong></p>`;
+      }
+      
+      if (trimmedLine.includes('This is an automated email')) {
+        return `<p><em>${trimmedLine}</em></p>`;
+      }
+      
+      if (trimmedLine.includes('©') && trimmedLine.includes('All rights reserved')) {
+        return `<p><small>${trimmedLine}</small></p>`;
+      }
+      
+      return `<p>${trimmedLine}</p>`;
+    })
+    .join('');
 
   // Now replace all variables in both HTML and subject
   Object.entries(sampleData).forEach(([key, value]) => {
@@ -315,7 +312,7 @@ export default function EmailTemplateEditor() {
                 <div>
                   {templateData.templateType === 'DONATION_CONFIRMATION' ? (
                     <WysiwygEditor
-                      value={bodyHtml}
+                      value={wysiwygHtml}
                       onChange={setBodyHtml}
                       variables={templateInfo.variables}
                       placeholder="Compose your donation receipt message..."
