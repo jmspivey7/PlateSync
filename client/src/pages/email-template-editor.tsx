@@ -211,24 +211,34 @@ export default function EmailTemplateEditor() {
     );
   }
 
-  // Add proper spacing between sections for better WYSIWYG visual structure
-  processedHtml = processedHtml
-    // Wrap church name in paragraph
-    .replace(/(\{\{churchName\}\})/g, '<p>$1</p>')
-    // Wrap greeting in paragraph
-    .replace(/(Dear \{\{donorName\}\},)/g, '<p>$1</p>')
-    // Wrap main thank you paragraph
-    .replace(/(Thank you for your generous donation to \{\{churchName\}\}\. Your support helps us continue our mission and serve our community\.)/g, '<p>$1</p>')
-    // Group donation details in a section with line breaks
-    .replace(/(Donation Amount: \{\{amount\}\})/g, '<p><strong>$1</strong><br>')
-    .replace(/(Date: \{\{date\}\})/g, '$1<br>')
-    .replace(/(Payment Method: \{\{paymentMethod\}\})/g, '$1</p>')
-    // Wrap closing paragraphs
-    .replace(/(Your contribution makes a difference in the lives of those we serve\. We are grateful for your continued support of our ministry\.)/g, '<p>$1</p>')
-    .replace(/(Blessings,)/g, '<p>$1</p>')
-    .replace(/(\{\{churchName\}\} Team)/g, '<p>$1</p>')
-    .replace(/(This is an automated email\. Please do not reply to this message\.)/g, '<p><em>$1</em></p>')
-    .replace(/(© \{\{currentYear\}\} \{\{churchName\}\}\. All rights reserved\.)/g, '<p><small>$1</small></p>');
+  // Convert plain text template to properly structured HTML for WYSIWYG editor
+  if (activeTab === 'edit') {
+    // Split the content by line breaks and wrap each meaningful section in paragraphs
+    processedHtml = processedHtml
+      .split('\n')
+      .map(line => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return '<p><br></p>'; // Empty line becomes paragraph with break
+        
+        // Special formatting for different types of content
+        if (trimmedLine.startsWith('Donation Amount:') || 
+            trimmedLine.startsWith('Date:') || 
+            trimmedLine.startsWith('Payment Method:')) {
+          return `<p><strong>${trimmedLine}</strong></p>`;
+        }
+        
+        if (trimmedLine.includes('This is an automated email')) {
+          return `<p><em>${trimmedLine}</em></p>`;
+        }
+        
+        if (trimmedLine.includes('©') && trimmedLine.includes('All rights reserved')) {
+          return `<p><small>${trimmedLine}</small></p>`;
+        }
+        
+        return `<p>${trimmedLine}</p>`;
+      })
+      .join('');
+  }
 
   // Now replace all variables in both HTML and subject
   Object.entries(sampleData).forEach(([key, value]) => {
