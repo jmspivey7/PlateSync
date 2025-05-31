@@ -22,8 +22,8 @@ const templateTypeInfo = {
   },
   COUNT_REPORT: {
     name: 'Count Report',
-    description: 'Weekly summary report sent to administrators.',
-    variables: ['{{churchName}}', '{{weekRange}}', '{{totalAmount}}', '{{batchCount}}', '{{churchLogoUrl}}']
+    description: 'Sent when a count is finalized after attestation.',
+    variables: ['{{churchName}}', '{{recipientName}}', '{{batchName}}', '{{batchDate}}', '{{totalAmount}}', '{{cashAmount}}', '{{checkAmount}}', '{{donationCount}}', '{{churchLogoUrl}}']
   },
   WELCOME_EMAIL: {
     name: 'Welcome Email',
