@@ -211,8 +211,6 @@ export default function EmailTemplateEditor() {
     );
   }
 
-
-
   // Now replace all variables in both HTML and subject
   Object.entries(sampleData).forEach(([key, value]) => {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
