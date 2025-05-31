@@ -179,15 +179,31 @@ const CsvImporter = () => {
         const lines = text.split('\n');
         const headers = lines[0].split(',');
         
-        // Check if CSV has the expected headers
-        const requiredHeaders = ['First Name', 'Last Name', 'Email', 'Mobile Phone Number'];
-        const hasRequiredHeaders = requiredHeaders.every(header => 
-          headers.some(h => h.trim().toLowerCase() === header.toLowerCase())
-        );
+        // Check if CSV has the required data fields using flexible matching
+        const hasFirstName = headers.some(h => {
+          const normalized = h.trim().toLowerCase();
+          return normalized.includes('first') && normalized.includes('name');
+        });
         
-        if (!hasRequiredHeaders) {
+        const hasLastName = headers.some(h => {
+          const normalized = h.trim().toLowerCase();
+          return normalized.includes('last') && normalized.includes('name');
+        });
+        
+        const hasEmail = headers.some(h => {
+          const normalized = h.trim().toLowerCase();
+          return normalized.includes('email');
+        });
+        
+        const hasPhone = headers.some(h => {
+          const normalized = h.trim().toLowerCase();
+          return (normalized.includes('phone') || normalized.includes('mobile') || normalized.includes('cell')) && 
+                 !normalized.includes('home');
+        });
+        
+        if (!hasFirstName || !hasLastName || !hasEmail || !hasPhone) {
           setImportStatus('error');
-          setStatusMessage('CSV file must include First Name, Last Name, Email, and Mobile Phone Number columns');
+          setStatusMessage('CSV file must include columns for First Name, Last Name, Email, and Phone/Mobile Number');
           return;
         }
         
