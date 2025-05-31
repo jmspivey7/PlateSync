@@ -15,32 +15,34 @@ interface WysiwygEditorProps {
 export function WysiwygEditor({ value, onChange, variables = [], placeholder }: WysiwygEditorProps) {
   const quillRef = useRef<ReactQuill>(null);
 
-  // Extract just the body content for editing
-  const getBodyContent = (html: string) => {
-    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    if (bodyMatch) {
-      return bodyMatch[1].trim();
+  // Convert plain text to HTML paragraphs for display in editor
+  const convertTextToHtml = (text: string) => {
+    if (!text || text.trim() === '') return '<p><br></p>';
+    
+    // Check if it's already HTML
+    if (text.includes('<') && text.includes('>')) {
+      return text;
     }
-    // If no body tag, just clean up the HTML
-    return html
-      .replace(/<\/?(html|head|title|meta|style)[^>]*>/gi, '')
-      .replace(/<style[^>]*>.*?<\/style>/gi, '')
-      .trim();
+    
+    // Convert plain text to HTML paragraphs
+    return text
+      .split('\n')
+      .map(line => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return '<p><br></p>';
+        return `<p>${trimmedLine}</p>`;
+      })
+      .join('');
   };
 
-  // Wrap content back in full HTML structure
-  const wrapInHtml = (content: string) => {
-    return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Template</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    ${content}
-</body>
-</html>`;
+  // Convert HTML back to plain text format for storage
+  const convertHtmlToText = (html: string) => {
+    return html
+      .replace(/<p><br><\/p>/g, '\n')
+      .replace(/<p>(.*?)<\/p>/g, '$1\n')
+      .replace(/<br\s*\/?>/g, '\n')
+      .replace(/<[^>]*>/g, '')
+      .trim();
   };
 
   const insertVariable = (variable: string) => {
@@ -55,7 +57,9 @@ export function WysiwygEditor({ value, onChange, variables = [], placeholder }: 
 
 
   const handleEditorChange = (content: string) => {
-    onChange(wrapInHtml(content));
+    // Convert HTML content back to plain text for storage
+    const plainText = convertHtmlToText(content);
+    onChange(plainText);
   };
 
   // Toolbar configuration
@@ -109,7 +113,7 @@ export function WysiwygEditor({ value, onChange, variables = [], placeholder }: 
       <div className="border rounded-md bg-white">
         <ReactQuill
           ref={quillRef}
-          value={getBodyContent(value)}
+          value={convertTextToHtml(value)}
           onChange={handleEditorChange}
           modules={modules}
           formats={formats}
