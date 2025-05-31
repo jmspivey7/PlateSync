@@ -284,12 +284,12 @@ export default function EmailTemplateEditor() {
                 </div>
 
                 <div>
-                  {templateData.templateType === 'DONATION_CONFIRMATION' ? (
+                  {(templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT') ? (
                     <WysiwygEditor
                       value={bodyHtml}
                       onChange={setBodyHtml}
                       variables={templateInfo.variables}
-                      placeholder="Compose your donation receipt message..."
+                      placeholder={templateData.templateType === 'COUNT_REPORT' ? "Compose your count report message..." : "Compose your donation receipt message..."}
                     />
                   ) : (
                     <>
@@ -310,7 +310,7 @@ export default function EmailTemplateEditor() {
                   )}
                 </div>
 
-                {templateData.templateType !== 'DONATION_CONFIRMATION' && (
+                {(templateData.templateType !== 'DONATION_CONFIRMATION' && templateData.templateType !== 'COUNT_REPORT') && (
                   <div>
                     <Label htmlFor="bodyText" className="text-base font-medium text-gray-900">
                       Text Body (Plain Text Fallback)
