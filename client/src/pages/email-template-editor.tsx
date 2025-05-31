@@ -173,6 +173,7 @@ export default function EmailTemplateEditor() {
     .replace(/\{\{userRole\}\}/g, 'Administrator');
 
   // Handle logo conditional logic - if no logo, remove the entire logo section
+  console.log('User logo URL:', user?.churchLogoUrl);
   if (!user?.churchLogoUrl) {
     // Remove the entire logo conditional block when no logo is available
     processedHtml = processedHtml
@@ -184,6 +185,7 @@ export default function EmailTemplateEditor() {
       .replace(/\{\{#if churchLogoUrl\}\}/g, '')
       .replace(/\{\{\/if\}\}/g, '')
       .replace(/\{\{churchLogoUrl\}\}/g, user.churchLogoUrl);
+    console.log('Logo URL replaced in preview:', user.churchLogoUrl);
   }
 
   return (
