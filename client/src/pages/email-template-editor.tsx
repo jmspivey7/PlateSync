@@ -159,18 +159,35 @@ export default function EmailTemplateEditor() {
   const templateInfo = templateTypeInfo[templateData.templateType];
 
   // Process HTML for preview with sample data
-  let processedHtml = bodyHtml
-    .replace(/\{\{churchName\}\}/g, user?.churchName || 'Sample Church')
-    .replace(/\{\{firstName\}\}/g, 'John')
-    .replace(/\{\{lastName\}\}/g, 'Doe')
-    .replace(/\{\{donorName\}\}/g, 'John Doe')
-    .replace(/\{\{amount\}\}/g, '100.00')
-    .replace(/\{\{date\}\}/g, new Date().toLocaleDateString())
-    .replace(/\{\{paymentMethod\}\}/g, 'Cash')
-    .replace(/\{\{weekRange\}\}/g, 'Jan 1-7, 2025')
-    .replace(/\{\{totalAmount\}\}/g, '2,500.00')
-    .replace(/\{\{batchCount\}\}/g, '5')
-    .replace(/\{\{userRole\}\}/g, 'Administrator');
+  const currentYear = new Date().getFullYear();
+  const sampleData = {
+    churchName: user?.churchName || 'Sample Church',
+    currentYear: currentYear.toString(),
+    firstName: 'John',
+    lastName: 'Doe',
+    donorName: 'John Doe',
+    amount: '100.00',
+    date: new Date().toLocaleDateString(),
+    paymentMethod: 'Cash',
+    weekRange: 'Jan 1-7, 2025',
+    totalAmount: '2,500.00',
+    batchCount: '5',
+    userRole: 'Administrator',
+    receiptNumber: 'RCP-2025-001234',
+    batchNumber: 'B-2025-123',
+    usherName: 'Jane Smith',
+    reportDate: 'May 31, 2025'
+  };
+
+  let processedHtml = bodyHtml;
+  let processedSubject = templateData.subject;
+
+  // Replace all variables in both HTML and subject
+  Object.entries(sampleData).forEach(([key, value]) => {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    processedHtml = processedHtml.replace(regex, value);
+    processedSubject = processedSubject.replace(regex, value);
+  });
 
   // Handle logo conditional logic - if no logo, remove the entire logo section
   if (!user?.churchLogoUrl) {
@@ -305,7 +322,7 @@ export default function EmailTemplateEditor() {
                 <div className="border border-gray-200 rounded-lg bg-white w-full">
                   <div className="p-4 border-b border-gray-200 bg-gray-50">
                     <p className="text-sm font-medium text-gray-900">Subject:</p>
-                    <p className="text-sm text-gray-700">{subject || 'No subject'}</p>
+                    <p className="text-sm text-gray-700">{processedSubject || 'No subject'}</p>
                   </div>
                   
                   <div className="p-6">
@@ -314,15 +331,6 @@ export default function EmailTemplateEditor() {
                       style={{ width: '100%', height: '600px', border: 'none' }}
                       title="Email Template Preview"
                     />
-                  </div>
-                </div>
-                
-                <div className="w-full">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2">Plain Text Version:</h4>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 w-full">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {bodyText || 'No plain text version'}
-                    </pre>
                   </div>
                 </div>
               </TabsContent>
