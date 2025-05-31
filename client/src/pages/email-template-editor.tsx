@@ -197,31 +197,27 @@ export default function EmailTemplateEditor() {
   let processedHtml = bodyHtml;
   let processedSubject = templateData.subject;
 
-  // Replace all variables in both HTML and subject
+  // Handle logo conditional logic FIRST, before variable replacement
+  if (!user?.churchLogoUrl) {
+    // Remove the entire logo conditional block when no logo is available
+    processedHtml = processedHtml.replace(/\{\{#if churchLogoUrl\}\}[\s\S]*?\{\{\/if\}\}/g, '');
+  } else {
+    // Replace logo conditional with actual image tag
+    processedHtml = processedHtml.replace(
+      /\{\{#if churchLogoUrl\}\}([\s\S]*?)\{\{\/if\}\}/g,
+      `<div style="text-align: center; margin-bottom: 20px;">
+        <img src="{{churchLogoUrl}}" alt="{{churchName}} Logo" style="max-width: 200px; height: auto;" />
+      </div>`
+    );
+  }
+
+  // Now replace all variables in both HTML and subject
   Object.entries(sampleData).forEach(([key, value]) => {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
     const replacement = value || '';
     processedHtml = processedHtml.replace(regex, replacement);
     processedSubject = processedSubject.replace(regex, replacement);
   });
-
-  // Debug the HTML after variable replacement
-  console.log('HTML after variable replacement:', processedHtml.substring(0, 500));
-  console.log('Looking for churchLogoUrl in HTML:', processedHtml.includes('churchLogoUrl'));
-
-  // Handle logo conditional logic
-  if (!user?.churchLogoUrl) {
-    // Remove the entire logo conditional block when no logo is available
-    processedHtml = processedHtml.replace(/\{\{#if churchLogoUrl\}\}[\s\S]*?\{\{\/if\}\}/g, '');
-  } else {
-    // Replace logo URL and remove conditional tags when logo is available
-    processedHtml = processedHtml
-      .replace(/\{\{#if churchLogoUrl\}\}/g, '')
-      .replace(/\{\{\/if\}\}/g, '');
-  }
-
-  // Debug final HTML
-  console.log('Final processed HTML contains logo URL:', processedHtml.includes(user?.churchLogoUrl || ''));
 
   return (
     <div className="min-h-screen bg-gray-50">
