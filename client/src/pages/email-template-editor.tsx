@@ -284,49 +284,15 @@ export default function EmailTemplateEditor() {
                 </div>
 
                 <div>
-                  {(templateData.templateType === 'DONATION_CONFIRMATION' || templateData.templateType === 'COUNT_REPORT') ? (
-                    <WysiwygEditor
-                      value={bodyHtml}
-                      onChange={setBodyHtml}
-                      variables={templateInfo.variables}
-                      placeholder={templateData.templateType === 'COUNT_REPORT' ? "Compose your count report message..." : "Compose your donation receipt message..."}
-                    />
-                  ) : (
-                    <>
-                      <Label htmlFor="bodyHtml" className="text-base font-medium text-gray-900">
-                        HTML Body
-                      </Label>
-                      <Textarea
-                        id="bodyHtml"
-                        value={bodyHtml}
-                        onChange={(e) => setBodyHtml(e.target.value)}
-                        className="mt-2 min-h-[300px] font-mono text-sm"
-                        placeholder="Enter HTML content..."
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Available variables: {templateInfo.variables?.join(', ')}
-                      </p>
-                    </>
-                  )}
+                  <WysiwygEditor
+                    value={bodyHtml}
+                    onChange={setBodyHtml}
+                    variables={templateInfo.variables}
+                    placeholder={templateData.templateType === 'COUNT_REPORT' ? "Compose your count report message..." : "Compose your donation receipt message..."}
+                  />
                 </div>
 
-                {(templateData.templateType !== 'DONATION_CONFIRMATION' && templateData.templateType !== 'COUNT_REPORT') && (
-                  <div>
-                    <Label htmlFor="bodyText" className="text-base font-medium text-gray-900">
-                      Text Body (Plain Text Fallback)
-                    </Label>
-                    <Textarea
-                      id="bodyText"
-                      value={bodyText}
-                      onChange={(e) => setBodyText(e.target.value)}
-                      className="mt-2 min-h-[200px] font-mono text-sm"
-                      placeholder="Enter plain text version..."
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Plain text version for email clients that don't support HTML.
-                    </p>
-                  </div>
-                )}
+
               </TabsContent>
 
               <TabsContent value="preview" className="mt-0 space-y-6 w-full">
