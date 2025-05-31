@@ -79,15 +79,15 @@ export function WysiwygEditor({ value, onChange, variables = [], placeholder }: 
       {/* Variable Insertion Dropdown */}
       {variables.length > 0 && (
         <div className="flex justify-between items-center">
-          <label className="text-sm font-medium text-gray-700">Message</label>
+          <label className="text-base font-medium text-gray-900">Message</label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="bg-white">
                 <Plus className="h-4 w-4 mr-1" />
                 Insert Variable
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-white">
               {variables.map((variable) => (
                 <DropdownMenuItem
                   key={variable}

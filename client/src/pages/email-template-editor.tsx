@@ -277,21 +277,23 @@ export default function EmailTemplateEditor() {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="bodyText" className="text-base font-medium text-gray-900">
-                    Text Body (Plain Text Fallback)
-                  </Label>
-                  <Textarea
-                    id="bodyText"
-                    value={bodyText}
-                    onChange={(e) => setBodyText(e.target.value)}
-                    className="mt-2 min-h-[200px] font-mono text-sm"
-                    placeholder="Enter plain text version..."
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Plain text version for email clients that don't support HTML.
-                  </p>
-                </div>
+                {templateData.templateType !== 'DONATION_CONFIRMATION' && (
+                  <div>
+                    <Label htmlFor="bodyText" className="text-base font-medium text-gray-900">
+                      Text Body (Plain Text Fallback)
+                    </Label>
+                    <Textarea
+                      id="bodyText"
+                      value={bodyText}
+                      onChange={(e) => setBodyText(e.target.value)}
+                      className="mt-2 min-h-[200px] font-mono text-sm"
+                      placeholder="Enter plain text version..."
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Plain text version for email clients that don't support HTML.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="preview" className="mt-0 space-y-6 w-full">
