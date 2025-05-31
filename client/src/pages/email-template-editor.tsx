@@ -32,6 +32,7 @@ const templateTypeInfo = {
 };
 
 export default function EmailTemplateEditor() {
+  const { user } = useAuth();
   const { id } = useParams();
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
@@ -168,7 +169,7 @@ export default function EmailTemplateEditor() {
   const currentYear = new Date().getFullYear();
   const sampleData = {
     churchName: user?.churchName || 'Sample Church',
-    churchLogoUrl: user?.churchLogoUrl || 'https://repl-plates-image-repo.s3.amazonaws.com/logos/church-logo-1748361823010-637985813.png',
+    churchLogoUrl: user?.churchLogoUrl || null,
     currentYear: currentYear.toString(),
     firstName: 'John',
     lastName: 'Doe',

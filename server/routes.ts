@@ -4445,6 +4445,38 @@ Sincerely,
     }
   });
 
+  // Church data endpoint for template preview
+  app.get("/api/church-data", async (req, res) => {
+    try {
+      const sessionData = req.session as any;
+      if (!sessionData?.userData?.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db
+        .select({ churchId: users.churchId })
+        .from(users)
+        .where(eq(users.id, sessionData.userData.userId));
+
+      if (!user || !user.churchId) {
+        return res.json({ churchLogoUrl: null, churchName: null });
+      }
+
+      const [church] = await db
+        .select({ logoUrl: churches.logoUrl, name: churches.name })
+        .from(churches)
+        .where(eq(churches.id, user.churchId));
+
+      return res.json({
+        churchLogoUrl: church?.logoUrl || null,
+        churchName: church?.name || null
+      });
+    } catch (error) {
+      console.error("Error fetching church data:", error);
+      return res.status(500).json({ error: "Failed to fetch church data" });
+    }
+  });
+
   // User management endpoints
   
   // Delete user endpoint
