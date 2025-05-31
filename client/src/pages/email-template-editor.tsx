@@ -168,6 +168,7 @@ export default function EmailTemplateEditor() {
   const currentYear = new Date().getFullYear();
   const sampleData = {
     churchName: user?.churchName || 'Sample Church',
+    churchLogoUrl: user?.churchLogoUrl || '',
     currentYear: currentYear.toString(),
     firstName: 'John',
     lastName: 'Doe',
@@ -195,18 +196,15 @@ export default function EmailTemplateEditor() {
     processedSubject = processedSubject.replace(regex, value);
   });
 
-  // Handle logo conditional logic - if no logo, remove the entire logo section
+  // Handle logo conditional logic
   if (!user?.churchLogoUrl) {
     // Remove the entire logo conditional block when no logo is available
-    processedHtml = processedHtml
-      .replace(/\{\{#if churchLogoUrl\}\}[\s\S]*?\{\{\/if\}\}/g, '')
-      .replace(/\{\{churchLogoUrl\}\}/g, '');
+    processedHtml = processedHtml.replace(/\{\{#if churchLogoUrl\}\}[\s\S]*?\{\{\/if\}\}/g, '');
   } else {
-    // Replace logo URL and remove conditional tags
+    // Replace logo URL and remove conditional tags when logo is available
     processedHtml = processedHtml
       .replace(/\{\{#if churchLogoUrl\}\}/g, '')
-      .replace(/\{\{\/if\}\}/g, '')
-      .replace(/\{\{churchLogoUrl\}\}/g, user.churchLogoUrl);
+      .replace(/\{\{\/if\}\}/g, '');
   }
 
   return (
