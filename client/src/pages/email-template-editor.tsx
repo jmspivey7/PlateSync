@@ -11,6 +11,7 @@ import { ArrowLeft, Save, Eye, Mail, RotateCcw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { WysiwygEditor } from '@/components/ui/wysiwyg-editor';
+import { useAuth } from '@/hooks/useAuth';
 
 // Template type information
 const templateTypeInfo = {
@@ -50,10 +51,7 @@ export default function EmailTemplateEditor() {
     queryFn: () => fetch(`/api/email-templates/${id}`).then(res => res.json()),
   });
 
-  // Fetch user data for logo replacement
-  const { data: user } = useQuery({
-    queryKey: ['/api/auth/user'],
-  });
+
 
   // Update template mutation
   const updateTemplateMutation = useMutation({
@@ -163,7 +161,7 @@ export default function EmailTemplateEditor() {
   }
 
   // Get template info
-  const templateInfo = templateTypeInfo[templateData.templateType];
+  const templateInfo = templateTypeInfo[templateData.templateType as keyof typeof templateTypeInfo];
 
   // Process HTML for preview with sample data
   const currentYear = new Date().getFullYear();
