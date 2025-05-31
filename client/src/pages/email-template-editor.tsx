@@ -46,6 +46,7 @@ export default function EmailTemplateEditor() {
   // Fetch template data
   const { data: templateData, isLoading } = useQuery({
     queryKey: [`/api/email-templates/${id}`],
+    queryFn: () => fetch(`/api/email-templates/${id}`).then(res => res.json()),
   });
 
   // Fetch user data for logo replacement
