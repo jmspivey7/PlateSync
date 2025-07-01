@@ -25,9 +25,13 @@ export const PdfModal: React.FC<PdfModalProps> = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    console.log("🚨 PdfModal isOpen changed to:", isOpen);
     if (isOpen) {
+      console.log("🚨 PdfModal opening - setting loading true");
       setIsLoading(true);
       setPrintError(false);
+    } else {
+      console.log("🚨 PdfModal closing");
     }
   }, [isOpen]);
 
