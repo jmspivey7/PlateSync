@@ -99,6 +99,11 @@ const BatchDetailPage = () => {
     console.log("showDeleteConfirm state changed to:", showDeleteConfirm);
   }, [showDeleteConfirm]);
 
+  // Debug PDF modal state
+  useEffect(() => {
+    console.log("🚨 isPdfModalOpen state changed to:", isPdfModalOpen);
+  }, [isPdfModalOpen]);
+
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
     queryKey: ["/api/batches", batchId, "details"],
@@ -312,11 +317,16 @@ const BatchDetailPage = () => {
 
   const handlePrint = () => {
     // Open the PDF report in modal
-    console.log("handlePrint called - opening modal");
+    console.log("🚨 HANDLEPRINT CALLED - Button clicked!");
+    console.log("🚨 Current batch:", batch);
+    console.log("🚨 Current isPdfModalOpen state:", isPdfModalOpen);
+    
     if (batch && batch.id) {
+      console.log("🚨 Setting isPdfModalOpen to true");
       setIsPdfModalOpen(true);
+      console.log("🚨 Called setIsPdfModalOpen(true)");
     } else {
-      console.error("Cannot generate PDF: Batch ID not available");
+      console.error("🚨 Cannot generate PDF: Batch ID not available");
       toast({
         title: "Error",
         description: "Unable to generate PDF report. Batch information is missing.",
