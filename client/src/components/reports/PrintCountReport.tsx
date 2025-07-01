@@ -7,7 +7,7 @@ import { Batch, Donation } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLocation } from "wouter";
-import PdfModal from "@/components/ui/pdf-modal";
+import { PdfModal } from "@/components/ui/pdf-modal";
 
 interface PrintCountReportProps {
   batchId: number;

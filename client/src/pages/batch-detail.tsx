@@ -59,6 +59,7 @@ import {
 import PageLayout from "@/components/layout/PageLayout";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { PdfModal } from "@/components/ui/pdf-modal";
 
 const BatchDetailPage = () => {
   const { toast } = useToast();
@@ -77,6 +78,7 @@ const BatchDetailPage = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   
   // Debug state management - this will help us see what's happening
   useEffect(() => {

@@ -120,7 +120,7 @@ export const PdfModal: React.FC<PdfModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-full max-h-full w-screen h-screen p-0 gap-0">
+      <DialogContent className="max-w-full max-h-full w-screen h-screen p-0 gap-0 fixed inset-0 z-50">
         <DialogHeader className="flex flex-row items-center justify-between p-4 border-b bg-white">
           <DialogTitle className="text-lg font-semibold text-gray-900 flex-1">
             {title}
