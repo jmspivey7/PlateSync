@@ -339,52 +339,41 @@ const BatchDetailPage = () => {
     container.id = 'pdf-viewer-container';
     container.className = 'mt-6 bg-white border rounded-lg shadow-lg';
     
-    // Create header
-    const header = document.createElement('div');
-    header.className = 'flex items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg';
-    header.innerHTML = `
-      <h3 class="text-lg font-semibold text-gray-900">PDF Report - ${batch.name || `Batch ${batch.id}`}</h3>
-      <div class="flex gap-2">
-        <button id="download-pdf" class="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Download</button>
-        <button id="print-pdf" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Print</button>
-        <button id="close-pdf" class="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">×</button>
+    // Create the main content area
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'p-6 text-center';
+    contentDiv.innerHTML = `
+      <h3 class="text-xl font-semibold text-gray-900 mb-4">PDF Report - ${batch.name || `Batch ${batch.id}`}</h3>
+      <p class="text-gray-600 mb-6">Your count report is ready. Choose how you'd like to access it:</p>
+      
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button id="download-pdf" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Download PDF
+        </button>
+        
+        <button id="print-pdf" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+          </svg>
+          Print Report
+        </button>
+        
+        <button id="close-pdf" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center justify-center gap-2 text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          Close
+        </button>
       </div>
+      
+      <p class="text-sm text-gray-500 mt-4">Download saves the PDF to your device. Print opens it in a new tab for viewing and printing.</p>
     `;
     
-    // Create iframe with proper PDF loading
-    const iframe = document.createElement('iframe');
-    iframe.src = `/api/batches/${batch.id}/pdf-report`;
-    iframe.className = 'w-full border-0';
-    iframe.style.height = '400px';
-    iframe.title = `Count Report - ${batch.name || `Batch ${batch.id}`}`;
-    iframe.setAttribute('type', 'application/pdf');
-    
-    // Add error handling for iframe
-    iframe.onload = () => {
-      console.log('PDF iframe loaded successfully');
-    };
-    
-    iframe.onerror = () => {
-      console.error('PDF iframe failed to load');
-      iframe.style.display = 'none';
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'p-8 text-center text-gray-600';
-      errorDiv.innerHTML = `
-        <p class="mb-4">Unable to display PDF in viewer.</p>
-        <button id="open-pdf-direct" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-          Open PDF in New Tab
-        </button>
-      `;
-      container.appendChild(errorDiv);
-      
-      document.getElementById('open-pdf-direct')?.addEventListener('click', () => {
-        window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
-      });
-    };
-    
     // Assemble container
-    container.appendChild(header);
-    container.appendChild(iframe);
+    container.appendChild(contentDiv);
     
     // Insert after the main card
     const pageLayout = document.querySelector('[data-page-layout]') || document.body;
