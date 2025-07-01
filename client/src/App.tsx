@@ -95,7 +95,7 @@ function Router() {
   
   // Check subscription status for Account Owners
   useEffect(() => {
-    if (!user || user.role !== 'ACCOUNT_OWNER' || checkingSubscription) return;
+    if (!user || user.role !== 'ACCOUNT_OWNER' || checkingSubscription || subscriptionStatus) return;
     
     setCheckingSubscription(true);
     fetch('/api/subscription/status', {
@@ -111,7 +111,7 @@ function Router() {
       console.error('Error checking subscription status:', error);
       setCheckingSubscription(false);
     });
-  }, [user, checkingSubscription]);
+  }, [user?.role, user?.id]);
 
   // Check authentication and redirect if needed
   useEffect(() => {
@@ -177,7 +177,7 @@ function Router() {
       console.error('Error during authentication redirect:', error);
       setRedirectInProgress(false);
     }
-  }, [user, isLoading, location, setLocation, redirectInProgress, subscriptionStatus, checkingSubscription]);
+  }, [user?.id, user?.role, isLoading, location, redirectInProgress]);
   
   // Show loading spinner while checking auth
   if (isLoading) {

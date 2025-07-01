@@ -48,13 +48,7 @@ export function useAuth() {
     refetchInterval: false,
     refetchOnWindowFocus: true,
     queryFn: getQueryFn({ on401: "returnNull" }),
-    onSuccess: (data) => {
-      if (data) {
-        // Save user data to localStorage when API call succeeds
-        saveUserToLocalStorage(data);
-        setLocalUser(data);
-      }
-    }
+
   });
 
   // Update local state when API data changes
