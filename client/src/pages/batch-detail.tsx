@@ -317,7 +317,7 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    console.log("Creating PDF viewer directly");
+    console.log("Opening PDF in new browser tab");
     
     if (!batch || !batch.id) {
       toast({
@@ -328,94 +328,9 @@ const BatchDetailPage = () => {
       return;
     }
 
-    // Remove existing PDF viewer if present
-    const existingViewer = document.getElementById('pdf-viewer-container');
-    if (existingViewer) {
-      existingViewer.remove();
-    }
-
-    // Create PDF viewer container
-    const container = document.createElement('div');
-    container.id = 'pdf-viewer-container';
-    container.className = 'mt-6 bg-white border rounded-lg shadow-lg';
-    
-    // Create the main content area
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'p-6 text-center';
-    contentDiv.innerHTML = `
-      <h3 class="text-xl font-semibold text-gray-900 mb-4">PDF Report - ${batch.name || `Batch ${batch.id}`}</h3>
-      <p class="text-gray-600 mb-6">Your count report is ready. Choose how you'd like to access it:</p>
-      
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <button id="download-pdf" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          Download PDF
-        </button>
-        
-        <button id="print-pdf" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-medium">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-          </svg>
-          Print Report
-        </button>
-        
-        <button id="close-pdf" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center justify-center gap-2 text-sm font-medium">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-          Close
-        </button>
-      </div>
-      
-      <p class="text-sm text-gray-500 mt-4">Download saves the PDF to your device. Print opens it in a new tab for viewing and printing.</p>
-    `;
-    
-    // Assemble container
-    container.appendChild(contentDiv);
-    
-    // Insert after the main card
-    const pageLayout = document.querySelector('[data-page-layout]') || document.body;
-    pageLayout.appendChild(container);
-    
-    // Add event listeners
-    document.getElementById('download-pdf')?.addEventListener('click', () => {
-      console.log('Download button clicked');
-      const link = document.createElement('a');
-      link.href = `/api/batches/${batch.id}/pdf-report`;
-      link.download = `count-report-${batch.name || batch.id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
-    
-    document.getElementById('print-pdf')?.addEventListener('click', () => {
-      console.log('Print button clicked');
-      // For mobile-friendly printing, open in new tab
-      const printWindow = window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
-      if (printWindow) {
-        // Focus the window and attempt to print
-        printWindow.focus();
-        setTimeout(() => {
-          try {
-            printWindow.print();
-          } catch (e) {
-            console.log('Print dialog not available, PDF opened in new tab');
-          }
-        }, 500);
-      } else {
-        console.log('Popup blocked, trying direct navigation');
-        window.location.href = `/api/batches/${batch.id}/pdf-report`;
-      }
-    });
-    
-    document.getElementById('close-pdf')?.addEventListener('click', () => {
-      container.remove();
-    });
-    
-    // Scroll to the PDF viewer
-    container.scrollIntoView({ behavior: 'smooth' });
+    // Simply open PDF in a new browser tab/window
+    const pdfUrl = `/api/batches/${batch.id}/pdf-report`;
+    window.open(pdfUrl, '_blank');
   };
 
   const formatCurrency = (amount: string | number) => {
