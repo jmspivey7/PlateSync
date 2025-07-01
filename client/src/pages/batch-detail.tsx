@@ -940,18 +940,55 @@ const BatchDetailPage = () => {
           </div>
         )}
 
-        {/* PDF Modal - Force re-render with key */}
-        <PdfModal
-          key={`pdf-modal-${isPdfModalOpen ? 'open' : 'closed'}`}
-          isOpen={isPdfModalOpen}
-          onClose={() => {
-            console.log("🚨 Modal onClose called");
-            setIsPdfModalOpen(false);
-          }}
-          pdfUrl={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
-          title={batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
-          batchId={batch ? batch.id.toString() : ''}
-        />
+        {/* Simple test modal - bypassing PdfModal component */}
+        {isPdfModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h2 className="text-xl font-semibold">
+                  {batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
+                </h2>
+                <button
+                  onClick={() => {
+                    console.log("🚨 Simple modal close clicked");
+                    setIsPdfModalOpen(false);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 p-4">
+                <iframe
+                  src={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
+                  className="w-full h-full border-0"
+                  title="PDF Report"
+                />
+              </div>
+              <div className="p-4 border-t flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Print
+                </button>
+                <button
+                  onClick={() => {
+                    if (batch) {
+                      const link = document.createElement('a');
+                      link.href = `/api/batches/${batch.id}/pdf-report`;
+                      link.download = `count-report-${batch.name || batch.id}.pdf`;
+                      link.click();
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Download
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
     </PageLayout>
   );
