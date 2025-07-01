@@ -317,18 +317,76 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    console.log("Opening PDF in split view");
+    console.log("Creating PDF viewer directly");
     
-    if (batch && batch.id) {
-      setIsPdfModalOpen(true);
-    } else {
-      console.error("Cannot generate PDF: Batch ID not available");
+    if (!batch || !batch.id) {
       toast({
         title: "Error",
         description: "Unable to generate PDF report. Batch information is missing.",
         variant: "destructive",
       });
+      return;
     }
+
+    // Remove existing PDF viewer if present
+    const existingViewer = document.getElementById('pdf-viewer-container');
+    if (existingViewer) {
+      existingViewer.remove();
+    }
+
+    // Create PDF viewer container
+    const container = document.createElement('div');
+    container.id = 'pdf-viewer-container';
+    container.className = 'mt-6 bg-white border rounded-lg shadow-lg';
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'flex items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg';
+    header.innerHTML = `
+      <h3 class="text-lg font-semibold text-gray-900">PDF Report - ${batch.name || `Batch ${batch.id}`}</h3>
+      <div class="flex gap-2">
+        <button id="download-pdf" class="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">Download</button>
+        <button id="print-pdf" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Print</button>
+        <button id="close-pdf" class="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">×</button>
+      </div>
+    `;
+    
+    // Create iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = `/api/batches/${batch.id}/pdf-report`;
+    iframe.className = 'w-full border-0';
+    iframe.style.height = '400px';
+    iframe.title = `Count Report - ${batch.name || `Batch ${batch.id}`}`;
+    
+    // Assemble container
+    container.appendChild(header);
+    container.appendChild(iframe);
+    
+    // Insert after the main card
+    const pageLayout = document.querySelector('[data-page-layout]') || document.body;
+    pageLayout.appendChild(container);
+    
+    // Add event listeners
+    document.getElementById('download-pdf')?.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.href = `/api/batches/${batch.id}/pdf-report`;
+      link.download = `count-report-${batch.name || batch.id}.pdf`;
+      link.click();
+    });
+    
+    document.getElementById('print-pdf')?.addEventListener('click', () => {
+      const printWindow = window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => printWindow.print();
+      }
+    });
+    
+    document.getElementById('close-pdf')?.addEventListener('click', () => {
+      container.remove();
+    });
+    
+    // Scroll to the PDF viewer
+    container.scrollIntoView({ behavior: 'smooth' });
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -937,70 +995,7 @@ const BatchDetailPage = () => {
         )}
       </Card>
       
-      {/* PDF Split View - Outside Card so it's visible */}
-      {isPdfModalOpen && batch && (
-        <Card className="mt-6">
-          {/* PDF Controls Header */}
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">
-                PDF Report - {batch.name || `Batch ${batch.id}`}
-              </CardTitle>
-              
-              <div className="flex items-center gap-2">
-                <Button 
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = `/api/batches/${batch.id}/pdf-report`;
-                    link.download = `count-report-${batch.name || batch.id}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download
-                </Button>
-                
-                <Button 
-                  onClick={() => {
-                    const printWindow = window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
-                    if (printWindow) {
-                      printWindow.onload = () => printWindow.print();
-                    }
-                  }}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print
-                </Button>
-                
-                <Button 
-                  onClick={() => setIsPdfModalOpen(false)}
-                  variant="ghost"
-                  size="sm"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
 
-          {/* PDF Viewer */}
-          <CardContent>
-            <div className="h-96 w-full border rounded-lg overflow-hidden">
-              <iframe
-                src={`/api/batches/${batch.id}/pdf-report`}
-                className="w-full h-full border-0"
-                title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </PageLayout>
   );
 };
