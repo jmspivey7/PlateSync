@@ -940,10 +940,14 @@ const BatchDetailPage = () => {
           </div>
         )}
 
-        {/* PDF Modal - Should work now */}
+        {/* PDF Modal - Force re-render with key */}
         <PdfModal
+          key={`pdf-modal-${isPdfModalOpen ? 'open' : 'closed'}`}
           isOpen={isPdfModalOpen}
-          onClose={() => setIsPdfModalOpen(false)}
+          onClose={() => {
+            console.log("🚨 Modal onClose called");
+            setIsPdfModalOpen(false);
+          }}
           pdfUrl={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
           title={batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
           batchId={batch ? batch.id.toString() : ''}
