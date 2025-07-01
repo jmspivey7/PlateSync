@@ -59,7 +59,7 @@ import {
 import PageLayout from "@/components/layout/PageLayout";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { PdfModal } from "@/components/ui/pdf-modal";
+import { MobilePdfViewer } from "@/components/ui/mobile-pdf-viewer";
 
 const BatchDetailPage = () => {
   const { toast } = useToast();
@@ -316,34 +316,12 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    console.log("🚨 HANDLEPRINT CALLED - Opening PDF in new window");
+    console.log("📱 Opening mobile-friendly PDF viewer");
     
     if (batch && batch.id) {
-      const pdfUrl = `/api/batches/${batch.id}/pdf-report`;
-      console.log("🚨 Opening PDF URL:", pdfUrl);
-      
-      // Open PDF in new window/tab
-      const printWindow = window.open(
-        pdfUrl,
-        '_blank',
-        'width=900,height=700,scrollbars=yes,resizable=yes'
-      );
-      
-      if (printWindow) {
-        printWindow.focus();
-        console.log("🚨 PDF window opened successfully");
-        
-        toast({
-          title: "PDF Report Opened",
-          description: "The PDF report has been opened in a new window. You can print or download it from there.",
-        });
-      } else {
-        console.log("🚨 Failed to open PDF window - trying direct navigation");
-        // Fallback: direct navigation
-        window.location.href = pdfUrl;
-      }
+      setIsPdfModalOpen(true);
     } else {
-      console.error("🚨 Cannot generate PDF: Batch ID not available");
+      console.error("Cannot generate PDF: Batch ID not available");
       toast({
         title: "Error",
         description: "Unable to generate PDF report. Batch information is missing.",
@@ -957,7 +935,13 @@ const BatchDetailPage = () => {
           </div>
         )}
 
-
+        {/* Mobile-friendly PDF Viewer */}
+        <MobilePdfViewer
+          isOpen={isPdfModalOpen}
+          onClose={() => setIsPdfModalOpen(false)}
+          pdfUrl={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
+          title={batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
+        />
       </Card>
     </PageLayout>
   );
