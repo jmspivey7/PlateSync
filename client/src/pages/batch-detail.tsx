@@ -942,7 +942,7 @@ const BatchDetailPage = () => {
 
         {/* PDF Modal - Always render but controlled by isOpen */}
         <PdfModal
-          isOpen={isPdfModalOpen && !!batch}
+          isOpen={isPdfModalOpen}
           onClose={() => setIsPdfModalOpen(false)}
           pdfUrl={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
           title={batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
