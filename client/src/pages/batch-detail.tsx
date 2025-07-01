@@ -311,9 +311,10 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    // Open the PDF report in modal
+    console.log("handlePrint called - opening modal");
     if (batch && batch.id) {
-      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+      setIsPdfModalOpen(true);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
@@ -927,6 +928,17 @@ const BatchDetailPage = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* PDF Modal */}
+        {batch && (
+          <PdfModal
+            isOpen={isPdfModalOpen}
+            onClose={() => setIsPdfModalOpen(false)}
+            pdfUrl={`/api/batches/${batch.id}/pdf-report`}
+            title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
+            batchId={batch.id.toString()}
+          />
         )}
       </Card>
     </PageLayout>
