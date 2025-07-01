@@ -29,8 +29,7 @@ import {
   X,
   UserCheck,
   Trash2,
-  MoreVertical,
-  Download
+  MoreVertical
 } from "lucide-react";
 import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
@@ -61,7 +60,6 @@ import PageLayout from "@/components/layout/PageLayout";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
 
-
 const BatchDetailPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,7 +77,6 @@ const BatchDetailPage = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
   
   // Debug state management - this will help us see what's happening
   useEffect(() => {
@@ -99,8 +96,6 @@ const BatchDetailPage = () => {
   useEffect(() => {
     console.log("showDeleteConfirm state changed to:", showDeleteConfirm);
   }, [showDeleteConfirm]);
-
-
 
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
@@ -314,39 +309,16 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    console.log("Opening PDF in system browser");
-    
-    if (!batch || !batch.id) {
+    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    if (batch && batch.id) {
+      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+    } else {
+      console.error("Cannot generate PDF: Batch ID not available");
       toast({
         title: "Error",
         description: "Unable to generate PDF report. Batch information is missing.",
         variant: "destructive",
       });
-      return;
-    }
-
-    // For PWA: Force opening in system browser, not within the app
-    const pdfUrl = `${window.location.origin}/api/batches/${batch.id}/pdf-report`;
-    
-    // Try multiple methods to ensure it opens in system browser
-    try {
-      // Method 1: window.open with specific parameters to force external browser
-      const newWindow = window.open(pdfUrl, '_blank', 'noopener,noreferrer');
-      
-      // Method 2: If window.open fails or is blocked, use location.href
-      if (!newWindow) {
-        window.location.href = pdfUrl;
-      }
-    } catch (error) {
-      // Method 3: Fallback - create a link element and click it
-      console.log('Using fallback method for opening PDF');
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     }
   };
 
@@ -955,8 +927,6 @@ const BatchDetailPage = () => {
           </div>
         )}
       </Card>
-      
-
     </PageLayout>
   );
 };

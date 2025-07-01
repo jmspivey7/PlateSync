@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLocation } from "wouter";
 
-
 interface PrintCountReportProps {
   batchId: number;
   onBack?: () => void;
@@ -17,7 +16,6 @@ interface PrintCountReportProps {
 const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) => {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-
 
   // Fetch batch details
   const { data: batch, isLoading: isBatchLoading } = useQuery<Batch>({
@@ -31,9 +29,8 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
   });
 
   const handlePrintPDF = () => {
-    // Open PDF in system browser
-    const pdfUrl = `${window.location.origin}/api/batches/${batchId}/pdf-report`;
-    window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+    // Open the PDF in a new tab/window
+    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -89,7 +86,6 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
 
   // Regular view
   return (
-    <>
     <Card>
       <CardHeader>
         <CardTitle>Count Report</CardTitle>
@@ -173,9 +169,6 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
         )}
       </CardContent>
     </Card>
-    
-
-    </>
   );
 };
 

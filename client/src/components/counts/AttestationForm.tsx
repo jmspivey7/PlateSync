@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PdfModal } from "@/components/ui/pdf-modal";
 
 // Define the types needed for batch with donations
 interface DonationWithMember extends Donation {
@@ -57,7 +56,6 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   
   // Log when the attestation form is mounted
   useEffect(() => {
@@ -493,7 +491,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <div className="flex flex-col space-y-3">
                 <Button 
                   onClick={() => {
-                    setIsPdfModalOpen(true);
+                    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >
@@ -596,22 +594,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
     );
   };
   
-  return (
-    <>
-      {renderStep()}
-      
-      {/* PDF Modal */}
-      {batch && (
-        <PdfModal
-          isOpen={isPdfModalOpen}
-          onClose={() => setIsPdfModalOpen(false)}
-          pdfUrl={`/api/batches/${batchId}/pdf-report`}
-          title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
-          batchId={batchId.toString()}
-        />
-      )}
-    </>
-  );
+  return renderStep();
 };
 
 export default AttestationForm;

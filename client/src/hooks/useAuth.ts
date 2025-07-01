@@ -48,16 +48,30 @@ export function useAuth() {
     refetchInterval: false,
     refetchOnWindowFocus: true,
     queryFn: getQueryFn({ on401: "returnNull" }),
-
+    onSuccess: (data) => {
+      if (data) {
+        // Save user data to localStorage when API call succeeds
+        saveUserToLocalStorage(data);
+        setLocalUser(data);
+      }
+    }
   });
 
-  // Update local state when API data changes
+  // Set up interval to synchronize local user data with React Query cache
   useEffect(() => {
-    if (user) {
-      saveUserToLocalStorage(user);
-      setLocalUser(user);
-    }
-  }, [user]);
+    // Check for updates in localStorage every second
+    const intervalId = setInterval(() => {
+      const storedUser = getUserFromLocalStorage();
+      // Only update state if the stored user is different from current local user
+      // This comparison ensures we don't cause unnecessary re-renders
+      if (storedUser && JSON.stringify(storedUser) !== JSON.stringify(localUser)) {
+        console.log("Detected user profile change in localStorage, updating local state");
+        setLocalUser(storedUser);
+      }
+    }, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [localUser]);
 
   // Debug user data issues
   useEffect(() => {
