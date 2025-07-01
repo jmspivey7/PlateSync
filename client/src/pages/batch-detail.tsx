@@ -316,15 +316,32 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    // Open the PDF report in modal
-    console.log("🚨 HANDLEPRINT CALLED - Button clicked!");
-    console.log("🚨 Current batch:", batch);
-    console.log("🚨 Current isPdfModalOpen state:", isPdfModalOpen);
+    console.log("🚨 HANDLEPRINT CALLED - Opening PDF in new window");
     
     if (batch && batch.id) {
-      console.log("🚨 Setting isPdfModalOpen to true");
-      setIsPdfModalOpen(true);
-      console.log("🚨 Called setIsPdfModalOpen(true)");
+      const pdfUrl = `/api/batches/${batch.id}/pdf-report`;
+      console.log("🚨 Opening PDF URL:", pdfUrl);
+      
+      // Open PDF in new window/tab
+      const printWindow = window.open(
+        pdfUrl,
+        '_blank',
+        'width=900,height=700,scrollbars=yes,resizable=yes'
+      );
+      
+      if (printWindow) {
+        printWindow.focus();
+        console.log("🚨 PDF window opened successfully");
+        
+        toast({
+          title: "PDF Report Opened",
+          description: "The PDF report has been opened in a new window. You can print or download it from there.",
+        });
+      } else {
+        console.log("🚨 Failed to open PDF window - trying direct navigation");
+        // Fallback: direct navigation
+        window.location.href = pdfUrl;
+      }
     } else {
       console.error("🚨 Cannot generate PDF: Batch ID not available");
       toast({
@@ -940,55 +957,7 @@ const BatchDetailPage = () => {
           </div>
         )}
 
-        {/* Simple test modal - bypassing PdfModal component */}
-        {isPdfModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-xl font-semibold">
-                  {batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
-                </h2>
-                <button
-                  onClick={() => {
-                    console.log("🚨 Simple modal close clicked");
-                    setIsPdfModalOpen(false);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="flex-1 p-4">
-                <iframe
-                  src={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
-                  className="w-full h-full border-0"
-                  title="PDF Report"
-                />
-              </div>
-              <div className="p-4 border-t flex gap-2">
-                <button
-                  onClick={() => window.print()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Print
-                </button>
-                <button
-                  onClick={() => {
-                    if (batch) {
-                      const link = document.createElement('a');
-                      link.href = `/api/batches/${batch.id}/pdf-report`;
-                      link.download = `count-report-${batch.name || batch.id}.pdf`;
-                      link.click();
-                    }
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Download
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
       </Card>
     </PageLayout>
   );
