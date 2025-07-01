@@ -7,7 +7,7 @@ import { Batch, Donation } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLocation } from "wouter";
-import { PdfModal } from "@/components/ui/pdf-modal";
+
 
 interface PrintCountReportProps {
   batchId: number;
@@ -17,7 +17,7 @@ interface PrintCountReportProps {
 const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) => {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
 
   // Fetch batch details
   const { data: batch, isLoading: isBatchLoading } = useQuery<Batch>({
@@ -31,7 +31,9 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
   });
 
   const handlePrintPDF = () => {
-    setIsPdfModalOpen(true);
+    // Open PDF in system browser
+    const pdfUrl = `${window.location.origin}/api/batches/${batchId}/pdf-report`;
+    window.open(pdfUrl, '_blank', 'noopener,noreferrer');
   };
 
   const formatCurrency = (amount: string | number) => {
@@ -172,16 +174,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
       </CardContent>
     </Card>
     
-    {/* PDF Modal */}
-    {batch && (
-      <PdfModal
-        isOpen={isPdfModalOpen}
-        onClose={() => setIsPdfModalOpen(false)}
-        pdfUrl={`/api/batches/${batchId}/pdf-report`}
-        title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
-        batchId={batchId.toString()}
-      />
-    )}
+
     </>
   );
 };
