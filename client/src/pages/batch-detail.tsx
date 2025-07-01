@@ -317,7 +317,7 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    console.log("Opening PDF in new browser tab");
+    console.log("Opening PDF in system browser");
     
     if (!batch || !batch.id) {
       toast({
@@ -328,9 +328,29 @@ const BatchDetailPage = () => {
       return;
     }
 
-    // Simply open PDF in a new browser tab/window
-    const pdfUrl = `/api/batches/${batch.id}/pdf-report`;
-    window.open(pdfUrl, '_blank');
+    // For PWA: Force opening in system browser, not within the app
+    const pdfUrl = `${window.location.origin}/api/batches/${batch.id}/pdf-report`;
+    
+    // Try multiple methods to ensure it opens in system browser
+    try {
+      // Method 1: window.open with specific parameters to force external browser
+      const newWindow = window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+      
+      // Method 2: If window.open fails or is blocked, use location.href
+      if (!newWindow) {
+        window.location.href = pdfUrl;
+      }
+    } catch (error) {
+      // Method 3: Fallback - create a link element and click it
+      console.log('Using fallback method for opening PDF');
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const formatCurrency = (amount: string | number) => {
