@@ -351,12 +351,36 @@ const BatchDetailPage = () => {
       </div>
     `;
     
-    // Create iframe
+    // Create iframe with proper PDF loading
     const iframe = document.createElement('iframe');
     iframe.src = `/api/batches/${batch.id}/pdf-report`;
     iframe.className = 'w-full border-0';
     iframe.style.height = '400px';
     iframe.title = `Count Report - ${batch.name || `Batch ${batch.id}`}`;
+    iframe.setAttribute('type', 'application/pdf');
+    
+    // Add error handling for iframe
+    iframe.onload = () => {
+      console.log('PDF iframe loaded successfully');
+    };
+    
+    iframe.onerror = () => {
+      console.error('PDF iframe failed to load');
+      iframe.style.display = 'none';
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'p-8 text-center text-gray-600';
+      errorDiv.innerHTML = `
+        <p class="mb-4">Unable to display PDF in viewer.</p>
+        <button id="open-pdf-direct" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          Open PDF in New Tab
+        </button>
+      `;
+      container.appendChild(errorDiv);
+      
+      document.getElementById('open-pdf-direct')?.addEventListener('click', () => {
+        window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+      });
+    };
     
     // Assemble container
     container.appendChild(header);
@@ -368,16 +392,32 @@ const BatchDetailPage = () => {
     
     // Add event listeners
     document.getElementById('download-pdf')?.addEventListener('click', () => {
+      console.log('Download button clicked');
       const link = document.createElement('a');
       link.href = `/api/batches/${batch.id}/pdf-report`;
       link.download = `count-report-${batch.name || batch.id}.pdf`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     });
     
     document.getElementById('print-pdf')?.addEventListener('click', () => {
+      console.log('Print button clicked');
+      // For mobile-friendly printing, open in new tab
       const printWindow = window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
       if (printWindow) {
-        printWindow.onload = () => printWindow.print();
+        // Focus the window and attempt to print
+        printWindow.focus();
+        setTimeout(() => {
+          try {
+            printWindow.print();
+          } catch (e) {
+            console.log('Print dialog not available, PDF opened in new tab');
+          }
+        }, 500);
+      } else {
+        console.log('Popup blocked, trying direct navigation');
+        window.location.href = `/api/batches/${batch.id}/pdf-report`;
       }
     });
     
