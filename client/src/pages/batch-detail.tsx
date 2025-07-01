@@ -940,9 +940,25 @@ const BatchDetailPage = () => {
           </div>
         )}
 
+        {/* Test Modal - Simple approach */}
+        {isPdfModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white p-4 rounded-lg">
+              <h2>PDF Modal Test</h2>
+              <p>Modal is working! isPdfModalOpen: {String(isPdfModalOpen)}</p>
+              <button 
+                onClick={() => setIsPdfModalOpen(false)}
+                className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
+              >
+                Close Modal
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* PDF Modal - Always render but controlled by isOpen */}
         <PdfModal
-          isOpen={isPdfModalOpen}
+          isOpen={false}
           onClose={() => setIsPdfModalOpen(false)}
           pdfUrl={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
           title={batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
