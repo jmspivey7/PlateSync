@@ -360,6 +360,17 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
           />
         </NoCloseDialogContent>
       </NoCloseDialog>
+
+      {/* PDF Modal */}
+      {batch && (
+        <PdfModal
+          isOpen={isPdfModalOpen}
+          onClose={() => setIsPdfModalOpen(false)}
+          pdfUrl={`/api/batches/${batch.id}/pdf-report`}
+          title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
+          batchId={batch.id.toString()}
+        />
+      )}
     </Card>
   );
 };
