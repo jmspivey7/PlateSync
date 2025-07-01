@@ -57,21 +57,13 @@ export function useAuth() {
     }
   });
 
-  // Set up interval to synchronize local user data with React Query cache
+  // Update local state when API data changes
   useEffect(() => {
-    // Check for updates in localStorage every second
-    const intervalId = setInterval(() => {
-      const storedUser = getUserFromLocalStorage();
-      // Only update state if the stored user is different from current local user
-      // This comparison ensures we don't cause unnecessary re-renders
-      if (storedUser && JSON.stringify(storedUser) !== JSON.stringify(localUser)) {
-        console.log("Detected user profile change in localStorage, updating local state");
-        setLocalUser(storedUser);
-      }
-    }, 1000);
-    
-    return () => clearInterval(intervalId);
-  }, [localUser]);
+    if (user) {
+      saveUserToLocalStorage(user);
+      setLocalUser(user);
+    }
+  }, [user]);
 
   // Debug user data issues
   useEffect(() => {
