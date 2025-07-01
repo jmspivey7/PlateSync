@@ -940,19 +940,14 @@ const BatchDetailPage = () => {
           </div>
         )}
 
-        {/* PDF Modal */}
-        {(() => {
-          console.log("🚨 PDF Modal render check - batch:", !!batch, "isPdfModalOpen:", isPdfModalOpen);
-          return batch && (
-            <PdfModal
-              isOpen={isPdfModalOpen}
-              onClose={() => setIsPdfModalOpen(false)}
-              pdfUrl={`/api/batches/${batch.id}/pdf-report`}
-              title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
-              batchId={batch.id.toString()}
-            />
-          );
-        })()}
+        {/* PDF Modal - Always render but controlled by isOpen */}
+        <PdfModal
+          isOpen={isPdfModalOpen && !!batch}
+          onClose={() => setIsPdfModalOpen(false)}
+          pdfUrl={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
+          title={batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
+          batchId={batch ? batch.id.toString() : ''}
+        />
       </Card>
     </PageLayout>
   );
