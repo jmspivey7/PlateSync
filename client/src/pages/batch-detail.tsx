@@ -935,17 +935,17 @@ const BatchDetailPage = () => {
             </div>
           </div>
         )}
-
-        {/* PDF Split View - Shows when isPdfModalOpen is true */}
-        {isPdfModalOpen && batch && (
-          <div className="mt-6 border-t pt-6">
-            {/* PDF Controls Header */}
-            <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  PDF Report - {batch.name || `Batch ${batch.id}`}
-                </h3>
-              </div>
+      </Card>
+      
+      {/* PDF Split View - Outside Card so it's visible */}
+      {isPdfModalOpen && batch && (
+        <Card className="mt-6">
+          {/* PDF Controls Header */}
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                PDF Report - {batch.name || `Batch ${batch.id}`}
+              </CardTitle>
               
               <div className="flex items-center gap-2">
                 <Button 
@@ -987,8 +987,10 @@ const BatchDetailPage = () => {
                 </Button>
               </div>
             </div>
+          </CardHeader>
 
-            {/* PDF Viewer - Lower Half of Screen */}
+          {/* PDF Viewer */}
+          <CardContent>
             <div className="h-96 w-full border rounded-lg overflow-hidden">
               <iframe
                 src={`/api/batches/${batch.id}/pdf-report`}
@@ -996,9 +998,9 @@ const BatchDetailPage = () => {
                 title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
               />
             </div>
-          </div>
-        )}
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </PageLayout>
   );
 };
