@@ -79,7 +79,7 @@ const BatchDetailPage = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [isAttesting, setIsAttesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
   
   // Debug state management - this will help us see what's happening
   useEffect(() => {
@@ -100,10 +100,7 @@ const BatchDetailPage = () => {
     console.log("showDeleteConfirm state changed to:", showDeleteConfirm);
   }, [showDeleteConfirm]);
 
-  // Debug PDF modal state
-  useEffect(() => {
-    console.log("🚨 isPdfModalOpen state changed to:", isPdfModalOpen);
-  }, [isPdfModalOpen]);
+
 
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
