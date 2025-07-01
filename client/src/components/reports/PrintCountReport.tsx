@@ -87,6 +87,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
 
   // Regular view
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Count Report</CardTitle>
@@ -177,7 +178,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
         pdfUrl={`/api/batches/${batchId}/pdf-report`}
-        title={`Count Report - ${batch.batchName || `Batch ${batch.id}`}`}
+        title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
         batchId={batchId.toString()}
       />
     )}

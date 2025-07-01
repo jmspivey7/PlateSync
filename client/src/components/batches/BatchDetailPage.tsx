@@ -28,6 +28,7 @@ import { NoCloseDialog, NoCloseDialogContent } from "@/components/ui/no-close-di
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import PdfModal from "@/components/ui/pdf-modal";
 
 interface BatchDetailProps {
   batchId: number;
@@ -41,6 +42,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   const [isAddingDonation, setIsAddingDonation] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [isFinalized, setIsFinalized] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Fetch batch data with donations
   const { data: batch, isLoading } = useQuery<BatchWithDonations>({
@@ -109,9 +111,9 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   };
 
   const handlePrint = () => {
-    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    // Open the PDF report in modal
     if (batch && batch.id) {
-      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+      setIsPdfModalOpen(true);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
