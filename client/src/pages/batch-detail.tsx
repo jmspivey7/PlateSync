@@ -29,7 +29,8 @@ import {
   X,
   UserCheck,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import DonationForm from "../components/donations/DonationForm";
@@ -59,7 +60,7 @@ import {
 import PageLayout from "@/components/layout/PageLayout";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { MobilePdfViewer } from "@/components/ui/mobile-pdf-viewer";
+
 
 const BatchDetailPage = () => {
   const { toast } = useToast();
@@ -316,7 +317,7 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    console.log("📱 Opening mobile-friendly PDF viewer");
+    console.log("Opening PDF in split view");
     
     if (batch && batch.id) {
       setIsPdfModalOpen(true);
@@ -935,13 +936,68 @@ const BatchDetailPage = () => {
           </div>
         )}
 
-        {/* Mobile-friendly PDF Viewer */}
-        <MobilePdfViewer
-          isOpen={isPdfModalOpen}
-          onClose={() => setIsPdfModalOpen(false)}
-          pdfUrl={batch ? `/api/batches/${batch.id}/pdf-report` : ''}
-          title={batch ? `Count Report - ${batch.name || `Batch ${batch.id}`}` : 'Loading...'}
-        />
+        {/* PDF Split View - Shows when isPdfModalOpen is true */}
+        {isPdfModalOpen && batch && (
+          <div className="mt-6 border-t pt-6">
+            {/* PDF Controls Header */}
+            <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  PDF Report - {batch.name || `Batch ${batch.id}`}
+                </h3>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = `/api/batches/${batch.id}/pdf-report`;
+                    link.download = `count-report-${batch.name || batch.id}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    const printWindow = window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+                    if (printWindow) {
+                      printWindow.onload = () => printWindow.print();
+                    }
+                  }}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print
+                </Button>
+                
+                <Button 
+                  onClick={() => setIsPdfModalOpen(false)}
+                  variant="ghost"
+                  size="sm"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* PDF Viewer - Lower Half of Screen */}
+            <div className="h-96 w-full border rounded-lg overflow-hidden">
+              <iframe
+                src={`/api/batches/${batch.id}/pdf-report`}
+                className="w-full h-full border-0"
+                title={`Count Report - ${batch.name || `Batch ${batch.id}`}`}
+              />
+            </div>
+          </div>
+        )}
       </Card>
     </PageLayout>
   );
