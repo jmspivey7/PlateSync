@@ -47,8 +47,17 @@ export default function PDFViewer() {
             }
           });
           
+          console.log('PDF fetch response:', {
+            status: response.status,
+            statusText: response.statusText,
+            contentType: response.headers.get('content-type'),
+            url: response.url
+          });
+          
           if (!response.ok) {
-            throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('PDF fetch error response:', errorText);
+            throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText} - ${errorText}`);
           }
           
           const blob = await response.blob();
@@ -228,12 +237,41 @@ export default function PDFViewer() {
         )}
         
         {pdfBlobUrl && (
-          <embed
-            src={pdfBlobUrl}
-            type="application/pdf"
-            className="w-full h-full"
-            title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
-          />
+          <>
+            <object
+              data={pdfBlobUrl}
+              type="application/pdf"
+              className="w-full h-full"
+              title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
+            >
+              <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-8">
+                <div className="text-center max-w-md">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    PDF Ready for Download
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Your browser doesn't support inline PDF viewing. Click below to download the PDF file.
+                  </p>
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleDownload}
+                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 w-full"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
+                    </Button>
+                    <Button
+                      onClick={() => window.open(pdfBlobUrl, '_blank')}
+                      variant="outline"
+                      className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 w-full"
+                    >
+                      Open in New Tab
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </object>
+          </>
         )}
       </div>
     </div>
