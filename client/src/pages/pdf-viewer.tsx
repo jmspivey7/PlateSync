@@ -2,16 +2,13 @@ import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Printer } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import { useToast } from "@/hooks/use-toast";
+
 
 export default function PDFViewer() {
   const [location, setLocation] = useLocation();
   const [, params] = useRoute("/pdf-viewer/:batchId/:type");
-  const { toast } = useToast();
-  const embedRef = useRef<HTMLEmbedElement>(null);
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const [pdfBlob, setPdfBlob] = useState<string>("");
   const [referrer, setReferrer] = useState<string>("/");
 
   const batchId = params?.batchId;
@@ -44,31 +41,14 @@ export default function PDFViewer() {
       }
     }
 
-    // Cleanup blob URL on unmount
-    return () => {
-      if (pdfBlob) {
-        URL.revokeObjectURL(pdfBlob);
-      }
-    };
-  }, [batchId, type, toast]);
+  }, [batchId, type]);
 
   const handlePrint = () => {
     try {
-      // For embed elements, we need to trigger print differently
-      // First try to use window.print() which should print the current page including the embed
+      // Try to print the current page which includes the iframe
       window.print();
-      
-      toast({
-        title: "Print Dialog Opened",
-        description: "Your browser's print dialog should now be open.",
-      });
     } catch (error) {
       console.error('Print error:', error);
-      toast({
-        title: "Print Error",
-        description: "Unable to open print dialog. Please try downloading instead.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -98,17 +78,9 @@ export default function PDFViewer() {
       // Clean up
       URL.revokeObjectURL(url);
       
-      toast({
-        title: "Download Started",
-        description: "Your PDF is being downloaded.",
-      });
+      console.log('Download started for:', filename);
     } catch (error) {
       console.error('Download error:', error);
-      toast({
-        title: "Download Failed",
-        description: "Unable to download PDF. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -186,8 +158,7 @@ export default function PDFViewer() {
         )}
         
         <iframe
-          ref={embedRef as any}
-          src={pdfBlob || pdfUrl}
+          src={pdfUrl}
           className="w-full h-full border-0"
           title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
         />
