@@ -196,32 +196,32 @@ export default function PDFViewer() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">
-              {type === 'count' ? 'Count Report' : 'Receipt Report'}
-            </h1>
-            <p className="text-sm text-gray-500">Batch #{batchId}</p>
-          </div>
+          
+          {pdfBlobUrl && (
+            <div className="flex gap-2">
+              <Button
+                onClick={handleDownload}
+                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
+              </Button>
+              <Button
+                onClick={() => window.open(pdfBlobUrl, '_blank')}
+                variant="outline"
+                className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2"
+              >
+                Open in New Tab
+              </Button>
+            </div>
+          )}
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            onClick={handlePrint}
-            disabled={!pdfBlobUrl}
-            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 flex-1 sm:flex-initial"
-          >
-            <Printer className="h-4 w-4" />
-            Print
-          </Button>
-          <Button
-            onClick={handleDownload}
-            disabled={!pdfBlobUrl}
-            variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 flex-1 sm:flex-initial"
-          >
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
+        <div className="text-right">
+          <h1 className="text-lg font-semibold text-gray-900">
+            {type === 'count' ? 'Count Report' : 'Receipt Report'}
+          </h1>
+          <p className="text-sm text-gray-500">Batch #{batchId}</p>
         </div>
       </div>
 
@@ -244,31 +244,10 @@ export default function PDFViewer() {
               className="w-full h-full"
               title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
             >
-              <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-8">
-                <div className="text-center max-w-md">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    PDF Ready for Download
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Your browser doesn't support inline PDF viewing. Click below to download the PDF file.
-                  </p>
-                  <div className="space-y-3">
-                    <Button
-                      onClick={handleDownload}
-                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 w-full"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
-                    </Button>
-                    <Button
-                      onClick={() => window.open(pdfBlobUrl, '_blank')}
-                      variant="outline"
-                      className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 w-full"
-                    >
-                      Open in New Tab
-                    </Button>
-                  </div>
-                </div>
+              <div className="flex items-center justify-center h-full bg-gray-50">
+                <p className="text-gray-600 text-center">
+                  Use the buttons above to download or open the PDF.
+                </p>
               </div>
             </object>
           </>
