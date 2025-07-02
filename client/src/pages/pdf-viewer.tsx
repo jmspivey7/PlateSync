@@ -226,36 +226,25 @@ export default function PDFViewer() {
         {pdfBlobUrl && (
           <>
             {isMobile ? (
-              // Mobile layout: Always show buttons overlaid on top
-              <div className="relative w-full h-full">
-                <object
-                  data={pdfBlobUrl}
-                  type="application/pdf"
-                  className="w-full h-full"
-                  title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
-                />
-                {/* Overlay buttons for mobile */}
-                <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                  <div className="flex flex-col items-center justify-start h-full p-8 pointer-events-none" style={{ paddingTop: '35%' }}>
-                    <div className="space-y-3 flex flex-col items-center pointer-events-auto">
-                      <Button
-                        onClick={handleDownload}
-                        className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8 shadow-lg"
-                        style={{ width: '300px' }}
-                      >
-                        <Download className="h-5 w-5" />
-                        Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
-                      </Button>
-                      <Button
-                        onClick={() => window.open(pdfBlobUrl, '_blank')}
-                        variant="outline"
-                        className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 h-16 text-lg px-8 bg-white shadow-lg"
-                        style={{ width: '300px' }}
-                      >
-                        Open in New Tab
-                      </Button>
-                    </div>
-                  </div>
+              // Mobile layout: NO PDF, ONLY BUTTONS
+              <div className="flex flex-col items-center justify-start h-full bg-gray-50 p-8" style={{ paddingTop: '35%' }}>
+                <div className="space-y-3 flex flex-col items-center">
+                  <Button
+                    onClick={handleDownload}
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8 shadow-lg"
+                    style={{ width: '300px' }}
+                  >
+                    <Download className="h-5 w-5" />
+                    Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
+                  </Button>
+                  <Button
+                    onClick={() => window.open(pdfBlobUrl, '_blank')}
+                    variant="outline"
+                    className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 h-16 text-lg px-8 bg-white shadow-lg"
+                    style={{ width: '300px' }}
+                  >
+                    Open in New Tab
+                  </Button>
                 </div>
               </div>
             ) : (
