@@ -161,7 +161,21 @@ const BatchSummaryPage = () => {
 
   const handlePrint = () => {
     if (batch && batch.id) {
-      if (isMobile()) {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+      const isNarrowViewport = window.innerWidth <= 768;
+      const isMobileDetected = isMobile();
+      
+      console.log('Print button clicked - Debug info:', {
+        userAgent,
+        isMobileDevice,
+        isNarrowViewport,
+        windowWidth: window.innerWidth,
+        isMobileDetected,
+        batchId: batch.id
+      });
+      
+      if (isMobileDetected) {
         // Mobile or test mode: Direct navigation to PDF (preserves authentication)
         console.log('Navigating to PDF directly (mobile/test mode):', batch.id);
         window.location.href = `/api/batches/${batch.id}/pdf-report`;
