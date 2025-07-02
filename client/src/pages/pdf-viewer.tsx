@@ -1,6 +1,6 @@
 import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import { ArrowLeft, Download, FileText, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function PDFViewer() {
@@ -226,24 +226,16 @@ export default function PDFViewer() {
         {pdfBlobUrl && (
           <>
             {isMobile ? (
-              // Mobile layout: NO PDF, ONLY BUTTONS
+              // Mobile layout: NO PDF, SINGLE BUTTON
               <div className="flex flex-col items-center justify-start h-full bg-gray-50 p-8" style={{ paddingTop: '35%' }}>
-                <div className="space-y-3 flex flex-col items-center">
+                <div className="flex flex-col items-center">
                   <Button
-                    onClick={handleDownload}
+                    onClick={() => window.open(pdfBlobUrl, '_blank')}
                     className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8 shadow-lg"
                     style={{ width: '300px' }}
                   >
-                    <Download className="h-5 w-5" />
-                    Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
-                  </Button>
-                  <Button
-                    onClick={() => window.open(pdfBlobUrl, '_blank')}
-                    variant="outline"
-                    className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 h-16 text-lg px-8 bg-white shadow-lg"
-                    style={{ width: '300px' }}
-                  >
-                    Open in New Tab
+                    <FileText className="h-5 w-5" />
+                    Open Report in Browser
                   </Button>
                 </div>
               </div>
