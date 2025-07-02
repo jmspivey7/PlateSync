@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { openPdfExternally, downloadPdfDirectly, isiOS, isPWA } from "@/lib/pdf-utils";
+
 
 // Define the types needed for batch with donations
 interface DonationWithMember extends Donation {

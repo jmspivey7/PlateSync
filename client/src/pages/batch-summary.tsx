@@ -61,7 +61,7 @@ import {
 import PageLayout from "@/components/layout/PageLayout";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { openPdfExternally, downloadPdfDirectly, isiOS, isPWA } from "@/lib/pdf-utils";
+
 
 const BatchSummaryPage = () => {
   const { toast } = useToast();
@@ -163,10 +163,34 @@ const BatchSummaryPage = () => {
     }
   }
 
-  const handleDownloadPdf = () => {
-    // Direct download for iOS PWA users
+  const handleDownloadPdf = async () => {
+    // Direct download implementation
     if (batch && batch.id) {
-      downloadPdfDirectly(`/api/batches/${batch.id}/pdf-report`, `batch-${batch.id}-report.pdf`);
+      try {
+        const response = await fetch(`/api/batches/${batch.id}/count-report/pdf`);
+        if (!response.ok) throw new Error('Download failed');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `batch-${batch.id}-count-report.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Download Complete",
+          description: "PDF report has been downloaded.",
+        });
+      } catch (error) {
+        toast({
+          title: "Download Error",
+          description: "Unable to download PDF report.",
+          variant: "destructive",
+        });
+      }
     } else {
       toast({
         title: "Error",
