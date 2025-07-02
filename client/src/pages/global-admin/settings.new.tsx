@@ -233,9 +233,10 @@ export default function GlobalAdminSettings() {
   
   // Helper function to strip HTML tags for plain text version
   const stripHtml = (html: string): string => {
-    const tmp = document.createElement('DIV');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
+    // Use DOMParser to safely parse HTML without executing scripts
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    return doc.body.textContent || doc.body.innerText || '';
   };
 
   // Handle saving the template
