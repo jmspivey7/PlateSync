@@ -490,42 +490,16 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               </div>
               
               <div className="flex flex-col space-y-3">
-                {isPWA() && isiOS() ? (
-                  // For iOS PWA, provide both options
-                  <>
-                    <Button 
-                      onClick={() => {
-                        openPdfExternally(`/api/batches/${batchId}/pdf-report`);
-                      }}
-                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                    >
-                      <Printer className="mr-2 h-4 w-4" />
-                      Open PDF (External Browser)
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => {
-                        downloadPdfDirectly(`/api/batches/${batchId}/pdf-report`, `batch-${batchId}-report.pdf`);
-                      }}
-                      variant="outline"
-                      className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download PDF
-                    </Button>
-                  </>
-                ) : (
-                  // Standard PDF opening for other environments
-                  <Button 
-                    onClick={() => {
-                      openPdfExternally(`/api/batches/${batchId}/pdf-report`);
-                    }}
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    View & Print PDF Report
-                  </Button>
-                )}
+                <Button 
+                  onClick={() => {
+                    // Navigate to internal PDF viewer
+                    setLocation(`/pdf-viewer/${batchId}/count`);
+                  }}
+                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  View & Print PDF Report
+                </Button>
                 
                 <Button 
                   onClick={() => setStep('confirmation')}
