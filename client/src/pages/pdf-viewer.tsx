@@ -223,19 +223,21 @@ export default function PDFViewer() {
               className="w-full h-full"
               title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
             >
-              <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-8">
+              <div className="flex flex-col items-center h-full bg-gray-50 p-8" style={{ paddingTop: '35%' }}>
                 <div className="space-y-3 max-w-md">
                   <Button
                     onClick={handleDownload}
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 w-full"
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 w-full h-16 text-lg"
+                    style={{ width: '125%' }}
                   >
-                    <Download className="h-4 w-4" />
+                    <Download className="h-5 w-5" />
                     Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
                   </Button>
                   <Button
                     onClick={() => window.open(pdfBlobUrl, '_blank')}
                     variant="outline"
-                    className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 w-full"
+                    className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 w-full h-16 text-lg"
+                    style={{ width: '125%' }}
                   >
                     Open in New Tab
                   </Button>
