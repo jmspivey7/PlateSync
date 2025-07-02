@@ -166,6 +166,9 @@ const AccountDropdown = () => {
         <DropdownMenuItem 
           className="text-red-600 text-[1.1rem] py-2"
           onClick={() => {
+            // Clear all local data immediately to fix the stuck state
+            localStorage.clear();
+            
             // Use simple window location navigation for GET logout
             window.location.href = '/api/logout';
           }}

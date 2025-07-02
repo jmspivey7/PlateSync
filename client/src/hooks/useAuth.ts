@@ -47,15 +47,21 @@ export function useAuth() {
     staleTime: 10000, // 10 seconds
     refetchInterval: false,
     refetchOnWindowFocus: true,
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    onSuccess: (data) => {
-      if (data) {
-        // Save user data to localStorage when API call succeeds
-        saveUserToLocalStorage(data);
-        setLocalUser(data);
-      }
-    }
+    queryFn: getQueryFn({ on401: "returnNull" })
   });
+
+  // Handle successful or failed user data fetch
+  useEffect(() => {
+    if (user) {
+      // Save user data to localStorage when API call succeeds
+      saveUserToLocalStorage(user);
+      setLocalUser(user);
+    } else if (user === null && !isLoading) {
+      // If API returns null (401/unauthorized), clear localStorage
+      localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+      setLocalUser(null);
+    }
+  }, [user, isLoading]);
 
   // Set up interval to synchronize local user data with React Query cache
   useEffect(() => {
@@ -73,10 +79,21 @@ export function useAuth() {
     return () => clearInterval(intervalId);
   }, [localUser]);
 
-  // Debug user data issues
+  // Handle authentication errors - if 401, clear localStorage and redirect
   useEffect(() => {
     if (error) {
       console.error("Error fetching user data:", error);
+      
+      // Check if it's a 401 error (unauthorized)
+      if (error.message && error.message.includes('401')) {
+        console.log("Detected 401 error - clearing localStorage and redirecting to login");
+        localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+        setLocalUser(null);
+        queryClient.clear();
+        
+        // Redirect to login page
+        window.location.href = "/login-local";
+      }
     }
   }, [error]);
 
@@ -126,13 +143,20 @@ export function useAuth() {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest<any>("/api/logout", "POST");
+      try {
+        await apiRequest<any>("/api/logout", "POST");
+      } catch (error) {
+        // If logout fails (e.g., session already destroyed), that's okay
+        // We'll still clear local data and redirect
+        console.log("Logout API call failed, but proceeding with local cleanup:", error);
+      }
       return;
     },
     onSuccess: () => {
       // Clear all cached data
       queryClient.clear();
       queryClient.setQueryData(["/api/auth/user"], null);
+      localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
       
       toast({
         title: "Logged out",
@@ -143,11 +167,13 @@ export function useAuth() {
       window.location.href = "/login-local";
     },
     onError: () => {
-      toast({
-        title: "Logout failed",
-        description: "There was a problem logging you out. Please try again.",
-        variant: "destructive",
-      });
+      // Even if logout API fails, clear local data and redirect
+      queryClient.clear();
+      queryClient.setQueryData(["/api/auth/user"], null);
+      localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+      
+      console.log("Logout failed but clearing local data anyway");
+      window.location.href = "/login-local";
     },
   });
 
