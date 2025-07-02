@@ -16,13 +16,7 @@ export function isMobileDevice(): boolean {
 
 // Handle PDF access for all devices
 export function handleMobilePDFAccess(pdfUrl: string): void {
-  if (isMobileDevice()) {
-    // For mobile devices, directly navigate to the PDF URL
-    // This bypasses the frontend router and goes straight to the server
-    window.location.href = pdfUrl;
-  } else {
-    // For desktop, also navigate directly to server - don't use window.open
-    // because it opens within the React app context and hits the router
-    window.location.href = pdfUrl;
-  }
+  // Simple direct approach - just open the URL
+  // This bypasses React router completely
+  window.open(pdfUrl, '_blank');
 }
