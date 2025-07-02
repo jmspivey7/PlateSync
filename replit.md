@@ -114,6 +114,11 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 ## Changelog
 
+- July 02, 2025. **SECURITY ENHANCEMENTS**: Completed comprehensive security audit with three high-priority updates:
+  1. **File Upload Security**: Enhanced validation for avatars and logos with MIME type checking, file extension verification, malicious filename detection, and size limits across multiple upload endpoints
+  2. **Input Validation**: Implemented comprehensive validation for form inputs, recipient data, and user-submitted content with XSS protection and data sanitization
+  3. **URL Parameter Validation**: Added security validation for Planning Center OAuth endpoints to prevent injection attacks and ensure parameter integrity
+  All changes maintain backward compatibility while significantly improving security posture.
 - July 02, 2025. **CRITICAL SECURITY FIX**: Fixed SQL injection vulnerability in global admin church purge endpoint (lines 387-389). Replaced vulnerable raw SQL with parameterized Drizzle queries.
 - July 02, 2025. Initial setup
 

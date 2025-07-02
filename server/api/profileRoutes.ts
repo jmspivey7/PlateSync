@@ -5,6 +5,7 @@ import fs from 'fs';
 import { db } from '../db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { validateFileOnServer, secureLog } from '@shared/security';
 
 const router = express.Router();
 
@@ -34,16 +35,21 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: function(req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|gif/i;
-    const mimeTypeValid = allowedTypes.test(file.mimetype);
-    const extname = path.extname(file.originalname).toLowerCase();
-    const extValid = allowedTypes.test(extname);
-    
-    if (mimeTypeValid && extValid) {
-      return cb(null, true);
-    } else {
-      return cb(new Error('Only image files (JPG, PNG, GIF) are allowed'));
+    secureLog.info('Avatar upload attempt', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+
+    // Use enhanced security validation
+    const validation = validateFileOnServer(file);
+    if (!validation.valid) {
+      secureLog.warn('Avatar upload rejected', { reason: validation.error });
+      return cb(new Error(validation.error), false);
     }
+
+    secureLog.info('Avatar upload accepted');
+    return cb(null, true);
   }
 });
 

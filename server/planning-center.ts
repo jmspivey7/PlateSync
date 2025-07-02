@@ -3,6 +3,7 @@ import { storage } from './storage';
 import type { Express, Request, Response } from 'express';
 import session from 'express-session';
 import crypto from 'crypto';
+import { validateUrlParameter, secureLog } from '@shared/security';
 
 // Helper function to identify user from request.user
 function identifyUser(user: any): string {
@@ -231,8 +232,19 @@ export function setupPlanningCenterRoutes(app: Express) {
   // OAuth callback endpoint with enhanced error handling and security
   app.get('/api/planning-center/callback', async (req: Request, res: Response) => {
     try {
-      // Extract all query parameters for detailed logging
-      const { code, state, error, error_description, churchId } = req.query;
+      // Extract and validate query parameters for security
+      const rawCode = req.query.code;
+      const rawState = req.query.state;
+      const rawError = req.query.error;
+      const rawErrorDescription = req.query.error_description;
+      const rawChurchId = req.query.churchId;
+      
+      // Validate URL parameters to prevent injection attacks
+      const code = validateUrlParameter(rawCode as string, 'code');
+      const state = validateUrlParameter(rawState as string, 'state');
+      const error = validateUrlParameter(rawError as string, 'error');
+      const error_description = validateUrlParameter(rawErrorDescription as string, 'error_description');
+      const churchId = validateUrlParameter(rawChurchId as string, 'churchId');
       
       // Detect if we're being accessed from a mobile device
       const userAgent = req.get('user-agent') || '';
@@ -1874,9 +1886,13 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    const { tempKey } = req.params;
-    // Extract churchId from query parameter if it's present
-    const queryChurchId = req.query.churchId as string | undefined;
+    // Validate URL parameters for security
+    const rawTempKey = req.params.tempKey;
+    const tempKey = validateUrlParameter(rawTempKey, 'tempKey');
+    
+    // Extract and validate churchId from query parameter if it's present
+    const rawQueryChurchId = req.query.churchId as string | undefined;
+    const queryChurchId = validateUrlParameter(rawQueryChurchId, 'churchId');
     
     // Log more details about the temporary token request
     console.log(`Attempting to claim Planning Center token with key: ${tempKey}`);
