@@ -28,7 +28,7 @@ import { NoCloseDialog, NoCloseDialogContent } from "@/components/ui/no-close-di
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { openPdfExternally } from "@/lib/pdf-utils";
+import { openPdfExternally, downloadPdfDirectly, isiOS, isPWA } from "@/lib/pdf-utils";
 
 interface BatchDetailProps {
   batchId: number;
