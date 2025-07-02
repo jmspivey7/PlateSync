@@ -21,7 +21,9 @@ export default function PDFViewer() {
     // Detect mobile device
     const checkMobile = () => {
       const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-      return /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+      const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+      console.log("Mobile detection:", { userAgent, isMobileDevice });
+      return isMobileDevice;
     };
     setIsMobile(checkMobile());
     
