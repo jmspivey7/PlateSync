@@ -162,11 +162,9 @@ const BatchSummaryPage = () => {
   const handlePrint = () => {
     if (batch && batch.id) {
       if (isMobile()) {
-        // Mobile or test mode: Direct Safari navigation with return URL parameter
-        const returnUrl = encodeURIComponent(window.location.href);
-        const pdfUrl = `/api/batches/${batch.id}/pdf-report?mobile=true&return=${returnUrl}`;
-        window.open(pdfUrl, '_blank');
-        console.log('Opening PDF in new tab (mobile/test mode):', pdfUrl);
+        // Mobile or test mode: Direct navigation to PDF (preserves authentication)
+        console.log('Navigating to PDF directly (mobile/test mode):', batch.id);
+        window.location.href = `/api/batches/${batch.id}/pdf-report`;
       } else {
         // Desktop: Navigate to internal PDF viewer
         console.log('Redirecting to PDF viewer for count report:', batch.id);

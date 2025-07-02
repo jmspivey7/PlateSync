@@ -502,10 +502,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     const isMobile = isMobileDevice || isTestMode;
                     
                     if (isMobile) {
-                      // Mobile: Direct Safari navigation with return URL parameter
-                      const returnUrl = encodeURIComponent(window.location.href);
-                      const pdfUrl = `/api/batches/${batchId}/pdf-report?mobile=true&return=${returnUrl}`;
-                      window.open(pdfUrl, '_blank');
+                      // Mobile: Direct navigation to PDF (preserves authentication)
+                      window.location.href = `/api/batches/${batchId}/pdf-report`;
                     } else {
                       // Desktop: Navigate to internal PDF viewer
                       setLocation(`/pdf-viewer/${batchId}/count`);

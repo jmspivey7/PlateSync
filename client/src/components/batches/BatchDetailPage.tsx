@@ -123,10 +123,8 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   const handlePrint = () => {
     if (batch && batch.id) {
       if (isMobile()) {
-        // Mobile: Direct Safari navigation with return URL parameter
-        const returnUrl = encodeURIComponent(window.location.href);
-        const pdfUrl = `/api/batches/${batch.id}/receipt-report?mobile=true&return=${returnUrl}`;
-        window.open(pdfUrl, '_blank');
+        // Mobile: Direct navigation to PDF (preserves authentication)
+        window.location.href = `/api/batches/${batch.id}/receipt-report`;
       } else {
         // Desktop: Navigate to internal PDF viewer
         setLocation(`/pdf-viewer/${batch.id}/receipt`);

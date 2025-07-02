@@ -116,6 +116,7 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 - July 02, 2025. Initial setup
 - July 02, 2025. Implemented mobile-first PDF approach to solve iPhone navigation issues - mobile devices now bypass PDF viewer page entirely and open PDFs directly in Safari with return URL parameters
+- July 02, 2025. Fixed mobile PDF authentication issue - changed from window.open() to window.location.href to preserve session cookies and prevent 404 errors. Mobile PDF access now works reliably across all components.
 
 ## User Preferences
 
