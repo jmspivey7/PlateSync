@@ -5,12 +5,13 @@ import { useEffect, useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PDFViewer() {
+  const [location, setLocation] = useLocation();
   const [, params] = useRoute("/pdf-viewer/:batchId/:type");
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const embedRef = useRef<HTMLEmbedElement>(null);
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [referrer, setReferrer] = useState<string>("/");
 
   const batchId = params?.batchId;
   const type = params?.type; // 'count' or 'receipt'
@@ -24,18 +25,23 @@ export default function PDFViewer() {
       
       console.log('Loading PDF from:', url);
       setPdfUrl(url);
+      
+      // Set appropriate referrer based on type
+      if (type === 'count') {
+        setReferrer(`/batch-summary/${batchId}`);
+      } else if (type === 'receipt') {
+        setReferrer(`/batch/${batchId}`);
+      } else {
+        setReferrer("/counts");
+      }
     }
   }, [batchId, type]);
 
   const handlePrint = () => {
     try {
-      // Try to print the iframe content
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.print();
-      } else {
-        // Fallback to opening in new window for printing
-        window.open(pdfUrl, '_blank');
-      }
+      // For embed elements, we need to trigger print differently
+      // First try to use window.print() which should print the current page including the embed
+      window.print();
       
       toast({
         title: "Print Dialog Opened",
@@ -92,14 +98,15 @@ export default function PDFViewer() {
   };
 
   const handleBack = () => {
-    setLocation(`/batch-summary/${batchId}`);
+    console.log('Navigating back to:', referrer);
+    setLocation(referrer);
   };
 
-  const handleIframeLoad = () => {
+  const handleEmbedLoad = () => {
     setIsLoading(false);
   };
 
-  const handleIframeError = () => {
+  const handleEmbedError = () => {
     setIsLoading(false);
     toast({
       title: "PDF Load Error",
@@ -174,13 +181,14 @@ export default function PDFViewer() {
           </div>
         )}
         
-        <iframe
-          ref={iframeRef}
+        <embed
+          ref={embedRef}
           src={pdfUrl}
+          type="application/pdf"
           className="w-full h-full border-0"
           title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
-          onLoad={handleIframeLoad}
-          onError={handleIframeError}
+          onLoad={handleEmbedLoad}
+          onError={handleEmbedError}
         />
       </div>
     </div>
