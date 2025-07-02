@@ -114,6 +114,7 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 ## Changelog
 
+- July 02, 2025. **CRITICAL SECURITY FIX**: Fixed SQL injection vulnerability in global admin church purge endpoint (lines 387-389). Replaced vulnerable raw SQL with parameterized Drizzle queries.
 - July 02, 2025. Initial setup
 
 ## User Preferences

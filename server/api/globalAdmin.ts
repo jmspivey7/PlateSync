@@ -1,9 +1,23 @@
 import express from "express";
 import { Router } from "express";
 import { db } from "../db";
-import { churches, users, members, donations, subscriptions, batches } from "@shared/schema";
+import { 
+  churches, 
+  users, 
+  members, 
+  donations, 
+  subscriptions, 
+  batches,
+  verificationCodes,
+  planningCenterTokens,
+  serviceOptions,
+  reportRecipients,
+  emailTemplates,
+  sessions,
+  churchMembers
+} from "@shared/schema";
 import { validateSchema } from "../middleware/validationMiddleware";
-import { eq, desc, and, asc, SQL, ilike, sql, ne, count, sum, gte } from "drizzle-orm";
+import { eq, desc, and, asc, SQL, ilike, sql, ne, count, sum, gte, inArray, or, isNull, not, like } from "drizzle-orm";
 import { z } from "zod";
 import { generateId, scryptHash, verifyPassword, generateToken } from "../util";
 import { requireGlobalAdmin } from "../middleware/globalAdminMiddleware";
@@ -301,11 +315,8 @@ router.post("/churches", requireGlobalAdmin, validateSchema(createChurchSchema),
       password: hashedPassword,
       churchId,
       churchName: name,
-      isActive: true,
       isVerified: true,
       isAccountOwner: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
     
     res.status(201).json({
@@ -371,118 +382,105 @@ router.delete("/churches/:id/purge", requireGlobalAdmin, async (req, res) => {
     }
     
     // Start a transaction to ensure all deletions succeed or fail together
-    await db.execute(`BEGIN`);
-    
-    try {
+    await db.transaction(async (tx) => {
+      
       // Get users associated with church (needed for later deletions)
-      const usersResult = await db.execute(
-        `SELECT id FROM users WHERE church_id = '${id}'`
-      );
-      const userIds = usersResult.rows.map(user => user.id);
-      const userIdsForQuery = userIds.length > 0 ? userIds.map(id => `'${id}'`).join(',') : "'0'";
+      const usersResult = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.churchId, id));
+      
+      const userIds = usersResult.map(user => user.id);
       
       console.log(`Purging church ${id} and ${userIds.length} associated users`);
       
       // Delete verification codes for this church
-      await db.execute(
-        `DELETE FROM verification_codes WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(verificationCodes)
+        .where(eq(verificationCodes.churchId, id));
       console.log(`Deleted verification codes for church`);
       
       // Delete planning center tokens
-      await db.execute(
-        `DELETE FROM planning_center_tokens WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(planningCenterTokens)
+        .where(eq(planningCenterTokens.churchId, id));
       console.log(`Deleted planning center tokens`);
       
       // Delete subscription data
-      await db.execute(
-        `DELETE FROM subscriptions WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(subscriptions)
+        .where(eq(subscriptions.churchId, id));
       console.log(`Deleted subscriptions`);
       
       // Delete service options
-      await db.execute(
-        `DELETE FROM service_options WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(serviceOptions)
+        .where(eq(serviceOptions.churchId, id));
       console.log(`Deleted service options`);
       
       // Delete report recipients
-      await db.execute(
-        `DELETE FROM report_recipients WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(reportRecipients)
+        .where(eq(reportRecipients.churchId, id));
       console.log(`Deleted report recipients`);
       
       // Delete email templates for this church
-      await db.execute(
-        `DELETE FROM email_templates WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(emailTemplates)
+        .where(eq(emailTemplates.churchId, id));
       console.log(`Deleted email templates`);
       
       // Delete donations first to maintain referential integrity
-      await db.execute(
-        `DELETE FROM donations WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(donations)
+        .where(eq(donations.churchId, id));
       console.log(`Deleted donations`);
       
       // Delete batches
-      await db.execute(
-        `DELETE FROM batches WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(batches)
+        .where(eq(batches.churchId, id));
       console.log(`Deleted batches`);
       
-      // Delete members
-      await db.execute(
-        `DELETE FROM members WHERE church_id = '${id}'`
-      );
-      console.log(`Deleted members`);
-      
-      // First get the church details for account_owner_id
-      const churchDetails = await db.execute(
-        `SELECT * FROM churches WHERE id = '${id}'`
-      );
+      // Delete church-member relationships and members
+      await tx
+        .delete(churchMembers)
+        .where(eq(churchMembers.churchId, id));
+      console.log(`Deleted church-member relationships`);
       
       // Set account_owner_id to NULL to remove foreign key constraint
-      await db.execute(
-        `UPDATE churches SET account_owner_id = NULL WHERE id = '${id}'`
-      );
+      await tx
+        .update(churches)
+        .set({ accountOwnerId: null })
+        .where(eq(churches.id, id));
       console.log(`Removed account owner reference`);
       
       // Delete sessions associated with users
-      // The sessions table stores session data in JSON format
+      // For sessions, we need to use raw SQL for the JSONB query but with parameterized values
       if (userIds.length > 0) {
-        await db.execute(
-          `DELETE FROM sessions WHERE sess::jsonb->'user'->>'id' IN (${userIdsForQuery})`
+        await tx.execute(
+          sql`DELETE FROM sessions WHERE sess::jsonb->'user'->>'id' = ANY(${userIds})`
         );
         console.log(`Deleted user sessions`);
       }
       
       // Now delete users associated with the church
-      await db.execute(
-        `DELETE FROM users WHERE church_id = '${id}'`
-      );
+      await tx
+        .delete(users)
+        .where(eq(users.churchId, id));
       console.log(`Deleted users`);
       
       // Finally, delete the church itself
-      await db.execute(
-        `DELETE FROM churches WHERE id = '${id}'`
-      );
+      await tx
+        .delete(churches)
+        .where(eq(churches.id, id));
       console.log(`Deleted church entity`);
-      
-      // Commit the transaction
-      await db.execute(`COMMIT`);
-      
-      res.status(200).json({
-        message: "Church and all associated data purged successfully",
-        churchId: id
-      });
-      
-    } catch (error) {
-      // Rollback the transaction if any queries fail
-      await db.execute(`ROLLBACK`);
-      console.error("Error in purge transaction:", error);
-      throw error;
-    }
+    });
+    
+    res.status(200).json({
+      message: "Church and all associated data purged successfully",
+      churchId: id
+    });
     
   } catch (error) {
     console.error("Error purging church data:", error);
@@ -505,19 +503,33 @@ router.get("/churches/:id/users", requireGlobalAdmin, async (req, res) => {
       return res.status(404).json({ message: "Church not found" });
     }
     
-    // Use a raw SQL query with string interpolation for consistency
-    // Exclude GLOBAL_ADMIN users and INACTIVE users from the church users list
-    const result = await db.execute(
-      `SELECT id, email, first_name AS "firstName", last_name AS "lastName", 
-              role, is_verified AS "isVerified", is_account_owner AS "isAccountOwner", 
-              created_at AS "createdAt", updated_at AS "updatedAt"
-       FROM users 
-       WHERE church_id = '${id}' AND role != 'GLOBAL_ADMIN' 
-       AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')
-       ORDER BY created_at DESC`
-    );
+    // Get church users using safe parameterized query
+    const result = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        isVerified: users.isVerified,
+        isAccountOwner: users.isAccountOwner,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.churchId, id),
+          ne(users.role, 'GLOBAL_ADMIN'),
+          or(
+            isNull(users.email),
+            not(like(users.email, 'INACTIVE_%'))
+          )
+        )
+      )
+      .orderBy(desc(users.createdAt));
     
-    const churchUsers = result.rows || [];
+    const churchUsers = result || [];
     
     res.status(200).json(churchUsers);
   } catch (error) {
