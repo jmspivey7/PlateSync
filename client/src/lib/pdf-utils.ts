@@ -39,73 +39,64 @@ export const openPdfExternally = (pdfUrl: string): void => {
   });
   
   if (isPWA() && isiOS()) {
-    // iOS PWA requires special handling to break out of PWA context
-    console.log('🚨 iOS PWA DETECTED - Using aggressive external browser methods');
+    // iOS PWA requires NUCLEAR approach to break out of PWA context completely
+    console.log('🚨 iOS PWA DETECTED - Using NUCLEAR external browser escape methods');
     console.log('📱 Device info:', {
       userAgent: navigator.userAgent,
       standalone: (window.navigator as any).standalone,
       displayMode: window.matchMedia('(display-mode: standalone)').matches
     });
     
-    // Method 1: Create a hidden iframe approach
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = pdfUrl;
-    document.body.appendChild(iframe);
-    
-    // Method 2: Create download link with user interaction
-    setTimeout(() => {
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = 'document.pdf';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
+    // NUCLEAR OPTION 1: Use mailto scheme to trigger external app, then redirect
+    try {
+      console.log('🚀 NUCLEAR METHOD 1: Using mailto scheme to break PWA context');
       
-      // Force a user gesture by creating a visible button temporarily
-      link.style.position = 'fixed';
-      link.style.top = '50%';
-      link.style.left = '50%';
-      link.style.transform = 'translate(-50%, -50%)';
-      link.style.padding = '20px';
-      link.style.backgroundColor = '#007AFF';
-      link.style.color = 'white';
-      link.style.border = 'none';
-      link.style.borderRadius = '8px';
-      link.style.fontSize = '16px';
-      link.style.zIndex = '9999';
-      link.style.cursor = 'pointer';
-      link.innerHTML = 'Tap to Open PDF';
+      // Create a mailto link to force iOS to ask about opening external app
+      const mailtoUrl = `mailto:?subject=PDF Report&body=Opening PDF report...`;
+      const tempMailto = document.createElement('a');
+      tempMailto.href = mailtoUrl;
+      tempMailto.style.display = 'none';
+      document.body.appendChild(tempMailto);
       
-      document.body.appendChild(link);
+      // Trigger the mailto (this often breaks PWA context)
+      tempMailto.click();
+      document.body.removeChild(tempMailto);
       
-      // Auto-remove after 5 seconds or on click
-      const cleanup = () => {
-        if (document.body.contains(link)) {
-          document.body.removeChild(link);
-        }
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      };
+      // Wait and then navigate to PDF (now that PWA context might be broken)
+      setTimeout(() => {
+        console.log('🚀 NUCLEAR METHOD 1b: Now navigating to PDF after PWA break attempt');
+        window.location.replace(window.location.origin + pdfUrl);
+      }, 500);
       
-      link.onclick = () => {
-        console.log('🎯 User tapped the PDF button! Attempting to open:', pdfUrl);
-        cleanup();
+    } catch (error) {
+      console.error('NUCLEAR METHOD 1 failed:', error);
+      
+      // NUCLEAR OPTION 2: Use tel scheme as PWA context breaker
+      try {
+        console.log('🚀 NUCLEAR METHOD 2: Using tel scheme to break PWA context');
         
-        // Try multiple opening methods
-        console.log('📂 Method 1: Trying window.open with _blank');
-        const newWindow = window.open(pdfUrl, '_blank');
-        console.log('📂 window.open result:', newWindow);
+        const telUrl = 'tel:+1';
+        const tempTel = document.createElement('a');
+        tempTel.href = telUrl;
+        tempTel.style.display = 'none';
+        document.body.appendChild(tempTel);
+        
+        tempTel.click();
+        document.body.removeChild(tempTel);
         
         setTimeout(() => {
-          console.log('📂 Method 2: Trying direct navigation as fallback');
-          window.location.href = pdfUrl;
-        }, 1000);
-      };
-      
-      setTimeout(cleanup, 5000);
-      
-    }, 100);
+          console.log('🚀 NUCLEAR METHOD 2b: Now navigating to PDF after tel PWA break');
+          window.location.replace(window.location.origin + pdfUrl);
+        }, 500);
+        
+      } catch (error2) {
+        console.error('NUCLEAR METHOD 2 failed:', error2);
+        
+        // NUCLEAR OPTION 3: Direct location replacement (most aggressive)
+        console.log('🚀 NUCLEAR METHOD 3: Direct location replacement - MOST AGGRESSIVE');
+        window.location.replace(window.location.origin + pdfUrl);
+      }
+    }
     
   } else if (isPWA()) {
     // Non-iOS PWA (Android, etc.)

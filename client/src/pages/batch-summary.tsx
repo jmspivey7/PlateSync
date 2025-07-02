@@ -255,23 +255,10 @@ const BatchSummaryPage = () => {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
-              {isPWA() && isiOS() ? (
-                <>
-                  <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
-                    <Printer className="mr-2 h-4 w-4" />
-                    Open PDF (External)
-                  </Button>
-                  <Button onClick={handleDownloadPdf} variant="outline" className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white w-full sm:w-auto">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
-                  <Printer className="mr-2 h-4 w-4" />
-                  View PDF Report
-                </Button>
-              )}
+              <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
+                <Printer className="mr-2 h-4 w-4" />
+                View PDF Report
+              </Button>
 
               {/* Delete confirmation dialog with warning */}
               {showDeleteConfirm && (
