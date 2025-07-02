@@ -28,6 +28,7 @@ import {
   Loader2,
   X,
   UserCheck,
+  Download,
   Trash2,
   MoreVertical
 } from "lucide-react";
@@ -60,6 +61,7 @@ import {
 import PageLayout from "@/components/layout/PageLayout";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { openPdfExternally, downloadPdfDirectly, isiOS, isPWA } from "@/lib/pdf-utils";
 
 const BatchSummaryPage = () => {
   const { toast } = useToast();
@@ -147,14 +149,27 @@ const BatchSummaryPage = () => {
   });
 
   const handlePrint = () => {
-    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    // Use enhanced PDF opening for PWA compatibility
     if (batch && batch.id) {
-      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+      openPdfExternally(`/api/batches/${batch.id}/pdf-report`);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
         title: "Error",
         description: "Unable to generate PDF report. Batch information is missing.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  const handleDownloadPdf = () => {
+    // Direct download for iOS PWA users
+    if (batch && batch.id) {
+      downloadPdfDirectly(`/api/batches/${batch.id}/pdf-report`, `batch-${batch.id}-report.pdf`);
+    } else {
+      toast({
+        title: "Error",
+        description: "Unable to download PDF report. Batch information is missing.",
         variant: "destructive",
       });
     }
@@ -240,10 +255,23 @@ const BatchSummaryPage = () => {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
-              <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
-                <Printer className="mr-2 h-4 w-4" />
-                View PDF Report
-              </Button>
+              {isPWA() && isiOS() ? (
+                <>
+                  <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
+                    <Printer className="mr-2 h-4 w-4" />
+                    Open PDF (External)
+                  </Button>
+                  <Button onClick={handleDownloadPdf} variant="outline" className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white w-full sm:w-auto">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
+                  <Printer className="mr-2 h-4 w-4" />
+                  View PDF Report
+                </Button>
+              )}
 
               {/* Delete confirmation dialog with warning */}
               {showDeleteConfirm && (
