@@ -494,7 +494,12 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                   onClick={() => {
                     // Check if mobile and direct to Safari if needed
                     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-                    const isMobile = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+                    const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+                    
+                    // Test mode: Force mobile behavior if viewport is narrow (for testing in Replit)
+                    const isNarrowViewport = window.innerWidth <= 768;
+                    const isTestMode = isNarrowViewport && !isMobileDevice;
+                    const isMobile = isMobileDevice || isTestMode;
                     
                     if (isMobile) {
                       // Mobile: Direct Safari navigation with return URL parameter

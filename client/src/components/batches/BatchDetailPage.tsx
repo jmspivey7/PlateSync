@@ -111,7 +111,13 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
 
   const isMobile = () => {
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    return /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+    const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+    
+    // Test mode: Force mobile behavior if viewport is narrow (for testing in Replit)
+    const isNarrowViewport = window.innerWidth <= 768;
+    const isTestMode = isNarrowViewport && !isMobileDevice;
+    
+    return isMobileDevice || isTestMode;
   };
 
   const handlePrint = () => {

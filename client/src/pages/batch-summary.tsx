@@ -150,16 +150,23 @@ const BatchSummaryPage = () => {
 
   const isMobile = () => {
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    return /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+    const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+    
+    // Test mode: Force mobile behavior if viewport is narrow (for testing in Replit)
+    const isNarrowViewport = window.innerWidth <= 768;
+    const isTestMode = isNarrowViewport && !isMobileDevice;
+    
+    return isMobileDevice || isTestMode;
   };
 
   const handlePrint = () => {
     if (batch && batch.id) {
       if (isMobile()) {
-        // Mobile: Direct Safari navigation with return URL parameter
+        // Mobile or test mode: Direct Safari navigation with return URL parameter
         const returnUrl = encodeURIComponent(window.location.href);
         const pdfUrl = `/api/batches/${batch.id}/pdf-report?mobile=true&return=${returnUrl}`;
         window.open(pdfUrl, '_blank');
+        console.log('Opening PDF in new tab (mobile/test mode):', pdfUrl);
       } else {
         // Desktop: Navigate to internal PDF viewer
         console.log('Redirecting to PDF viewer for count report:', batch.id);
