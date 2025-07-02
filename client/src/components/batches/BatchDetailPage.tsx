@@ -124,10 +124,10 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
     if (batch && batch.id) {
       if (isMobile()) {
         // Mobile: Direct navigation to PDF (preserves authentication)
-        window.location.href = `/api/batches/${batch.id}/receipt-report`;
+        window.location.href = `/api/batches/${batch.id}/pdf-report`;
       } else {
         // Desktop: Navigate to internal PDF viewer
-        setLocation(`/pdf-viewer/${batch.id}/receipt`);
+        setLocation(`/pdf-viewer/${batch.id}/count`);
       }
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
