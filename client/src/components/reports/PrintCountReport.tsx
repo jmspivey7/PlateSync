@@ -7,6 +7,7 @@ import { Batch, Donation } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLocation } from "wouter";
+import { openPdfExternally } from "@/lib/pdf-utils";
 
 interface PrintCountReportProps {
   batchId: number;
@@ -29,8 +30,8 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
   });
 
   const handlePrintPDF = () => {
-    // Open the PDF in a new tab/window
-    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
+    // Open the PDF externally in PWA, or new tab in browser
+    openPdfExternally(`/api/batches/${batchId}/pdf-report`);
   };
 
   const formatCurrency = (amount: string | number) => {

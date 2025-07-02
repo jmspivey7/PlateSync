@@ -492,7 +492,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <div className="flex flex-col space-y-3">
                 <Button 
                   onClick={() => {
-                    window.open(`/api/batches/${batchId}/pdf-report`, '_blank');
+                    openPdfExternally(`/api/batches/${batchId}/pdf-report`);
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >
