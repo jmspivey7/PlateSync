@@ -40,7 +40,12 @@ export const openPdfExternally = (pdfUrl: string): void => {
   
   if (isPWA() && isiOS()) {
     // iOS PWA requires special handling to break out of PWA context
-    console.log('iOS PWA detected - using aggressive external browser methods');
+    console.log('🚨 iOS PWA DETECTED - Using aggressive external browser methods');
+    console.log('📱 Device info:', {
+      userAgent: navigator.userAgent,
+      standalone: (window.navigator as any).standalone,
+      displayMode: window.matchMedia('(display-mode: standalone)').matches
+    });
     
     // Method 1: Create a hidden iframe approach
     const iframe = document.createElement('iframe');
@@ -84,10 +89,16 @@ export const openPdfExternally = (pdfUrl: string): void => {
       };
       
       link.onclick = () => {
+        console.log('🎯 User tapped the PDF button! Attempting to open:', pdfUrl);
         cleanup();
+        
         // Try multiple opening methods
-        window.open(pdfUrl, '_blank');
+        console.log('📂 Method 1: Trying window.open with _blank');
+        const newWindow = window.open(pdfUrl, '_blank');
+        console.log('📂 window.open result:', newWindow);
+        
         setTimeout(() => {
+          console.log('📂 Method 2: Trying direct navigation as fallback');
           window.location.href = pdfUrl;
         }, 1000);
       };

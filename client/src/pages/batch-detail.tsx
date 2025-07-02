@@ -309,9 +309,12 @@ const BatchDetailPage = () => {
   };
 
   const handlePrint = () => {
-    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    // Use enhanced PDF opening for PWA compatibility
     if (batch && batch.id) {
-      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+      // Import and use the enhanced PDF utility
+      import('@/lib/pdf-utils').then(({ openPdfExternally }) => {
+        openPdfExternally(`/api/batches/${batch.id}/pdf-report`);
+      });
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
