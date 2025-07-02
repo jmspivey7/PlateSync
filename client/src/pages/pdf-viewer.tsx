@@ -223,12 +223,12 @@ export default function PDFViewer() {
               className="w-full h-full"
               title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
             >
-              <div className="flex flex-col items-center h-full bg-gray-50 p-8" style={{ paddingTop: '35%' }}>
-                <div className="space-y-3 max-w-md">
+              <div className="flex flex-col items-center justify-start h-full bg-gray-50 p-8" style={{ paddingTop: '35%' }}>
+                <div className="space-y-3 flex flex-col items-center">
                   <Button
                     onClick={handleDownload}
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 w-full h-16 text-lg"
-                    style={{ width: '125%' }}
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8"
+                    style={{ width: '300px' }}
                   >
                     <Download className="h-5 w-5" />
                     Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
@@ -236,8 +236,8 @@ export default function PDFViewer() {
                   <Button
                     onClick={() => window.open(pdfBlobUrl, '_blank')}
                     variant="outline"
-                    className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 w-full h-16 text-lg"
-                    style={{ width: '125%' }}
+                    className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 h-16 text-lg px-8"
+                    style={{ width: '300px' }}
                   >
                     Open in New Tab
                   </Button>
