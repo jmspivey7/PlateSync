@@ -419,8 +419,8 @@ const BatchSummaryPage = () => {
                 <div className="flex flex-col sm:flex-row justify-between">
                   <div>
                     <h4 className="font-semibold">
-                      {donation.member?.firstName && donation.member?.lastName
-                        ? `${donation.member.lastName}, ${donation.member.firstName}`
+                      {(donation as any).member?.firstName && (donation as any).member?.lastName
+                        ? `${(donation as any).member.lastName}, ${(donation as any).member.firstName}`
                         : "Cash Donation"}
                     </h4>
                     <div className="text-sm text-muted-foreground flex items-center mt-1">

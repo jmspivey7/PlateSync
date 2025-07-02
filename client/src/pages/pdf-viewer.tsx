@@ -78,7 +78,7 @@ export default function PDFViewer() {
       // Clean up
       URL.revokeObjectURL(url);
       
-      console.log('Download started for:', filename);
+      console.log('Download started for:', `${type}-report-batch-${batchId}.pdf`);
     } catch (error) {
       console.error('Download error:', error);
     }
