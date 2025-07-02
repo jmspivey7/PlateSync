@@ -28,6 +28,7 @@ import { NoCloseDialog, NoCloseDialogContent } from "@/components/ui/no-close-di
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { openPdfExternally } from "@/lib/pdf-utils";
 
 interface BatchDetailProps {
   batchId: number;
@@ -109,9 +110,9 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   };
 
   const handlePrint = () => {
-    // Open the PDF report in a new tab, ensuring we have the correct batch ID
+    // Open the PDF report externally in PWA, or new tab in browser
     if (batch && batch.id) {
-      window.open(`/api/batches/${batch.id}/pdf-report`, '_blank');
+      openPdfExternally(`/api/batches/${batch.id}/pdf-report`);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
