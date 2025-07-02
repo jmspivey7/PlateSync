@@ -11,6 +11,7 @@ export default function PDFViewer() {
   const embedRef = useRef<HTMLEmbedElement>(null);
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [pdfBlob, setPdfBlob] = useState<string>("");
   const [referrer, setReferrer] = useState<string>("/");
 
   const batchId = params?.batchId;
@@ -26,6 +27,13 @@ export default function PDFViewer() {
       console.log('Loading PDF from:', url);
       setPdfUrl(url);
       
+      // Set loading timeout since iframe load events are tricky
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+      
       // Set appropriate referrer based on type
       if (type === 'count') {
         setReferrer(`/batch-summary/${batchId}`);
@@ -35,7 +43,14 @@ export default function PDFViewer() {
         setReferrer("/counts");
       }
     }
-  }, [batchId, type]);
+
+    // Cleanup blob URL on unmount
+    return () => {
+      if (pdfBlob) {
+        URL.revokeObjectURL(pdfBlob);
+      }
+    };
+  }, [batchId, type, toast]);
 
   const handlePrint = () => {
     try {
@@ -102,16 +117,7 @@ export default function PDFViewer() {
     setLocation(referrer);
   };
 
-  // Auto-hide loading state after a short delay since embed elements don't support onLoad
-  useEffect(() => {
-    if (pdfUrl) {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 1000); // Give the embed element time to load
-      
-      return () => clearTimeout(timer);
-    }
-  }, [pdfUrl]);
+
 
   if (!batchId || !type) {
     return (
@@ -179,10 +185,9 @@ export default function PDFViewer() {
           </div>
         )}
         
-        <embed
-          ref={embedRef}
-          src={pdfUrl}
-          type="application/pdf"
+        <iframe
+          ref={embedRef as any}
+          src={pdfBlob || pdfUrl}
           className="w-full h-full border-0"
           title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
         />
