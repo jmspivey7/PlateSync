@@ -492,8 +492,19 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <div className="flex flex-col space-y-3">
                 <Button 
                   onClick={() => {
-                    // Navigate to internal PDF viewer
-                    setLocation(`/pdf-viewer/${batchId}/count`);
+                    // Check if mobile and direct to Safari if needed
+                    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+                    const isMobile = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+                    
+                    if (isMobile) {
+                      // Mobile: Direct Safari navigation with return URL parameter
+                      const returnUrl = encodeURIComponent(window.location.href);
+                      const pdfUrl = `/api/batches/${batchId}/pdf-report?mobile=true&return=${returnUrl}`;
+                      window.open(pdfUrl, '_blank');
+                    } else {
+                      // Desktop: Navigate to internal PDF viewer
+                      setLocation(`/pdf-viewer/${batchId}/count`);
+                    }
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >

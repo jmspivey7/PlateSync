@@ -109,10 +109,22 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
     finalizeBatchMutation.mutate();
   };
 
+  const isMobile = () => {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    return /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+  };
+
   const handlePrint = () => {
-    // Navigate to internal PDF viewer instead of opening externally
     if (batch && batch.id) {
-      setLocation(`/pdf-viewer/${batch.id}/receipt`);
+      if (isMobile()) {
+        // Mobile: Direct Safari navigation with return URL parameter
+        const returnUrl = encodeURIComponent(window.location.href);
+        const pdfUrl = `/api/batches/${batch.id}/receipt-report?mobile=true&return=${returnUrl}`;
+        window.open(pdfUrl, '_blank');
+      } else {
+        // Desktop: Navigate to internal PDF viewer
+        setLocation(`/pdf-viewer/${batch.id}/receipt`);
+      }
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({

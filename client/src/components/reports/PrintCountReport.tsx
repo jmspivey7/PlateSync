@@ -29,9 +29,21 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
     enabled: !!batch,
   });
 
+  const isMobile = () => {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    return /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+  };
+
   const handlePrintPDF = () => {
-    // Navigate to internal PDF viewer
-    navigate(`/pdf-viewer/${batchId}/count`);
+    if (isMobile()) {
+      // Mobile: Direct Safari navigation with return URL parameter
+      const returnUrl = encodeURIComponent(window.location.href);
+      const pdfUrl = `/api/batches/${batchId}/pdf-report?mobile=true&return=${returnUrl}`;
+      window.open(pdfUrl, '_blank');
+    } else {
+      // Desktop: Navigate to internal PDF viewer
+      navigate(`/pdf-viewer/${batchId}/count`);
+    }
   };
 
   const formatCurrency = (amount: string | number) => {

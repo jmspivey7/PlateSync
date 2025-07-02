@@ -50,7 +50,23 @@ export default function PDFViewer() {
     let isMounted = true;
     
     if (batchId && type) {
-      // Set appropriate referrer based on type
+      // Check if mobile user reached this page directly - redirect them back
+      const checkMobile = () => {
+        const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+        return /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
+      };
+      
+      if (checkMobile()) {
+        // Mobile user shouldn't be on this page, redirect to appropriate page
+        const redirectPath = type === 'count' 
+          ? `/batch/${batchId}/summary`
+          : `/batch/${batchId}`;
+        console.log("Mobile user detected on PDF viewer, redirecting to:", redirectPath);
+        setLocation(redirectPath);
+        return;
+      }
+      
+      // Set appropriate referrer based on type for desktop
       if (type === 'count') {
         setReferrer(`/batch/${batchId}/summary`);
       } else if (type === 'receipt') {
