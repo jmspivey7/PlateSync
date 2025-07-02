@@ -20,7 +20,7 @@ export default function PDFViewer() {
     if (batchId && type) {
       // Construct the PDF URL based on type
       const url = type === 'count' 
-        ? `/api/batches/${batchId}/count-report/pdf`
+        ? `/api/batches/${batchId}/pdf-report`
         : `/api/batches/${batchId}/receipt-report/pdf`;
       
       console.log('Loading PDF from:', url);
