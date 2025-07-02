@@ -185,37 +185,16 @@ export default function PDFViewer() {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header with controls */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          
-          {pdfBlobUrl && (
-            <div className="flex gap-2">
-              <Button
-                onClick={handleDownload}
-                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
-              </Button>
-              <Button
-                onClick={() => window.open(pdfBlobUrl, '_blank')}
-                variant="outline"
-                className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2"
-              >
-                Open in New Tab
-              </Button>
-            </div>
-          )}
-        </div>
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleBack}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
         
         <div className="text-right">
           <h1 className="text-lg font-semibold text-gray-900">
@@ -244,10 +223,23 @@ export default function PDFViewer() {
               className="w-full h-full"
               title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
             >
-              <div className="flex items-center justify-center h-full bg-gray-50">
-                <p className="text-gray-600 text-center">
-                  Use the buttons above to download or open the PDF.
-                </p>
+              <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-8">
+                <div className="space-y-3 max-w-md">
+                  <Button
+                    onClick={handleDownload}
+                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 w-full"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
+                  </Button>
+                  <Button
+                    onClick={() => window.open(pdfBlobUrl, '_blank')}
+                    variant="outline"
+                    className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 w-full"
+                  >
+                    Open in New Tab
+                  </Button>
+                </div>
               </div>
             </object>
           </>
