@@ -114,6 +114,7 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 ## Changelog
 
+- July 02, 2025. **CRITICAL SECURITY FIX #2**: Fixed severe SQL injection vulnerability in purge onboarding endpoint (lines 311-313). Replaced all vulnerable string concatenation SQL queries with parameterized Drizzle queries using sql template literals. Added input validation for church ID parameter.
 - July 02, 2025. **SECURITY ENHANCEMENTS**: Completed comprehensive security audit with three high-priority updates:
   1. **File Upload Security**: Enhanced validation for avatars and logos with MIME type checking, file extension verification, malicious filename detection, and size limits across multiple upload endpoints
   2. **Input Validation**: Implemented comprehensive validation for form inputs, recipient data, and user-submitted content with XSS protection and data sanitization

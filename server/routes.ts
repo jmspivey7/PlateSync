@@ -305,89 +305,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
+      // Validate the church ID parameter
+      if (!id || typeof id !== 'string' || id.trim() === '') {
+        return res.status(400).json({ message: 'Invalid church ID provided' });
+      }
+      
       console.log(`Purging church ${id} and all associated data during onboarding cancellation`);
       
-      // Get user IDs associated with this church first
-      const userResult = await db.execute(
-        `SELECT id FROM users WHERE church_id = '${id}'`
-      );
+      // Get user IDs associated with this church first using parameterized query
+      const userResult = await db.execute(sql`SELECT id FROM users WHERE church_id = ${id}`);
       const userIds = userResult.rows.map((row: any) => row.id);
-      const userIdsForQuery = userIds.map((uid: string) => `'${uid}'`).join(',');
       
       console.log(`Purging church ${id} and ${userIds.length} associated users`);
       
       // Delete verification codes for this church
-      await db.execute(
-        `DELETE FROM verification_codes WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM verification_codes WHERE church_id = ${id}`);
       console.log(`Deleted verification codes for church`);
       
       // Delete planning center tokens
-      await db.execute(
-        `DELETE FROM planning_center_tokens WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM planning_center_tokens WHERE church_id = ${id}`);
       console.log(`Deleted planning center tokens`);
       
       // Delete subscription data
-      await db.execute(
-        `DELETE FROM subscriptions WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM subscriptions WHERE church_id = ${id}`);
       console.log(`Deleted subscriptions`);
       
       // Delete service options
-      await db.execute(
-        `DELETE FROM service_options WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM service_options WHERE church_id = ${id}`);
       console.log(`Deleted service options`);
       
       // Delete report recipients
-      await db.execute(
-        `DELETE FROM report_recipients WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM report_recipients WHERE church_id = ${id}`);
       console.log(`Deleted report recipients`);
       
       // Delete donations first to maintain referential integrity
-      await db.execute(
-        `DELETE FROM donations WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM donations WHERE church_id = ${id}`);
       console.log(`Deleted donations`);
       
       // Delete batches
-      await db.execute(
-        `DELETE FROM batches WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM batches WHERE church_id = ${id}`);
       console.log(`Deleted batches`);
       
       // Delete members
-      await db.execute(
-        `DELETE FROM members WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM members WHERE church_id = ${id}`);
       console.log(`Deleted members`);
       
       // Set account_owner_id to NULL to remove foreign key constraint
-      await db.execute(
-        `UPDATE churches SET account_owner_id = NULL WHERE id = '${id}'`
-      );
+      await db.execute(sql`UPDATE churches SET account_owner_id = NULL WHERE id = ${id}`);
       console.log(`Removed account owner reference`);
       
-      // Delete sessions associated with users
+      // Delete sessions associated with users (if any exist)
       if (userIds.length > 0) {
-        await db.execute(
-          `DELETE FROM sessions WHERE sess::jsonb->'user'->>'id' IN (${userIdsForQuery})`
-        );
+        // Use a safer approach for session deletion by iterating through user IDs
+        for (const userId of userIds) {
+          await db.execute(sql`DELETE FROM sessions WHERE sess::jsonb->'user'->>'id' = ${userId}`);
+        }
         console.log(`Deleted user sessions`);
       }
       
       // Now delete users associated with the church
-      await db.execute(
-        `DELETE FROM users WHERE church_id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM users WHERE church_id = ${id}`);
       console.log(`Deleted users`);
       
       // Finally, delete the church itself
-      await db.execute(
-        `DELETE FROM churches WHERE id = '${id}'`
-      );
+      await db.execute(sql`DELETE FROM churches WHERE id = ${id}`);
       console.log(`Deleted church entity`);
       
       res.status(200).json({ 
