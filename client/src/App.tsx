@@ -30,6 +30,7 @@ import EmailTemplateEditor from "@/pages/email-template-editor";
 import Subscription from "@/pages/subscription";
 import SubscriptionPage from "@/pages/subscription-page";
 import ExpiredSubscription from "@/pages/expired-subscription";
+import PDFViewer from "@/pages/pdf-viewer";
 
 // Global Admin pages
 import GlobalAdminLogin from "@/pages/global-admin/login";
@@ -209,6 +210,7 @@ function Router() {
       <Route path="/batch-summary/:id" component={BatchSummary} />
       <Route path="/attest-batch/:id" component={AttestBatch} />
       <Route path="/print-report" component={PrintReport} />
+      <Route path="/pdf-viewer/:batchId/:type" component={PDFViewer} />
       
       {/* Account and Settings Pages */}
       <Route path="/profile" component={Profile} />

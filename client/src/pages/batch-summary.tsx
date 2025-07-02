@@ -149,9 +149,10 @@ const BatchSummaryPage = () => {
   });
 
   const handlePrint = () => {
-    // Use enhanced PDF opening for PWA compatibility
+    // Navigate to embedded PDF viewer for PWA compatibility
     if (batch && batch.id) {
-      openPdfExternally(`/api/batches/${batch.id}/pdf-report`);
+      console.log('Redirecting to PDF viewer for count report:', batch.id);
+      setLocation(`/pdf-viewer/${batch.id}/count`);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
