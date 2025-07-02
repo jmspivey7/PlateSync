@@ -134,27 +134,31 @@ router.get("/churches", requireGlobalAdmin, async (req, res) => {
     const churchesWithStats = await Promise.all(
       churchesList.map(async (church) => {
         // Get user count for this church (excluding GLOBAL_ADMIN users and INACTIVE users)
-        // Use direct SQL to ensure consistent counting with the detail page
-        const userCountResult = await db.execute(
-          `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${church.id}' AND role != 'GLOBAL_ADMIN' AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')`
+        // Use parameterized SQL to prevent injection attacks
+        const userCountResult = await db.$client.query(
+          `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = $1 AND role != 'GLOBAL_ADMIN' AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')`,
+          [church.id]
         );
         const userCount = parseInt(userCountResult.rows[0]?.userCount || '0');
         
-        // Use SQL to get member count for this church safely
-        const memberResult = await db.execute(
-          `SELECT COUNT(*) as "memberCount" FROM members WHERE church_id = '${church.id}'`
+        // Use parameterized SQL to get member count for this church safely
+        const memberResult = await db.$client.query(
+          `SELECT COUNT(*) as "memberCount" FROM members WHERE church_id = $1`,
+          [church.id]
         );
         const memberCount = parseInt(memberResult.rows?.[0]?.memberCount || '0');
         
-        // Use SQL to get total donations for this church safely
-        const donationResult = await db.execute(
-          `SELECT COALESCE(SUM(amount)::text, '0.00') as "donationSum" FROM donations WHERE church_id = '${church.id}'`
+        // Use parameterized SQL to get total donations for this church safely
+        const donationResult = await db.$client.query(
+          `SELECT COALESCE(SUM(amount)::text, '0.00') as "donationSum" FROM donations WHERE church_id = $1`,
+          [church.id]
         );
         const donationSum = donationResult.rows?.[0]?.donationSum || '0.00';
           
-        // Use SQL to get the most recent login date (using updatedAt as a proxy) from any user in this church
-        const userLoginResult = await db.execute(
-          `SELECT updated_at FROM users WHERE church_id = '${church.id}' ORDER BY updated_at DESC LIMIT 1`
+        // Use parameterized SQL to get the most recent login date (using updatedAt as a proxy) from any user in this church
+        const userLoginResult = await db.$client.query(
+          `SELECT updated_at FROM users WHERE church_id = $1 ORDER BY updated_at DESC LIMIT 1`,
+          [church.id]
         );
         
         // If no users have logged in recently, fall back to the church's updated_at date
