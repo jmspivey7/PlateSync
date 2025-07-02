@@ -196,10 +196,14 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Get the church details using string interpolation instead of parameterized query
-    // This is safe because 'id' comes from the route parameter, not user input
+    // Input validation to prevent SQL injection
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return res.status(400).json({ message: "Invalid church ID" });
+    }
+    
+    // Get the church details using parameterized query to prevent SQL injection
     const churchResult = await db.execute(
-      `SELECT * FROM churches WHERE id = '${id}' LIMIT 1`
+      sql`SELECT * FROM churches WHERE id = ${id} LIMIT 1`
     );
     
     const church = churchResult.rows?.[0];
@@ -210,37 +214,37 @@ router.get("/churches/:id", requireGlobalAdmin, async (req, res) => {
     
     // Get active user count (excluding GLOBAL_ADMIN users and INACTIVE users)
     const userResult = await db.execute(
-      `SELECT COUNT(*) as "userCount" FROM users WHERE church_id = '${id}' AND role != 'GLOBAL_ADMIN' AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')`
+      sql`SELECT COUNT(*) as "userCount" FROM users WHERE church_id = ${id} AND role != 'GLOBAL_ADMIN' AND (email IS NULL OR email NOT LIKE 'INACTIVE_%')`
     );
-    const userCount = parseInt(userResult.rows[0]?.userCount || '0');
+    const userCount = parseInt(String(userResult.rows[0]?.userCount || '0'));
       
     // Get members count  
     const membersResult = await db.execute(
-      `SELECT COUNT(*) as "totalMembers" FROM members WHERE church_id = '${id}'`
+      sql`SELECT COUNT(*) as "totalMembers" FROM members WHERE church_id = ${id}`
     );
-    const totalMembers = parseInt(membersResult.rows[0]?.totalMembers || '0');
+    const totalMembers = parseInt(String(membersResult.rows[0]?.totalMembers || '0'));
       
     // Get total donations
     const donationsResult = await db.execute(
-      `SELECT SUM(amount) as "totalDonations" FROM donations WHERE church_id = '${id}'`
+      sql`SELECT SUM(amount) as "totalDonations" FROM donations WHERE church_id = ${id}`
     );
     const totalDonations = donationsResult.rows[0]?.totalDonations || '0.00';
 
     // Get Account Owner's email for contact email
     const accountOwnerResult = await db.execute(
-      `SELECT email FROM users WHERE church_id = '${id}' AND (role = 'ACCOUNT_OWNER' OR is_account_owner = true) AND (email IS NULL OR email NOT LIKE 'INACTIVE_%') LIMIT 1`
+      sql`SELECT email FROM users WHERE church_id = ${id} AND (role = 'ACCOUNT_OWNER' OR is_account_owner = true) AND (email IS NULL OR email NOT LIKE 'INACTIVE_%') LIMIT 1`
     );
     const contactEmail = accountOwnerResult.rows[0]?.email || church.contact_email;
 
     // Get Account Owner's registration date for Created On
     const accountOwnerCreatedResult = await db.execute(
-      `SELECT created_at FROM users WHERE church_id = '${id}' AND (role = 'ACCOUNT_OWNER' OR is_account_owner = true) AND (email IS NULL OR email NOT LIKE 'INACTIVE_%') ORDER BY created_at ASC LIMIT 1`
+      sql`SELECT created_at FROM users WHERE church_id = ${id} AND (role = 'ACCOUNT_OWNER' OR is_account_owner = true) AND (email IS NULL OR email NOT LIKE 'INACTIVE_%') ORDER BY created_at ASC LIMIT 1`
     );
     const createdOn = accountOwnerCreatedResult.rows[0]?.created_at || church.created_at;
 
     // Get most recent finalized count date for Last Updated
     const lastFinalizedResult = await db.execute(
-      `SELECT MAX(attestation_confirmation_date) as last_finalized FROM batches WHERE church_id = '${id}' AND status = 'FINALIZED'`
+      sql`SELECT MAX(attestation_confirmation_date) as last_finalized FROM batches WHERE church_id = ${id} AND status = 'FINALIZED'`
     );
     const lastUpdated = lastFinalizedResult.rows[0]?.last_finalized || church.updated_at;
     
@@ -711,11 +715,11 @@ router.get("/dashboard/analytics", requireGlobalAdmin, async (req, res) => {
         deleted_churches: 0
       },
       subscriptionStats: {
-        trial_subscriptions: parseInt(subscriptionStats.rows[0]?.trial_subscriptions) || 0,
-        monthly_subscriptions: parseInt(subscriptionStats.rows[0]?.monthly_subscriptions) || 0,
-        annual_subscriptions: parseInt(subscriptionStats.rows[0]?.annual_subscriptions) || 0,
-        active_subscriptions: parseInt(subscriptionStats.rows[0]?.active_subscriptions) || 0,
-        trial_active: parseInt(subscriptionStats.rows[0]?.trial_active) || 0
+        trial_subscriptions: parseInt(String(subscriptionStats.rows[0]?.trial_subscriptions)) || 0,
+        monthly_subscriptions: parseInt(String(subscriptionStats.rows[0]?.monthly_subscriptions)) || 0,
+        annual_subscriptions: parseInt(String(subscriptionStats.rows[0]?.annual_subscriptions)) || 0,
+        active_subscriptions: parseInt(String(subscriptionStats.rows[0]?.active_subscriptions)) || 0,
+        trial_active: parseInt(String(subscriptionStats.rows[0]?.trial_active)) || 0
       },
       donationStats: donationStats.rows[0] || {
         total_donations: 0,
