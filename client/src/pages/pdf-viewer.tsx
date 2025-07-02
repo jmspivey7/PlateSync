@@ -102,18 +102,16 @@ export default function PDFViewer() {
     setLocation(referrer);
   };
 
-  const handleEmbedLoad = () => {
-    setIsLoading(false);
-  };
-
-  const handleEmbedError = () => {
-    setIsLoading(false);
-    toast({
-      title: "PDF Load Error",
-      description: "Unable to display PDF. Please try downloading instead.",
-      variant: "destructive",
-    });
-  };
+  // Auto-hide loading state after a short delay since embed elements don't support onLoad
+  useEffect(() => {
+    if (pdfUrl) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 1000); // Give the embed element time to load
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pdfUrl]);
 
   if (!batchId || !type) {
     return (
@@ -187,8 +185,6 @@ export default function PDFViewer() {
           type="application/pdf"
           className="w-full h-full border-0"
           title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
-          onLoad={handleEmbedLoad}
-          onError={handleEmbedError}
         />
       </div>
     </div>
