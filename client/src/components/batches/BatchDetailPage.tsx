@@ -28,6 +28,7 @@ import { NoCloseDialog, NoCloseDialogContent } from "@/components/ui/no-close-di
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { handleMobilePDFAccess } from "@/utils/mobile";
 
 
 interface BatchDetailProps {
@@ -109,26 +110,11 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
     finalizeBatchMutation.mutate();
   };
 
-  const isMobile = () => {
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
-    
-    // Test mode: Force mobile behavior if viewport is narrow (for testing in Replit)
-    const isNarrowViewport = window.innerWidth <= 768;
-    const isTestMode = isNarrowViewport && !isMobileDevice;
-    
-    return isMobileDevice || isTestMode;
-  };
-
   const handlePrint = () => {
     if (batch && batch.id) {
-      if (isMobile()) {
-        // Mobile: Direct navigation to PDF (preserves authentication)
-        window.location.href = `/api/batches/${batch.id}/pdf-report`;
-      } else {
-        // Desktop: Navigate to internal PDF viewer
-        setLocation(`/pdf-viewer/${batch.id}/count`);
-      }
+      // Use the mobile utility to handle PDF access properly
+      const pdfUrl = `${window.location.origin}/api/batches/${batch.id}/pdf-report`;
+      handleMobilePDFAccess(pdfUrl);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({

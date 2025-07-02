@@ -48,6 +48,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { handleMobilePDFAccess } from "@/utils/mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,42 +149,11 @@ const BatchSummaryPage = () => {
     }
   });
 
-  const isMobile = () => {
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
-    
-    // Test mode: Force mobile behavior if viewport is narrow (for testing in Replit)
-    const isNarrowViewport = window.innerWidth <= 768;
-    const isTestMode = isNarrowViewport && !isMobileDevice;
-    
-    return isMobileDevice || isTestMode;
-  };
-
   const handlePrint = () => {
     if (batch && batch.id) {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-      const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
-      const isNarrowViewport = window.innerWidth <= 768;
-      const isMobileDetected = isMobile();
-      
-      console.log('Print button clicked - Debug info:', {
-        userAgent,
-        isMobileDevice,
-        isNarrowViewport,
-        windowWidth: window.innerWidth,
-        isMobileDetected,
-        batchId: batch.id
-      });
-      
-      if (isMobileDetected) {
-        // Mobile or test mode: Direct navigation to PDF (preserves authentication)
-        console.log('Navigating to PDF directly (mobile/test mode):', batch.id);
-        window.location.href = `/api/batches/${batch.id}/pdf-report`;
-      } else {
-        // Desktop: Navigate to internal PDF viewer
-        console.log('Redirecting to PDF viewer for count report:', batch.id);
-        setLocation(`/pdf-viewer/${batch.id}/count`);
-      }
+      // Use the mobile utility to handle PDF access properly
+      const pdfUrl = `${window.location.origin}/api/batches/${batch.id}/pdf-report`;
+      handleMobilePDFAccess(pdfUrl);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
@@ -192,7 +162,7 @@ const BatchSummaryPage = () => {
         variant: "destructive",
       });
     }
-  }
+  };
 
   const handleDownloadPdf = async () => {
     // Direct download implementation

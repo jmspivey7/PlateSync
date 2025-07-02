@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, AlertTriangle, Printer, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { handleMobilePDFAccess } from "@/utils/mobile";
 import { 
   Select,
   SelectContent,
@@ -492,22 +493,9 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <div className="flex flex-col space-y-3">
                 <Button 
                   onClick={() => {
-                    // Check if mobile and direct to Safari if needed
-                    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-                    const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
-                    
-                    // Test mode: Force mobile behavior if viewport is narrow (for testing in Replit)
-                    const isNarrowViewport = window.innerWidth <= 768;
-                    const isTestMode = isNarrowViewport && !isMobileDevice;
-                    const isMobile = isMobileDevice || isTestMode;
-                    
-                    if (isMobile) {
-                      // Mobile: Direct navigation to PDF (preserves authentication)
-                      window.location.href = `/api/batches/${batchId}/pdf-report`;
-                    } else {
-                      // Desktop: Navigate to internal PDF viewer
-                      setLocation(`/pdf-viewer/${batchId}/count`);
-                    }
+                    // Use the mobile utility to handle PDF access properly
+                    const pdfUrl = `${window.location.origin}/api/batches/${batchId}/pdf-report`;
+                    handleMobilePDFAccess(pdfUrl);
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >
