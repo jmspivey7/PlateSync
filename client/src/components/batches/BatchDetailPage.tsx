@@ -28,7 +28,6 @@ import { NoCloseDialog, NoCloseDialogContent } from "@/components/ui/no-close-di
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { handleMobilePDFAccess } from "@/utils/mobile";
 
 
 interface BatchDetailProps {
@@ -111,10 +110,9 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
   };
 
   const handlePrint = () => {
+    // Navigate to internal PDF viewer instead of opening externally
     if (batch && batch.id) {
-      // Use the mobile utility to handle PDF access properly
-      const pdfUrl = `${window.location.origin}/api/batches/${batch.id}/pdf-report`;
-      handleMobilePDFAccess(pdfUrl);
+      setLocation(`/pdf-viewer/${batch.id}/receipt`);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({

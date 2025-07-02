@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, AlertTriangle, Printer, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { handleMobilePDFAccess } from "@/utils/mobile";
 import { 
   Select,
   SelectContent,
@@ -493,9 +492,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               <div className="flex flex-col space-y-3">
                 <Button 
                   onClick={() => {
-                    // Use the mobile utility to handle PDF access properly
-                    const pdfUrl = `${window.location.origin}/api/batches/${batchId}/pdf-report`;
-                    handleMobilePDFAccess(pdfUrl);
+                    // Navigate to internal PDF viewer
+                    setLocation(`/pdf-viewer/${batchId}/count`);
                   }}
                   className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
                 >

@@ -48,7 +48,6 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { handleMobilePDFAccess } from "@/utils/mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,10 +149,10 @@ const BatchSummaryPage = () => {
   });
 
   const handlePrint = () => {
+    // Navigate to embedded PDF viewer for PWA compatibility
     if (batch && batch.id) {
-      // Use the mobile utility to handle PDF access properly
-      const pdfUrl = `${window.location.origin}/api/batches/${batch.id}/pdf-report`;
-      handleMobilePDFAccess(pdfUrl);
+      console.log('Redirecting to PDF viewer for count report:', batch.id);
+      setLocation(`/pdf-viewer/${batch.id}/count`);
     } else {
       console.error("Cannot generate PDF: Batch ID not available");
       toast({
@@ -162,7 +161,7 @@ const BatchSummaryPage = () => {
         variant: "destructive",
       });
     }
-  };
+  }
 
   const handleDownloadPdf = async () => {
     // Direct download implementation

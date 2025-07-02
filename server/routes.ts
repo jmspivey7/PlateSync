@@ -168,8 +168,6 @@ function setupSessionMiddleware(app: Express) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: sessionTtl,
-      // Ensure mobile browsers can handle the cookie properly
-      domain: process.env.NODE_ENV === 'production' ? undefined : undefined,
     },
   }));
   
@@ -1859,27 +1857,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Mobile-friendly authentication middleware for PDF endpoints
-  const mobileAuthenticationHandler = (req: any, res: any, next: any) => {
-    if (!req.isAuthenticated()) {
-      // Check if this looks like a mobile browser request
-      const userAgent = req.headers['user-agent'] || '';
-      const isMobile = /iPhone|iPad|iPod|Android|Mobile/.test(userAgent);
-      
-      if (isMobile) {
-        // For mobile browsers, redirect to login page with return URL
-        const returnUrl = encodeURIComponent(req.originalUrl);
-        return res.redirect(`/login-local?returnUrl=${returnUrl}`);
-      } else {
-        // For desktop/API calls, return 401
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-    }
-    next();
-  };
-
   // PDF Report generation endpoint for batch
-  app.get('/api/batches/:id/pdf-report', mobileAuthenticationHandler, async (req: any, res) => {
+  app.get('/api/batches/:id/pdf-report', isAuthenticated, async (req: any, res) => {
     try {
       const batchId = parseInt(req.params.id);
       const userId = req.user.id || (req.user.claims && req.user.claims.sub);
@@ -1941,7 +1920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const total = cashTotal + checkTotal;
       
       // Helper function to format currency with thousands separators
-      const formatCurrency = (amount: string | number): string => {
+      function formatCurrency(amount: string | number): string {
         // Convert to number if it's a string
         const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
         
@@ -1952,7 +1931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const parts = numStr.split('.');
         const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return `$${integerPart}.${parts[1]}`;
-      };
+      }
       
       try {
         // Import modules dynamically

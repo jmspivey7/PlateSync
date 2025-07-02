@@ -11,13 +11,13 @@ export default function PDFViewer() {
   const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [referrer, setReferrer] = useState<string>("/");
-  const [hasOpenedSafari, setHasOpenedSafari] = useState(false);
 
   const batchId = params?.batchId;
   const type = params?.type; // 'count' or 'receipt'
 
-  // Mobile detection and Safari return handler
   useEffect(() => {
+    let isMounted = true;
+    
     // Detect mobile device
     const checkMobile = () => {
       const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
@@ -26,96 +26,67 @@ export default function PDFViewer() {
       return isMobileDevice;
     };
     setIsMobile(checkMobile());
-
-    // Add page visibility listener for Safari return detection
-    const handleVisibilityChange = () => {
-      if (!document.hidden && hasOpenedSafari && checkMobile()) {
-        console.log("Detected return from Safari, redirecting to referrer:", referrer);
-        // Small delay to ensure Safari transition is complete
-        setTimeout(() => {
-          setLocation(referrer);
-        }, 100);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [hasOpenedSafari, referrer, setLocation]);
-
-  // PDF loading effect
-  useEffect(() => {
-    let isMounted = true;
     
     if (batchId && type) {
-      // Check if mobile user reached this page directly - redirect them back
-      const checkMobile = () => {
-        const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-        const isMobileDevice = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
-        
-        // Test mode: Force mobile behavior if viewport is narrow (for testing in Replit)
-        const isNarrowViewport = window.innerWidth <= 768;
-        const isTestMode = isNarrowViewport && !isMobileDevice;
-        
-        return isMobileDevice || isTestMode;
-      };
-      
-      if (checkMobile()) {
-        // Mobile user shouldn't be on this page, redirect to appropriate page
-        const redirectPath = type === 'count' 
-          ? `/batch/${batchId}/summary`
-          : `/batch/${batchId}`;
-        console.log("Mobile user detected on PDF viewer, redirecting to:", redirectPath);
-        setLocation(redirectPath);
-        return;
-      }
-      
-      // Set appropriate referrer based on type for desktop
+      // Set appropriate referrer based on type
       if (type === 'count') {
-        setReferrer(`/batch/${batchId}/summary`);
+        setReferrer(`/batch-summary/${batchId}`);
       } else if (type === 'receipt') {
         setReferrer(`/batch/${batchId}`);
+      } else {
+        setReferrer("/counts");
       }
 
-      const fetchPdf = async () => {
+      // Fetch PDF as blob to avoid browser security restrictions
+      const fetchPDF = async () => {
         try {
           setIsLoading(true);
           setError(null);
           
-          // Determine the correct API endpoint based on type
-          const endpoint = type === 'count' 
+          // Construct the PDF URL based on type
+          const url = type === 'count' 
             ? `/api/batches/${batchId}/pdf-report`
-            : `/api/batches/${batchId}/receipt-report`;
+            : `/api/batches/${batchId}/receipt-report/pdf`;
           
-          console.log("Fetching PDF from:", endpoint);
+          console.log('Fetching PDF from:', url);
           
-          const response = await fetch(endpoint, {
-            method: 'GET',
+          const response = await fetch(url, {
             credentials: 'include',
+            headers: {
+              'Accept': 'application/pdf'
+            }
           });
-
-          console.log("PDF fetch response:", {
+          
+          console.log('PDF fetch response:', {
             status: response.status,
             statusText: response.statusText,
             contentType: response.headers.get('content-type'),
             url: response.url
           });
-
+          
           if (!response.ok) {
-            throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('PDF fetch error response:', errorText);
+            throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText} - ${errorText}`);
           }
-
+          
           const blob = await response.blob();
-          if (!isMounted) return;
+          
+          // Ensure we're dealing with a PDF
+          if (!blob.type.includes('pdf')) {
+            console.warn('Response is not a PDF, type:', blob.type);
+          }
           
           const blobUrl = URL.createObjectURL(blob);
-          setPdfBlobUrl(blobUrl);
-        } catch (error) {
-          console.error("Error fetching PDF:", error);
+          
           if (isMounted) {
-            setError(error instanceof Error ? error.message : 'Failed to load PDF');
+            setPdfBlobUrl(blobUrl);
+          }
+          
+        } catch (err) {
+          console.error('Error fetching PDF:', err);
+          if (isMounted) {
+            setError(err instanceof Error ? err.message : 'Failed to load PDF');
           }
         } finally {
           if (isMounted) {
@@ -124,7 +95,7 @@ export default function PDFViewer() {
         }
       };
 
-      fetchPdf();
+      fetchPDF();
     }
 
     // Cleanup function
@@ -148,112 +119,109 @@ export default function PDFViewer() {
   const handlePrint = () => {
     try {
       if (pdfBlobUrl) {
+        // Open PDF in new window for printing
         const printWindow = window.open(pdfBlobUrl, '_blank');
         if (printWindow) {
-          printWindow.onload = () => {
+          printWindow.addEventListener('load', () => {
             printWindow.print();
-          };
+          });
         }
       }
     } catch (error) {
-      console.error("Error printing PDF:", error);
+      console.error('Print error:', error);
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     try {
       if (pdfBlobUrl) {
+        console.log('Downloading PDF...');
+        
+        // Create download link
         const link = document.createElement('a');
         link.href = pdfBlobUrl;
-        const filename = type === 'count' 
-          ? `count-report-batch-${batchId}.pdf`
-          : `receipt-report-batch-${batchId}.pdf`;
-        link.download = filename;
+        link.download = `${type}-report-batch-${batchId}.pdf`;
+        link.style.display = 'none';
+        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        console.log('Download started for:', `${type}-report-batch-${batchId}.pdf`);
       }
     } catch (error) {
-      console.error("Error downloading PDF:", error);
+      console.error('Download error:', error);
     }
   };
 
   const handleBack = () => {
+    console.log('Navigating back to:', referrer);
     setLocation(referrer);
   };
 
-  if (isLoading) {
+  if (!batchId || !type) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
+      <div className="container mx-auto p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Invalid PDF Request</h1>
+          <p className="mt-2 text-gray-600">Missing batch ID or report type.</p>
+          <Button onClick={() => setLocation('/')} className="mt-4">
+            Return to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center p-4">
-        <div className="text-red-600 text-center mb-4">
-          <h2 className="text-xl font-semibold mb-2">Error Loading PDF</h2>
-          <p>{error}</p>
+      <div className="container mx-auto p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Error Loading PDF</h1>
+          <p className="mt-2 text-gray-600">{error}</p>
+          <div className="mt-4 space-x-2">
+            <Button onClick={handleBack} variant="outline">
+              Go Back
+            </Button>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
         </div>
-        <Button onClick={handleBack} variant="outline">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Go Back
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-white">
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Header with controls */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <Button
-          onClick={handleBack}
           variant="outline"
           size="sm"
+          onClick={handleBack}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
         
-        <h1 className="text-lg font-semibold text-center flex-1">
-          {type === 'count' ? 'Count Report' : 'Receipt Report'}
-          {batchId && <span className="text-sm text-gray-500 block">Batch #{batchId}</span>}
-        </h1>
-        
-        {/* Desktop controls - only show on desktop */}
-        {!isMobile && (
-          <div className="flex gap-2">
-            <Button
-              onClick={handleDownload}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-            <Button
-              onClick={handlePrint}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
-          </div>
-        )}
+        <div className="text-right">
+          <h1 className="text-lg font-semibold text-gray-900">
+            {type === 'count' ? 'Count Report' : 'Receipt Report'}
+          </h1>
+          <p className="text-sm text-gray-500">Batch #{batchId}</p>
+        </div>
       </div>
-      
-      {/* PDF Content */}
-      <div className="flex-1 relative">
-        {!pdfBlobUrl && (
-          <div className="h-full flex items-center justify-center">
-            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
+
+      {/* PDF Viewer */}
+      <div className="flex-1 relative bg-white">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white flex items-center justify-center z-10">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-[#69ad4c] border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading PDF...</p>
+            </div>
           </div>
         )}
         
@@ -264,11 +232,7 @@ export default function PDFViewer() {
               <div className="flex flex-col items-center justify-start h-full bg-gray-50 p-8" style={{ paddingTop: '35%' }}>
                 <div className="flex flex-col items-center">
                   <Button
-                    onClick={() => {
-                      console.log("Opening Safari, setting tracking flag");
-                      setHasOpenedSafari(true);
-                      window.open(pdfBlobUrl, '_blank');
-                    }}
+                    onClick={() => window.open(pdfBlobUrl, '_blank')}
                     className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8 shadow-lg"
                     style={{ width: '300px' }}
                   >
@@ -283,24 +247,23 @@ export default function PDFViewer() {
                 data={pdfBlobUrl}
                 type="application/pdf"
                 className="w-full h-full"
-                style={{ minHeight: '600px' }}
+                title={`${type === 'count' ? 'Count Report' : 'Receipt Report'} - Batch ${batchId}`}
               >
-                <div className="h-full flex flex-col items-center justify-center p-8 bg-gray-50">
-                  <p className="text-gray-600 mb-4 text-center">
-                    PDF viewer not supported in this browser.
-                  </p>
-                  <div className="flex gap-3">
+                <div className="flex flex-col items-center justify-start h-full bg-gray-50 p-8" style={{ paddingTop: '35%' }}>
+                  <div className="space-y-3 flex flex-col items-center">
                     <Button
                       onClick={handleDownload}
-                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2"
+                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8"
+                      style={{ width: '300px' }}
                     >
-                      <Download className="h-4 w-4" />
-                      Download PDF
+                      <Download className="h-5 w-5" />
+                      Download {type === 'count' ? 'Count Report' : 'Receipt Report'}
                     </Button>
                     <Button
                       onClick={() => window.open(pdfBlobUrl, '_blank')}
                       variant="outline"
-                      className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2"
+                      className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 h-16 text-lg px-8"
+                      style={{ width: '300px' }}
                     >
                       Open in New Tab
                     </Button>
