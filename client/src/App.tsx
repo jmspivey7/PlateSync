@@ -34,6 +34,8 @@ import PDFViewer from "@/pages/pdf-viewer";
 
 // Global Admin pages
 import GlobalAdminLogin from "@/pages/global-admin/login";
+import GlobalAdminForgotPassword from "@/pages/global-admin/forgot-password";
+import GlobalAdminResetPassword from "@/pages/global-admin/reset-password";
 import GlobalAdminDashboard from "@/pages/global-admin/dashboard";
 import GlobalAdminChurches from "@/pages/global-admin/churches";
 import ChurchDetail from "@/pages/global-admin/church-detail";
@@ -67,6 +69,8 @@ const PUBLIC_PATHS = [
 // Global Admin paths are handled separately
 const GLOBAL_ADMIN_PATHS = [
   "/global-admin/login",
+  "/global-admin/forgot-password",
+  "/global-admin/reset-password",
   "/global-admin/dashboard",
   "/global-admin/churches",
   "/global-admin/church/",  // Updated to support all church detail pages with trailing slash
@@ -226,6 +230,8 @@ function Router() {
       
       {/* Global Admin Routes */}
       <Route path="/global-admin/login" component={GlobalAdminLogin} />
+      <Route path="/global-admin/forgot-password" component={GlobalAdminForgotPassword} />
+      <Route path="/global-admin/reset-password" component={GlobalAdminResetPassword} />
       <Route path="/global-admin/dashboard" component={GlobalAdminDashboard} />
       <Route path="/global-admin/churches" component={GlobalAdminChurches} />
       <Route path="/global-admin/church/:id" component={ChurchDetail} />

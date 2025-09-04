@@ -165,6 +165,17 @@ export default function GlobalAdminLogin() {
                   )}
                 />
                 
+                <div className="flex justify-end">
+                  <Button
+                    variant="link"
+                    type="button"
+                    className="text-sm text-[#69ad4c] hover:text-[#5a9440] p-0"
+                    onClick={() => setLocation("/global-admin/forgot-password")}
+                  >
+                    Forgot Password?
+                  </Button>
+                </div>
+                
                 <Button
                   type="submit"
                   className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"

@@ -225,7 +225,7 @@ export const insertMemberSchema = createInsertSchema(members).pick({
 export const insertChurchMemberSchema = createInsertSchema(churchMembers).pick({
   churchId: true,
   memberId: true,
-  memberNotes: true,
+  notes: true,
   joinedDate: true,
   isActive: true,
 });
