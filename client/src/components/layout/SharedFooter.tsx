@@ -1,13 +1,13 @@
-import plateSyncLogo from "../../assets/platesync-logo.png";
+import plateSyncLogoHorizontal from "../../assets/platesync-logo-horizontal.png";
 
 const SharedFooter = () => {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-center mt-3 mb-4 gap-4">
       <div>
         <img 
-          src={plateSyncLogo} 
+          src={plateSyncLogoHorizontal} 
           alt="PlateSYNQ - Church Collection Management" 
-          className="h-11 object-contain" /* Increased by 10% from h-10 */
+          className="h-10 object-contain" /* Horizontal logo for footer */
         />
       </div>
       <div className="text-right text-gray-500 text-xs">
