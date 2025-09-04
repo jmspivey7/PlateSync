@@ -173,7 +173,7 @@ export default function LoginLocal() {
               <img 
                 src={plateSyncLogo} 
                 alt="PlateSYNQ Logo" 
-                className="mx-auto h-[5.25rem]" /* 25% reduction from h-28 (7rem) */
+                className="mx-auto h-[6.3rem]" /* 20% larger than 5.25rem */
               />
             </div>
           </CardHeader>
