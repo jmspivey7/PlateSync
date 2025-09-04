@@ -40,7 +40,7 @@ export default function GlobalAdminHelp() {
               className="h-10 object-contain" 
             />
             <div className="h-6 w-px bg-gray-300 mx-2"></div>
-            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Admin</h1>
+            <h1 className="text-xl font-semibold text-[#d35f5f]">Global Admin</h1>
           </div>
           <div className="flex items-center space-x-4">
             <Button 
@@ -64,7 +64,7 @@ export default function GlobalAdminHelp() {
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center mb-6">
-            <HelpCircle className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <HelpCircle className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">Help & Support</h2>
           </div>
           
@@ -77,7 +77,7 @@ export default function GlobalAdminHelp() {
                 <p className="text-sm text-gray-600 mb-4">
                   Access comprehensive guides and documentation for PlateSYNQ's Global Admin features.
                 </p>
-                <Button className="w-full bg-[#69ad4c] hover:bg-[#5a9740]">
+                <Button className="w-full bg-[#d35f5f] hover:bg-[#5a9740]">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   View Documentation
                 </Button>

@@ -77,7 +77,7 @@ const Donations = () => {
     if (!status) return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>;
     switch (status) {
       case 'SENT':
-        return <Badge className="bg-green-100 text-green-800">Notified</Badge>;
+        return <Badge className="bg-red-100 text-red-800">Notified</Badge>;
       case 'PENDING':
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       case 'FAILED':
@@ -142,7 +142,7 @@ const Donations = () => {
                 
                 <div>
                   <h3 className="font-medium text-gray-500 mb-1">Amount</h3>
-                  <p className="text-lg font-medium text-[#48BB78]">
+                  <p className="text-lg font-medium text-[#d35f5f]">
                     ${donation?.amount ? parseFloat(donation.amount.toString()).toFixed(2) : '0.00'}
                   </p>
                 </div>
@@ -200,7 +200,7 @@ const Donations = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold font-inter text-[#2D3748]">Donations</h2>
           <Button 
-            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white" 
+            className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white" 
             onClick={handleNewDonation}
           >
             <Plus className="h-5 w-5 mr-2" />

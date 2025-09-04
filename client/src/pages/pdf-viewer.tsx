@@ -219,7 +219,7 @@ export default function PDFViewer() {
         {isLoading && (
           <div className="absolute inset-0 bg-white flex items-center justify-center z-10">
             <div className="text-center">
-              <div className="animate-spin w-8 h-8 border-4 border-[#69ad4c] border-t-transparent rounded-full mx-auto mb-4"></div>
+              <div className="animate-spin w-8 h-8 border-4 border-[#d35f5f] border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-gray-600">Loading PDF...</p>
             </div>
           </div>
@@ -233,7 +233,7 @@ export default function PDFViewer() {
                 <div className="flex flex-col items-center">
                   <Button
                     onClick={() => window.open(pdfBlobUrl, '_blank')}
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8 shadow-lg"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white flex items-center gap-2 h-16 text-lg px-8 shadow-lg"
                     style={{ width: '300px' }}
                   >
                     <FileText className="h-5 w-5" />
@@ -253,7 +253,7 @@ export default function PDFViewer() {
                   <div className="space-y-3 flex flex-col items-center">
                     <Button
                       onClick={handleDownload}
-                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex items-center gap-2 h-16 text-lg px-8"
+                      className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white flex items-center gap-2 h-16 text-lg px-8"
                       style={{ width: '300px' }}
                     >
                       <Download className="h-5 w-5" />
@@ -262,7 +262,7 @@ export default function PDFViewer() {
                     <Button
                       onClick={() => window.open(pdfBlobUrl, '_blank')}
                       variant="outline"
-                      className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c] hover:text-white flex items-center gap-2 h-16 text-lg px-8"
+                      className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f] hover:text-white flex items-center gap-2 h-16 text-lg px-8"
                       style={{ width: '300px' }}
                     >
                       Open in New Tab

@@ -55,7 +55,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         title: "Payment Verified",
         description: "Your subscription has been manually verified.",
         variant: "default",
-        className: "bg-green-50 border-green-600 text-green-800",
+        className: "bg-red-50 border-red-600 text-red-800",
       });
     } catch (error) {
       console.error('Error verifying payment:', error);
@@ -152,19 +152,19 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
           </p>
           <ul className="space-y-2 mb-4">
             <li className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-red-500" />
               <span>Unlimited members</span>
             </li>
             <li className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-red-500" />
               <span>Unlimited donation tracking</span>
             </li>
             <li className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-red-500" />
               <span>Email notifications</span>
             </li>
             <li className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-red-500" />
               <span>Planning Center integration</span>
             </li>
           </ul>
@@ -217,7 +217,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
             </div>
             <div className="flex items-center justify-between border-b pb-2">
               <span className="font-medium">Status:</span>
-              <span className="text-green-600 font-medium">Active</span>
+              <span className="text-red-600 font-medium">Active</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium">Ends On:</span>
@@ -232,7 +232,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-red-600 hover:bg-red-700 text-white"
           >
             Upgrade to Paid Plan
           </Button>
@@ -291,7 +291,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-red-600 hover:bg-red-700 text-white"
           >
             Upgrade Now
           </Button>
@@ -308,7 +308,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardHeader>
           <div className="flex justify-between items-center mb-2">
             <CardTitle>Active Subscription</CardTitle>
-            <Badge className="bg-green-600 text-white">Active</Badge>
+            <Badge className="bg-red-600 text-white">Active</Badge>
           </div>
           <CardDescription>
             Your subscription is active
@@ -326,7 +326,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
             </div>
             <div className="flex items-center justify-between border-b pb-2">
               <span className="font-medium">Status:</span>
-              <span className="text-green-600 font-medium">Active</span>
+              <span className="text-red-600 font-medium">Active</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium">Renewal Date:</span>
@@ -445,7 +445,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         <CardFooter>
           <Button 
             onClick={onUpgrade} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-red-600 hover:bg-red-700 text-white"
           >
             Create a New Plan
           </Button>
@@ -487,7 +487,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
       <CardFooter>
         <Button 
           onClick={onUpgrade} 
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
+          className="w-full bg-red-600 hover:bg-red-700 text-white"
         >
           Select a New Plan
         </Button>

@@ -133,7 +133,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
 
   const getBadgeClass = (status: string) => {
     const statusColors = {
-      OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
+      OPEN: "bg-red-100 text-red-800 hover:bg-red-100",
       CLOSED: "bg-orange-100 text-orange-800 hover:bg-orange-100",
       FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
     };
@@ -291,7 +291,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="text-sm text-gray-500">Total Amount</div>
-            <div className="text-xl font-bold text-[#48BB78]">
+            <div className="text-xl font-bold text-[#d35f5f]">
               {formatCurrency(batch.totalAmount || 0)}
             </div>
           </div>
@@ -314,7 +314,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
         <div className="mb-6">
           <Button 
             onClick={handleAddDonation}
-            className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto"
+            className="bg-red-600 hover:bg-red-700 text-white w-full md:w-auto"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Record New Donation
@@ -336,7 +336,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
                       {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                     </div>
                   </div>
-                  <div className="font-medium text-[#48BB78]">
+                  <div className="font-medium text-[#d35f5f]">
                     {formatCurrency(donation.amount)}
                   </div>
                 </div>

@@ -21,8 +21,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 
 const statusColors = {
-  OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
-  PENDING_FINALIZATION: "bg-green-100 text-green-800 hover:bg-green-100", // Same style as OPEN
+  OPEN: "bg-red-100 text-red-800 hover:bg-red-100",
+  PENDING_FINALIZATION: "bg-red-100 text-red-800 hover:bg-red-100", // Same style as OPEN
   FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
 };
 
@@ -194,11 +194,11 @@ const CountsPage = () => {
     <PageLayout
       title="All Counts"
       subtitle="View and manage donation counts."
-      icon={<Calendar className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<Calendar className="h-6 w-6 text-[#d35f5f]" />}
       action={
         <Button 
           onClick={handleCreateBatch}
-          className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+          className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           New Count
@@ -212,13 +212,13 @@ const CountsPage = () => {
             <TabsList className="grid w-full grid-cols-2 p-1 shadow-sm border border-gray-200 rounded-md">
               <TabsTrigger 
                 value="open"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-[#d35f5f] hover:bg-[#d35f5f]/10 transition-colors duration-200"
               >
                 Open
               </TabsTrigger>
               <TabsTrigger 
                 value="finalized"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-[#d35f5f] hover:bg-[#d35f5f]/10 transition-colors duration-200"
               >
                 Finalized
               </TabsTrigger>
@@ -265,7 +265,7 @@ const CountsPage = () => {
                             return format(correctedDate, 'MM/dd/yyyy');
                           })()}
                         </td>
-                        <td className="py-3 px-3 font-medium text-[#48BB78] text-right">
+                        <td className="py-3 px-3 font-medium text-[#d35f5f] text-right">
                           {(() => {
                             // For finalized batches, use the stored total amount
                             if (batch.status === "FINALIZED") {
@@ -359,7 +359,7 @@ const CountsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="text-sm text-gray-500">Total Amount</div>
-                <div className="text-xl font-bold text-[#48BB78]">
+                <div className="text-xl font-bold text-[#d35f5f]">
                   {formatCurrency(selectedBatch.totalAmount || 0)}
                 </div>
               </div>
@@ -409,7 +409,7 @@ const CountsPage = () => {
                           {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                         </div>
                       </div>
-                      <div className="font-medium text-[#48BB78]">
+                      <div className="font-medium text-[#d35f5f]">
                         {formatCurrency(donation.amount)}
                       </div>
                     </div>

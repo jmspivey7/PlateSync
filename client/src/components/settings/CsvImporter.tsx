@@ -304,10 +304,10 @@ const CsvImporter = () => {
         )}
 
         {importStatus === 'success' && (
-          <Alert className="mb-4 bg-green-50 border-green-200">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertTitle className="text-green-800">Import Successful</AlertTitle>
-            <AlertDescription className="text-green-700 text-sm">
+          <Alert className="mb-4 bg-red-50 border-red-200">
+            <CheckCircle2 className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800">Import Successful</AlertTitle>
+            <AlertDescription className="text-red-700 text-sm">
               {statusMessage}
             </AlertDescription>
           </Alert>
@@ -353,7 +353,7 @@ const CsvImporter = () => {
           <Button
             onClick={handleImport}
             disabled={!file || importStatus === 'loading'}
-            className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6 mb-2"
+            className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white px-6 mb-2"
           >
             {importStatus === 'loading' ? (
               <>

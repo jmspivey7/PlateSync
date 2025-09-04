@@ -114,6 +114,12 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 ## Changelog
 
+- January 03, 2025. **BRAND & DESIGN UPDATE**: Comprehensive rebranding and design refresh:
+  1. **Brand Name Update**: Changed from "PlateSync" to "PlateSYNQ" across all user-facing interfaces
+  2. **Color Scheme Transformation**: Complete update from green (#69ad4c) to red (#d35f5f) primary color
+  3. **UI Consistency**: Updated all components including buttons, icons, headers, tabs, and forms to use the new red color scheme
+  4. **Chart Updates**: Modified donation charts to use green for cash visualization and red for checks
+  5. **Global Admin Portal**: Updated all admin interfaces to match the new brand identity
 - July 02, 2025. **CRITICAL SECURITY FIX #2**: Fixed severe SQL injection vulnerability in purge onboarding endpoint (lines 311-313). Replaced all vulnerable string concatenation SQL queries with parameterized Drizzle queries using sql template literals. Added input validation for church ID parameter.
 - July 02, 2025. **SECURITY ENHANCEMENTS**: Completed comprehensive security audit with three high-priority updates:
   1. **File Upload Security**: Enhanced validation for avatars and logos with MIME type checking, file extension verification, malicious filename detection, and size limits across multiple upload endpoints

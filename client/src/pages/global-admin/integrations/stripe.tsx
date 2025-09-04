@@ -173,7 +173,7 @@ export default function StripeIntegration() {
       toast({
         title: "Stripe keys validated",
         description: `Your Stripe integration appears to be properly configured in ${isLiveMode ? 'live' : 'test'} mode`,
-        className: "bg-[#69ad4c] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     } catch (error) {
       console.error("Stripe test error:", error);
@@ -266,7 +266,7 @@ export default function StripeIntegration() {
       toast({
         title: "Configuration saved",
         description: "Stripe configuration has been successfully updated",
-        className: "bg-[#69ad4c] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     } catch (error) {
       toast({
@@ -284,7 +284,7 @@ export default function StripeIntegration() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <RotateCw className="h-12 w-12 animate-spin text-[#69ad4c]" />
+          <RotateCw className="h-12 w-12 animate-spin text-[#d35f5f]" />
           <p className="text-gray-500">Verifying authentication...</p>
         </div>
       </div>
@@ -298,12 +298,12 @@ export default function StripeIntegration() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <CreditCard className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <CreditCard className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">Stripe Integration</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/settings?tab=integrations")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -321,14 +321,14 @@ export default function StripeIntegration() {
           <CardContent>
             <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded-md">
               <div className="flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-2 ${isLiveMode ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                <div className={`w-3 h-3 rounded-full mr-2 ${isLiveMode ? 'bg-red-500' : 'bg-amber-500'}`}></div>
                 <span className="font-medium">{isLiveMode ? 'Live Mode' : 'Test Mode'}</span>
               </div>
               <div className="flex items-center">
                 <Label htmlFor="mode-toggle" className={`mr-2 text-sm ${!isLiveMode ? 'font-bold' : ''}`}>Test</Label>
                 <div
                   onClick={() => setIsLiveMode(!isLiveMode)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer ${isLiveMode ? 'bg-[#69ad4c]' : 'bg-gray-300'}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer ${isLiveMode ? 'bg-[#d35f5f]' : 'bg-gray-300'}`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isLiveMode ? 'translate-x-6' : 'translate-x-1'}`}
@@ -497,7 +497,7 @@ export default function StripeIntegration() {
                 
                 <Button 
                   onClick={saveConfiguration} 
-                  className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+                  className="bg-[#d35f5f] hover:bg-[#5a9740] text-white"
                   disabled={isSaving}
                 >
                   {isSaving ? (

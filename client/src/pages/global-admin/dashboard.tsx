@@ -48,7 +48,7 @@ const StatsCard = ({
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        {icon && <div className="text-[#69ad4c]">{icon}</div>}
+        {icon && <div className="text-[#d35f5f]">{icon}</div>}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
@@ -57,7 +57,7 @@ const StatsCard = ({
         )}
         {trend && (
           <div className="flex items-center mt-1 text-xs">
-            <span className={trend.isPositive ? "text-green-600 mr-1" : "text-red-600 mr-1"}>
+            <span className={trend.isPositive ? "text-red-600 mr-1" : "text-red-600 mr-1"}>
               {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}%
             </span>
             <span className="text-muted-foreground">from last month</span>
@@ -148,7 +148,7 @@ export default function GlobalAdminDashboard() {
     { name: 'Annual', value: parseInt(analytics?.subscriptionStats?.annual_subscriptions) || 0 },
   ];
 
-  const COLORS = ["#69ad4c", "#132433", "#8884d8", "#82ca9d"];
+  const COLORS = ["#d35f5f", "#132433", "#8884d8", "#82ca9d"];
 
   // Handle error state
   if (error) {
@@ -229,7 +229,7 @@ export default function GlobalAdminDashboard() {
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="trial" name="Trials" fill="#69ad4c" />
+                        <Bar dataKey="trial" name="Trials" fill="#d35f5f" />
                         <Bar dataKey="subscriber" name="Subscribers" fill="#132433" />
                       </BarChart>
                     </ResponsiveContainer>
@@ -294,7 +294,7 @@ export default function GlobalAdminDashboard() {
                     <CardDescription>% of trials that convert to paid subscriptions</CardDescription>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-[#69ad4c]">
+                    <div className="text-2xl font-bold text-[#d35f5f]">
                       {currentConversionRate}%
                     </div>
                     <div className="text-xs text-muted-foreground">Current conversion</div>
@@ -313,7 +313,7 @@ export default function GlobalAdminDashboard() {
                           type="monotone" 
                           dataKey="rate" 
                           name="Conversion Rate (%)" 
-                          stroke="#69ad4c" 
+                          stroke="#d35f5f" 
                           strokeWidth={2}
                           activeDot={{ r: 8 }} 
                         />

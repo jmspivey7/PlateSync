@@ -76,7 +76,7 @@ const systemTemplates: EmailTemplate[] = [
     
     .button {
       display: inline-block;
-      background-color: #69ad4c;
+      background-color: #d35f5f;
       color: white;
       text-decoration: none;
       padding: 12px 24px;
@@ -168,7 +168,7 @@ const systemTemplates: EmailTemplate[] = [
     
     .button {
       display: inline-block;
-      background-color: #69ad4c;
+      background-color: #d35f5f;
       color: white;
       text-decoration: none;
       padding: 12px 24px;
@@ -354,12 +354,12 @@ export default function GlobalAdminSettings() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <SettingsIcon className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <SettingsIcon className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">System Settings</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/dashboard")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -378,7 +378,7 @@ export default function GlobalAdminSettings() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center">
-                    <Mail className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    <Mail className="h-5 w-5 mr-2 text-[#d35f5f]" />
                     <CardTitle>System Email Templates</CardTitle>
                   </div>
                   <CardDescription>
@@ -421,7 +421,7 @@ export default function GlobalAdminSettings() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center">
-                    <Network className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    <Network className="h-5 w-5 mr-2 text-[#d35f5f]" />
                     <CardTitle>Integrations</CardTitle>
                   </div>
                   <CardDescription>
@@ -534,7 +534,7 @@ export default function GlobalAdminSettings() {
                           <Button
                             onClick={handleSaveTemplate}
                             disabled={isSaving}
-                            className="bg-[#69ad4c] hover:bg-[#5a9440]"
+                            className="bg-[#d35f5f] hover:bg-[#5a9440]"
                           >
                             {isSaving ? (
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

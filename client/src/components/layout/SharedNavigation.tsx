@@ -69,12 +69,12 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
             </div>
           ) : user?.churchName ? (
             <div className="flex items-center">
-              <Church className="h-8 w-8 mr-2 text-[#69ad4c]" />
+              <Church className="h-8 w-8 mr-2 text-[#d35f5f]" />
               <span className="text-xl font-bold">{user.churchName}</span>
             </div>
           ) : (
             <div className="flex items-center">
-              <Church className="h-8 w-8 mr-2 text-[#69ad4c]" />
+              <Church className="h-8 w-8 mr-2 text-[#d35f5f]" />
               <span className="text-xl font-bold">PlateSYNQ</span>
             </div>
           )}
@@ -101,7 +101,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
           {/* Header with user profile and close button */}
           <div className="pt-16 p-6 border-b border-gray-100 flex justify-between items-center">
             <div className="flex items-center">
-              <Avatar className="h-16 w-16 bg-[#69ad4c] mr-4">
+              <Avatar className="h-16 w-16 bg-[#d35f5f] mr-4">
                 {user?.profileImageUrl ? (
                   <AvatarImage src={user.profileImageUrl} alt={user?.firstName || "User"} />
                 ) : (
@@ -125,7 +125,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
               {isAccountOwner ? (
                 <div className="flex items-center justify-center">
                   <span className="mr-2">Account Owner</span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#69ad4c] text-white">O</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#d35f5f] text-white">O</span>
                 </div>
               ) : isAdmin ? "Administrator" : "Standard User"}
             </div>

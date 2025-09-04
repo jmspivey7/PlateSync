@@ -304,7 +304,7 @@ export default function PlanningCenterIntegration() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <RotateCw className="h-12 w-12 animate-spin text-[#69ad4c]" />
+          <RotateCw className="h-12 w-12 animate-spin text-[#d35f5f]" />
           <p className="text-gray-500">Verifying authentication...</p>
         </div>
       </div>
@@ -318,12 +318,12 @@ export default function PlanningCenterIntegration() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Users className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <Users className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">Planning Center Integration</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/settings?tab=integrations")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -397,7 +397,7 @@ export default function PlanningCenterIntegration() {
               <div className="flex justify-end">
                 <Button 
                   onClick={saveConfiguration} 
-                  className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+                  className="bg-[#d35f5f] hover:bg-[#5a9740] text-white"
                   disabled={isSaving || !clientId || !clientSecret || !callbackUrl || !registrationCallbackUrl}
                 >
                   {isSaving ? (
@@ -464,29 +464,29 @@ export default function PlanningCenterIntegration() {
               {configTestResult && (
                 <div className={`rounded-md p-4 ${
                   configTestResult.success 
-                    ? "bg-green-50 border border-green-100" 
+                    ? "bg-red-50 border border-red-100" 
                     : "bg-red-50 border border-red-100"
                 }`}>
                   <div className="flex items-start">
                     {configTestResult.success ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+                      <CheckCircle2 className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
                     ) : (
                       <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
                     )}
                     <div>
                       <h4 className={`text-sm font-medium ${
-                        configTestResult.success ? "text-green-800" : "text-red-800"
+                        configTestResult.success ? "text-red-800" : "text-red-800"
                       }`}>
                         {configTestResult.success ? "Configuration Valid" : "Configuration Error"}
                       </h4>
                       <p className={`text-sm mt-1 ${
-                        configTestResult.success ? "text-green-700" : "text-red-700"
+                        configTestResult.success ? "text-red-700" : "text-red-700"
                       }`}>
                         {configTestResult.message}
                       </p>
                       {configTestResult.activeConnections && (
                         <div className="mt-2">
-                          <p className="text-sm font-medium text-green-800">
+                          <p className="text-sm font-medium text-red-800">
                             Active Connections: {configTestResult.activeConnections}
                           </p>
                         </div>

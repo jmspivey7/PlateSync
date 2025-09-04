@@ -212,12 +212,12 @@ export default function GlobalAdminChurches() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Building2 className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <Building2 className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">Church Management</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/dashboard")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -270,7 +270,7 @@ export default function GlobalAdminChurches() {
                   <p className="text-destructive mb-4">{error?.message || "Failed to load churches"}</p>
                   <Button 
                     onClick={() => refetch()} 
-                    className="bg-[#69ad4c] hover:bg-[#5a9440]"
+                    className="bg-[#d35f5f] hover:bg-[#5a9440]"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Try Again
@@ -279,8 +279,8 @@ export default function GlobalAdminChurches() {
               ) : isLoading ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <div className="relative h-16 w-16">
-                    <Loader2 className="h-16 w-16 animate-spin text-[#69ad4c]" />
-                    <Building2 className="h-8 w-8 text-[#69ad4c] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                    <Loader2 className="h-16 w-16 animate-spin text-[#d35f5f]" />
+                    <Building2 className="h-8 w-8 text-[#d35f5f] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
                   </div>
                   <p className="mt-4 text-muted-foreground">Loading churches...</p>
                 </div>
@@ -302,7 +302,7 @@ export default function GlobalAdminChurches() {
                           <TableRow 
                             key={church.id} 
                             onClick={() => handleDetailView(church.id)} 
-                            className="cursor-pointer hover:bg-[#69ad4c]/5 transition-colors"
+                            className="cursor-pointer hover:bg-[#d35f5f]/5 transition-colors"
                           >
                             <TableCell className="font-medium truncate max-w-[350px]">
                               {church.name}

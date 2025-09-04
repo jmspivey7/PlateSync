@@ -355,7 +355,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                   
                   <Button 
                     type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                     disabled={primaryAttestMutation.isPending}
                   >
                     {primaryAttestMutation.isPending && (
@@ -380,7 +380,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
           <CardContent>
             <div className="mb-4">
               <div className="flex items-center p-3 bg-gray-50 rounded-md mb-6">
-                <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                <CheckCircle2 className="h-5 w-5 text-red-500 mr-2" />
                 <div>
                   <p className="font-medium">Primary attestation complete</p>
                   <p className="text-sm text-gray-600">
@@ -464,7 +464,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                   
                   <Button 
                     type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                     disabled={secondaryAttestMutation.isPending}
                   >
                     {secondaryAttestMutation.isPending && (
@@ -490,7 +490,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
             <div className="space-y-6">
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center p-3 bg-gray-50 rounded-md">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                  <CheckCircle2 className="h-5 w-5 text-red-500 mr-2" />
                   <div>
                     <p className="font-medium">Primary attestation complete</p>
                     <p className="text-sm text-gray-600">
@@ -500,7 +500,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                 </div>
                 
                 <div className="flex items-center p-3 bg-gray-50 rounded-md">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                  <CheckCircle2 className="h-5 w-5 text-red-500 mr-2" />
                   <div>
                     <p className="font-medium">Secondary attestation complete</p>
                     <p className="text-sm text-gray-600">
@@ -533,7 +533,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                       }
                     }, 1000);
                   }}
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                  className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                 >
                   <Printer className="mr-2 h-4 w-4" />
                   Print Report
@@ -562,7 +562,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
             <div className="space-y-6">
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center p-3 bg-gray-50 rounded-md">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                  <CheckCircle2 className="h-5 w-5 text-red-500 mr-2" />
                   <div>
                     <p className="font-medium">Primary attestation complete</p>
                     <p className="text-sm text-gray-600">
@@ -572,7 +572,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                 </div>
                 
                 <div className="flex items-center p-3 bg-gray-50 rounded-md">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                  <CheckCircle2 className="h-5 w-5 text-red-500 mr-2" />
                   <div>
                     <p className="font-medium">Secondary attestation complete</p>
                     <p className="text-sm text-gray-600">
@@ -590,7 +590,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               
               <Button 
                 onClick={onConfirmAttestation}
-                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full"
+                className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full"
                 disabled={confirmAttestationMutation.isPending}
               >
                 {confirmAttestationMutation.isPending && (
@@ -612,8 +612,8 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-6">
-            <div className="bg-green-100 rounded-full p-3 mb-4">
-              <CheckCircle2 className="h-10 w-10 text-green-500" />
+            <div className="bg-red-100 rounded-full p-3 mb-4">
+              <CheckCircle2 className="h-10 w-10 text-red-500" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Attestation Complete</h3>
             <p className="text-gray-600 text-center mb-6">
@@ -624,7 +624,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                 // Direct the user to the batch summary page instead of going back to counts list
                 window.location.href = `/batch-summary/${batchId}?finalized=true`;
               }}
-              className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+              className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
             >
               View Count Summary
             </Button>

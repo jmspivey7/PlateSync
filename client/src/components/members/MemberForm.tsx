@@ -110,7 +110,7 @@ const MemberForm = ({ memberId, isEdit = false, onClose }: MemberFormProps) => {
       toast({
         title: "Success",
         description: isEdit ? "Member updated successfully." : "Member created successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
       
       if (onClose) {
@@ -255,7 +255,7 @@ const MemberForm = ({ memberId, isEdit = false, onClose }: MemberFormProps) => {
                 </Button>
                 <Button 
                   type="submit" 
-                  className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+                  className="bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
                   disabled={memberMutation.isPending}
                 >
                   {memberMutation.isPending && (

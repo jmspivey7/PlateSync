@@ -34,33 +34,33 @@ const Header = () => {
       <header className="bg-[#2D3748] text-white shadow-md">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <DollarSign className="h-8 w-8 text-[#48BB78]" />
+            <DollarSign className="h-8 w-8 text-[#d35f5f]" />
             <h1 className="text-xl font-bold font-inter tracking-tight">PlateSYNQ</h1>
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/">
-              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/' ? 'text-[#48BB78]' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-[#d35f5f] transition ${location === '/' ? 'text-[#d35f5f]' : ''}`}>
                 Dashboard
               </a>
             </Link>
             <Link href="/donations">
-              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/donations' ? 'text-[#48BB78]' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-[#d35f5f] transition ${location === '/donations' ? 'text-[#d35f5f]' : ''}`}>
                 Donations
               </a>
             </Link>
             <Link href="/members">
-              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/members' ? 'text-[#48BB78]' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-[#d35f5f] transition ${location === '/members' ? 'text-[#d35f5f]' : ''}`}>
                 Members
               </a>
             </Link>
             <Link href="/counts">
-              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/counts' ? 'text-[#48BB78]' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-[#d35f5f] transition ${location === '/counts' ? 'text-[#d35f5f]' : ''}`}>
                 Counts
               </a>
             </Link>
             <Link href="/settings">
-              <a className={`font-inter font-medium text-white hover:text-[#48BB78] transition ${location === '/settings' ? 'text-[#48BB78]' : ''}`}>
+              <a className={`font-inter font-medium text-white hover:text-[#d35f5f] transition ${location === '/settings' ? 'text-[#d35f5f]' : ''}`}>
                 Settings
               </a>
             </Link>

@@ -28,7 +28,7 @@ export default function StatsCard({
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        {icon && <div className="text-[#69ad4c]">{icon}</div>}
+        {icon && <div className="text-[#d35f5f]">{icon}</div>}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
@@ -39,7 +39,7 @@ export default function StatsCard({
           <div className="flex items-center mt-1 text-xs">
             <span className={cn(
               "mr-1",
-              trend.isPositive ? "text-green-600" : "text-red-600"
+              trend.isPositive ? "text-red-600" : "text-red-600"
             )}>
               {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}%
             </span>

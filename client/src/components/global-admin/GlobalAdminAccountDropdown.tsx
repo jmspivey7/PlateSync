@@ -73,7 +73,7 @@ const GlobalAdminAccountDropdown = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
-          <Avatar className="h-9 w-9 bg-[#69ad4c]">
+          <Avatar className="h-9 w-9 bg-[#d35f5f]">
             {profileImageUrl ? (
               <AvatarImage src={profileImageUrl} alt={adminName} />
             ) : (

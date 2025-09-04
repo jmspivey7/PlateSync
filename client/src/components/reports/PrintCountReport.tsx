@@ -110,11 +110,11 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
 
             <div className={`border rounded-md p-4 mb-6 ${
               batch.status === 'FINALIZED' 
-                ? 'bg-green-50 border-green-200' 
+                ? 'bg-red-50 border-red-200' 
                 : 'bg-blue-50 border-blue-200'
             }`}>
               <h3 className={`font-medium flex items-center ${
-                batch.status === 'FINALIZED' ? 'text-green-800' : 'text-blue-800'
+                batch.status === 'FINALIZED' ? 'text-red-800' : 'text-blue-800'
               }`}>
                 <FileText className="h-5 w-5 mr-2" />
                 {batch.status === 'FINALIZED' 
@@ -122,7 +122,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
                   : 'Count Report'
                 }
               </h3>
-              <p className={batch.status === 'FINALIZED' ? 'text-green-700 mt-1' : 'text-blue-700 mt-1'}>
+              <p className={batch.status === 'FINALIZED' ? 'text-red-700 mt-1' : 'text-blue-700 mt-1'}>
                 {batch.status === 'FINALIZED'
                   ? `Count ${batch.name} has been finalized and attested by two people.
                      Please print the detailed PDF report to include with the money bag.`
@@ -155,7 +155,7 @@ const PrintCountReport: React.FC<PrintCountReportProps> = ({ batchId, onBack }) 
               <div className="grid grid-cols-1 gap-3">
                 <Button 
                   onClick={handlePrintPDF}
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9941] text-white"
+                  className="w-full bg-[#d35f5f] hover:bg-[#5a9941] text-white"
                 >
                   <Printer className="mr-2 h-5 w-5" />
                   View & Print PDF Report

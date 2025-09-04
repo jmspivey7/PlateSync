@@ -290,7 +290,7 @@ const EmailSettings = () => {
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleSendTestEmail}
-                        className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                        className="bg-[#d35f5f] hover:bg-[#588f3f]"
                         disabled={isSendingTest}
                       >
                         {isSendingTest ? (
@@ -308,7 +308,7 @@ const EmailSettings = () => {
                 
                 <Button 
                   type="submit" 
-                  className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                  className="bg-[#d35f5f] hover:bg-[#588f3f]"
                   disabled={updateMutation.isPending}
                 >
                   {updateMutation.isPending ? (

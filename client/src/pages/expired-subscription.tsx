@@ -114,11 +114,11 @@ export default function ExpiredSubscription() {
                   <p className="text-3xl font-bold mb-2">$2.99<span className="text-base font-normal text-gray-500">/month</span></p>
                   <ul className="space-y-2 mb-4 flex-1">
                     <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                      <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                       <span>All features included</span>
                     </li>
                     <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                      <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                       <span>Unlimited members</span>
                     </li>
                   </ul>
@@ -134,9 +134,9 @@ export default function ExpiredSubscription() {
               </Card>
 
               {/* Annual Plan */}
-              <Card className="border border-green-200 shadow-sm flex flex-col">
+              <Card className="border border-red-200 shadow-sm flex flex-col">
                 <CardHeader className="pb-2">
-                  <Badge className="w-fit bg-green-600 text-white mb-2">Best Value</Badge>
+                  <Badge className="w-fit bg-red-600 text-white mb-2">Best Value</Badge>
                   <CardTitle className="text-xl">Annual Plan</CardTitle>
                   <CardDescription>Pay annually, save more</CardDescription>
                 </CardHeader>
@@ -144,15 +144,15 @@ export default function ExpiredSubscription() {
                   <p className="text-3xl font-bold mb-2">$25.00<span className="text-base font-normal text-gray-500">/year</span></p>
                   <ul className="space-y-2 mb-4 flex-1">
                     <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                      <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                       <span>All features included</span>
                     </li>
                     <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                      <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                       <span>Unlimited members</span>
                     </li>
                     <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                      <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                       <span>Save over 30%</span>
                     </li>
                   </ul>

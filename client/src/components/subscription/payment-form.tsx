@@ -177,8 +177,8 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col items-center justify-center p-8 text-center">
-          <div className="rounded-full bg-green-100 p-3 mb-4">
-            <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="rounded-full bg-red-100 p-3 mb-4">
+            <CheckCircle className="h-8 w-8 text-red-600" />
           </div>
           <h2 className="text-2xl font-bold mb-2">Payment Successful!</h2>
           <p className="text-gray-600 mb-6">
@@ -186,7 +186,7 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
           </p>
           <Button 
             onClick={onSuccess} 
-            className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
+            className="bg-red-600 hover:bg-red-700 w-full md:w-auto"
           >
             Return to Dashboard
           </Button>
@@ -228,7 +228,7 @@ function PaymentFormContent({ onSuccess, onCancel, plan }: PaymentFormProps) {
           <Button
             type="submit"
             disabled={!stripe || !elements || isProcessing}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-red-600 hover:bg-red-700 text-white"
           >
             {isProcessing ? (
               <>

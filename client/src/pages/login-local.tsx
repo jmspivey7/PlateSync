@@ -274,7 +274,7 @@ export default function LoginLocal() {
                   )}
 
                   {registerSuccess && (
-                    <div className="p-3 rounded-md bg-green-50 text-green-600 text-sm mb-4">
+                    <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm mb-4">
                       {registerSuccess}
                     </div>
                   )}

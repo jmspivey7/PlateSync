@@ -161,7 +161,7 @@ export function ComboboxSearch({
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           placeholder={showSelected ? "Click to change member..." : placeholder}
-          className={`w-full bg-white pr-16 ${showSelected ? 'text-green-700 font-medium' : ''}`}
+          className={`w-full bg-white pr-16 ${showSelected ? 'text-red-700 font-medium' : ''}`}
           readOnly={showSelected}
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -187,8 +187,8 @@ export function ComboboxSearch({
             <button
               key={option.value}
               type="button"
-              className={`w-full text-left cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center hover:bg-green-50 focus:outline-none focus:bg-green-50 ${
-                option.value === value ? 'bg-green-50' : ''
+              className={`w-full text-left cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center hover:bg-red-50 focus:outline-none focus:bg-red-50 ${
+                option.value === value ? 'bg-red-50' : ''
               }`}
               onClick={() => handleOptionSelect(option)}
             >
@@ -198,7 +198,7 @@ export function ComboboxSearch({
               </span>
               {option.value === value && (
                 <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                  <Check className="h-5 w-5 text-green-600" />
+                  <Check className="h-5 w-5 text-red-600" />
                 </span>
               )}
             </button>

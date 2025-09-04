@@ -198,14 +198,14 @@ export default function EditEmailTemplate() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <div className="h-7 w-7 bg-[#69ad4c] rounded mr-3 flex items-center justify-center">
+            <div className="h-7 w-7 bg-[#d35f5f] rounded mr-3 flex items-center justify-center">
               <span className="text-white text-xs font-bold">✉</span>
             </div>
             <h2 className="text-2xl font-bold">{getTemplateTitle()}</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/settings?tab=email-templates")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -286,7 +286,7 @@ export default function EditEmailTemplate() {
                         <Button
                           onClick={handleSave}
                           disabled={isSaving}
-                          className="bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                          className="bg-[#d35f5f] hover:bg-[#5a9440] text-white"
                         >
                           <Save className="h-4 w-4 mr-2" />
                           {isSaving ? 'Saving...' : 'Save Template'}

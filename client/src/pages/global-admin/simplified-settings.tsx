@@ -65,12 +65,12 @@ export default function GlobalAdminSettings() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <SettingsIcon className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <SettingsIcon className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">System Settings</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/dashboard")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -88,7 +88,7 @@ export default function GlobalAdminSettings() {
             <Card>
               <CardHeader>
                 <div className="flex items-center">
-                  <Mail className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                  <Mail className="h-5 w-5 mr-2 text-[#d35f5f]" />
                   <CardTitle>System Email Templates</CardTitle>
                 </div>
                 <CardDescription>
@@ -98,14 +98,14 @@ export default function GlobalAdminSettings() {
               <CardContent>
                 {templatesLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#69ad4c]"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d35f5f]"></div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {templates.map((template) => (
                       <div 
                         key={template.id} 
-                        className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
+                        className="border rounded-md overflow-hidden hover:border-[#d35f5f] hover:shadow-sm transition-all duration-200 cursor-pointer group p-4 flex items-center justify-between"
                         onClick={() => {
                           console.log('Clicking template:', template.id, template.templateType);
                           setLocation(`/global-admin/edit-email-template/${template.id}`);
@@ -140,7 +140,7 @@ export default function GlobalAdminSettings() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Network className="text-[#69ad4c] h-5 w-5" />
+                  <Network className="text-[#d35f5f] h-5 w-5" />
                   <CardTitle className="text-2xl font-bold">Integrations</CardTitle>
                 </div>
                 <CardDescription>
@@ -150,7 +150,7 @@ export default function GlobalAdminSettings() {
               <CardContent>
                 <div className="space-y-4">
                   <div 
-                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    className="border rounded-md overflow-hidden hover:border-[#d35f5f] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
                     onClick={() => setLocation("/global-admin/integrations/stripe")}
                   >
                     <div className="flex items-center gap-6">
@@ -167,7 +167,7 @@ export default function GlobalAdminSettings() {
                   </div>
                     
                   <div 
-                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    className="border rounded-md overflow-hidden hover:border-[#d35f5f] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
                     onClick={() => setLocation("/global-admin/integrations/sendgrid")}
                   >
                     <div className="flex items-center gap-6">
@@ -184,7 +184,7 @@ export default function GlobalAdminSettings() {
                   </div>
                   
                   <div 
-                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    className="border rounded-md overflow-hidden hover:border-[#d35f5f] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
                     onClick={() => setLocation("/global-admin/integrations/aws-s3")}
                   >
                     <div className="flex items-center gap-6">
@@ -201,7 +201,7 @@ export default function GlobalAdminSettings() {
                   </div>
                   
                   <div 
-                    className="border rounded-md overflow-hidden hover:border-[#69ad4c] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
+                    className="border rounded-md overflow-hidden hover:border-[#d35f5f] hover:shadow-sm transition-all duration-200 cursor-pointer group p-6 flex items-center justify-between"
                     onClick={() => setLocation("/global-admin/integrations/planning-center")}
                   >
                     <div className="flex items-center gap-6">

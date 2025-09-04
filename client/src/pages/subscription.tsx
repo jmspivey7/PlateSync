@@ -46,7 +46,7 @@ export default function SubscriptionPage() {
             <h3 className="text-lg font-medium mb-2">Need Help?</h3>
             <p className="text-gray-600">
               If you have any questions about your subscription or need assistance,
-              please don't hesitate to <a href="mailto:support@platesync.com" className="text-green-600 hover:text-green-700 font-medium">contact our support team</a>.
+              please don't hesitate to <a href="mailto:support@platesync.com" className="text-red-600 hover:text-red-700 font-medium">contact our support team</a>.
             </p>
           </div>
         </div>

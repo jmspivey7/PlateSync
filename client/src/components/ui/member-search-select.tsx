@@ -69,7 +69,7 @@ export function MemberSearchSelect({ members, value, onValueChange, placeholder 
       toast({
         title: "Member Added",
         description: `${newMember.firstName} ${newMember.lastName} has been added successfully.`,
-        className: 'bg-[#48BB78] text-white',
+        className: 'bg-[#d35f5f] text-white',
       });
     },
     onError: (error) => {
@@ -187,7 +187,7 @@ export function MemberSearchSelect({ members, value, onValueChange, placeholder 
             onChange={handleSearchChange}
             onFocus={handleInputFocus}
             placeholder={selectedMember ? "Member selected" : placeholder}
-            className={`w-full pr-20 ${selectedMember ? 'bg-green-50 border-green-200 text-green-800' : ''}`}
+            className={`w-full pr-20 ${selectedMember ? 'bg-red-50 border-red-200 text-red-800' : ''}`}
             readOnly={!!selectedMember}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 space-x-1">

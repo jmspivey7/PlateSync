@@ -570,7 +570,7 @@ const UserManagement = () => {
                           </TableCell>
                           <TableCell>
                             {user.isVerified ? (
-                              <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Verified</Badge>
+                              <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">Verified</Badge>
                             ) : (
                               <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100">Pending</Badge>
                             )}
@@ -627,7 +627,7 @@ const UserManagement = () => {
                               )}
                               
                               {user.isVerified ? (
-                                <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Verified</Badge>
+                                <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100 text-xs">Verified</Badge>
                               ) : (
                                 <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs">Pending</Badge>
                               )}

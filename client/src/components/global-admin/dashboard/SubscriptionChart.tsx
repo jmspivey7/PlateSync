@@ -36,7 +36,7 @@ export default function SubscriptionChart({ data, title, description }: Subscrip
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="trial" name="Trials" fill="#69ad4c" />
+            <Bar dataKey="trial" name="Trials" fill="#d35f5f" />
             <Bar dataKey="subscriber" name="Subscribers" fill="#132433" />
           </BarChart>
         </ResponsiveContainer>

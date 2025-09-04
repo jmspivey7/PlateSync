@@ -280,7 +280,7 @@ const BatchSummaryPage = () => {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
-              <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto">
+              <Button onClick={handlePrint} className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full sm:w-auto">
                 <Printer className="mr-2 h-4 w-4" />
                 View PDF Report
               </Button>

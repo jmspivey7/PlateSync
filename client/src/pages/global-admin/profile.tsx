@@ -196,7 +196,7 @@ export default function GlobalAdminProfile() {
             <h2 className="text-2xl font-bold">Global Administrator Profile</h2>
             <Button 
               variant="outline" 
-              className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+              className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
               onClick={() => setLocation("/global-admin/dashboard")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -212,7 +212,7 @@ export default function GlobalAdminProfile() {
             <CardContent>
               <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
                 <div>
-                  <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
+                  <Avatar className="w-24 h-24 border-2 border-[#d35f5f]">
                     {profileData.profileImageUrl ? (
                       <AvatarImage 
                         src={`${profileData.profileImageUrl}?t=${Date.now()}`} 
@@ -224,7 +224,7 @@ export default function GlobalAdminProfile() {
                         }}
                       />
                     ) : (
-                      <AvatarFallback className="bg-[#69ad4c] text-white text-xl">
+                      <AvatarFallback className="bg-[#d35f5f] text-white text-xl">
                         {profileData.firstName && profileData.lastName 
                           ? `${profileData.firstName[0]}${profileData.lastName[0]}`
                           : "GA"}
@@ -360,7 +360,7 @@ export default function GlobalAdminProfile() {
               Cancel
             </Button>
             <Button 
-              className="bg-[#69ad4c] hover:bg-[#5a9740]"
+              className="bg-[#d35f5f] hover:bg-[#5a9740]"
               onClick={() => {
                 setIsSaving(true);
                 

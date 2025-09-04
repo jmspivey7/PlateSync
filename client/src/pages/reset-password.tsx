@@ -211,7 +211,7 @@ export default function ResetPassword() {
               <CardFooter className="flex flex-col gap-4">
                 <Button 
                   type="submit" 
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white text-lg py-6"
+                  className="w-full bg-[#d35f5f] hover:bg-[#5a9440] text-white text-lg py-6"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -227,7 +227,7 @@ export default function ResetPassword() {
                 <Button 
                   type="button" 
                   variant="link" 
-                  className="text-[#69ad4c] hover:text-[#5a9440]"
+                  className="text-[#d35f5f] hover:text-[#5a9440]"
                   onClick={() => setLocation("/login")}
                 >
                   Return to Login
@@ -236,7 +236,7 @@ export default function ResetPassword() {
             </form>
           ) : (
             <CardContent className="space-y-6 py-6">
-              <div className="p-4 rounded-md bg-green-50 text-green-700 text-center">
+              <div className="p-4 rounded-md bg-red-50 text-red-700 text-center">
                 <p className="text-lg">
                   Your password has been successfully reset!
                 </p>
@@ -247,7 +247,7 @@ export default function ResetPassword() {
               
               <Button 
                 type="button" 
-                className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                className="w-full bg-[#d35f5f] hover:bg-[#5a9440] text-white"
                 onClick={() => setLocation("/login")}
               >
                 Go to Login

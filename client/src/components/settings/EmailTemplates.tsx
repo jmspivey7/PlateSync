@@ -166,7 +166,7 @@ export default function EmailTemplates() {
           <Button 
             onClick={() => initializeTemplatesMutation.mutate()}
             disabled={initializeTemplatesMutation.isPending}
-            className="mt-4 bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+            className="mt-4 bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
           >
             {initializeTemplatesMutation.isPending ? (
               <>
@@ -211,7 +211,7 @@ export default function EmailTemplates() {
                   <div className="space-y-1">
                     <div className="font-medium text-base flex items-center justify-between">
                       <span>{templateTypeInfo[template.templateType]?.name || template.templateType}</span>
-                      <span className="text-[#69ad4c] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center text-sm">
+                      <span className="text-[#d35f5f] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center text-sm">
                         <Edit className="h-4 w-4 mr-1" />
                         Edit Template
                       </span>

@@ -46,11 +46,11 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-// Configuration for the revenue chart with our green color scheme
+// Configuration for the revenue chart with our red color scheme
 const chartConfig = {
   monthly: {
     label: "Monthly Subscriptions",
-    color: "#69ad4c",
+    color: "#d35f5f",
   },
   annual: {
     label: "Annual Subscriptions",
@@ -178,7 +178,7 @@ export default function GlobalAdminReports() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-[#69ad4c] border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="animate-spin w-8 h-8 border-4 border-[#d35f5f] border-t-transparent rounded-full mx-auto mb-4"></div>
           <p>Loading reports...</p>
         </div>
       </div>
@@ -205,12 +205,12 @@ export default function GlobalAdminReports() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <FileText className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <FileText className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">System Reports</h2>
           </div>
           <Button 
             variant="outline" 
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/dashboard")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -247,14 +247,14 @@ export default function GlobalAdminReports() {
             <CardHeader className="pb-2">
               <CardTitle className="flex justify-between items-center text-lg">
                 <span>Total Churches</span>
-                <Building2 className="h-5 w-5 text-[#69ad4c]" />
+                <Building2 className="h-5 w-5 text-[#d35f5f]" />
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
                 {parseInt(reportsData?.churchStats?.total_churches) || 0}
               </div>
-              <p className="text-sm text-green-600 flex items-center mt-1">
+              <p className="text-sm text-red-600 flex items-center mt-1">
                 +{parseInt(reportsData?.churchStats?.new_churches) || 0} from previous period
               </p>
             </CardContent>
@@ -280,14 +280,14 @@ export default function GlobalAdminReports() {
             <CardHeader className="pb-2">
               <CardTitle className="flex justify-between items-center text-lg">
                 <span>Total Users</span>
-                <Users className="h-5 w-5 text-[#69ad4c]" />
+                <Users className="h-5 w-5 text-[#d35f5f]" />
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
                 {parseInt(reportsData?.userStats?.total_users) || 0}
               </div>
-              <p className="text-sm text-green-600 flex items-center mt-1">
+              <p className="text-sm text-red-600 flex items-center mt-1">
                 +{parseInt(reportsData?.userStats?.new_users) || 0} from previous period
               </p>
             </CardContent>
@@ -313,7 +313,7 @@ export default function GlobalAdminReports() {
             <CardHeader className="pb-2">
               <CardTitle className="flex justify-between items-center text-lg">
                 <span>Total Revenue</span>
-                <DollarSign className="h-5 w-5 text-[#69ad4c]" />
+                <DollarSign className="h-5 w-5 text-[#d35f5f]" />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -324,7 +324,7 @@ export default function GlobalAdminReports() {
                   ) || 0
                 )}
               </div>
-              <p className="text-sm text-green-600 flex items-center mt-1">
+              <p className="text-sm text-red-600 flex items-center mt-1">
                 Revenue for selected period
               </p>
             </CardContent>
@@ -352,11 +352,11 @@ export default function GlobalAdminReports() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-[#69ad4c]" />
+                <DollarSign className="h-5 w-5 text-[#d35f5f]" />
                 Revenue Tracking
               </div>
               <div className={`flex items-center gap-1 text-sm font-medium ${
-                parseFloat(revenuePercentageChange) >= 0 ? 'text-green-600' : 'text-red-600'
+                parseFloat(revenuePercentageChange) >= 0 ? 'text-red-600' : 'text-red-600'
               }`}>
                 <span>
                   {parseFloat(revenuePercentageChange) >= 0 ? '+' : ''}{revenuePercentageChange}%
@@ -407,7 +407,7 @@ export default function GlobalAdminReports() {
           </CardContent>
           <CardFooter className="flex justify-center pb-4 pt-0">
             <Button 
-              className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+              className="bg-[#d35f5f] hover:bg-[#5a9740] text-white"
               onClick={() => downloadReport('revenue')}
               disabled={downloadingReport === 'revenue'}
             >

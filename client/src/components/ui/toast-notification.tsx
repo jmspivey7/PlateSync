@@ -38,7 +38,7 @@ const ToastNotification = ({
   const getBackgroundColor = () => {
     switch (variant) {
       case "success":
-        return "bg-[#48BB78] text-white";
+        return "bg-[#d35f5f] text-white";
       case "error":
         return "bg-red-500 text-white";
       case "warning":

@@ -717,7 +717,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         >
                           <ToggleGroupItem 
                             value="existing" 
-                            className={`flex items-center gap-2 flex-1 ${field.value === "existing" ? "border-green-500 bg-[#69ad4c] text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-green-50"}`}
+                            className={`flex items-center gap-2 flex-1 ${field.value === "existing" ? "border-red-500 bg-[#d35f5f] text-white font-semibold" : "bg-gray-50 border border-gray-200 hover:bg-red-50"}`}
                             aria-label="Existing Member"
                           >
                             {/* Force icon to always be visible using solid green color */}
@@ -779,7 +779,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                         <FormDescription>
                           {members && members.length > 0 ? (
                             field.value && members ? (
-                              <span className="text-sm text-green-700 font-medium">
+                              <span className="text-sm text-red-700 font-medium">
                                 Selected: {members.find(m => m.id.toString() === field.value)?.firstName} {members.find(m => m.id.toString() === field.value)?.lastName}
                               </span>
                             ) : (
@@ -992,7 +992,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                 {/* Success indicator - appears briefly above buttons, aligned right */}
                 {showSuccess && (
                   <div className="flex justify-end mb-2">
-                    <ThumbsUp className="h-6 w-6 text-green-500 animate-fade-in-out" />
+                    <ThumbsUp className="h-6 w-6 text-red-500 animate-fade-in-out" />
                   </div>
                 )}
                 

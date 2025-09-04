@@ -97,7 +97,7 @@ export default function StripeTestPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <RotateCw className="h-12 w-12 animate-spin text-[#69ad4c]" />
+          <RotateCw className="h-12 w-12 animate-spin text-[#d35f5f]" />
           <p className="text-gray-500">Loading test data...</p>
         </div>
       </div>
@@ -111,12 +111,12 @@ export default function StripeTestPage() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <CreditCard className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <CreditCard className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">Stripe Test Page</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/settings?tab=integrations")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

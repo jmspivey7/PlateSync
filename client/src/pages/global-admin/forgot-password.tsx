@@ -98,7 +98,7 @@ export default function GlobalAdminForgotPassword() {
                 className="mx-auto h-[5.25rem]"
               />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">Reset Password</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-[#d35f5f]">Reset Password</CardTitle>
             <CardDescription className="text-center">
               Enter your email address and we'll send you a link to reset your password.
             </CardDescription>
@@ -130,7 +130,7 @@ export default function GlobalAdminForgotPassword() {
                   
                   <Button
                     type="submit"
-                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                    className="w-full bg-[#d35f5f] hover:bg-[#5a9440] text-white"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -146,8 +146,8 @@ export default function GlobalAdminForgotPassword() {
               </Form>
             ) : (
               <div className="text-center space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-green-800">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-800">
                     If an account exists with this email address, you will receive password reset instructions shortly.
                   </p>
                 </div>

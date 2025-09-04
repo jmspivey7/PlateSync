@@ -333,7 +333,7 @@ export default function ChurchDetail() {
             />
           </div>
           <div className="flex-1 text-center">
-            <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
+            <h1 className="text-xl font-semibold text-[#d35f5f]">Global Administration</h1>
           </div>
           <div className="flex-1 flex justify-end">
             <GlobalAdminAccountDropdown 
@@ -348,7 +348,7 @@ export default function ChurchDetail() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
-            <Building2 className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <Building2 className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">
               {isLoadingChurch ? (
                 <Skeleton className="h-8 w-64" />
@@ -359,7 +359,7 @@ export default function ChurchDetail() {
                 <Badge 
                   className={`ml-3 ${
                     church.status === "ACTIVE" 
-                      ? "bg-green-500" 
+                      ? "bg-red-500" 
                       : church.status === "SUSPENDED" 
                       ? "bg-amber-500" 
                       : "bg-red-500"
@@ -494,7 +494,7 @@ export default function ChurchDetail() {
                       <>
                         <Button
                           variant="outline"
-                          className="border-green-500 text-green-500 hover:bg-green-500/10"
+                          className="border-red-500 text-red-500 hover:bg-red-500/10"
                           onClick={() => handleStatusChange("ACTIVE")}
                         >
                           Reactivate Church
@@ -619,7 +619,7 @@ export default function ChurchDetail() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="flex items-center">
-                    <Users className="h-5 w-5 mr-2 text-[#69ad4c]" />
+                    <Users className="h-5 w-5 mr-2 text-[#d35f5f]" />
                     Church Users
                   </CardTitle>
                   <CardDescription>All users associated with this church</CardDescription>
@@ -687,7 +687,7 @@ export default function ChurchDetail() {
                           <TableCell>
                             <Badge 
                               variant="outline" 
-                              className="bg-green-100 text-green-800 hover:bg-green-100"
+                              className="bg-red-100 text-red-800 hover:bg-red-100"
                             >
                               Verified
                             </Badge>

@@ -23,7 +23,7 @@ export default function PieChart({
   data, 
   title, 
   description, 
-  colors = ["#69ad4c", "#132433", "#8884d8", "#82ca9d"] 
+  colors = ["#d35f5f", "#132433", "#8884d8", "#82ca9d"] 
 }: PieChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   

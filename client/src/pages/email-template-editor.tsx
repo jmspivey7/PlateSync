@@ -224,7 +224,7 @@ export default function EmailTemplateEditor() {
       {/* Header bar matching Global Admin style */}
       <div className="flex items-center justify-between p-4 bg-white border-b">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
+          <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center">
             <Mail className="h-5 w-5 text-white" />
           </div>
           <h1 className="text-xl font-semibold text-gray-900">
@@ -339,7 +339,7 @@ export default function EmailTemplateEditor() {
           <Button
             onClick={handleSave}
             disabled={!isFormDirty || updateTemplateMutation.isPending}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
           >
             {updateTemplateMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -327,7 +327,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
       toast({
         title: "Count Deleted",
         description: "The count and all associated donations have been deleted successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
       
       onClose();
@@ -529,7 +529,7 @@ const CountModal = ({ isOpen, onClose, batchId, isEdit = false }: CountModalProp
                     </Button>
                     <Button 
                       type="submit" 
-                      className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                      className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                       disabled={createBatchMutation.isPending}
                     >
                       {createBatchMutation.isPending && (

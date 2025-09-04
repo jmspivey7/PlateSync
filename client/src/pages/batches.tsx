@@ -18,7 +18,7 @@ import BatchModal from "../components/batches/BatchModal";
 import { apiRequest } from "@/lib/queryClient";
 
 const statusColors = {
-  OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
+  OPEN: "bg-red-100 text-red-800 hover:bg-red-100",
   CLOSED: "bg-orange-100 text-orange-800 hover:bg-orange-100",
   FINALIZED: "bg-blue-100 text-blue-800 hover:bg-blue-100",
 };

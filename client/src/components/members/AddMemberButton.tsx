@@ -65,7 +65,7 @@ export function AddMemberButton({
       toast({
         title: "Member Added",
         description: `${newMember.firstName} ${newMember.lastName} has been added successfully.`,
-        className: 'bg-[#48BB78] text-white',
+        className: 'bg-[#d35f5f] text-white',
       });
     },
     onError: (error) => {

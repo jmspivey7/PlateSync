@@ -182,14 +182,14 @@ export default function AwsS3Integration() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <div className="h-7 w-7 bg-[#69ad4c] rounded mr-3 flex items-center justify-center">
+            <div className="h-7 w-7 bg-[#d35f5f] rounded mr-3 flex items-center justify-center">
               <span className="text-white text-xs font-bold">S3</span>
             </div>
             <h2 className="text-2xl font-bold">AWS S3 Integration</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/settings?tab=integrations")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -280,7 +280,7 @@ export default function AwsS3Integration() {
                       {testResult && (
                         <div className={`flex items-center gap-2 p-3 rounded-lg ${
                           testResult === 'success' 
-                            ? 'bg-green-50 text-green-700 border border-green-200' 
+                            ? 'bg-red-50 text-red-700 border border-red-200' 
                             : 'bg-red-50 text-red-700 border border-red-200'
                         }`}>
                           {testResult === 'success' ? (
@@ -316,7 +316,7 @@ export default function AwsS3Integration() {
                         <Button
                           type="submit"
                           disabled={saveMutation.isPending}
-                          className="flex-1 bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                          className="flex-1 bg-[#d35f5f] hover:bg-[#5a9440] text-white"
                         >
                           {saveMutation.isPending ? (
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

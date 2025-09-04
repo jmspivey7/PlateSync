@@ -80,7 +80,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Monthly Plan */}
-        <Card className="relative overflow-hidden border-2 hover:border-green-600 hover:shadow-md transition-all flex flex-col">
+        <Card className="relative overflow-hidden border-2 hover:border-red-600 hover:shadow-md transition-all flex flex-col">
           <div className="absolute top-0 right-0 px-3 py-1 bg-blue-600 text-white text-xs font-medium">
             Most Popular
           </div>
@@ -95,23 +95,23 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
           <CardContent className="flex-grow">
             <ul className="space-y-2">
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Unlimited members</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Unlimited donation tracking</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Email notifications</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Planning Center integration</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Full access to all features</span>
               </li>
             </ul>
@@ -119,7 +119,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
           <CardFooter className="mt-auto">
             <Button 
               onClick={() => handleSelectPlan('MONTHLY')} 
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
               disabled={selectedPlan === 'MONTHLY'}
             >
               {selectedPlan === 'MONTHLY' ? (
@@ -135,8 +135,8 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
         </Card>
 
         {/* Annual Plan */}
-        <Card className="relative overflow-hidden border-2 hover:border-green-600 hover:shadow-md transition-all flex flex-col">
-          <div className="absolute top-0 right-0 px-3 py-1 bg-green-600 text-white text-xs font-medium">
+        <Card className="relative overflow-hidden border-2 hover:border-red-600 hover:shadow-md transition-all flex flex-col">
+          <div className="absolute top-0 right-0 px-3 py-1 bg-red-600 text-white text-xs font-medium">
             Best Value
           </div>
           <CardHeader>
@@ -145,7 +145,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
             <div className="mt-4">
               <span className="text-3xl font-bold">$25.00</span>
               <span className="text-gray-500 ml-1">/year</span>
-              <Badge variant="outline" className="ml-2 bg-green-50">
+              <Badge variant="outline" className="ml-2 bg-red-50">
                 Save $10.88
               </Badge>
             </div>
@@ -153,27 +153,27 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
           <CardContent className="flex-grow">
             <ul className="space-y-2">
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Unlimited members</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Unlimited donation tracking</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Email notifications</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Planning Center integration</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Full access to all features</span>
               </li>
               <li className="flex items-start">
-                <Check className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <Check className="mr-2 h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <span>Priority support</span>
               </li>
             </ul>
@@ -181,7 +181,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
           <CardFooter className="mt-auto">
             <Button 
               onClick={() => handleSelectPlan('ANNUAL')} 
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
               disabled={selectedPlan === 'ANNUAL'}
             >
               {selectedPlan === 'ANNUAL' ? (

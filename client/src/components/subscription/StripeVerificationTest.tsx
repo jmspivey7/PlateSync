@@ -134,10 +134,10 @@ export function StripeVerificationTest() {
       );
     } else if (isActive) {
       return (
-        <Alert className="bg-green-50 border-green-200 mb-4">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800">Active Subscription Verified</AlertTitle>
-          <AlertDescription className="text-green-700">
+        <Alert className="bg-red-50 border-red-200 mb-4">
+          <CheckCircle2 className="h-4 w-4 text-red-600" />
+          <AlertTitle className="text-red-800">Active Subscription Verified</AlertTitle>
+          <AlertDescription className="text-red-700">
             This subscription is active and valid in Stripe. Current status: {status}
           </AlertDescription>
         </Alert>
@@ -212,7 +212,7 @@ export function StripeVerificationTest() {
                   onClick={handleLinkSubscription} 
                   disabled={linking}
                   variant="outline" 
-                  className="w-full text-green-600 border-green-200 bg-green-50 hover:bg-green-100 hover:text-green-700 mb-2"
+                  className="w-full text-red-600 border-red-200 bg-red-50 hover:bg-red-100 hover:text-red-700 mb-2"
                 >
                   {linking ? (
                     <>

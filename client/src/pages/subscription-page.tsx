@@ -44,7 +44,7 @@ export default function SubscriptionPage() {
         title: "Payment Successful!",
         description: "Finalizing your subscription...",
         variant: "default",
-        className: "bg-green-50 border-green-600 text-green-800",
+        className: "bg-red-50 border-red-600 text-red-800",
       });
       
       // If we have a verification token, call the API to verify the payment
@@ -78,7 +78,7 @@ export default function SubscriptionPage() {
             title: "Subscription Activated!",
             description: "Your account has been successfully upgraded.",
             variant: "default",
-            className: "bg-green-50 border-green-600 text-green-800",
+            className: "bg-red-50 border-red-600 text-red-800",
           });
           
           setIsVerifying(false);
@@ -106,7 +106,7 @@ export default function SubscriptionPage() {
             title: "Subscription Activated!",
             description: "Your account has been successfully upgraded.",
             variant: "default",
-            className: "bg-green-50 border-green-600 text-green-800",
+            className: "bg-red-50 border-red-600 text-red-800",
           });
           
           setIsVerifying(false);
@@ -199,7 +199,7 @@ export default function SubscriptionPage() {
           <h3 className="text-lg font-medium mb-2">Need Help?</h3>
           <p className="text-gray-600 mb-4">
             If you have any questions about your subscription or need assistance,
-            please don't hesitate to <a href="mailto:support@platesync.com" className="text-green-600 hover:text-green-700 font-medium">contact our support team</a>.
+            please don't hesitate to <a href="mailto:support@platesync.com" className="text-red-600 hover:text-red-700 font-medium">contact our support team</a>.
           </p>
         </div>
 

@@ -170,7 +170,7 @@ const Settings = () => {
       toast({
         title: "Settings updated",
         description: "Your church settings have been saved successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -213,7 +213,7 @@ const Settings = () => {
       toast({
         title: "Service Option Added",
         description: "The service option has been added successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -247,7 +247,7 @@ const Settings = () => {
       toast({
         title: "Service Option Updated",
         description: "The service option has been updated successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -270,7 +270,7 @@ const Settings = () => {
       toast({
         title: "Service Option Deleted",
         description: "The service option has been deleted successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -298,7 +298,7 @@ const Settings = () => {
       toast({
         title: "Default Updated",
         description: "The default service option has been updated.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -329,7 +329,7 @@ const Settings = () => {
       toast({
         title: "Recipient Added",
         description: "The report recipient has been added successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -359,7 +359,7 @@ const Settings = () => {
       toast({
         title: "Recipient Updated",
         description: "The report recipient has been updated successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -383,7 +383,7 @@ const Settings = () => {
       toast({
         title: "Recipient Deleted",
         description: "The report recipient has been deleted successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {
@@ -491,14 +491,14 @@ const Settings = () => {
         toast({
           title: "Planning Center Link Started",
           description: "Successfully claimed tokens. Setting up connection...",
-          className: "bg-[#69ad4c] text-white",
+          className: "bg-[#d35f5f] text-white",
           duration: 5000, // Longer duration for mobile
         });
       } else {
         toast({
           title: "Tokens Claimed",
           description: "Successfully claimed Planning Center tokens. Verifying connection...",
-          className: "bg-[#69ad4c] text-white",
+          className: "bg-[#d35f5f] text-white",
         });
       }
       
@@ -520,14 +520,14 @@ const Settings = () => {
                 toast({
                   title: "Planning Center Connected! 🎉",
                   description: "Your Planning Center account is now linked with PlateSync.",
-                  className: "bg-[#69ad4c] text-white font-medium",
+                  className: "bg-[#d35f5f] text-white font-medium",
                   duration: 7000, // Even longer for success confirmation on mobile
                 });
               } else {
                 toast({
                   title: "Connection Successful",
                   description: "Successfully connected to Planning Center!",
-                  className: "bg-[#69ad4c] text-white",
+                  className: "bg-[#d35f5f] text-white",
                 });
               }
             } else {
@@ -817,7 +817,7 @@ const Settings = () => {
       toast({
         title: "SendGrid is configured correctly",
         description: "SendGrid configuration is working correctly! Your account is ready to send donation notifications.",
-        className: "bg-[#69ad4c] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     } catch (error) {
       // Show error toast
@@ -834,16 +834,16 @@ const Settings = () => {
     <PageLayout 
       title="Settings" 
       subtitle="Manage church details and configurations."
-      icon={<SettingsIcon className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<SettingsIcon className="h-6 w-6 text-[#d35f5f]" />}
     >
       
       <div className="grid grid-cols-1 gap-6">
         {/* Account Owner Information Card */}
         {isAccountOwner && (
-          <Card className="border-[#69ad4c]/40 bg-[#69ad4c]/5">
+          <Card className="border-[#d35f5f]/40 bg-[#d35f5f]/5">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
-                <span className="bg-[#69ad4c] text-white p-1 rounded-md text-xs font-bold">O</span>
+                <span className="bg-[#d35f5f] text-white p-1 rounded-md text-xs font-bold">O</span>
                 Account Owner Access
               </CardTitle>
               <CardDescription>
@@ -974,7 +974,7 @@ const Settings = () => {
                           toast({
                             title: "Logo updated",
                             description: "Your church logo has been updated successfully.",
-                            className: "bg-[#48BB78] text-white",
+                            className: "bg-[#d35f5f] text-white",
                           });
                         } catch (error) {
                           console.error("Logo upload error:", error);
@@ -1033,7 +1033,7 @@ const Settings = () => {
                               toast({
                                 title: "Logo removed",
                                 description: "Your church logo has been removed.",
-                                className: "bg-[#48BB78] text-white",
+                                className: "bg-[#d35f5f] text-white",
                               });
                             } catch (error) {
                               toast({
@@ -1067,7 +1067,7 @@ const Settings = () => {
                 <div className="flex justify-center mt-4">
                   <Button 
                     type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                    className="bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
                     disabled={updateSettingsMutation.isPending}
                   >
                     {updateSettingsMutation.isPending ? (
@@ -1102,7 +1102,7 @@ const Settings = () => {
                     </div>
                     <div className="flex items-center pl-4">
                       <div className="relative inline-flex">
-                        <div className={`relative rounded-full p-[2px] ${form.watch("emailNotificationsEnabled") ? "bg-[#69ad4c]" : "bg-gray-300"} w-11 h-6 transition-colors`}>
+                        <div className={`relative rounded-full p-[2px] ${form.watch("emailNotificationsEnabled") ? "bg-[#d35f5f]" : "bg-gray-300"} w-11 h-6 transition-colors`}>
                           <button
                             type="button"
                             onClick={() => {
@@ -1131,7 +1131,7 @@ const Settings = () => {
                                 toast({
                                   title: "Notification Setting Updated",
                                   description: `Email notifications have been turned ${newValue ? 'ON' : 'OFF'}.`,
-                                  className: "bg-[#69ad4c] text-white",
+                                  className: "bg-[#d35f5f] text-white",
                                 });
                               })
                               .catch(error => {
@@ -1261,7 +1261,7 @@ const Settings = () => {
                     <div className="flex justify-center mt-4">
                       <Button
                         onClick={openAddRecipientDialog}
-                        className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                        className="bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
                       >
                         <Plus className="mr-2 h-4 w-4" />
                         Add Recipient
@@ -1297,7 +1297,7 @@ const Settings = () => {
                 <Button
                   onClick={() => createServiceOptionMutation.mutate(newServiceOption)}
                   disabled={!newServiceOption.trim() || createServiceOptionMutation.isPending}
-                  className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                  className="bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
                 >
                   {createServiceOptionMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1342,7 +1342,7 @@ const Settings = () => {
                             })}
                             disabled={!serviceOptionEditName.trim() || updateServiceOptionMutation.isPending}
                             size="sm"
-                            className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+                            className="bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
                           >
                             {updateServiceOptionMutation.isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1375,7 +1375,7 @@ const Settings = () => {
                           key={option.id} 
                           className={`group inline-flex items-center rounded-full border px-2.5 py-1.5 text-sm font-medium
                             ${option.isDefault 
-                              ? 'border-green-600 bg-green-100 text-green-800' 
+                              ? 'border-red-600 bg-red-100 text-red-800' 
                               : 'border-gray-300 bg-gray-100 text-gray-900'
                             } transition-colors hover:bg-gray-200`}
                         >
@@ -1388,7 +1388,7 @@ const Settings = () => {
                                 disabled={setAsDefaultMutation.isPending}
                                 size="icon"
                                 variant="ghost"
-                                className="h-4 w-4 p-0 opacity-50 hover:opacity-100 hover:text-green-700"
+                                className="h-4 w-4 p-0 opacity-50 hover:opacity-100 hover:text-red-700"
                                 title="Set as default"
                               >
                                 {setAsDefaultMutation.isPending && setAsDefaultMutation.variables === option.id ? (
@@ -1454,7 +1454,7 @@ const Settings = () => {
           <CardContent className="pt-1 pb-4">
             <div className="mb-4">
               <p className="text-sm text-gray-600 max-w-[90%]">
-                You can manage your members by importing them in bulk using a CSV file or connecting directly to Planning Center Online. To see a list of all members <Link href="/members" className="text-[#69ad4c] hover:underline font-medium">click here</Link>.
+                You can manage your members by importing them in bulk using a CSV file or connecting directly to Planning Center Online. To see a list of all members <Link href="/members" className="text-[#d35f5f] hover:underline font-medium">click here</Link>.
               </p>
             </div>
             
@@ -1522,7 +1522,7 @@ const Settings = () => {
             </Button>
             <Button 
               type="button" 
-              className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
+              className="bg-[#d35f5f] hover:bg-[#5c9b43] text-white"
               onClick={handleAddRecipient}
               disabled={createReportRecipientMutation.isPending}
             >
@@ -1581,7 +1581,7 @@ const Settings = () => {
             </Button>
             <Button 
               type="button" 
-              className="bg-[#69ad4c] hover:bg-[#5c9b43] text-white"
+              className="bg-[#d35f5f] hover:bg-[#5c9b43] text-white"
               onClick={handleUpdateRecipient}
               disabled={updateReportRecipientMutation.isPending}
             >

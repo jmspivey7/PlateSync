@@ -20,7 +20,7 @@ const StatCard = ({ title, value, changeText, changeValue, borderColor }: StatCa
   
   const getChangeIcon = () => {
     if (changeValue > 0) {
-      return <ArrowUp className="h-3 w-3 mr-1 text-[#48BB78]" />;
+      return <ArrowUp className="h-3 w-3 mr-1 text-[#d35f5f]" />;
     } else if (changeValue < 0) {
       return <ArrowDown className="h-3 w-3 mr-1 text-red-500" />;
     } else {
@@ -30,7 +30,7 @@ const StatCard = ({ title, value, changeText, changeValue, borderColor }: StatCa
   
   const getChangeTextColor = () => {
     if (changeValue > 0) {
-      return "text-[#48BB78]";
+      return "text-[#d35f5f]";
     } else if (changeValue < 0) {
       return "text-red-500";
     } else {

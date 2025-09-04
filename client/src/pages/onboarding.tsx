@@ -1458,7 +1458,7 @@ export default function Onboarding() {
                       // Save to localStorage immediately for persistence
                       localStorage.setItem('onboardingEmailNotifications', JSON.stringify(newValue));
                     }}
-                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
+                    className="data-[state=checked]:bg-red-500 data-[state=unchecked]:bg-gray-200"
                   />
                   <span className="font-semibold text-base">{donorNotificationsEnabled ? "ON" : "OFF"}</span>
                 </div>
@@ -1615,10 +1615,10 @@ export default function Onboarding() {
                   )}
 
                   {importStatus === 'success' && (
-                    <Alert className="mb-4 bg-green-50 border-green-200">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <AlertTitle className="text-green-800">Import Successful</AlertTitle>
-                      <AlertDescription className="text-green-700 text-sm">
+                    <Alert className="mb-4 bg-red-50 border-red-200">
+                      <CheckCircle className="h-4 w-4 text-red-600" />
+                      <AlertTitle className="text-red-800">Import Successful</AlertTitle>
+                      <AlertDescription className="text-red-700 text-sm">
                         {statusMessage}
                       </AlertDescription>
                     </Alert>
@@ -1664,7 +1664,7 @@ export default function Onboarding() {
                     <div className="flex justify-center">
                       <Button
                         onClick={handleCsvImport}
-                        className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white px-6"
+                        className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white px-6"
                       >
                         <FileUp className="mr-2 h-4 w-4" />
                         Import Members
@@ -1693,7 +1693,7 @@ export default function Onboarding() {
                       {isPlanningCenterConnected ? (
                         <div className="space-y-4">
                           <Alert>
-                            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                            <CheckCircle className="h-4 w-4 mr-2 text-red-600" />
                             <AlertTitle className="flex items-center">
                               <Users className="h-4 w-4 mr-2" />
                               Planning Center Connected
@@ -1748,10 +1748,10 @@ export default function Onboarding() {
                           
                           {/* Success status display */}
                           {importStatus === 'success' && statusMessage && (
-                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                               <div className="text-sm text-center">
-                                <p className="text-green-800 font-medium">{statusMessage}</p>
-                                <p className="text-green-600 text-xs mt-1">
+                                <p className="text-red-800 font-medium">{statusMessage}</p>
+                                <p className="text-red-600 text-xs mt-1">
                                   Imported on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
                                 </p>
                               </div>
@@ -1950,7 +1950,7 @@ export default function Onboarding() {
             
             <div className="bg-white rounded-lg border p-6 mb-6">
               <div className="flex items-center justify-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mr-4">
                   <Gift className="h-8 w-8 text-[#d35f5f]" />
                 </div>
                 <div>
@@ -1975,20 +1975,20 @@ export default function Onboarding() {
                     <p className="text-3xl font-bold mb-2">$2.99<span className="text-base font-normal text-gray-500">/month</span></p>
                     <ul className="space-y-2">
                       <li className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                         <span>All features included</span>
                       </li>
                       <li className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                         <span>Unlimited members</span>
                       </li>
                     </ul>
                   </CardContent>
                 </Card>
                 
-                <Card className="border border-green-200 shadow-sm">
-                  <CardHeader className="pb-2 bg-green-50 rounded-t-lg">
-                    <Badge className="w-fit bg-green-600 mb-2">Best Value</Badge>
+                <Card className="border border-red-200 shadow-sm">
+                  <CardHeader className="pb-2 bg-red-50 rounded-t-lg">
+                    <Badge className="w-fit bg-red-600 mb-2">Best Value</Badge>
                     <CardTitle className="text-xl">Annual Plan</CardTitle>
                     <CardDescription>Get 2 months free</CardDescription>
                   </CardHeader>
@@ -1996,15 +1996,15 @@ export default function Onboarding() {
                     <p className="text-3xl font-bold mb-2">$25.00<span className="text-base font-normal text-gray-500">/year</span></p>
                     <ul className="space-y-2">
                       <li className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                         <span>All features included</span>
                       </li>
                       <li className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                         <span>Unlimited members</span>
                       </li>
                       <li className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        <CheckCircle className="h-4 w-4 text-red-600 mr-2" />
                         <span>Save over 30%</span>
                       </li>
                     </ul>
@@ -2053,7 +2053,7 @@ export default function Onboarding() {
                 {/* Right side buttons - shown first on mobile */}
                 <div className="order-1 sm:order-2">
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto px-8"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full sm:w-auto px-8"
                     onClick={async () => {
                       try {
                         // Get churchId from localStorage during onboarding
@@ -2109,7 +2109,7 @@ export default function Onboarding() {
       case OnboardingStep.COMPLETE:
         return (
           <div className="flex flex-col items-center justify-center space-y-6 p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
               <CheckCircle className="h-8 w-8 text-[#d35f5f]" />
             </div>
             <h2 className="text-2xl font-bold">Your Free Trial is Now Active!</h2>
@@ -2118,7 +2118,7 @@ export default function Onboarding() {
             </p>
             <div className="flex justify-center pt-4 border-t mt-6 w-full max-w-md">
               <Button 
-                className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white w-full sm:w-auto"
+                className="bg-[#d35f5f] hover:bg-[#59ad3c] text-white w-full sm:w-auto"
                 onClick={handleNextStep}
               >
                 Go to Sign In <ChevronsRight className="ml-2 h-4 w-4" />

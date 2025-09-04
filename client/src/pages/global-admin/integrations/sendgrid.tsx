@@ -142,7 +142,7 @@ export default function SendGridIntegration() {
       toast({
         title: "SendGrid is configured correctly",
         description: "SendGrid configuration is working correctly! Your account is ready to send donation notifications.",
-        className: "bg-[#69ad4c] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     } catch (error) {
       console.error("Error testing SendGrid:", error);
@@ -226,7 +226,7 @@ export default function SendGridIntegration() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <RotateCw className="h-12 w-12 animate-spin text-[#69ad4c]" />
+          <RotateCw className="h-12 w-12 animate-spin text-[#d35f5f]" />
           <p className="text-gray-500">Verifying authentication...</p>
         </div>
       </div>
@@ -240,12 +240,12 @@ export default function SendGridIntegration() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Mail className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <Mail className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">SendGrid Integration</h2>
           </div>
           <Button
             variant="outline"
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/settings?tab=integrations")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -293,7 +293,7 @@ export default function SendGridIntegration() {
               <div className="flex justify-end">
                 <Button 
                   onClick={saveConfiguration} 
-                  className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+                  className="bg-[#d35f5f] hover:bg-[#5a9740] text-white"
                   disabled={isSaving || !fromEmail}
                 >
                   {isSaving ? (
@@ -326,7 +326,7 @@ export default function SendGridIntegration() {
                 
                 <div className="flex justify-end">
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+                    className="bg-[#d35f5f] hover:bg-[#5a9740] text-white"
                     onClick={testSendGridConfiguration}
                     disabled={isTesting || !fromEmail}
                   >

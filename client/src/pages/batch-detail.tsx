@@ -712,7 +712,7 @@ const BatchDetailPage = () => {
           <div className="flex justify-between mb-4">
             <Button 
               onClick={handleAddDonation}
-              className="bg-green-600 hover:bg-green-700 text-white h-12 px-4 sm:px-6 w-full sm:w-auto"
+              className="bg-red-600 hover:bg-red-700 text-white h-12 px-4 sm:px-6 w-full sm:w-auto"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Donations
@@ -727,7 +727,7 @@ const BatchDetailPage = () => {
                 {batch.donations.map((donation) => (
                   <div 
                     key={donation.id} 
-                    className={`p-2.5 flex justify-between group ${!isFinalized ? "hover:bg-green-100 cursor-pointer transition-colors duration-200" : ""}`}
+                    className={`p-2.5 flex justify-between group ${!isFinalized ? "hover:bg-red-100 cursor-pointer transition-colors duration-200" : ""}`}
                     onClick={(e) => {
                       // Only trigger edit if we didn't click the delete button
                       if (!isFinalized && !e.defaultPrevented) {
@@ -754,7 +754,7 @@ const BatchDetailPage = () => {
                       <div className="ml-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         {!isFinalized && (
                           <>
-                            <Edit className="h-4 w-4 text-green-600 mr-2" />
+                            <Edit className="h-4 w-4 text-red-600 mr-2" />
                             <Trash2 
                               className="h-4 w-4 text-red-600 hover:text-red-700 cursor-pointer" 
                               onClick={(e) => {

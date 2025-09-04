@@ -8,13 +8,13 @@ const Help = () => {
     <PageLayout 
       title="Help Center" 
       subtitle="Find answers to common questions about using the application."
-      icon={<HelpCircle className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<HelpCircle className="h-6 w-6 text-[#d35f5f]" />}
     >
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <HelpCircle className="h-5 w-5 text-[#69ad4c]" />
+              <HelpCircle className="h-5 w-5 text-[#d35f5f]" />
               Frequently Asked Questions
             </CardTitle>
             <CardDescription>
@@ -152,7 +152,7 @@ const Help = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileQuestion className="h-5 w-5 text-[#69ad4c]" />
+              <FileQuestion className="h-5 w-5 text-[#d35f5f]" />
               Need Additional Help?
             </CardTitle>
             <CardDescription>

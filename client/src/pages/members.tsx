@@ -177,7 +177,7 @@ const Members = () => {
                             </TableCell>
                             <TableCell>
                               {donation.notificationStatus === 'SENT' ? (
-                                <Badge className="bg-green-100 text-green-800">Notified</Badge>
+                                <Badge className="bg-red-100 text-red-800">Notified</Badge>
                               ) : donation.notificationStatus === 'PENDING' ? (
                                 <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
                               ) : donation.notificationStatus === 'FAILED' ? (
@@ -230,7 +230,7 @@ const Members = () => {
     <PageLayout 
       title={`Members (${totalMembers})`} 
       subtitle="Manage your church members and their information"
-      icon={<UserPlus className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<UserPlus className="h-6 w-6 text-[#d35f5f]" />}
       action={
         <div className="flex flex-col sm:flex-row gap-2">
           <Link href="/settings">

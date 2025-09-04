@@ -152,12 +152,12 @@ export default function GlobalAdminUsers() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <UsersIcon className="h-7 w-7 text-[#69ad4c] mr-3" />
+            <UsersIcon className="h-7 w-7 text-[#d35f5f] mr-3" />
             <h2 className="text-2xl font-bold">System Users</h2>
           </div>
           <Button 
             variant="outline" 
-            className="border-[#69ad4c] text-[#69ad4c] hover:bg-[#69ad4c]/10 hover:text-[#5a9440]"
+            className="border-[#d35f5f] text-[#d35f5f] hover:bg-[#d35f5f]/10 hover:text-[#5a9440]"
             onClick={() => setLocation("/global-admin/dashboard")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -170,7 +170,7 @@ export default function GlobalAdminUsers() {
             <div className="flex justify-between items-center">
               <CardTitle>Global Administrator Accounts</CardTitle>
               <Button 
-                className="bg-[#69ad4c] hover:bg-[#5a9740] text-white"
+                className="bg-[#d35f5f] hover:bg-[#5a9740] text-white"
                 onClick={() => setShowAddUserDialog(true)}
               >
                 <UserPlus className="h-4 w-4 mr-2" />
@@ -221,7 +221,7 @@ export default function GlobalAdminUsers() {
                         <TableCell>{user.role}</TableCell>
                         <TableCell>
                           {user.status === "active" ? (
-                            <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                            <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Active
                             </Badge>
@@ -311,7 +311,7 @@ export default function GlobalAdminUsers() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>Cancel</Button>
             <Button 
-              className="bg-[#69ad4c] hover:bg-[#5a9740]"
+              className="bg-[#d35f5f] hover:bg-[#5a9740]"
               onClick={handleAddUser}
               disabled={!newUser.firstName || !newUser.lastName || !newUser.email}
             >
@@ -355,7 +355,7 @@ export default function GlobalAdminUsers() {
                     <Label className="text-sm font-medium text-gray-700">Status</Label>
                     <div className="flex items-center">
                       {selectedUser.status === "active" ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                        <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Active
                         </Badge>
@@ -381,7 +381,7 @@ export default function GlobalAdminUsers() {
                   <Button
                     onClick={() => handleToggleUserStatus(selectedUser.id)}
                     variant={selectedUser.status === "active" ? "destructive" : "default"}
-                    className={selectedUser.status === "active" ? "" : "bg-[#69ad4c] hover:bg-[#5a9740] text-white"}
+                    className={selectedUser.status === "active" ? "" : "bg-[#d35f5f] hover:bg-[#5a9740] text-white"}
                   >
                     {selectedUser.status === "active" ? (
                       <>

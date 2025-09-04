@@ -106,7 +106,7 @@ export default function GlobalAdminLogin() {
                 className="mx-auto h-[5.25rem]"
               />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">Global Admin Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center text-[#d35f5f]">Global Admin Portal</CardTitle>
             <CardDescription className="text-center">
               Login to access the PlateSYNQ administration dashboard.
             </CardDescription>
@@ -169,7 +169,7 @@ export default function GlobalAdminLogin() {
                   <Button
                     variant="link"
                     type="button"
-                    className="text-sm text-[#69ad4c] hover:text-[#5a9440] p-0"
+                    className="text-sm text-[#d35f5f] hover:text-[#5a9440] p-0"
                     onClick={() => setLocation("/global-admin/forgot-password")}
                   >
                     Forgot Password?
@@ -178,7 +178,7 @@ export default function GlobalAdminLogin() {
                 
                 <Button
                   type="submit"
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                  className="w-full bg-[#d35f5f] hover:bg-[#5a9440] text-white"
                   disabled={isLoading}
                 >
                   {isLoading ? (

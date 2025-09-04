@@ -161,7 +161,7 @@ export default function GlobalAdminResetPassword() {
                 className="mx-auto h-[5.25rem]"
               />
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">
+            <CardTitle className="text-2xl font-bold text-center text-[#d35f5f]">
               Create New Password
             </CardTitle>
             <CardDescription className="text-center">
@@ -171,7 +171,7 @@ export default function GlobalAdminResetPassword() {
           <CardContent>
             {isValidToken === null ? (
               <div className="text-center py-4">
-                <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#69ad4c]" />
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#d35f5f]" />
                 <p className="mt-2 text-sm text-gray-600">Validating reset link...</p>
               </div>
             ) : isValidToken === false ? (
@@ -182,7 +182,7 @@ export default function GlobalAdminResetPassword() {
                   </p>
                 </div>
                 <Button 
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                  className="w-full bg-[#d35f5f] hover:bg-[#5a9440] text-white"
                   onClick={() => setLocation("/global-admin/forgot-password")}
                 >
                   Request New Reset Link
@@ -253,7 +253,7 @@ export default function GlobalAdminResetPassword() {
                   
                   <Button
                     type="submit"
-                    className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white"
+                    className="w-full bg-[#d35f5f] hover:bg-[#5a9440] text-white"
                     disabled={isLoading}
                   >
                     {isLoading ? (

@@ -176,7 +176,7 @@ export default function Verify() {
             
             {/* Success message */}
             {success && (
-              <div className="p-3 rounded-md bg-green-100 text-green-800 text-sm">
+              <div className="p-3 rounded-md bg-red-100 text-red-800 text-sm">
                 Your email has been verified and password set successfully. You will be redirected to the login page.
               </div>
             )}

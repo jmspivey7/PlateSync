@@ -136,7 +136,7 @@ export default function ForgotPassword() {
             </form>
           ) : (
             <CardContent className="space-y-6 py-6">
-              <div className="p-4 rounded-md bg-green-50 text-green-700 text-center">
+              <div className="p-4 rounded-md bg-red-50 text-red-700 text-center">
                 <p className="text-lg">
                   If your email is validated by our system then a reset password link will be sent to you within the next 5 minutes.
                 </p>
