@@ -352,7 +352,7 @@ const MembersList = ({}: MembersListProps) => {
                       </TableCell>
                       <TableCell className="text-center">
                         {member.externalSystem ? (
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             Import
                           </span>
                         ) : (

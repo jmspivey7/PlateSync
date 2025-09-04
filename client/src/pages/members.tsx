@@ -241,7 +241,7 @@ const Members = () => {
           </Link>
           <AddMemberButton 
             variant="default" 
-            className="bg-[#4299E1] hover:bg-[#3182CE] text-white"
+            className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
           />
         </div>
       }
