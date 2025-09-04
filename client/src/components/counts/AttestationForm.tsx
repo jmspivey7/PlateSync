@@ -338,7 +338,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                   
                   <Button 
                     type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                     disabled={primaryAttestMutation.isPending}
                   >
                     {primaryAttestMutation.isPending && (
@@ -437,7 +437,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                   
                   <Button 
                     type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                     disabled={secondaryAttestMutation.isPending}
                   >
                     {secondaryAttestMutation.isPending && (
@@ -495,7 +495,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                     // Navigate to internal PDF viewer
                     setLocation(`/pdf-viewer/${batchId}/count`);
                   }}
-                  className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+                  className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                 >
                   <Printer className="mr-2 h-4 w-4" />
                   View & Print PDF Report
@@ -552,7 +552,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
               
               <Button 
                 onClick={onConfirmAttestation}
-                className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full"
+                className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full"
                 disabled={confirmAttestationMutation.isPending}
               >
                 {confirmAttestationMutation.isPending && (
@@ -586,7 +586,7 @@ const AttestationForm = ({ batchId, onComplete }: AttestationFormProps) => {
                 // Direct the user to the batch summary page instead of going back to counts list
                 window.location.href = `/batch-summary/${batchId}?finalized=true`;
               }}
-              className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+              className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
             >
               View Count Summary
             </Button>

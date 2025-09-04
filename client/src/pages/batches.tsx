@@ -247,7 +247,7 @@ const BatchesPage = () => {
                               {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                             </div>
                           </div>
-                          <div className="font-medium text-[#48BB78]">
+                          <div className="font-medium text-[#d35f5f]">
                             {formatCurrency(donation.amount)}
                           </div>
                         </div>

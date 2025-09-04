@@ -275,7 +275,7 @@ const Dashboard = () => {
         <div className="md:w-1/3 h-16 md:h-auto">
           {/* Mobile view: original compact button */}
           <Button 
-            className="w-full h-full md:hidden rounded-xl bg-[#69ad4c] hover:bg-[#69ad4c] text-white flex flex-row items-center justify-center text-2xl font-bold py-0 px-4 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#69ad4c]/50 hover:translate-y-[-2px] gap-5"
+            className="w-full h-full md:hidden rounded-xl bg-[#d35f5f] hover:bg-[#d35f5f] text-white flex flex-row items-center justify-center text-2xl font-bold py-0 px-4 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-[#d35f5f]/50 hover:translate-y-[-2px] gap-5"
             onClick={handleNewCount}
           >
             <span className="flex-shrink-0 w-20 h-16 flex items-center justify-center overflow-hidden">
@@ -285,10 +285,10 @@ const Dashboard = () => {
           </Button>
           
           {/* Desktop view: taller card-like button that matches Last Count Finalized height */}
-          <Card className="hidden md:flex h-full rounded-xl shadow-sm border overflow-hidden bg-[#69ad4c]">
+          <Card className="hidden md:flex h-full rounded-xl shadow-sm border overflow-hidden bg-[#d35f5f]">
             <CardContent className="p-0 w-full flex flex-col items-center justify-center">
               <Button 
-                className="w-full h-full rounded-none bg-[#69ad4c] hover:bg-[#5c9a42] text-white flex flex-col items-center justify-center border-none shadow-none py-2 transition-all duration-300"
+                className="w-full h-full rounded-none bg-[#d35f5f] hover:bg-[#b84f4f] text-white flex flex-col items-center justify-center border-none shadow-none py-2 transition-all duration-300"
                 onClick={handleNewCount}
               >
                 <div className="flex items-center justify-center flex-col gap-2 py-3">

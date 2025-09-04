@@ -184,7 +184,7 @@ export default function SubscriptionPage() {
     <PageLayout
       title="Subscription Management"
       subtitle="Manage your PlateSync subscription"
-      icon={<CreditCard className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<CreditCard className="h-6 w-6 text-[#d35f5f]" />}
     >
       <div className="space-y-6">
         <div className="max-w-2xl mx-auto">

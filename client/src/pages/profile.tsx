@@ -259,12 +259,12 @@ const Profile = () => {
   // Show loading state if auth is still loading
   if (isAuthLoading) {
     return (
-      <PageLayout title="Profile" subtitle="View and manage your account information." icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
+      <PageLayout title="Profile" subtitle="View and manage your account information." icon={<User className="h-6 w-6 text-[#d35f5f]" />}>
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardContent className="pt-6">
               <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#69ad4c]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d35f5f]"></div>
               </div>
             </CardContent>
           </Card>
@@ -274,18 +274,18 @@ const Profile = () => {
   }
   
   return (
-    <PageLayout title="Profile" subtitle="View and manage your account information." icon={<User className="h-6 w-6 text-[#69ad4c]" />}>
+    <PageLayout title="Profile" subtitle="View and manage your account information." icon={<User className="h-6 w-6 text-[#d35f5f]" />}>
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardContent className="pt-6">
             {/* Profile header with avatar */}
             <div className="flex flex-col md:flex-row items-center mb-6 gap-4">
               <div>
-                <Avatar className="w-24 h-24 border-2 border-[#69ad4c]">
+                <Avatar className="w-24 h-24 border-2 border-[#d35f5f]">
                   {user?.profileImageUrl ? (
                     <AvatarImage src={user.profileImageUrl} alt="Profile" />
                   ) : (
-                    <AvatarFallback className="bg-[#69ad4c] text-white text-xl">
+                    <AvatarFallback className="bg-[#d35f5f] text-white text-xl">
                       {user?.firstName && user?.lastName 
                         ? `${user.firstName[0]}${user.lastName[0]}`
                         : user?.username?.[0] || "U"}
@@ -364,14 +364,14 @@ const Profile = () => {
                 <TabsTrigger 
                   value="profile" 
                   onClick={() => setActiveTab("profile")}
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200 font-bold text-sm py-2.5"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-[#d35f5f] hover:bg-[#d35f5f]/10 transition-colors duration-200 font-bold text-sm py-2.5"
                 >
                   Profile Information
                 </TabsTrigger>
                 <TabsTrigger 
                   value="password" 
                   onClick={() => setActiveTab("password")}
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-[#69ad4c] hover:bg-[#69ad4c]/10 transition-colors duration-200 font-bold text-sm py-2.5"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-[#d35f5f] hover:bg-[#d35f5f]/10 transition-colors duration-200 font-bold text-sm py-2.5"
                 >
                   Change Password
                 </TabsTrigger>
@@ -434,7 +434,7 @@ const Profile = () => {
                     <Button 
                       type="submit" 
                       disabled={updateProfileMutation.isPending}
-                      className="bg-[#69ad4c] hover:bg-[#5c9941] text-white"
+                      className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                     >
                       {updateProfileMutation.isPending ? (
                         <>
@@ -552,7 +552,7 @@ const Profile = () => {
                   <div className="pt-4">
                     <Button 
                       type="submit" 
-                      className="bg-[#69ad4c] hover:bg-[#588f3f] text-white"
+                      className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                       disabled={changePasswordMutation.isPending}
                     >
                       {changePasswordMutation.isPending ? (

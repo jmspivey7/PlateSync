@@ -294,7 +294,7 @@ const PlanningCenterIntegration = () => {
       toast({
         title: "Disconnected",
         description: "Successfully disconnected from Planning Center.",
-        className: "bg-[#69ad4c] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
       
       // Immediately invalidate and refetch the status

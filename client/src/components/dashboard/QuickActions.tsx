@@ -36,7 +36,7 @@ const QuickActions = () => {
           </Button>
           
           <Button 
-            className="bg-[#48BB78] hover:bg-[#48BB78]/90 text-white"
+            className="bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
             onClick={() => handleNavigate("/settings")}
           >
             <BarChart3 className="h-5 w-5 mr-2" />

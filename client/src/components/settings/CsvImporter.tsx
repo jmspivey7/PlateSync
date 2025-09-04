@@ -82,7 +82,7 @@ const CsvImporter = () => {
       toast({
         title: 'Import Successful',
         description: `${data.importedCount} members imported successfully.`,
-        className: 'bg-[#48BB78] text-white',
+        className: 'bg-[#d35f5f] text-white',
       });
     },
     onError: (error) => {

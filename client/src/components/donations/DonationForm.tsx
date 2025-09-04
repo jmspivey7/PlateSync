@@ -721,7 +721,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                             aria-label="Existing Member"
                           >
                             {/* Force icon to always be visible using solid green color */}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#69ad4c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d35f5f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                               <circle cx="12" cy="8" r="5" />
                               <path d="M20 21a8 8 0 0 0-16 0" />
                             </svg>
@@ -1018,7 +1018,7 @@ const DonationForm = ({ donationId, isEdit = false, onClose, defaultBatchId, isI
                   </Button>
                   <Button 
                     type="submit" 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white h-12"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white h-12"
                     disabled={createDonationMutation.isPending}
                     onClick={() => {
                       // Log form state before submission

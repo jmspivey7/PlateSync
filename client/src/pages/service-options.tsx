@@ -477,7 +477,7 @@ const ServiceOptions = () => {
               </Button>
               <Button 
                 type="submit"
-                className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                className="bg-[#d35f5f] hover:bg-[#b84f4f]"
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (

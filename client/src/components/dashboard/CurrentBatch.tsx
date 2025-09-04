@@ -66,7 +66,7 @@ export function CurrentCount() {
                 </span>
               </div>
               <div className="flex items-center">
-                <DollarSign className="h-4 w-4 text-[#48BB78] mr-2" />
+                <DollarSign className="h-4 w-4 text-[#d35f5f] mr-2" />
                 <span className="font-medium">
                   {formatCurrency(currentBatch.totalAmount || 0)}
                 </span>

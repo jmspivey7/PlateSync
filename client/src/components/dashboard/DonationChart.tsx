@@ -33,7 +33,7 @@ import { Batch, Donation } from "@shared/schema";
 const chartConfig = {
   cash: {
     label: "Cash",
-    color: "#69ad4c", // Green for cash
+    color: "#d35f5f", // Red for cash
   },
   check: {
     label: "Check",
@@ -43,7 +43,7 @@ const chartConfig = {
 
 // Add CSS variables for the chart colors
 if (typeof document !== 'undefined') {
-  document.documentElement.style.setProperty('--color-cash', '#69ad4c');
+  document.documentElement.style.setProperty('--color-cash', '#d35f5f');
   document.documentElement.style.setProperty('--color-check', '#3b82f6');
 }
 
@@ -188,7 +188,7 @@ export function DonationChart() {
             </CardDescription>
           </div>
           <Button 
-            className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
+            className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white rounded-md" 
             onClick={() => navigate("/counts")}
             disabled={true}
           >
@@ -218,7 +218,7 @@ export function DonationChart() {
             </CardDescription>
           </div>
           <Button 
-            className="bg-[#69ad4c] hover:bg-[#5a9940] text-white rounded-md" 
+            className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white rounded-md" 
             onClick={() => navigate("/counts")}
           >
             All Counts

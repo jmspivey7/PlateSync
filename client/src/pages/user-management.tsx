@@ -179,7 +179,7 @@ const CreateUserForm = ({
           <Button 
             type="submit" 
             disabled={isSubmitting}
-            className="bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+            className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
           >
             {isSubmitting ? (
               <>
@@ -460,7 +460,7 @@ const UserManagement = () => {
     <PageLayout 
       title="Users" 
       subtitle="Manage users and their roles in the system."
-      icon={<Users className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<Users className="h-6 w-6 text-[#d35f5f]" />}
     >
       <Card>
         <CardHeader>
@@ -483,7 +483,7 @@ const UserManagement = () => {
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Add User
@@ -543,7 +543,7 @@ const UserManagement = () => {
                             <div className="flex items-center gap-3">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
-                                <AvatarFallback className="bg-[#69ad4c] text-white">
+                                <AvatarFallback className="bg-[#d35f5f] text-white">
                                   {user.firstName && user.lastName 
                                     ? `${user.firstName[0]}${user.lastName[0]}`
                                     : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
@@ -597,7 +597,7 @@ const UserManagement = () => {
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10 flex-shrink-0">
                           <AvatarImage src={user.profileImageUrl || ""} alt={`${user.firstName} ${user.lastName}`} />
-                          <AvatarFallback className="bg-[#69ad4c] text-white text-sm">
+                          <AvatarFallback className="bg-[#d35f5f] text-white text-sm">
                             {user.firstName && user.lastName 
                               ? `${user.firstName[0]}${user.lastName[0]}`
                               : user.role === "ACCOUNT_OWNER" ? "AO" : user.role === "ADMIN" ? "AD" : "SU"}
@@ -666,7 +666,7 @@ const UserManagement = () => {
                   <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16">
                       <AvatarImage src={selectedUser.profileImageUrl || ""} alt={`${selectedUser.firstName} ${selectedUser.lastName}`} />
-                      <AvatarFallback className="text-lg bg-[#69ad4c] text-white">
+                      <AvatarFallback className="text-lg bg-[#d35f5f] text-white">
                         {selectedUser.firstName && selectedUser.lastName 
                           ? `${selectedUser.firstName[0]}${selectedUser.lastName[0]}`
                           : selectedUser.role === "ACCOUNT_OWNER" ? "AO" : selectedUser.role === "ADMIN" ? "AD" : "SU"}
@@ -709,7 +709,7 @@ const UserManagement = () => {
                           variant="outline"
                           onClick={() => handleResendWelcomeEmail(selectedUser.id)}
                           disabled={isResendingEmail}
-                          className="text-[#69ad4c] border-[#69ad4c] hover:bg-[#69ad4c] hover:text-white"
+                          className="text-[#d35f5f] border-[#d35f5f] hover:bg-[#d35f5f] hover:text-white"
                         >
                           {isResendingEmail ? (
                             <>
@@ -877,7 +877,7 @@ const UserManagement = () => {
                 }
               }}
               disabled={!userToTransferTo || isTransferring}
-              className="bg-[#69ad4c] hover:bg-[#5a9641] text-white"
+              className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
             >
               {isTransferring ? (
                 <>

@@ -105,11 +105,11 @@ const AccountDropdown = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
-          <Avatar className="h-[2.76rem] w-[2.76rem] bg-[#69ad4c]">
+          <Avatar className="h-[2.76rem] w-[2.76rem] bg-[#d35f5f]">
             {effectiveUser?.profileImageUrl ? (
               <AvatarImage src={effectiveUser.profileImageUrl} alt={getDisplayName()} />
             ) : null}
-            <AvatarFallback className="text-white bg-[#69ad4c]">{getInitials()}</AvatarFallback>
+            <AvatarFallback className="text-white bg-[#d35f5f]">{getInitials()}</AvatarFallback>
           </Avatar>
           <span className="text-[1.1rem]">{getDisplayName()}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
