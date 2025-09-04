@@ -235,7 +235,7 @@ export function DonationChart() {
               />
               <path 
                 d="M0,200 C100,180 200,220 300,190 C400,210 500,180 600,220 C700,190 800,230 900,210 L1000,220 L1000,300 L0,300 Z" 
-                fill="#d35f5f" 
+                fill="#69ad4c" 
                 opacity="0.6"
               />
             </svg>
@@ -478,8 +478,8 @@ export function DonationChart() {
                 dataKey="cash"
                 name="Cash"
                 stackId="1"
-                stroke="#d35f5f"
-                fill="#d35f5f"
+                stroke="#69ad4c"
+                fill="#69ad4c"
                 fillOpacity={0.4}
               />
             </AreaChart>
@@ -506,7 +506,7 @@ export function DonationChart() {
           {/* Legend moved to the footer to be on the same line as trending information */}
           <div className="flex items-center gap-4">
             <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-[#d35f5f] mr-1.5"></div>
+              <div className="w-3 h-3 rounded-full bg-[#69ad4c] mr-1.5"></div>
               <span className="text-xs text-muted-foreground">Cash</span>
             </div>
             <div className="flex items-center">
