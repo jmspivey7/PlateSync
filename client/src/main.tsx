@@ -10,7 +10,7 @@ document.head.appendChild(fontsStyle);
 
 // Set title
 const titleElement = document.createElement("title");
-titleElement.textContent = "PlateSync - Church Donation Management";
+titleElement.textContent = "PlateSYNQ - Church Donation Management";
 document.head.appendChild(titleElement);
 
 createRoot(document.getElementById("root")!).render(<App />);

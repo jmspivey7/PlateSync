@@ -52,7 +52,7 @@ export default function GlobalAdminHeader() {
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <img 
           src={plateSyncLogo} 
-          alt="PlateSync Logo" 
+          alt="PlateSYNQ Logo" 
           className="h-10 object-contain" 
         />
         <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>

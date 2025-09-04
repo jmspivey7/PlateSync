@@ -35,7 +35,7 @@ export default function SubscriptionPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-white shadow rounded-lg p-6 max-w-3xl mx-auto">
           <div className="mb-4">
-            <h2 className="text-xl font-medium text-[#333]">Manage your PlateSync subscription</h2>
+            <h2 className="text-xl font-medium text-[#333]">Manage your PlateSYNQ subscription</h2>
           </div>
 
           <div className="mt-6">
@@ -58,7 +58,7 @@ export default function SubscriptionPage() {
           <DialogHeader>
             <DialogTitle>Upgrade Your Subscription</DialogTitle>
             <DialogDescription>
-              Choose a plan to continue using PlateSync
+              Choose a plan to continue using PlateSYNQ
             </DialogDescription>
           </DialogHeader>
           <SubscriptionPlans onCancel={() => setShowUpgradeDialog(false)} />

@@ -110,7 +110,7 @@ const PlanningCenterIntegration = () => {
           // First, show the user a toast to indicate we're proceeding
           toast({
             title: "Connecting to Planning Center",
-            description: "You'll be redirected to authenticate with Planning Center. After authentication, you'll be returned to PlateSync.",
+            description: "You'll be redirected to authenticate with Planning Center. After authentication, you'll be returned to PlateSYNQ.",
             duration: 5000,
           });
           
@@ -338,7 +338,7 @@ const PlanningCenterIntegration = () => {
               <CheckCircle className="h-4 w-4" style={{ color: PLANNING_CENTER_BLUE }} />
               <AlertTitle style={{ color: PLANNING_CENTER_BLUE }}>Connection Successful</AlertTitle>
               <AlertDescription>
-                Your Planning Center account has been successfully connected to PlateSync.
+                Your Planning Center account has been successfully connected to PlateSYNQ.
               </AlertDescription>
             </Alert>
           ) : (
@@ -383,7 +383,7 @@ const PlanningCenterIntegration = () => {
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Connect your Planning Center Online account to import your members directly into PlateSync.
+              Connect your Planning Center Online account to import your members directly into PlateSYNQ.
               This integration uses OAuth 2.0 to securely connect to your Planning Center account without
               storing your credentials.
             </p>
@@ -492,7 +492,7 @@ const PlanningCenterIntegration = () => {
                   <p className="font-medium mb-1">After connecting to Planning Center:</p>
                   <ul className="list-disc list-inside space-y-1 text-xs">
                     <li>Member data will sync automatically from Planning Center</li>
-                    <li>Updates in Planning Center will reflect in PlateSync</li>
+                    <li>Updates in Planning Center will reflect in PlateSYNQ</li>
                     <li>You can manually refresh member data anytime</li>
                   </ul>
                 </div>

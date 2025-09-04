@@ -8,12 +8,12 @@ const Footer = () => {
           <div className="mb-4 md:mb-0">
             <div className="flex items-center">
               <DollarSign className="h-6 w-6 text-[#48BB78] mr-2" />
-              <span className="text-lg font-bold font-inter">PlateSync</span>
+              <span className="text-lg font-bold font-inter">PlateSYNQ</span>
             </div>
             <p className="text-sm text-gray-400 mt-1">Simplifying church donation management</p>
           </div>
           <div className="text-sm text-gray-400">
-            <p>&copy; {new Date().getFullYear()} PlateSync. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} PlateSYNQ. All rights reserved.</p>
             <p>Built with care for churches everywhere.</p>
           </div>
         </div>

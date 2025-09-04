@@ -6,12 +6,12 @@ const SharedFooter = () => {
       <div>
         <img 
           src={plateSyncLogo} 
-          alt="PlateSync - Church Collection Management" 
+          alt="PlateSYNQ - Church Collection Management" 
           className="h-11 object-contain" /* Increased by 10% from h-10 */
         />
       </div>
       <div className="text-right text-gray-500 text-xs">
-        <p>© 2025 PlateSync. All rights reserved.</p>
+        <p>© 2025 PlateSYNQ. All rights reserved.</p>
         <p>Built with care for churches everywhere.</p>
       </div>
     </div>

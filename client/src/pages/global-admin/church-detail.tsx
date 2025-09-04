@@ -328,7 +328,7 @@ export default function ChurchDetail() {
           <div className="flex-1">
             <img 
               src="/logo-with-text.png" 
-              alt="PlateSync Logo" 
+              alt="PlateSYNQ Logo" 
               className="h-10 object-contain" 
             />
           </div>

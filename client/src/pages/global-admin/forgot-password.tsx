@@ -94,7 +94,7 @@ export default function GlobalAdminForgotPassword() {
             <div className="text-center mb-4">
               <img 
                 src={plateSyncLogo} 
-                alt="PlateSync Logo" 
+                alt="PlateSYNQ Logo" 
                 className="mx-auto h-[5.25rem]"
               />
             </div>

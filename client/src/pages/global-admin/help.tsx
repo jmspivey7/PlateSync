@@ -36,7 +36,7 @@ export default function GlobalAdminHelp() {
           <div className="flex items-center space-x-4">
             <img 
               src="/logo-with-text.png" 
-              alt="PlateSync Logo" 
+              alt="PlateSYNQ Logo" 
               className="h-10 object-contain" 
             />
             <div className="h-6 w-px bg-gray-300 mx-2"></div>
@@ -75,7 +75,7 @@ export default function GlobalAdminHelp() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  Access comprehensive guides and documentation for PlateSync's Global Admin features.
+                  Access comprehensive guides and documentation for PlateSYNQ's Global Admin features.
                 </p>
                 <Button className="w-full bg-[#69ad4c] hover:bg-[#5a9740]">
                   <ExternalLink className="h-4 w-4 mr-2" />

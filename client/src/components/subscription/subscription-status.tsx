@@ -147,7 +147,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         </CardHeader>
         <CardContent>
           <p className="text-gray-600 mb-4">
-            Experience the full power of PlateSync with our 30-day free trial. 
+            Experience the full power of PlateSYNQ with our 30-day free trial. 
             No payment information required to get started.
           </p>
           <ul className="space-y-2 mb-4">
@@ -202,13 +202,13 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
             </Badge>
           </div>
           <CardDescription>
-            You're currently on a free trial of PlateSync
+            You're currently on a free trial of PlateSYNQ
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-gray-600 mb-4">
             You have access to all features during your trial period. 
-            Upgrade to a paid plan to continue using PlateSync after your trial ends.
+            Upgrade to a paid plan to continue using PlateSYNQ after your trial ends.
           </p>
           <div className="grid gap-2">
             <div className="flex items-center justify-between border-b pb-2">
@@ -259,7 +259,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Your trial has expired. Please upgrade to continue using PlateSync.
+                Your trial has expired. Please upgrade to continue using PlateSYNQ.
               </AlertDescription>
             </Alert>
           )}
@@ -315,7 +315,7 @@ export function SubscriptionStatus({ onUpgrade }: SubscriptionStatusProps) {
         </CardHeader>
         <CardContent>
           <p className="text-gray-600 mb-4">
-            Thank you for subscribing to PlateSync! You have full access to all features.
+            Thank you for subscribing to PlateSYNQ! You have full access to all features.
           </p>
           
           <div className="grid gap-2">

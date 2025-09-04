@@ -35,7 +35,7 @@ const Header = () => {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <DollarSign className="h-8 w-8 text-[#48BB78]" />
-            <h1 className="text-xl font-bold font-inter tracking-tight">PlateSync</h1>
+            <h1 className="text-xl font-bold font-inter tracking-tight">PlateSYNQ</h1>
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">

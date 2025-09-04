@@ -172,7 +172,7 @@ export default function LoginLocal() {
             <div className="text-center mb-4">
               <img 
                 src={plateSyncLogo} 
-                alt="PlateSync Logo" 
+                alt="PlateSYNQ Logo" 
                 className="mx-auto h-[5.25rem]" /* 25% reduction from h-28 (7rem) */
               />
             </div>
@@ -264,7 +264,7 @@ export default function LoginLocal() {
 
             <TabsContent value="register">
               <CardContent className="py-4">
-                <p className="text-gray-600 mb-4 text-center">Start your <strong>30-Day Free Trial</strong> of PlateSync Today! No credit card required. Complete the New Account form to get started.</p>
+                <p className="text-gray-600 mb-4 text-center">Start your <strong>30-Day Free Trial</strong> of PlateSYNQ Today! No credit card required. Complete the New Account form to get started.</p>
 
                 <form onSubmit={handleRegister} className="space-y-4">
                   {registerError && (

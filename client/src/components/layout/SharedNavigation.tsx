@@ -75,7 +75,7 @@ const SharedNavigation = ({ title, subtitle, icon, action }: SharedNavigationPro
           ) : (
             <div className="flex items-center">
               <Church className="h-8 w-8 mr-2 text-[#69ad4c]" />
-              <span className="text-xl font-bold">PlateSync</span>
+              <span className="text-xl font-bold">PlateSYNQ</span>
             </div>
           )}
         </div>

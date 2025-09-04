@@ -188,7 +188,7 @@ export default function SetPasswordPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Set Your Password</CardTitle>
           <CardDescription>
-            Create a secure password for your PlateSync account
+            Create a secure password for your PlateSYNQ account
           </CardDescription>
         </CardHeader>
         <CardContent>

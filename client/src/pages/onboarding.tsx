@@ -1179,7 +1179,7 @@ export default function Onboarding() {
             </div>
             
             <p className="text-gray-600 mb-6">
-              Upload your church logo to personalize your PlateSync experience. This logo will appear on donation receipts and reports.
+              Upload your church logo to personalize your PlateSYNQ experience. This logo will appear on donation receipts and reports.
               <br />
               <span className="text-sm italic">You can skip this step now and add your logo later in Settings.</span>
             </p>
@@ -1444,7 +1444,7 @@ export default function Onboarding() {
                     <h3 className="text-lg font-medium">Donor Email Notifications</h3>
                   </div>
                   <p className="text-gray-600 text-sm">
-                    When enabled, PlateSync will automatically send email notifications to donors after each 
+                    When enabled, PlateSYNQ will automatically send email notifications to donors after each 
                     count is finalized. This helps keep your congregation informed about their contributions.
                   </p>
                 </div>
@@ -1955,12 +1955,12 @@ export default function Onboarding() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">Start Your Free Trial</h3>
-                  <p className="text-gray-600">Experience the full power of PlateSync</p>
+                  <p className="text-gray-600">Experience the full power of PlateSYNQ</p>
                 </div>
               </div>
               
               <p className="text-center mb-6">
-                Your Free Trial of PlateSync is set to start. You'll have 30 days to use the app to 
+                Your Free Trial of PlateSYNQ is set to start. You'll have 30 days to use the app to 
                 make sure it meets your needs. After your trial period ends you will be able to continue 
                 using the app by choosing one of two billing options:
               </p>
@@ -2114,7 +2114,7 @@ export default function Onboarding() {
             </div>
             <h2 className="text-2xl font-bold">Your Free Trial is Now Active!</h2>
             <p className="text-gray-600 max-w-md">
-              Congratulations! Your PlateSync account is ready to use and your 30-day free trial has started. Click the button below to sign in and start managing your donations.
+              Congratulations! Your PlateSYNQ account is ready to use and your 30-day free trial has started. Click the button below to sign in and start managing your donations.
             </p>
             <div className="flex justify-center pt-4 border-t mt-6 w-full max-w-md">
               <Button 
@@ -2139,7 +2139,7 @@ export default function Onboarding() {
         <div className="flex flex-col items-center justify-center max-w-md text-center">
           <img 
             src={plateSyncLogo} 
-            alt="PlateSync Logo" 
+            alt="PlateSYNQ Logo" 
             className="h-[5.25rem] mb-8"
           />
           
@@ -2177,7 +2177,7 @@ export default function Onboarding() {
           <div className="flex items-center justify-center">
             <img 
               src={plateSyncLogo} 
-              alt="PlateSync Logo" 
+              alt="PlateSYNQ Logo" 
               className="h-[5.25rem]"
             />
           </div>

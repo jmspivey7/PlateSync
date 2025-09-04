@@ -86,7 +86,7 @@ export function SubscriptionPlans({ onCancel }: SubscriptionPlansProps) {
           </div>
           <CardHeader>
             <CardTitle>Monthly Plan</CardTitle>
-            <CardDescription>Perfect for churches trying PlateSync</CardDescription>
+            <CardDescription>Perfect for churches trying PlateSYNQ</CardDescription>
             <div className="mt-4">
               <span className="text-3xl font-bold">$2.99</span>
               <span className="text-gray-500 ml-1">/month</span>

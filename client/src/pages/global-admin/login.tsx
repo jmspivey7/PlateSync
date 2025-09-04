@@ -102,13 +102,13 @@ export default function GlobalAdminLogin() {
             <div className="text-center mb-4">
               <img 
                 src={plateSyncLogo} 
-                alt="PlateSync Logo" 
+                alt="PlateSYNQ Logo" 
                 className="mx-auto h-[5.25rem]"
               />
             </div>
             <CardTitle className="text-2xl font-bold text-center text-[#69ad4c]">Global Admin Portal</CardTitle>
             <CardDescription className="text-center">
-              Login to access the PlateSync administration dashboard.
+              Login to access the PlateSYNQ administration dashboard.
             </CardDescription>
           </CardHeader>
           <CardContent>
