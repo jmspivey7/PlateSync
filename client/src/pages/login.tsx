@@ -76,7 +76,7 @@ export default function Login() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#69ad4c]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d35f5f]"></div>
       </div>
     );
   }
@@ -154,7 +154,7 @@ export default function Login() {
               
               <Button 
                 type="submit" 
-                className="w-full bg-[#69ad4c] hover:bg-[#59ad3c] text-white" 
+                className="w-full bg-[#d35f5f] hover:bg-[#b84f4f] text-white" 
                 disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign In"}
@@ -163,7 +163,7 @@ export default function Login() {
               <div className="text-center mt-4">
                 <a 
                   href="/forgot-password" 
-                  className="text-sm text-[#69ad4c] hover:underline"
+                  className="text-sm text-[#d35f5f] hover:underline"
                 >
                   Forgot password?
                 </a>
