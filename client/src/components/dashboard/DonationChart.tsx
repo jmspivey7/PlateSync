@@ -469,8 +469,8 @@ export function DonationChart() {
                 dataKey="check"
                 name="Check"
                 stackId="1"
-                stroke="#3b82f6"
-                fill="#3b82f6"
+                stroke="#666666"
+                fill="#666666"
                 fillOpacity={0.4}
               />
               <Area
@@ -510,7 +510,7 @@ export function DonationChart() {
               <span className="text-xs text-muted-foreground">Cash</span>
             </div>
             <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-1.5"></div>
+              <div className="w-3 h-3 rounded-full bg-[#666666] mr-1.5"></div>
               <span className="text-xs text-muted-foreground">Check</span>
             </div>
           </div>
