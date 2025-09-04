@@ -146,9 +146,9 @@
 
 /* Apply different styles based on state */
 .enhanced-switch[data-state="checked"] {
-  border: 2px solid #69ad4c !important;
-  box-shadow: 0 0 4px 1px rgba(105, 173, 76, 0.5) !important;
-  background-color: #69ad4c !important;
+  border: 2px solid #d35f5f !important;
+  box-shadow: 0 0 4px 1px rgba(211, 95, 95, 0.5) !important;
+  background-color: #d35f5f !important;
 }
 
 .enhanced-switch[data-state="unchecked"] {

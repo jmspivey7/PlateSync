@@ -1056,7 +1056,7 @@ export default function Onboarding() {
       case OnboardingStep.CREATING_ACCOUNT:
         return (
           <div className="flex flex-col items-center justify-center space-y-6 p-8 text-center">
-            <Loader2 className="h-16 w-16 animate-spin text-[#69ad4c]" />
+            <Loader2 className="h-16 w-16 animate-spin text-[#d35f5f]" />
             <h2 className="text-2xl font-bold">Hold tight while we create your Church organization</h2>
             <Progress value={progress} className="w-full max-w-md" />
             <p className="text-gray-500">Setting up your account...</p>
@@ -1078,7 +1078,7 @@ export default function Onboarding() {
             
             <div className="flex flex-col items-center space-y-8 py-6">
               <div className="bg-gray-50 p-8 rounded-lg w-full max-w-md flex flex-col items-center space-y-6">
-                <Mail className="h-12 w-12 text-[#69ad4c] mb-2" />
+                <Mail className="h-12 w-12 text-[#d35f5f] mb-2" />
                 
                 <InputOTP 
                   maxLength={6}
@@ -1149,7 +1149,7 @@ export default function Onboarding() {
                 
                 <div className="order-1 sm:order-2">
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full sm:w-auto"
                     onClick={verifyCode}
                     disabled={isVerifying || verificationCode.length !== 6}
                   >
@@ -1218,7 +1218,7 @@ export default function Onboarding() {
                 <Button
                   type="button"
                   variant={logoPreview ? "outline" : "default"}
-                  className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
+                  className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                 >
                   Browse Files
                 </Button>
@@ -1265,7 +1265,7 @@ export default function Onboarding() {
                   </Button>
                   
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full sm:w-auto"
                     onClick={handleNextStep}
                   >
                     Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
@@ -1309,7 +1309,7 @@ export default function Onboarding() {
                 <Button
                   onClick={handleAddServiceOption}
                   disabled={isAddingService}
-                  className="bg-[#69ad4c] hover:bg-[#59ad3c] text-white"
+                  className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
                 >
                   {isAddingService ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1418,7 +1418,7 @@ export default function Onboarding() {
                   </Button>
                   
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full sm:w-auto"
                     onClick={handleNextStep}
                 >
                   Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
@@ -1440,7 +1440,7 @@ export default function Onboarding() {
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <BellRing className="h-5 w-5 text-[#69ad4c]" />
+                    <BellRing className="h-5 w-5 text-[#d35f5f]" />
                     <h3 className="text-lg font-medium">Donor Email Notifications</h3>
                   </div>
                   <p className="text-gray-600 text-sm">
@@ -1534,7 +1534,7 @@ export default function Onboarding() {
                   </Button>
                   
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full sm:w-auto"
                     onClick={handleNextStep}
                     disabled={donorNotificationMutation.isPending}
                   >
@@ -1716,7 +1716,7 @@ export default function Onboarding() {
                                   toast({
                                     title: 'Import Successful',
                                     description: `Successfully imported ${response.importedCount} members from Planning Center.`,
-                                    className: 'bg-[#48BB78] text-white',
+                                    className: 'bg-[#d35f5f] text-white',
                                   });
                                 } else {
                                   throw new Error(response.error || 'Import failed');
@@ -1825,7 +1825,7 @@ export default function Onboarding() {
                                           toast({
                                             title: "Connected!",
                                             description: "Planning Center connected successfully. Click 'Import Members' to proceed.",
-                                            className: 'bg-[#48BB78] text-white',
+                                            className: 'bg-[#d35f5f] text-white',
                                           });
                                         } else {
                                           toast({
@@ -1915,7 +1915,7 @@ export default function Onboarding() {
                   )}
                   
                   <Button 
-                    className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white w-full sm:w-auto"
+                    className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white w-full sm:w-auto"
                     onClick={handleNextStep}
                   >
                     Save & Continue <ArrowRight className="ml-2 h-4 w-4" />
@@ -1951,7 +1951,7 @@ export default function Onboarding() {
             <div className="bg-white rounded-lg border p-6 mb-6">
               <div className="flex items-center justify-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                  <Gift className="h-8 w-8 text-[#69ad4c]" />
+                  <Gift className="h-8 w-8 text-[#d35f5f]" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">Start Your Free Trial</h3>
@@ -2110,7 +2110,7 @@ export default function Onboarding() {
         return (
           <div className="flex flex-col items-center justify-center space-y-6 p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="h-8 w-8 text-[#69ad4c]" />
+              <CheckCircle className="h-8 w-8 text-[#d35f5f]" />
             </div>
             <h2 className="text-2xl font-bold">Your Free Trial is Now Active!</h2>
             <p className="text-gray-600 max-w-md">
@@ -2144,7 +2144,7 @@ export default function Onboarding() {
           />
           
           <div className="w-16 h-16 mb-6">
-            <svg className="animate-spin w-full h-full text-[#69ad4c]" viewBox="0 0 24 24">
+            <svg className="animate-spin w-full h-full text-[#d35f5f]" viewBox="0 0 24 24">
               <circle 
                 className="opacity-25" 
                 cx="12" 

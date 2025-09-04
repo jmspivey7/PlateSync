@@ -23,7 +23,7 @@ const Reports = () => {
           </p>
           <Button
             onClick={() => window.location.href = "/dashboard"}
-            className="bg-[#69ad4c] hover:bg-[#69ad4c]/90 text-white"
+            className="bg-[#d35f5f] hover:bg-[#d35f5f]/90 text-white"
           >
             Return to Dashboard
           </Button>
@@ -42,7 +42,7 @@ const Reports = () => {
     <PageLayout 
       title="Reports" 
       subtitle="Export donation and member data for reporting purposes"
-      icon={<FileBarChart className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<FileBarChart className="h-6 w-6 text-[#d35f5f]" />}
     >
       <div className="max-w-4xl mx-auto">
         <Card>
@@ -56,7 +56,7 @@ const Reports = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <Button 
                 variant="outline" 
-                className="text-[#2D3748] hover:bg-[#69ad4c]/10 flex items-center justify-center gap-2 h-16"
+                className="text-[#2D3748] hover:bg-[#d35f5f]/10 flex items-center justify-center gap-2 h-16"
                 onClick={() => handleExport('monthly')}
               >
                 <Download className="h-4 w-4" />
@@ -64,7 +64,7 @@ const Reports = () => {
               </Button>
               <Button 
                 variant="outline" 
-                className="text-[#2D3748] hover:bg-[#69ad4c]/10 flex items-center justify-center gap-2 h-16"
+                className="text-[#2D3748] hover:bg-[#d35f5f]/10 flex items-center justify-center gap-2 h-16"
                 onClick={() => handleExport('annual')}
               >
                 <Download className="h-4 w-4" />
@@ -72,7 +72,7 @@ const Reports = () => {
               </Button>
               <Button 
                 variant="outline" 
-                className="text-[#2D3748] hover:bg-[#69ad4c]/10 flex items-center justify-center gap-2 h-16"
+                className="text-[#2D3748] hover:bg-[#d35f5f]/10 flex items-center justify-center gap-2 h-16"
                 onClick={() => handleExport('directory')}
               >
                 <Download className="h-4 w-4" />

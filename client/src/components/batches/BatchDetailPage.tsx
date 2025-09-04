@@ -73,7 +73,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
       toast({
         title: "Success",
         description: "Batch has been finalized successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
       
       setIsFinalized(true);
@@ -169,7 +169,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
           </div>
           <div className="flex space-x-2">
             {isFinalized && (
-              <Button onClick={handlePrint} className="bg-[#69ad4c] hover:bg-[#5c9a42]">
+              <Button onClick={handlePrint} className="bg-[#d35f5f] hover:bg-[#b84f4f]">
                 <Printer className="mr-2 h-4 w-4" />
                 Print
               </Button>
@@ -211,19 +211,19 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-sm text-gray-500">Cash Total</div>
-              <div className="text-xl font-bold text-[#48BB78]">
+              <div className="text-xl font-bold text-[#d35f5f]">
                 {formatCurrency(cashTotal)}
               </div>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-sm text-gray-500">Check Total</div>
-              <div className="text-xl font-bold text-[#48BB78]">
+              <div className="text-xl font-bold text-[#d35f5f]">
                 {formatCurrency(checkTotal)}
               </div>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-sm text-gray-500">Total Amount</div>
-              <div className="text-xl font-bold text-[#48BB78]">
+              <div className="text-xl font-bold text-[#d35f5f]">
                 {formatCurrency(batch.totalAmount || 0)}
               </div>
             </div>
@@ -244,7 +244,7 @@ const BatchDetailPage = ({ batchId, onBack }: BatchDetailProps) => {
                         {donation.donationType === "CASH" ? " Cash" : ` Check #${donation.checkNumber}`}
                       </div>
                     </div>
-                    <div className="font-medium text-[#48BB78]">
+                    <div className="font-medium text-[#d35f5f]">
                       {formatCurrency(donation.amount)}
                     </div>
                   </div>

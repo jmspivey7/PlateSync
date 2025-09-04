@@ -125,7 +125,7 @@ export default function ExpiredSubscription() {
                   <Button 
                     onClick={() => handleSubscribe('monthly')}
                     disabled={isRedirecting}
-                    className="w-full bg-[#69ad4c] hover:bg-[#5a9140] text-white mt-auto"
+                    className="w-full bg-[#d35f5f] hover:bg-[#b84f4f] text-white mt-auto"
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
                     {isRedirecting ? 'Redirecting...' : 'Subscribe Monthly'}
@@ -159,7 +159,7 @@ export default function ExpiredSubscription() {
                   <Button 
                     onClick={() => handleSubscribe('annual')}
                     disabled={isRedirecting}
-                    className="w-full bg-[#69ad4c] hover:bg-[#5a9140] text-white mt-auto"
+                    className="w-full bg-[#d35f5f] hover:bg-[#b84f4f] text-white mt-auto"
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
                     {isRedirecting ? 'Redirecting...' : 'Subscribe Annually'}
@@ -178,29 +178,29 @@ export default function ExpiredSubscription() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-[#69ad4c] rounded-full mr-3"></div>
+                    <div className="w-2 h-2 bg-[#d35f5f] rounded-full mr-3"></div>
                     <span className="text-gray-700">Unlimited donation tracking</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-[#69ad4c] rounded-full mr-3"></div>
+                    <div className="w-2 h-2 bg-[#d35f5f] rounded-full mr-3"></div>
                     <span className="text-gray-700">Member management</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-[#69ad4c] rounded-full mr-3"></div>
+                    <div className="w-2 h-2 bg-[#d35f5f] rounded-full mr-3"></div>
                     <span className="text-gray-700">Automated email notifications</span>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-[#69ad4c] rounded-full mr-3"></div>
+                    <div className="w-2 h-2 bg-[#d35f5f] rounded-full mr-3"></div>
                     <span className="text-gray-700">Financial reports</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-[#69ad4c] rounded-full mr-3"></div>
+                    <div className="w-2 h-2 bg-[#d35f5f] rounded-full mr-3"></div>
                     <span className="text-gray-700">Planning Center integration</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-[#69ad4c] rounded-full mr-3"></div>
+                    <div className="w-2 h-2 bg-[#d35f5f] rounded-full mr-3"></div>
                     <span className="text-gray-700">Multi-user support</span>
                   </div>
                 </div>
@@ -221,7 +221,7 @@ export default function ExpiredSubscription() {
 
           {/* Support Contact */}
           <div className="text-center mt-8 text-gray-600">
-            <p>Questions? Contact us at <a href="mailto:support@platesync.com" className="text-[#69ad4c] hover:underline">support@platesync.com</a></p>
+            <p>Questions? Contact us at <a href="mailto:support@platesync.com" className="text-[#d35f5f] hover:underline">support@platesync.com</a></p>
           </div>
         </div>
       </div>

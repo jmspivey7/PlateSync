@@ -122,7 +122,7 @@ const MembersList = ({}: MembersListProps) => {
       toast({
         title: "Success",
         description: "Member deleted successfully.",
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
     },
     onError: (error) => {

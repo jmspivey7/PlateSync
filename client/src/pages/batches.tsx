@@ -109,7 +109,7 @@ const BatchesPage = () => {
         </div>
         <Button 
           onClick={handleCreateBatch}
-          className="bg-[#69ad4c] hover:bg-[#5c9a42] text-white"
+          className="bg-[#d35f5f] hover:bg-[#b84f4f] text-white"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           New Count
@@ -152,7 +152,7 @@ const BatchesPage = () => {
                         {format(new Date(batch.date), 'MMM d, yyyy')}
                       </div>
                       <div className="mt-1 flex items-center text-sm font-medium">
-                        <DollarSign className="mr-1 h-3.5 w-3.5 text-[#48BB78]" />
+                        <DollarSign className="mr-1 h-3.5 w-3.5 text-[#d35f5f]" />
                         {formatCurrency(batch.totalAmount || 0)}
                       </div>
                     </div>
@@ -201,7 +201,7 @@ const BatchesPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="text-sm text-gray-500">Total Amount</div>
-                    <div className="text-xl font-bold text-[#48BB78]">
+                    <div className="text-xl font-bold text-[#d35f5f]">
                       {formatCurrency(selectedBatch.totalAmount || 0)}
                     </div>
                   </div>

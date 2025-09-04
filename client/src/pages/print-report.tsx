@@ -41,7 +41,7 @@ const PrintReportPage: React.FC = () => {
     <PageLayout 
       title="Print Count Report" 
       subtitle="Generate a printable report to include with the money bag"
-      icon={<Printer className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<Printer className="h-6 w-6 text-[#d35f5f]" />}
     >
       <div className="max-w-2xl mx-auto">
         <PrintCountReport batchId={batchId} onBack={handleBack} />

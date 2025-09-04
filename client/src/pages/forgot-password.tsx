@@ -111,7 +111,7 @@ export default function ForgotPassword() {
               <CardFooter className="flex flex-col gap-4">
                 <Button 
                   type="submit" 
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440] text-white text-lg py-6"
+                  className="w-full bg-[#d35f5f] hover:bg-[#b84f4f] text-white text-lg py-6"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -127,7 +127,7 @@ export default function ForgotPassword() {
                 <Button 
                   type="button" 
                   variant="link" 
-                  className="text-[#69ad4c] hover:text-[#5a9440]"
+                  className="text-[#d35f5f] hover:text-[#b84f4f]"
                   onClick={() => setLocation("/login")}
                 >
                   Return to Login

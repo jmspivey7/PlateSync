@@ -55,7 +55,7 @@ export default function GlobalAdminHeader() {
           alt="PlateSYNQ Logo" 
           className="h-10 object-contain" 
         />
-        <h1 className="text-xl font-semibold text-[#69ad4c]">Global Administration</h1>
+        <h1 className="text-xl font-semibold text-[#d35f5f]">Global Administration</h1>
         <GlobalAdminAccountDropdown 
           adminName={fullName} 
           adminEmail={adminInfo.email} 

@@ -238,7 +238,7 @@ export default function Verify() {
                 
                 <Button
                   type="submit"
-                  className="w-full bg-[#69ad4c] hover:bg-[#5a9440]"
+                  className="w-full bg-[#d35f5f] hover:bg-[#b84f4f]"
                   disabled={loading || success}
                 >
                   {loading ? (

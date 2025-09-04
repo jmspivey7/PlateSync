@@ -122,7 +122,7 @@ const ServiceOptions = () => {
       toast({
         title: 'Success',
         description: 'Service option created successfully',
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
       setIsCreateOpen(false);
@@ -151,7 +151,7 @@ const ServiceOptions = () => {
       toast({
         title: 'Success',
         description: 'Service option updated successfully',
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
       setIsEditOpen(false);
@@ -180,7 +180,7 @@ const ServiceOptions = () => {
       toast({
         title: 'Success',
         description: 'Service option deleted successfully',
-        className: "bg-[#48BB78] text-white",
+        className: "bg-[#d35f5f] text-white",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/service-options'] });
       setDeleteOption(null);
@@ -242,7 +242,7 @@ const ServiceOptions = () => {
     <PageLayout 
       title="Service Options" 
       subtitle="Manage service options for creating new counts."
-      icon={<ListChecks className="h-6 w-6 text-[#69ad4c]" />}
+      icon={<ListChecks className="h-6 w-6 text-[#d35f5f]" />}
     >
       <Card>
         <CardHeader>
@@ -257,7 +257,7 @@ const ServiceOptions = () => {
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                  className="bg-[#d35f5f] hover:bg-[#b84f4f]"
                   onClick={() => resetForm()}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
@@ -312,7 +312,7 @@ const ServiceOptions = () => {
                     </Button>
                     <Button 
                       type="submit"
-                      className="bg-[#69ad4c] hover:bg-[#588f3f]"
+                      className="bg-[#d35f5f] hover:bg-[#b84f4f]"
                       disabled={createMutation.isPending}
                     >
                       {createMutation.isPending ? (
