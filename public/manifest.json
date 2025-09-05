@@ -1,16 +1,29 @@
 {
-  "name": "PlateSync",
-  "short_name": "PlateSync",
+  "name": "PlateSYNQ",
+  "short_name": "PlateSYNQ",
   "description": "Church donation management system",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#69ad4c",
+  "theme_color": "#d35f5f",
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/assets/logo-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
