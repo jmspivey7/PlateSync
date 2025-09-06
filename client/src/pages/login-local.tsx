@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, ChurchIcon, UserIcon, BuildingIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import plateSyncLogo from "../assets/platesync-logo.png";
+import plateSyncLogo from "../assets/platesync-logo.png?v=2025010601";
 
 export default function LoginLocal() {
   // Login state

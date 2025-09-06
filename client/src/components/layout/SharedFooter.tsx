@@ -1,4 +1,4 @@
-import plateSyncLogoHorizontal from "../../assets/platesync-logo-horizontal.png";
+import plateSyncLogoHorizontal from "../../assets/platesync-logo-horizontal.png?v=2025010601";
 
 const SharedFooter = () => {
   return (
