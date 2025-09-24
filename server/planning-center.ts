@@ -892,7 +892,10 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
+    // Load Planning Center configuration from database
+    const planningCenterConfig = await getPlanningCenterConfig();
+    
+    if (!planningCenterConfig.clientId || !planningCenterConfig.clientSecret) {
       console.error('Planning Center API credentials not configured');
       return res.status(400).json({ 
         error: 'Planning Center credentials not configured',
@@ -906,19 +909,19 @@ export function setupPlanningCenterRoutes(app: Express) {
       const state = crypto.randomBytes(24).toString('hex');
       
       // Log user details for debugging
-      const authUrlUser = req.user as any;
+      let authUrlUser = req.user as any;
       console.log('Full req.user object in auth URL generation:', JSON.stringify(authUrlUser, null, 2));
       
       // Extract user ID from req.user which might be in different formats based on auth method
-      let userId = '';
+      // Note: userId and churchId are already declared at the function start
       
-      // Check for Replit Auth structure (claims.sub)
-      if (authUrlUser.claims && authUrlUser.claims.sub) {
+      // Check for Replit Auth structure (claims.sub) - only if authUrlUser exists
+      if (authUrlUser && authUrlUser.claims && authUrlUser.claims.sub) {
         userId = authUrlUser.claims.sub;
         console.log('Found userId in claims.sub:', userId);
       } 
-      // Try alternatives for username/email-based auth
-      else if (authUrlUser.username || authUrlUser.email) {
+      // Try alternatives for username/email-based auth - only if authUrlUser exists
+      else if (authUrlUser && (authUrlUser.username || authUrlUser.email)) {
         // Use email if available, otherwise try username
         const emailToCheck = authUrlUser.email || authUrlUser.username;
         
@@ -933,23 +936,35 @@ export function setupPlanningCenterRoutes(app: Express) {
           console.error('Error looking up user by email:', err);
         }
       }
-      // Check for local auth structure (id)
-      else if (authUrlUser.id) {
+      // Check for local auth structure (id) - only if authUrlUser exists
+      else if (authUrlUser && authUrlUser.id) {
         userId = authUrlUser.id;
         console.log('Found userId in user.id:', userId);
       }
       
-      // If we can't find a user ID, we have a problem
+      // If we don't have a userId from the user session, use the values determined earlier
       if (!userId) {
-        console.error('Could not extract user ID from user object for auth URL generation');
-        return res.status(400).json({
-          error: 'invalid_user',
-          message: 'Could not determine user identity'
-        });
+        // Use the userId and churchId that were already determined at the beginning of the function
+        // This handles both authenticated users and registration flow with query parameters
+        if (req.user) {
+          const user = req.user as any;
+          userId = user.id || user.churchId;
+        } else {
+          // Registration flow - use churchId as userId
+          userId = churchId;
+        }
+        console.log('Using determined userId from function start:', userId);
       }
       
-      // Assign the extracted ID to authUrlUser.id for consistent usage
-      authUrlUser.id = userId;
+      // Create authUrlUser object if it doesn't exist (for registration flow)
+      if (!authUrlUser) {
+        authUrlUser = { id: userId, churchId: churchId };
+        console.log('Created authUrlUser for registration flow:', authUrlUser);
+      } else {
+        // Assign the extracted ID to authUrlUser.id for consistent usage
+        authUrlUser.id = userId;
+      }
+      
       console.log(`Auth URL request from user: ${authUrlUser.id}, church: ${authUrlUser.churchId || authUrlUser.id}`);
       
       // If churchId is missing, fall back to using userId as churchId
@@ -1004,8 +1019,8 @@ export function setupPlanningCenterRoutes(app: Express) {
       let redirectUri;
       if (isRegistration) {
         // Use registration-specific callback exactly as configured
-        if (config.registrationCallbackUrl) {
-          redirectUri = config.registrationCallbackUrl;
+        if (planningCenterConfig.registrationCallbackUrl) {
+          redirectUri = planningCenterConfig.registrationCallbackUrl;
           console.log('Using exact configured registration callback URL:', redirectUri);
         } else {
           console.error('CRITICAL: No Planning Center registration callback URL configured');
@@ -1014,8 +1029,8 @@ export function setupPlanningCenterRoutes(app: Express) {
             message: 'Administrator must configure PLANNING_CENTER_REGISTRATION_CALLBACK_URL'
           });
         }
-      } else if (config.callbackUrl) {
-        redirectUri = config.callbackUrl;
+      } else if (planningCenterConfig.callbackUrl) {
+        redirectUri = planningCenterConfig.callbackUrl;
         console.log('Using exact configured callback URL from database/env:', redirectUri);
       } else {
         console.error('CRITICAL: No Planning Center callback URL configured');
@@ -1028,7 +1043,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Make sure we're following Planning Center OAuth spec exactly
       // https://developer.planning.center/docs/#/overview/authentication
       const authUrl = new URL(PLANNING_CENTER_AUTH_URL);
-      authUrl.searchParams.append('client_id', config.clientId);
+      authUrl.searchParams.append('client_id', planningCenterConfig.clientId);
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('response_type', 'code');
       
@@ -1052,8 +1067,8 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Add state for CSRF protection
       authUrl.searchParams.append('state', state);
       
-      // Get the churchId to include in both the URL and response
-      const churchId = authUrlUser.churchId || authUrlUser.id;
+      // Get the churchId to include in both the URL and response (using existing variable)
+      // Note: churchId is already declared at function start, so we'll use authUrlUser.churchId
       
       // Add churchId as a custom parameter to be passed through the OAuth flow
       // Planning Center will include this in the callback
@@ -1090,8 +1105,7 @@ export function setupPlanningCenterRoutes(app: Express) {
   // Endpoint to initiate the OAuth flow via redirect
   app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
     // Handle both authenticated users and registration flow
-    let churchId = '';
-    let userId = '';
+    // Note: Using local variables for this endpoint since it's separate from auth-url
     
     if (req.user) {
       // Authenticated user
