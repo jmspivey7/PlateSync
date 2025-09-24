@@ -63,16 +63,35 @@ async function getPlanningCenterConfig() {
     console.log('- Registration Callback URL:', registrationCallbackUrl || 'NOT SET');
     
     if (!clientId || !clientSecret || !callbackUrl || !registrationCallbackUrl) {
-      throw new Error('Missing required Planning Center configuration in database');
+      console.log('Missing database configuration, falling back to environment variables...');
+      
+      // Fallback to environment variables for production compatibility
+      const envClientId = process.env.PLANNING_CENTER_CLIENT_ID || '';
+      const envClientSecret = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+      const envCallbackUrl = process.env.PLANNING_CENTER_CALLBACK_URL || '';
+      const envRegistrationCallbackUrl = process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
+      
+      console.log('Planning Center config from environment:');
+      console.log('- Client ID:', envClientId ? (envClientId.substring(0, 8) + '...') : 'NOT SET');
+      console.log('- Callback URL:', envCallbackUrl || 'NOT SET');
+      console.log('- Registration Callback URL:', envRegistrationCallbackUrl || 'NOT SET');
+      
+      if (!envClientId || !envClientSecret || !envCallbackUrl || !envRegistrationCallbackUrl) {
+        throw new Error('Missing required Planning Center configuration in both database and environment variables');
+      }
+      
+      return { 
+        clientId: envClientId, 
+        clientSecret: envClientSecret, 
+        callbackUrl: envCallbackUrl, 
+        registrationCallbackUrl: envRegistrationCallbackUrl 
+      };
     }
     
     return { clientId, clientSecret, callbackUrl, registrationCallbackUrl };
   } catch (error) {
-    console.error('CRITICAL: Database configuration failed for Planning Center:', error);
-    console.error('This means production is using stale environment variables instead of database config');
-    
-    // FAIL HARD - do not use environment variables that may be stale
-    throw new Error('Planning Center database configuration required - environment variables are disabled');
+    console.error('CRITICAL: Planning Center configuration failed:', error);
+    throw new Error('Planning Center configuration required - check database and environment variables');
   }
 }
 
