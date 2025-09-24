@@ -50,21 +50,29 @@ const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 // Helper function to get Planning Center configuration from database
 async function getPlanningCenterConfig() {
   try {
-    const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || process.env.PLANNING_CENTER_CLIENT_ID || '';
-    const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || process.env.PLANNING_CENTER_CLIENT_SECRET || '';
-    const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
-    const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
+    console.log('Loading Planning Center configuration from database...');
+    
+    const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || '';
+    const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || '';
+    const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || '';
+    const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || '';
+    
+    console.log('Planning Center config loaded from database:');
+    console.log('- Client ID:', clientId ? (clientId.substring(0, 8) + '...') : 'NOT SET');
+    console.log('- Callback URL:', callbackUrl || 'NOT SET');
+    console.log('- Registration Callback URL:', registrationCallbackUrl || 'NOT SET');
+    
+    if (!clientId || !clientSecret || !callbackUrl || !registrationCallbackUrl) {
+      throw new Error('Missing required Planning Center configuration in database');
+    }
     
     return { clientId, clientSecret, callbackUrl, registrationCallbackUrl };
   } catch (error) {
-    console.error('Error getting Planning Center config from database, falling back to environment variables:', error);
-    // Fallback to environment variables if database access fails
-    return {
-      clientId: process.env.PLANNING_CENTER_CLIENT_ID || '',
-      clientSecret: process.env.PLANNING_CENTER_CLIENT_SECRET || '',
-      callbackUrl: process.env.PLANNING_CENTER_CALLBACK_URL || '',
-      registrationCallbackUrl: process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || ''
-    };
+    console.error('CRITICAL: Database configuration failed for Planning Center:', error);
+    console.error('This means production is using stale environment variables instead of database config');
+    
+    // FAIL HARD - do not use environment variables that may be stale
+    throw new Error('Planning Center database configuration required - environment variables are disabled');
   }
 }
 
