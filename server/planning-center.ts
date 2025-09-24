@@ -301,17 +301,20 @@ export function setupPlanningCenterRoutes(app: Express) {
         console.warn('Session or planningCenterState not available, proceeding without state verification');
       }
       
+      // Get Planning Center configuration from database first
+      const config = await getPlanningCenterConfig();
+      
       // Determine the correct redirect URI (must match what was used in the initial authorization request)
       let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
       console.log('Current callback host:', host);
       const protocol = req.protocol || 'https';
       
-      // Prefer the environment-configured redirect URI if available
+      // Use explicit callback URL from configuration instead of dynamic construction
       let redirectUri;
-      if (process.env.PLANNING_CENTER_CALLBACK_URL) {
-        // Always use the environment variable if available, but ensure we don't add duplicate params
-        redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
-        console.log('Using fixed callback URL from env:', redirectUri);
+      if (config.callbackUrl) {
+        // Always use the configured callback URL if available
+        redirectUri = config.callbackUrl;
+        console.log('Using configured callback URL from database/env:', redirectUri);
         
         // Extract churchId from query parameter or session, prioritizing query
         const churchId = req.query.churchId as string || 
@@ -328,14 +331,12 @@ export function setupPlanningCenterRoutes(app: Express) {
           }
         }
       } else {
-        // If no fixed URL, build our own with proper query parameters
+        // If no configured URL, build our own with proper query parameters
         redirectUri = `${protocol}://${host}/api/planning-center/callback`;
-        console.log('Using dynamic callback URL:', redirectUri);
+        console.log('Using dynamic callback URL (fallback):', redirectUri);
       }
       
       // Build properly formatted parameters for token request
-      // Get Planning Center configuration from database
-      const config = await getPlanningCenterConfig();
       
       // Using URLSearchParams to ensure proper encoding and formatting
       const params = new URLSearchParams();
@@ -1005,15 +1006,15 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Use different callback URLs for registration vs settings
       let redirectUri;
       if (isRegistration) {
-        // Use registration-specific callback
-        redirectUri = `${protocol}://${host}/api/planning-center/callback-registration`;
+        // Use registration-specific callback from configuration
+        redirectUri = config.registrationCallbackUrl || `${protocol}://${host}/api/planning-center/callback-registration`;
         console.log('Using registration callback URL:', redirectUri);
-      } else if (process.env.PLANNING_CENTER_CALLBACK_URL) {
-        redirectUri = process.env.PLANNING_CENTER_CALLBACK_URL;
-        console.log('Using fixed callback URL from env:', redirectUri);
+      } else if (config.callbackUrl) {
+        redirectUri = config.callbackUrl;
+        console.log('Using configured callback URL from database/env:', redirectUri);
       } else {
         redirectUri = `${protocol}://${host}/api/planning-center/callback`;
-        console.log('Using dynamic callback URL:', redirectUri);
+        console.log('Using dynamic callback URL (fallback):', redirectUri);
       }
       
       // Make sure we're following Planning Center OAuth spec exactly
