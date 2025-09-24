@@ -68,7 +68,7 @@ const PlanningCenterIntegration = () => {
       setIsConnecting(true);
       
       // Get auth URL from our backend with churchId parameter
-      const response = await apiRequest('/api/planning-center/auth-url', 'GET');
+      const response = await apiRequest(`/api/planning-center/auth-url?churchId=${user?.churchId}`, 'GET');
       
       if (response?.url) {
         console.log('Got Planning Center auth URL with churchId:', response.churchId);
