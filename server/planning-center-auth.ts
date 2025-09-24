@@ -19,12 +19,14 @@ async function getPlanningCenterConfig() {
   try {
     const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || process.env.PLANNING_CENTER_CLIENT_ID || '';
     const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || process.env.PLANNING_CENTER_CLIENT_SECRET || '';
-    return { clientId, clientSecret };
+    const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
+    return { clientId, clientSecret, callbackUrl };
   } catch (error) {
     console.error('Error getting Planning Center config from database, falling back to environment variables:', error);
     return {
       clientId: process.env.PLANNING_CENTER_CLIENT_ID || '',
-      clientSecret: process.env.PLANNING_CENTER_CLIENT_SECRET || ''
+      clientSecret: process.env.PLANNING_CENTER_CLIENT_SECRET || '',
+      callbackUrl: process.env.PLANNING_CENTER_CALLBACK_URL || ''
     };
   }
 }
@@ -75,8 +77,12 @@ export function setupPlanningCenterAuth(app: Express) {
     // Get Planning Center configuration from database
     const config = await getPlanningCenterConfig();
     
-    // Redirect to Planning Center OAuth authorization
-    const redirectUri = `${req.protocol}://${req.get("host")}/api/planning-center/callback`;
+    // Use explicit callback URL from configuration instead of dynamic construction
+    const redirectUri = config.callbackUrl || `${req.protocol}://${req.get("host")}/api/planning-center/callback`;
+    console.log('Planning Center OAuth Auth - Callback URL being used:', redirectUri);
+    console.log('Planning Center OAuth Auth - Config callback URL:', config.callbackUrl);
+    console.log('Planning Center OAuth Auth - Dynamic fallback URL:', `${req.protocol}://${req.get("host")}/api/planning-center/callback`);
+    
     const authUrl = `${PC_OAUTH_BASE_URL}/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=people`;
     
     res.redirect(authUrl);
@@ -85,7 +91,13 @@ export function setupPlanningCenterAuth(app: Express) {
   // OAuth callback route - Planning Center redirects here after authorization
   app.get("/api/planning-center/callback", async (req, res) => {
     const { code } = req.query;
-    const redirectUri = `${req.protocol}://${req.get("host")}/api/planning-center/callback`;
+    
+    // Get Planning Center configuration to use the same callback URL as in auth
+    const config = await getPlanningCenterConfig();
+    const redirectUri = config.callbackUrl || `${req.protocol}://${req.get("host")}/api/planning-center/callback`;
+    console.log('Planning Center OAuth Callback - Callback URL being used:', redirectUri);
+    console.log('Planning Center OAuth Callback - Config callback URL:', config.callbackUrl);
+    console.log('Planning Center OAuth Callback - Dynamic fallback URL:', `${req.protocol}://${req.get("host")}/api/planning-center/callback`);
     
     if (!code) {
       return res.status(400).json({ message: "Authorization code missing" });
@@ -96,8 +108,7 @@ export function setupPlanningCenterAuth(app: Express) {
     }
 
     try {
-      // Get Planning Center configuration from database
-      const config = await getPlanningCenterConfig();
+      // Config already retrieved above for redirectUri
       
       // Exchange code for access token using URLSearchParams
       const params = new URLSearchParams();
