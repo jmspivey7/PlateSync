@@ -95,17 +95,17 @@ export async function sendVerificationEmail(
     const result = await sendEmail({
       to: email,
       from: fromEmail,
-      subject: `PlateSync: Your Verification Code`,
+      subject: `PlateSYNQ: Your Verification Code`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
           <div style="padding: 20px; text-align: center;">
-            <img src="https://images.squarespace-cdn.com/content/v1/676190801265eb0dc09c3768/739cc76d-9a1c-49b8-81d4-debf5f1bb208/PlateSync+Logo.png" alt="PlateSync Logo" style="width: 270px; margin: 0 auto;">
+            <img src="https://repl-plates-image-repo.s3.amazonaws.com/email-templates/platesynq-logo-with-text.png" alt="PlateSYNQ Logo" style="width: 270px; margin: 0 auto;">
           </div>
           
           <div style="padding: 0 30px 30px;">
             <p style="margin-top: 0;">${greeting}</p>
             
-            <p>To finish setting up your PlateSync account, please enter the verification code below in the Email Verification page:</p>
+            <p>To finish setting up your PlateSYNQ account, please enter the verification code below in the Email Verification page:</p>
             
             <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
               ${code}
@@ -116,14 +116,14 @@ export async function sendVerificationEmail(
             <p>If you didn't request this code, you can safely ignore this email.</p>
             
             <p>Thank you,<br>
-            <strong>The PlateSync Team</strong></p>
+            <strong>The PlateSYNQ Team</strong></p>
           </div>
         </div>
       `,
       text: `
 ${greeting}
 
-To finish setting up your PlateSync account, please enter the verification code below in the Email Verification page:
+To finish setting up your PlateSYNQ account, please enter the verification code below in the Email Verification page:
 
 ${code}
 
@@ -132,7 +132,7 @@ This code will expire in 10 minutes.
 If you didn't request this code, you can safely ignore this email.
 
 Thank you,
-The PlateSync Team
+The PlateSYNQ Team
       `
     });
     
