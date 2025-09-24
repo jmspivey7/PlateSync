@@ -114,6 +114,7 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 ## Changelog
 
+- September 24, 2025. **GLOBAL ADMIN EMAIL TEMPLATE FIX**: Fixed "Template not found" issue in Global Admin portal by updating storage layer to include all three system templates (IDs 30, 31, 32) instead of just 30 and 31. The getEmailTemplates() method in server/storage.ts now properly returns EMAIL_VERIFICATION template (ID 32) along with WELCOME_EMAIL (ID 30) and PASSWORD_RESET (ID 31) templates.
 - January 03, 2025. **BRAND & DESIGN UPDATE**: Comprehensive rebranding and design refresh:
   1. **Brand Name Update**: Changed from "PlateSync" to "PlateSYNQ" across all user-facing interfaces
   2. **Color Scheme Transformation**: Complete update from green (#69ad4c) to red (#d35f5f) primary color
