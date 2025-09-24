@@ -1772,14 +1772,9 @@ export default function Onboarding() {
                               // Use popup window for OAuth flow during registration
                               // Get the Planning Center auth URL first, then open popup
                               try {
-                                const response = await fetch(`/api/planning-center/auth-url?churchId=${idToUse}&deviceType=desktop&forceReauth=true&isRegistration=true`);
-                                if (!response.ok) {
-                                  throw new Error('Failed to get Planning Center auth URL');
-                                }
-                                
-                                const data = await response.json();
-                                if (!data.url) {
-                                  throw new Error('No auth URL received');
+                                const data = await apiRequest(`/api/planning-center/auth-url?churchId=${idToUse}&deviceType=desktop&forceReauth=true&isRegistration=true`, 'GET');
+                                if (!data || !data.url) {
+                                  throw new Error('No auth URL received from server');
                                 }
                                 
                                 // Open popup with the actual Planning Center OAuth URL
@@ -1817,23 +1812,20 @@ export default function Onboarding() {
                                   // Just check if connection was successful - no auto-import
                                   setTimeout(async () => {
                                     try {
-                                      const statusResponse = await fetch(`/api/planning-center/status?churchId=${idToUse}`);
-                                      if (statusResponse.ok) {
-                                        const status = await statusResponse.json();
-                                        if (status.connected) {
-                                          setIsPlanningCenterConnected(true);
-                                          toast({
-                                            title: "Connected!",
-                                            description: "Planning Center connected successfully. Click 'Import Members' to proceed.",
-                                            className: 'bg-[#d35f5f] text-white',
-                                          });
-                                        } else {
-                                          toast({
-                                            title: "Connection Issue",
-                                            description: "Could not verify Planning Center connection.",
-                                            variant: "destructive"
-                                          });
-                                        }
+                                      const status = await apiRequest(`/api/planning-center/status?churchId=${idToUse}`, 'GET');
+                                      if (status && status.connected) {
+                                        setIsPlanningCenterConnected(true);
+                                        toast({
+                                          title: "Connected!",
+                                          description: "Planning Center connected successfully. Click 'Import Members' to proceed.",
+                                          className: 'bg-[#d35f5f] text-white',
+                                        });
+                                      } else {
+                                        toast({
+                                          title: "Connection Issue",
+                                          description: "Could not verify Planning Center connection.",
+                                          variant: "destructive"
+                                        });
                                       }
                                     } catch (error) {
                                       console.error('Error checking Planning Center status:', error);
