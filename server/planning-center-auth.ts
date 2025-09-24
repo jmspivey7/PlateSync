@@ -77,11 +77,17 @@ export function setupPlanningCenterAuth(app: Express) {
     // Get Planning Center configuration from database
     const config = await getPlanningCenterConfig();
     
-    // Use explicit callback URL from configuration instead of dynamic construction
-    const redirectUri = config.callbackUrl || `${req.protocol}://${req.get("host")}/api/planning-center/callback`;
-    console.log('Planning Center OAuth Auth - Callback URL being used:', redirectUri);
-    console.log('Planning Center OAuth Auth - Config callback URL:', config.callbackUrl);
-    console.log('Planning Center OAuth Auth - Dynamic fallback URL:', `${req.protocol}://${req.get("host")}/api/planning-center/callback`);
+    // Use exact callback URL from configuration - Planning Center requires exact match
+    if (!config.callbackUrl) {
+      console.error('CRITICAL: No Planning Center callback URL configured in database or environment');
+      return res.status(500).json({ 
+        error: 'Planning Center callback URL not configured',
+        message: 'Administrator must configure PLANNING_CENTER_CALLBACK_URL'
+      });
+    }
+    
+    const redirectUri = config.callbackUrl;
+    console.log('Planning Center OAuth Auth - Using exact configured callback URL:', redirectUri);
     
     const authUrl = `${PC_OAUTH_BASE_URL}/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=people`;
     
@@ -92,12 +98,19 @@ export function setupPlanningCenterAuth(app: Express) {
   app.get("/api/planning-center/callback", async (req, res) => {
     const { code } = req.query;
     
-    // Get Planning Center configuration to use the same callback URL as in auth
+    // Get Planning Center configuration to use the same exact callback URL as in auth
     const config = await getPlanningCenterConfig();
-    const redirectUri = config.callbackUrl || `${req.protocol}://${req.get("host")}/api/planning-center/callback`;
-    console.log('Planning Center OAuth Callback - Callback URL being used:', redirectUri);
-    console.log('Planning Center OAuth Callback - Config callback URL:', config.callbackUrl);
-    console.log('Planning Center OAuth Callback - Dynamic fallback URL:', `${req.protocol}://${req.get("host")}/api/planning-center/callback`);
+    
+    if (!config.callbackUrl) {
+      console.error('CRITICAL: No Planning Center callback URL configured for token exchange');
+      return res.status(500).json({ 
+        error: 'Planning Center callback URL not configured',
+        message: 'Administrator must configure PLANNING_CENTER_CALLBACK_URL'
+      });
+    }
+    
+    const redirectUri = config.callbackUrl;
+    console.log('Planning Center OAuth Callback - Using exact configured callback URL:', redirectUri);
     
     if (!code) {
       return res.status(400).json({ message: "Authorization code missing" });
