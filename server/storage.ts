@@ -2926,7 +2926,7 @@ export class DatabaseStorage implements IStorage {
   
   // Email Templates operations
   async getEmailTemplates(churchId: string): Promise<EmailTemplate[]> {
-    // Special handling for system templates - only return templates 30 and 31
+    // Special handling for system templates - return templates 30, 31, and 32
     if (churchId === 'SYSTEM_TEMPLATES') {
       return db
         .select()
@@ -2935,7 +2935,8 @@ export class DatabaseStorage implements IStorage {
           eq(emailTemplates.churchId, churchId),
           or(
             eq(emailTemplates.id, 30),
-            eq(emailTemplates.id, 31)
+            eq(emailTemplates.id, 31),
+            eq(emailTemplates.id, 32)
           )
         ))
         .orderBy(asc(emailTemplates.templateType));
