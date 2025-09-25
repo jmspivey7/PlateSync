@@ -57,25 +57,57 @@ async function getPlanningCenterConfig() {
     const clientId = process.env.PLANNING_CENTER_CLIENT_ID || '';
     const clientSecret = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
     
-    // Callback URLs can still come from database for deployment flexibility
-    const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
-    const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
+    // For backward compatibility, still load stored URLs but they'll be overridden dynamically
+    const storedCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
+    const storedRegistrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
     
     console.log('Planning Center config loaded:');
     console.log('- Client ID (from env):', clientId ? (clientId.substring(0, 8) + '...') : 'NOT SET');
     console.log('- Client Secret (from env):', clientSecret ? 'SET' : 'NOT SET');
-    console.log('- Callback URL:', callbackUrl || 'NOT SET');
-    console.log('- Registration Callback URL:', registrationCallbackUrl || 'NOT SET');
+    console.log('- Stored Callback URL (will be dynamically determined):', storedCallbackUrl || 'NOT SET');
+    console.log('- Stored Registration Callback URL (will be dynamically determined):', storedRegistrationCallbackUrl || 'NOT SET');
     
-    if (!clientId || !clientSecret || !callbackUrl || !registrationCallbackUrl) {
+    if (!clientId || !clientSecret) {
       throw new Error('Missing required Planning Center configuration in environment variables');
     }
     
-    return { clientId, clientSecret, callbackUrl, registrationCallbackUrl };
+    // Return config with stored URLs for backward compatibility, but we'll build them dynamically
+    return { 
+      clientId, 
+      clientSecret, 
+      callbackUrl: storedCallbackUrl, 
+      registrationCallbackUrl: storedRegistrationCallbackUrl 
+    };
   } catch (error) {
     console.error('CRITICAL: Planning Center configuration failed:', error);
     throw new Error('Planning Center configuration required - check environment variables');
   }
+}
+
+// Helper function to dynamically build callback URL based on current request
+function buildCallbackUrl(req: Request, isRegistration: boolean = false): string {
+  // Determine the current host dynamically
+  // Priority: X-Forwarded-Host (for proxies), then Host header
+  const forwardedHost = req.get('x-forwarded-host');
+  const host = forwardedHost || req.get('host') || 'localhost:5000';
+  
+  // Determine protocol (https in production, may be http in dev)
+  const forwardedProto = req.get('x-forwarded-proto');
+  const protocol = forwardedProto || req.protocol || 'https';
+  
+  // Build the callback URL dynamically
+  const callbackPath = isRegistration 
+    ? '/api/planning-center/callback-registration'
+    : '/api/planning-center/callback';
+  
+  const callbackUrl = `${protocol}://${host}${callbackPath}`;
+  
+  console.log(`Dynamically built callback URL for ${isRegistration ? 'registration' : 'auth'}:`);
+  console.log(`  - Protocol: ${protocol}`);
+  console.log(`  - Host: ${host}`);
+  console.log(`  - Full URL: ${callbackUrl}`);
+  
+  return callbackUrl;
 }
 
 // Export the setup function to be called from routes.ts
@@ -323,33 +355,17 @@ export function setupPlanningCenterRoutes(app: Express) {
       // Get Planning Center configuration from database first
       const config = await getPlanningCenterConfig();
       
-      // Determine the correct redirect URI (must match what was used in the initial authorization request)
-      let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
-      console.log('Current callback host:', host);
-      const protocol = req.protocol || 'https';
+      // Build the redirect URI dynamically - must match what was used in the initial authorization request
+      const redirectUri = buildCallbackUrl(req, false);
+      console.log('Dynamic callback URL for token exchange:', redirectUri);
       
-      // Use exact callback URL from configuration - no modifications allowed
-      let redirectUri;
-      if (config.callbackUrl) {
-        // Always use the configured callback URL exactly as stored - Planning Center requires exact match
-        redirectUri = config.callbackUrl;
-        console.log('Using exact configured callback URL from database/env:', redirectUri);
-        
-        // Store churchId in session instead of modifying callback URL
-        const churchId = req.query.churchId as string || 
-                         (req.session && req.session.planningCenterChurchId);
-        
-        if (churchId && req.session) {
-          req.session.planningCenterChurchId = churchId;
-          console.log('Storing churchId in session for callback processing:', churchId);
-        }
-      } else {
-        // Fail fast if no configured callback URL is available
-        console.error('CRITICAL: No Planning Center callback URL configured in database or environment');
-        return res.status(500).json({ 
-          error: 'Planning Center callback URL not configured',
-          message: 'Administrator must configure PLANNING_CENTER_CALLBACK_URL'
-        });
+      // Store churchId in session for later processing
+      const churchIdFromQuery = req.query.churchId as string || 
+                       (req.session && req.session.planningCenterChurchId);
+      
+      if (churchIdFromQuery && req.session) {
+        req.session.planningCenterChurchId = churchIdFromQuery;
+        console.log('Storing churchId in session for callback processing:', churchIdFromQuery);
       }
       
       // Build properly formatted parameters for token request
@@ -732,6 +748,10 @@ export function setupPlanningCenterRoutes(app: Express) {
       const config = await getPlanningCenterConfig();
       
       // Exchange code for access token
+      // Build the redirect URI dynamically - must match what was used in the initial authorization
+      const redirectUri = buildCallbackUrl(req, true);
+      console.log('Dynamic registration callback URL for token exchange:', redirectUri);
+      
       const tokenResponse = await fetch(PLANNING_CENTER_TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -742,7 +762,7 @@ export function setupPlanningCenterRoutes(app: Express) {
           client_id: config.clientId,
           client_secret: config.clientSecret,
           code: String(code),
-          redirect_uri: config.registrationCallbackUrl || `${req.protocol}://${req.get('host')}/api/planning-center/callback-registration`,
+          redirect_uri: redirectUri,
         }),
       });
 
@@ -1035,30 +1055,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       let host = process.env.PLANNING_CENTER_REDIRECT_HOST || req.get('host');
       const protocol = req.protocol || 'https';
       
-      // Use exact callback URLs from configuration - no modifications allowed
-      let redirectUri;
-      if (isRegistration) {
-        // Use registration-specific callback exactly as configured
-        if (planningCenterConfig.registrationCallbackUrl) {
-          redirectUri = planningCenterConfig.registrationCallbackUrl;
-          console.log('Using exact configured registration callback URL:', redirectUri);
-        } else {
-          console.error('CRITICAL: No Planning Center registration callback URL configured');
-          return res.status(500).json({ 
-            error: 'Planning Center registration callback URL not configured',
-            message: 'Administrator must configure PLANNING_CENTER_REGISTRATION_CALLBACK_URL'
-          });
-        }
-      } else if (planningCenterConfig.callbackUrl) {
-        redirectUri = planningCenterConfig.callbackUrl;
-        console.log('Using exact configured callback URL from database/env:', redirectUri);
-      } else {
-        console.error('CRITICAL: No Planning Center callback URL configured');
-        return res.status(500).json({ 
-          error: 'Planning Center callback URL not configured',
-          message: 'Administrator must configure PLANNING_CENTER_CALLBACK_URL'
-        });
-      }
+      // Build callback URL dynamically based on current environment
+      const redirectUri = buildCallbackUrl(req, isRegistration);
+      console.log(`Dynamic callback URL for ${isRegistration ? 'registration' : 'regular'} auth: ${redirectUri}`);
       
       // Make sure we're following Planning Center OAuth spec exactly
       // https://developer.planning.center/docs/#/overview/authentication
