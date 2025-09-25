@@ -241,6 +241,15 @@ export function setupPlanningCenterRoutes(app: Express) {
   });
   // OAuth callback endpoint with enhanced error handling and security
   app.get('/api/planning-center/callback', async (req: Request, res: Response) => {
+    console.log('=== PLANNING CENTER CALLBACK RECEIVED ===');
+    console.log('Full URL:', req.url);
+    console.log('Query params:', req.query);
+    console.log('Headers:', {
+      host: req.get('host'),
+      referer: req.get('referer'),
+      'user-agent': req.get('user-agent')?.substring(0, 100)
+    });
+    
     try {
       // Extract and validate query parameters for security
       const rawCode = req.query.code;
@@ -853,9 +862,10 @@ export function setupPlanningCenterRoutes(app: Express) {
     if (req.user) {
       // Authenticated user
       const authUrlUser = req.user as any;
-      churchId = authUrlUser.churchId || authUrlUser.id;
+      // First try to get churchId from query parameter (client sends it), then fall back to user object
+      churchId = (req.query.churchId as string) || authUrlUser.churchId || authUrlUser.id;
       userId = authUrlUser.id;
-      console.log('Auth URL for authenticated user:', { userId, churchId });
+      console.log('Auth URL for authenticated user:', { userId, churchId, fromQuery: req.query.churchId });
     } else {
       // Registration flow - get church ID from query parameter
       churchId = req.query.churchId as string || '';
@@ -1093,6 +1103,15 @@ export function setupPlanningCenterRoutes(app: Express) {
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
       
       console.log('Device detection from user agent:', isMobileDevice ? 'mobile' : 'desktop');
+      
+      // Log critical info for debugging callback issues
+      console.log('Planning Center auth URL requested:');
+      console.log('  - Full redirect URI:', redirectUri);
+      console.log('  - Client ID:', planningCenterConfig.clientId);
+      console.log('  - Church ID:', churchId);
+      console.log('  - State:', state.substring(0, 8) + '...');
+      console.log('  - Device:', isMobileDevice ? 'mobile' : 'desktop');
+      console.log('  - Auth URL:', authUrl.toString().replace(/state=([^&]+)/, 'state=REDACTED'));
       
       // Return the URL to the client with churchId and device type info
       res.json({ 
