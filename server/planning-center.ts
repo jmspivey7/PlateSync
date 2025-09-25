@@ -115,6 +115,10 @@ function buildCallbackUrl(req: Request, isRegistration: boolean = false): string
   
   const callbackUrl = `${protocol}://${host}${callbackPath}`;
   
+  // Get origin and referer headers for logging
+  const origin = req.get('origin');
+  const referer = req.get('referer');
+  
   console.log(`Dynamically built callback URL for ${isRegistration ? 'registration' : 'auth'}:`);
   console.log(`  - Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
   console.log(`  - Protocol: ${protocol}`);
@@ -574,6 +578,7 @@ export function setupPlanningCenterRoutes(app: Express) {
         }
         
         // Check if this is a popup flow (desktop during registration)
+        const deviceType = req.query.deviceType as string;
         const isPopupFlow = deviceType === 'desktop';
         
         if (isPopupFlow) {
@@ -1148,6 +1153,8 @@ export function setupPlanningCenterRoutes(app: Express) {
   app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
     // Handle both authenticated users and registration flow
     // Note: Using local variables for this endpoint since it's separate from auth-url
+    let churchId = '';
+    let userId = '';
     
     if (req.user) {
       // Authenticated user
@@ -1169,7 +1176,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       });
     }
     
-    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
+    if (!process.env.PLANNING_CENTER_CLIENT_ID || !process.env.PLANNING_CENTER_CLIENT_SECRET) {
       console.error('Planning Center API credentials not configured');
       return res.status(400).json({ 
         error: 'Planning Center credentials not configured',
@@ -1814,6 +1821,9 @@ export function setupPlanningCenterRoutes(app: Express) {
           // Revoke token with Planning Center
           const revokeUrl = 'https://api.planningcenteronline.com/oauth/revoke';
           
+          // Get Planning Center configuration
+          const config = await getPlanningCenterConfig();
+          
           try {
             // Correctly format token revocation data
             // Planning Center requires the token as form data, not JSON
@@ -1914,11 +1924,11 @@ export function setupPlanningCenterRoutes(app: Express) {
     
     // Validate URL parameters for security
     const rawTempKey = req.params.tempKey;
-    const tempKey = validateUrlParameter(rawTempKey, 'tempKey');
+    const tempKey = validateUrlParameter(rawTempKey || null, 'tempKey');
     
     // Extract and validate churchId from query parameter if it's present
     const rawQueryChurchId = req.query.churchId as string | undefined;
-    const queryChurchId = validateUrlParameter(rawQueryChurchId, 'churchId');
+    const queryChurchId = validateUrlParameter(rawQueryChurchId || null, 'churchId');
     
     // Log more details about the temporary token request
     console.log(`Attempting to claim Planning Center token with key: ${tempKey}`);
@@ -2067,7 +2077,7 @@ export async function refreshPlanningCenterToken(
       throw new Error('Cannot refresh Planning Center token: Missing user or church ID');
     }
     
-    if (!PLANNING_CENTER_CLIENT_ID || !PLANNING_CENTER_CLIENT_SECRET) {
+    if (!process.env.PLANNING_CENTER_CLIENT_ID || !process.env.PLANNING_CENTER_CLIENT_SECRET) {
       console.error('Missing Planning Center API credentials');
       throw new Error('Planning Center credentials not configured');
     }
