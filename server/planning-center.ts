@@ -86,16 +86,35 @@ async function getPlanningCenterConfig() {
 
 // Helper function to dynamically build callback URL based on current request
 function buildCallbackUrl(req: Request, isRegistration: boolean = false): string {
-  // Determine the current host dynamically
-  // Priority: X-Forwarded-Host (for proxies), then Host header
-  const forwardedHost = req.get('x-forwarded-host');
-  const host = forwardedHost || req.get('host') || 'localhost:5000';
+  // CRITICAL FIX: Check if we're in production by looking at the origin or referer
+  const origin = req.get('origin');
+  const referer = req.get('referer');
   
-  // Determine protocol (https in production, may be http in dev)
-  const forwardedProto = req.get('x-forwarded-proto');
-  const protocol = forwardedProto || req.protocol || 'https';
+  // Check if this is a production request from platesynq.plainboxstudio.com
+  const isProduction = (origin && origin.includes('platesynq.plainboxstudio.com')) || 
+                       (referer && referer.includes('platesynq.plainboxstudio.com')) ||
+                       process.env.NODE_ENV === 'production' ||
+                       process.env.REPL_SLUG === 'PlateSync-Prod';
   
-  // Build the callback URL dynamically
+  let host: string;
+  let protocol: string = 'https'; // Always use HTTPS for OAuth callbacks
+  
+  if (isProduction) {
+    // PRODUCTION: Always use the production domain
+    host = 'platesynq.plainboxstudio.com';
+    console.log('PRODUCTION environment detected - using platesynq.plainboxstudio.com');
+  } else {
+    // DEVELOPMENT: Use the actual request host (Replit dev URL)
+    const forwardedHost = req.get('x-forwarded-host');
+    host = forwardedHost || req.get('host') || 'localhost:5000';
+    
+    // For dev, check if we need http
+    const forwardedProto = req.get('x-forwarded-proto');
+    protocol = forwardedProto || req.protocol || 'https';
+    console.log('DEVELOPMENT environment - using request host:', host);
+  }
+  
+  // Build the callback URL
   const callbackPath = isRegistration 
     ? '/api/planning-center/callback-registration'
     : '/api/planning-center/callback';
@@ -103,9 +122,12 @@ function buildCallbackUrl(req: Request, isRegistration: boolean = false): string
   const callbackUrl = `${protocol}://${host}${callbackPath}`;
   
   console.log(`Dynamically built callback URL for ${isRegistration ? 'registration' : 'auth'}:`);
+  console.log(`  - Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
   console.log(`  - Protocol: ${protocol}`);
   console.log(`  - Host: ${host}`);
   console.log(`  - Full URL: ${callbackUrl}`);
+  console.log(`  - Origin header: ${origin || 'not set'}`);
+  console.log(`  - Referer header: ${referer || 'not set'}`);
   
   return callbackUrl;
 }
