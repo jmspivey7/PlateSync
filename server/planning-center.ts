@@ -86,15 +86,9 @@ async function getPlanningCenterConfig() {
 
 // Helper function to dynamically build callback URL based on current request
 function buildCallbackUrl(req: Request, isRegistration: boolean = false): string {
-  // CRITICAL FIX: Check if we're in production by looking at the origin or referer
-  const origin = req.get('origin');
-  const referer = req.get('referer');
-  
-  // Check if this is a production request from platesynq.plainboxstudio.com
-  const isProduction = (origin && origin.includes('platesynq.plainboxstudio.com')) || 
-                       (referer && referer.includes('platesynq.plainboxstudio.com')) ||
-                       process.env.NODE_ENV === 'production' ||
-                       process.env.REPL_SLUG === 'PlateSync-Prod';
+  // CRITICAL FIX: Use Replit's REPLIT_DEPLOYMENT env var to detect production
+  // This is set to "1" when the app is deployed/published
+  const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
   
   let host: string;
   let protocol: string = 'https'; // Always use HTTPS for OAuth callbacks
@@ -102,7 +96,7 @@ function buildCallbackUrl(req: Request, isRegistration: boolean = false): string
   if (isProduction) {
     // PRODUCTION: Always use the production domain
     host = 'platesynq.plainboxstudio.com';
-    console.log('PRODUCTION environment detected - using platesynq.plainboxstudio.com');
+    console.log('PRODUCTION environment detected (REPLIT_DEPLOYMENT=1) - using platesynq.plainboxstudio.com');
   } else {
     // DEVELOPMENT: Use the actual request host (Replit dev URL)
     const forwardedHost = req.get('x-forwarded-host');
@@ -111,7 +105,7 @@ function buildCallbackUrl(req: Request, isRegistration: boolean = false): string
     // For dev, check if we need http
     const forwardedProto = req.get('x-forwarded-proto');
     protocol = forwardedProto || req.protocol || 'https';
-    console.log('DEVELOPMENT environment - using request host:', host);
+    console.log('DEVELOPMENT environment (REPLIT_DEPLOYMENT not set) - using request host:', host);
   }
   
   // Build the callback URL
