@@ -53,19 +53,12 @@ const PlanningCenterIntegration = () => {
 
   // Function to handle Planning Center connection
   const handleConnectPlanningCenter = async () => {
-    console.log('Connect button clicked!');
-    console.log('User object:', user);
-    console.log('User churchId:', user?.churchId);
-    console.log('CSV import stats:', csvImportStats);
-    
     // Check if there are existing CSV imports
     if (csvImportStats?.lastImportDate) {
-      console.log('CSV import detected, showing warning');
       setShowCsvWarning(true);
       return;
     }
 
-    console.log('No CSV imports, proceeding with connection');
     await connectToPlanningCenter();
   };
 
@@ -168,12 +161,6 @@ const PlanningCenterIntegration = () => {
       }
     } catch (error) {
       console.error('Error connecting to Planning Center:', error);
-      console.error('Error details:', { 
-        error, 
-        user, 
-        churchId: user?.churchId,
-        apiEndpoint: `/api/planning-center/auth-url?churchId=${user?.churchId}`
-      });
       toast({
         title: "Connection Failed",
         description: error instanceof Error ? error.message : "Failed to start Planning Center connection.",
