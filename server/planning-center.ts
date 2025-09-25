@@ -53,17 +53,22 @@ async function getPlanningCenterConfig() {
     console.log('Loading Planning Center configuration from database...');
     
     const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || '';
-    const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || '';
+    const dbClientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || '';
     const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || '';
     const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || '';
     
-    console.log('Planning Center config loaded from database:');
+    // IMPORTANT: Always use environment variable for client secret if available
+    // The database might contain a PAT (Personal Access Token) instead of the OAuth client secret
+    const clientSecret = process.env.PLANNING_CENTER_CLIENT_SECRET || dbClientSecret;
+    
+    console.log('Planning Center config loaded:');
     console.log('- Client ID:', clientId ? (clientId.substring(0, 8) + '...') : 'NOT SET');
+    console.log('- Client Secret source:', process.env.PLANNING_CENTER_CLIENT_SECRET ? 'environment' : 'database');
     console.log('- Callback URL:', callbackUrl || 'NOT SET');
     console.log('- Registration Callback URL:', registrationCallbackUrl || 'NOT SET');
     
     if (!clientId || !clientSecret || !callbackUrl || !registrationCallbackUrl) {
-      console.log('Missing database configuration, falling back to environment variables...');
+      console.log('Missing required configuration, checking environment variables...');
       
       // Fallback to environment variables for production compatibility
       const envClientId = process.env.PLANNING_CENTER_CLIENT_ID || '';
@@ -77,7 +82,7 @@ async function getPlanningCenterConfig() {
       console.log('- Registration Callback URL:', envRegistrationCallbackUrl || 'NOT SET');
       
       if (!envClientId || !envClientSecret || !envCallbackUrl || !envRegistrationCallbackUrl) {
-        throw new Error('Missing required Planning Center configuration in both database and environment variables');
+        throw new Error('Missing required Planning Center configuration');
       }
       
       return { 
