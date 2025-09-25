@@ -103,7 +103,34 @@ export function validateUrlParameter(value: string | null, paramName: string): s
     return null;
   }
 
-  // Remove dangerous characters
+  // CRITICAL: OAuth parameters need special handling
+  // OAuth codes use base64url encoding which includes: A-Z, a-z, 0-9, -, _, =
+  // We must NOT strip these characters for 'code' and 'state' parameters
+  if (paramName === 'code' || paramName === 'state') {
+    // For OAuth parameters, only check for the most dangerous patterns
+    // but preserve the integrity of base64url encoded values
+    const dangerousPatterns = [
+      /<script/i,
+      /<iframe/i,
+      /javascript:/i,
+      /vbscript:/i,
+      /\.\.\//g, // Path traversal
+      /\/etc\/passwd/i,
+      /\0/g // Null bytes
+    ];
+
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(value)) {
+        console.warn(`OAuth parameter ${paramName} contains suspicious content`, { value: value.substring(0, 20) + '...' });
+        return null;
+      }
+    }
+    
+    // Return OAuth parameters without character stripping to preserve their integrity
+    return value.trim();
+  }
+
+  // For non-OAuth parameters, apply standard sanitization
   const sanitized = value
     .replace(/[<>'"&\x00-\x1f\x7f-\x9f]/g, '') // Remove HTML/script chars and control chars
     .replace(/javascript:/gi, '') // Remove javascript: protocol
