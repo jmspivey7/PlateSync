@@ -965,7 +965,7 @@ export function setupPlanningCenterRoutes(app: Express) {
       const state = crypto.randomBytes(24).toString('hex');
       
       // Log user details for debugging
-      let authUrlUser = req.user as any;
+      // Note: authUrlUser is already declared at the start of the function
       console.log('Full req.user object in auth URL generation:', JSON.stringify(authUrlUser, null, 2));
       
       // Extract user ID from req.user which might be in different formats based on auth method
@@ -1072,8 +1072,9 @@ export function setupPlanningCenterRoutes(app: Express) {
       const protocol = req.protocol || 'https';
       
       // Build callback URL dynamically based on current environment
-      const redirectUri = buildCallbackUrl(req, isRegistration);
-      console.log(`Dynamic callback URL for ${isRegistration ? 'registration' : 'regular'} auth: ${redirectUri}`);
+      // Since this is the regular auth flow (not registration), pass false
+      const redirectUri = buildCallbackUrl(req, false);
+      console.log(`Dynamic callback URL for regular auth: ${redirectUri}`);
       
       // Make sure we're following Planning Center OAuth spec exactly
       // https://developer.planning.center/docs/#/overview/authentication
