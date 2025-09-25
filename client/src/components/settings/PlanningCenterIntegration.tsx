@@ -38,6 +38,12 @@ const PlanningCenterIntegration = () => {
   
   // Hook to get current user and access church information
   const { user } = useAuth();
+  
+  // Debug: Log user data on mount and when it changes
+  useEffect(() => {
+    console.log('PlanningCenterIntegration user data:', user);
+    console.log('User churchId:', user?.churchId);
+  }, [user]);
 
   // Query to check CSV import status
   const { data: csvImportStats } = useQuery({
