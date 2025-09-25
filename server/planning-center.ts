@@ -47,56 +47,34 @@ const PLANNING_CENTER_AUTH_URL = 'https://api.planningcenteronline.com/oauth/aut
 const PLANNING_CENTER_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const PLANNING_CENTER_API_BASE = 'https://api.planningcenteronline.com';
 
-// Helper function to get Planning Center configuration from database
+// Helper function to get Planning Center configuration
+// ALWAYS uses environment variables (Secrets) for client ID and secret
 async function getPlanningCenterConfig() {
   try {
-    console.log('Loading Planning Center configuration from database...');
+    console.log('Loading Planning Center configuration...');
     
-    const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || '';
-    const dbClientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || '';
-    const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || '';
-    const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || '';
+    // ALWAYS use environment variables for client ID and secret (from Secrets)
+    const clientId = process.env.PLANNING_CENTER_CLIENT_ID || '';
+    const clientSecret = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
     
-    // IMPORTANT: Always use environment variable for client secret if available
-    // The database might contain a PAT (Personal Access Token) instead of the OAuth client secret
-    const clientSecret = process.env.PLANNING_CENTER_CLIENT_SECRET || dbClientSecret;
+    // Callback URLs can still come from database for deployment flexibility
+    const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
+    const registrationCallbackUrl = await storage.getSystemConfig('PLANNING_CENTER_REGISTRATION_CALLBACK_URL') || process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
     
     console.log('Planning Center config loaded:');
-    console.log('- Client ID:', clientId ? (clientId.substring(0, 8) + '...') : 'NOT SET');
-    console.log('- Client Secret source:', process.env.PLANNING_CENTER_CLIENT_SECRET ? 'environment' : 'database');
+    console.log('- Client ID (from env):', clientId ? (clientId.substring(0, 8) + '...') : 'NOT SET');
+    console.log('- Client Secret (from env):', clientSecret ? 'SET' : 'NOT SET');
     console.log('- Callback URL:', callbackUrl || 'NOT SET');
     console.log('- Registration Callback URL:', registrationCallbackUrl || 'NOT SET');
     
     if (!clientId || !clientSecret || !callbackUrl || !registrationCallbackUrl) {
-      console.log('Missing required configuration, checking environment variables...');
-      
-      // Fallback to environment variables for production compatibility
-      const envClientId = process.env.PLANNING_CENTER_CLIENT_ID || '';
-      const envClientSecret = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
-      const envCallbackUrl = process.env.PLANNING_CENTER_CALLBACK_URL || '';
-      const envRegistrationCallbackUrl = process.env.PLANNING_CENTER_REGISTRATION_CALLBACK_URL || '';
-      
-      console.log('Planning Center config from environment:');
-      console.log('- Client ID:', envClientId ? (envClientId.substring(0, 8) + '...') : 'NOT SET');
-      console.log('- Callback URL:', envCallbackUrl || 'NOT SET');
-      console.log('- Registration Callback URL:', envRegistrationCallbackUrl || 'NOT SET');
-      
-      if (!envClientId || !envClientSecret || !envCallbackUrl || !envRegistrationCallbackUrl) {
-        throw new Error('Missing required Planning Center configuration');
-      }
-      
-      return { 
-        clientId: envClientId, 
-        clientSecret: envClientSecret, 
-        callbackUrl: envCallbackUrl, 
-        registrationCallbackUrl: envRegistrationCallbackUrl 
-      };
+      throw new Error('Missing required Planning Center configuration in environment variables');
     }
     
     return { clientId, clientSecret, callbackUrl, registrationCallbackUrl };
   } catch (error) {
     console.error('CRITICAL: Planning Center configuration failed:', error);
-    throw new Error('Planning Center configuration required - check database and environment variables');
+    throw new Error('Planning Center configuration required - check environment variables');
   }
 }
 

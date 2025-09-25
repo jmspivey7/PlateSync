@@ -14,15 +14,18 @@ declare module "express-session" {
   }
 }
 
-// Helper function to get Planning Center configuration from database
+// Helper function to get Planning Center configuration
+// Prioritizes environment variables (Secrets) over database for credentials
 async function getPlanningCenterConfig() {
   try {
-    const clientId = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_ID') || process.env.PLANNING_CENTER_CLIENT_ID || '';
-    const clientSecret = await storage.getSystemConfig('PLANNING_CENTER_CLIENT_SECRET') || process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+    // ALWAYS use environment variables for client ID and secret (from Secrets)
+    const clientId = process.env.PLANNING_CENTER_CLIENT_ID || '';
+    const clientSecret = process.env.PLANNING_CENTER_CLIENT_SECRET || '';
+    // Callback URL can still be configured via database for flexibility
     const callbackUrl = await storage.getSystemConfig('PLANNING_CENTER_CALLBACK_URL') || process.env.PLANNING_CENTER_CALLBACK_URL || '';
     return { clientId, clientSecret, callbackUrl };
   } catch (error) {
-    console.error('Error getting Planning Center config from database, falling back to environment variables:', error);
+    console.error('Error getting Planning Center config:', error);
     return {
       clientId: process.env.PLANNING_CENTER_CLIENT_ID || '',
       clientSecret: process.env.PLANNING_CENTER_CLIENT_SECRET || '',
