@@ -1324,14 +1324,9 @@ export function setupPlanningCenterRoutes(app: Express) {
     console.log('Using churchId for token lookup:', statusUser.churchId);
     
     try {
-      // Try to get tokens with churchId first (preferred)
-      let tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.churchId);
-      
-      // If that fails, try with userId as churchId
-      if (!tokens && statusUser.churchId !== statusUser.id) {
-        console.log('No tokens found with churchId, trying with userId as churchId...');
-        tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.id);
-      }
+      // SECURITY FIX: Only get tokens for THIS specific user and church combination
+      // NEVER fall back to other IDs - this prevents token sharing between churches
+      const tokens = await storage.getPlanningCenterTokens(statusUser.id, statusUser.churchId);
       
       console.log('Planning Center tokens found:', tokens ? 'YES' : 'NO');
       
