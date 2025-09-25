@@ -114,14 +114,15 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 ## Changelog
 
-- September 25, 2025. **CRITICAL PLANNING CENTER OAUTH SECURITY FIX**: Fixed catastrophic security vulnerability where OAuth authentication was completely bypassed, allowing any church to access other churches' member data without authentication. Changes:
-  1. **Removed Token Reuse Logic**: Eliminated all code that checked for existing tokens and skipped OAuth authentication
-  2. **Church ID Isolation**: ChurchId now derived ONLY from authenticated session, never from client-supplied parameters
-  3. **State Validation Required**: Added mandatory CSRF protection with state parameter validation in callback
-  4. **Force Login Prompt**: OAuth flow now always requires explicit Planning Center authentication with `prompt=login`
-  5. **Production URL Fix**: Corrected callback URLs to use platesynq.plainboxstudio.com in production instead of Replit dev URLs
-  6. **Token Purge**: Cleared all existing shared tokens from database to force re-authentication
-  This fix ensures proper church data isolation and requires valid Planning Center credentials for all connections.
+- September 25, 2025. **CRITICAL PLANNING CENTER OAUTH SECURITY FIX (PART 2)**: Completed comprehensive security fix for IDOR vulnerability across all Planning Center endpoints. Changes:
+  1. **Complete IDOR Protection**: Fixed all Planning Center endpoints to ONLY use churchId from authenticated session, preventing cross-church data access
+  2. **Frontend Security**: Removed all churchId query parameters from frontend API calls  
+  3. **Backend Enforcement**: All endpoints (/auth-url, /authorize, /status) now enforce strict session-based churchId validation
+  4. **Token Reuse Removed**: Eliminated all token sharing between churches - each church must authenticate separately
+  5. **OAuth Flow Security**: Added CSRF protection with state parameter validation throughout OAuth flow
+  6. **Audit Logging**: Added security warnings when churchId is attempted in query parameters (potential attacks)
+  7. **Bug Fixes**: Fixed undefined variable errors in auth-url endpoint
+  This completes the critical security fix ensuring complete church data isolation and proper OAuth authentication.
 - September 24, 2025. **GLOBAL ADMIN EMAIL TEMPLATE FIX**: Fixed "Template not found" issue in Global Admin portal by updating storage layer to include all three system templates (IDs 30, 31, 32) instead of just 30 and 31. The getEmailTemplates() method in server/storage.ts now properly returns EMAIL_VERIFICATION template (ID 32) along with WELCOME_EMAIL (ID 30) and PASSWORD_RESET (ID 31) templates.
 - January 03, 2025. **BRAND & DESIGN UPDATE**: Comprehensive rebranding and design refresh:
   1. **Brand Name Update**: Changed from "PlateSync" to "PlateSYNQ" across all user-facing interfaces
