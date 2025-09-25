@@ -89,7 +89,15 @@ export function validateUrlParameter(value: string | null, paramName: string): s
   if (!value) return null;
 
   // Check parameter length to prevent abuse
-  const maxLength = paramName === 'pc_temp_key' ? 100 : 50;
+  // OAuth codes can be much longer than regular parameters
+  let maxLength = 50;
+  if (paramName === 'pc_temp_key') {
+    maxLength = 100;
+  } else if (paramName === 'code' || paramName === 'state') {
+    // OAuth authorization codes and state parameters can be very long
+    maxLength = 500;
+  }
+  
   if (value.length > maxLength) {
     console.warn(`URL parameter ${paramName} exceeds maximum length`, { length: value.length, maxLength });
     return null;
