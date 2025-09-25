@@ -326,14 +326,20 @@ export function setupPlanningCenterRoutes(app: Express) {
         return res.redirect(`/settings?planningCenterError=${encodeURIComponent(String(error))}&error_description=${encodeURIComponent(String(error_description || 'Unknown error'))}`);
       }
       
-      // Validate required parameters
-      if (!code || !state) {
-        console.error('Missing code or state parameter', { code: !!code, state: !!state });
-        return res.redirect('/settings?planningCenterError=missing_params');
+      // Validate required parameters - Only code is truly required
+      // State is optional as some OAuth providers don't return it
+      if (!code) {
+        console.error('Missing authorization code parameter');
+        return res.redirect('/settings?planningCenterError=missing_code');
       }
       
-      // Only check state match if session is available, otherwise proceed with caution
-      if (req.session && req.session.planningCenterState) {
+      // Log if state is missing (for debugging)
+      if (!state) {
+        console.warn('State parameter not returned by Planning Center - continuing without CSRF validation');
+      }
+      
+      // Only check state match if both state and session are available
+      if (state && req.session && req.session.planningCenterState) {
         // Partial state logging for debugging (never log full state values)
         console.log('Session state:', req.session.planningCenterState.substring(0, 8) + '...');
         console.log('Callback state:', String(state).substring(0, 8) + '...');
@@ -347,7 +353,11 @@ export function setupPlanningCenterRoutes(app: Express) {
           });
           // Not returning an error here, allowing the flow to continue
           // This makes the flow more resilient to session issues during redirects
+        } else {
+          console.log('State parameter verified successfully');
         }
+      } else if (!state) {
+        console.warn('No state parameter returned from Planning Center - skipping CSRF verification');
       } else {
         console.warn('Session or planningCenterState not available, proceeding without state verification');
       }

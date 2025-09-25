@@ -75,7 +75,13 @@ export function setupPlanningCenterAuth(app: Express) {
       return res.status(500).json({ message: "Session management error" });
     }
     
+    // Generate a random state parameter for CSRF protection
+    const crypto = require('crypto');
+    const state = crypto.randomBytes(32).toString('hex');
+    
+    // Store both church ID and state in session
     req.session.planningCenterChurchId = user.churchId;
+    req.session.planningCenterState = state;
 
     // Get Planning Center configuration from database
     const config = await getPlanningCenterConfig();
@@ -91,8 +97,9 @@ export function setupPlanningCenterAuth(app: Express) {
     
     const redirectUri = config.callbackUrl;
     console.log('Planning Center OAuth Auth - Using exact configured callback URL:', redirectUri);
+    console.log('Generated state parameter for CSRF protection:', state);
     
-    const authUrl = `${PC_OAUTH_BASE_URL}/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=people`;
+    const authUrl = `${PC_OAUTH_BASE_URL}/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=people&state=${state}`;
     
     res.redirect(authUrl);
   });
