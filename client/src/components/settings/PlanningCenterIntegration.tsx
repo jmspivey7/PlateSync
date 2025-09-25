@@ -87,10 +87,13 @@ const PlanningCenterIntegration = () => {
     try {
       setIsConnecting(true);
       
-      const authUrl = `/api/planning-center/auth-url?churchId=${user.churchId}`;
+      // SECURITY FIX: Do NOT send churchId in query parameters
+      // Backend will only use the authenticated session's churchId
+      const authUrl = `/api/planning-center/auth-url`;
       console.log('[Planning Center] Fetching auth URL from:', authUrl);
+      console.log('[Planning Center] ChurchId will be derived from session, not query params');
       
-      // Get auth URL from our backend with churchId parameter
+      // Get auth URL from our backend (churchId from authenticated session)
       const response = await apiRequest(authUrl, 'GET');
       
       console.log('[Planning Center] Auth URL response:', response);

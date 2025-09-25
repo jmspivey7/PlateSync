@@ -898,36 +898,33 @@ export function setupPlanningCenterRoutes(app: Express) {
   
   // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
-    // SECURITY FIX: Always require OAuth authentication for new connections
-    // Never reuse tokens from other churches or skip authentication
-    const isRegistration = req.query.isRegistration === 'true';
+    // CRITICAL SECURITY FIX: ONLY use authenticated session for churchId
+    // NEVER accept churchId from query parameters to prevent cross-church data access
     console.log('====== PLANNING CENTER AUTH URL REQUEST ======');
-    console.log('SECURITY: OAuth authentication will ALWAYS be required');
-    console.log('Is registration flow:', isRegistration);
+    console.log('SECURITY: ChurchId will ONLY be derived from authenticated session');
     
-    // Handle both authenticated users and registration flow
-    let churchId = '';
-    let userId = '';
-    
-    if (req.user) {
-      // SECURITY FIX: Derive churchId ONLY from authenticated session, NEVER from client
-      const authUrlUser = req.user as any;
-      churchId = authUrlUser.churchId || authUrlUser.id;
-      userId = authUrlUser.id;
-      console.log('Auth URL for authenticated user:', { userId, churchId });
-      console.log('SECURITY: ChurchId derived from session only, NOT from client query params');
-    } else if (isRegistration) {
-      // Registration flow - get church ID from query parameter (only during registration)
-      churchId = req.query.churchId as string || '';
-      userId = churchId; // Use church ID as user ID for registration
-      console.log('Auth URL for registration flow:', { userId, churchId });
-    } else {
-      // Not authenticated and not registration - reject
-      console.error('SECURITY: Unauthenticated request to Planning Center auth URL');
+    // REQUIRE authenticated user - no exceptions
+    if (!req.user) {
+      console.error('SECURITY: Unauthenticated request to Planning Center auth URL - REJECTED');
       return res.status(401).json({ 
         error: 'Authentication required',
         message: 'You must be logged in to connect to Planning Center'
       });
+    }
+    
+    // ONLY use churchId from authenticated session, NEVER from query parameters
+    const authUrlUser = req.user as any;
+    const churchId = authUrlUser.churchId || authUrlUser.id;
+    const userId = authUrlUser.id;
+    
+    console.log('Auth URL for authenticated user:', { userId, churchId });
+    console.log('SECURITY: ChurchId derived ONLY from session, query parameters IGNORED');
+    
+    // Log if someone tried to send churchId in query (potential attack)
+    if (req.query.churchId) {
+      console.warn('SECURITY WARNING: churchId in query parameter IGNORED - potential attack attempt');
+      console.warn('Attempted churchId:', req.query.churchId);
+      console.warn('Using session churchId instead:', churchId);
     }
     
     // SECURITY FIX: REMOVED all token reuse logic that was bypassing OAuth
@@ -1151,20 +1148,27 @@ export function setupPlanningCenterRoutes(app: Express) {
 
   // Endpoint to initiate the OAuth flow via redirect
   app.get('/api/planning-center/authorize', async (req: Request, res: Response) => {
-    // Handle both authenticated users and registration flow
-    // Note: Using local variables for this endpoint since it's separate from auth-url
-    let churchId = '';
-    let userId = '';
+    // SECURITY FIX: ONLY accept churchId from authenticated session
+    // NEVER from query parameters to prevent cross-church access
     
-    if (req.user) {
-      // Authenticated user
-      const authorizeUser = req.user as any;
-      churchId = authorizeUser.churchId || authorizeUser.id;
-      userId = authorizeUser.id;
-    } else {
-      // Registration flow - get church ID from query parameter
-      churchId = req.query.churchId as string || '';
-      userId = churchId; // Use church ID as user ID for registration
+    if (!req.user) {
+      console.error('SECURITY: Unauthenticated request to Planning Center authorize - REJECTED');
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'You must be logged in to connect to Planning Center'
+      });
+    }
+    
+    // ONLY use churchId from authenticated session
+    const authorizeUser = req.user as any;
+    const churchId = authorizeUser.churchId || authorizeUser.id;
+    const userId = authorizeUser.id;
+    
+    // Log if someone tried to send churchId in query (potential attack)
+    if (req.query.churchId) {
+      console.warn('SECURITY WARNING: churchId in query parameter IGNORED in /authorize - potential attack');
+      console.warn('Attempted churchId:', req.query.churchId);
+      console.warn('Using session churchId instead:', churchId);
     }
     
     if (!churchId) {
