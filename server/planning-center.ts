@@ -310,25 +310,29 @@ export function setupPlanningCenterRoutes(app: Express) {
       const rawState = req.query.state;
       const rawError = req.query.error;
       const rawErrorDescription = req.query.error_description;
-      const rawChurchId = req.query.churchId;
+      // SECURITY FIX: DO NOT accept churchId from URL - use session only
+      // const rawChurchId = req.query.churchId;
       
       // Validate URL parameters to prevent injection attacks
       const code = validateUrlParameter(rawCode as string, 'code');
       const state = validateUrlParameter(rawState as string, 'state');
       const error = validateUrlParameter(rawError as string, 'error');
       const error_description = validateUrlParameter(rawErrorDescription as string, 'error_description');
-      const churchId = validateUrlParameter(rawChurchId as string, 'churchId');
+      // SECURITY FIX: Get churchId from session, not from URL
+      const churchId = req.session?.planningCenterChurchId || '';
       
       // Detect if we're being accessed from a mobile device
       const userAgent = req.get('user-agent') || '';
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
       console.log('Device type detected in callback:', isMobileDevice ? 'Mobile' : 'Desktop');
       
-      // Store churchId from the request in the session for token claim step
-      if (churchId && req.session) {
-        req.session.planningCenterChurchId = String(churchId);
-        console.log('Stored churchId from callback in session:', churchId);
+      // SECURITY FIX: ChurchId should already be in session from auth-url
+      // We don't accept it from the callback URL to prevent manipulation
+      if (!churchId) {
+        console.error('SECURITY: No churchId in session during callback - possible session hijacking');
+        return res.redirect('/settings?planningCenterError=invalid_session');
       }
+      console.log('Using churchId from session (not from URL):', churchId);
       
       // Log the callback details for debugging (redacting sensitive parts)
       console.log('Planning Center callback received with params:', {
@@ -355,34 +359,28 @@ export function setupPlanningCenterRoutes(app: Express) {
         return res.redirect('/settings?planningCenterError=missing_code');
       }
       
-      // Log if state is missing (for debugging)
+      // SECURITY FIX: Require state validation for CSRF protection
       if (!state) {
-        console.warn('State parameter not returned by Planning Center - continuing without CSRF validation');
+        console.error('SECURITY: Missing state parameter in callback - possible CSRF attack');
+        return res.redirect('/settings?planningCenterError=missing_state');
       }
       
-      // Only check state match if both state and session are available
-      if (state && req.session && req.session.planningCenterState) {
-        // Partial state logging for debugging (never log full state values)
-        console.log('Session state:', req.session.planningCenterState.substring(0, 8) + '...');
-        console.log('Callback state:', String(state).substring(0, 8) + '...');
-        
-        // Verify the state parameter matches what we stored (CSRF protection)
-        // But with fallback behavior if it doesn't match (after logging the mismatch)
-        if (req.session.planningCenterState !== state) {
-          console.log('State mismatch (still proceeding):', { 
-            expected: req.session.planningCenterState.substring(0, 8) + '...', 
-            received: String(state).substring(0, 8) + '...'
-          });
-          // Not returning an error here, allowing the flow to continue
-          // This makes the flow more resilient to session issues during redirects
-        } else {
-          console.log('State parameter verified successfully');
-        }
-      } else if (!state) {
-        console.warn('No state parameter returned from Planning Center - skipping CSRF verification');
-      } else {
-        console.warn('Session or planningCenterState not available, proceeding without state verification');
+      if (!req.session || !req.session.planningCenterState) {
+        console.error('SECURITY: No state in session to validate against - session may have expired');
+        return res.redirect('/settings?planningCenterError=session_expired');
       }
+      
+      // Verify the state parameter matches what we stored (CSRF protection)
+      if (req.session.planningCenterState !== state) {
+        console.error('SECURITY: State mismatch - possible CSRF attack detected:', { 
+          expected: req.session.planningCenterState.substring(0, 8) + '...', 
+          received: String(state).substring(0, 8) + '...'
+        });
+        // SECURITY: Reject the request - do not proceed with mismatched state
+        return res.redirect('/settings?planningCenterError=invalid_state');
+      }
+      
+      console.log('State parameter verified successfully');
       
       // Get Planning Center configuration from database first
       const config = await getPlanningCenterConfig();
@@ -391,14 +389,13 @@ export function setupPlanningCenterRoutes(app: Express) {
       const redirectUri = buildCallbackUrl(req, false);
       console.log('Dynamic callback URL for token exchange:', redirectUri);
       
-      // Store churchId in session for later processing
-      const churchIdFromQuery = req.query.churchId as string || 
-                       (req.session && req.session.planningCenterChurchId);
+      // SECURITY FIX: Use churchId from session only, never from query
+      // The churchId was already validated and retrieved from session above
+      // const churchIdFromQuery = req.query.churchId as string || 
+      //                  (req.session && req.session.planningCenterChurchId);
       
-      if (churchIdFromQuery && req.session) {
-        req.session.planningCenterChurchId = churchIdFromQuery;
-        console.log('Storing churchId in session for callback processing:', churchIdFromQuery);
-      }
+      // ChurchId is already in the session from auth-url and validated above
+      console.log('Using churchId from session for callback processing:', churchId);
       
       // Build properly formatted parameters for token request
       
@@ -902,58 +899,49 @@ export function setupPlanningCenterRoutes(app: Express) {
   
   // Endpoint to get the OAuth authentication URL (doesn't redirect, just returns the URL)
   app.get('/api/planning-center/auth-url', async (req: Request, res: Response) => {
-    // Check if force re-authorization is requested (during registration)
-    const forceReauth = req.query.forceReauth === 'true';
+    // SECURITY FIX: Always require OAuth authentication for new connections
+    // Never reuse tokens from other churches or skip authentication
     const isRegistration = req.query.isRegistration === 'true';
-    console.log('Planning Center auth URL requested with forceReauth:', forceReauth, 'isRegistration:', isRegistration);
+    console.log('====== PLANNING CENTER AUTH URL REQUEST ======');
+    console.log('SECURITY: OAuth authentication will ALWAYS be required');
+    console.log('Is registration flow:', isRegistration);
     
     // Handle both authenticated users and registration flow
     let churchId = '';
     let userId = '';
     
     if (req.user) {
-      // Authenticated user
+      // SECURITY FIX: Derive churchId ONLY from authenticated session, NEVER from client
       const authUrlUser = req.user as any;
-      // First try to get churchId from query parameter (client sends it), then fall back to user object
-      churchId = (req.query.churchId as string) || authUrlUser.churchId || authUrlUser.id;
+      churchId = authUrlUser.churchId || authUrlUser.id;
       userId = authUrlUser.id;
-      console.log('Auth URL for authenticated user:', { userId, churchId, fromQuery: req.query.churchId });
-    } else {
-      // Registration flow - get church ID from query parameter
+      console.log('Auth URL for authenticated user:', { userId, churchId });
+      console.log('SECURITY: ChurchId derived from session only, NOT from client query params');
+    } else if (isRegistration) {
+      // Registration flow - get church ID from query parameter (only during registration)
       churchId = req.query.churchId as string || '';
       userId = churchId; // Use church ID as user ID for registration
       console.log('Auth URL for registration flow:', { userId, churchId });
+    } else {
+      // Not authenticated and not registration - reject
+      console.error('SECURITY: Unauthenticated request to Planning Center auth URL');
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'You must be logged in to connect to Planning Center'
+      });
     }
     
-    // If forceReauth is false, check if already connected and skip OAuth
-    if (!forceReauth) {
-      try {
-        const existingTokens = await storage.getPlanningCenterTokens(userId, churchId);
-        if (existingTokens) {
-          console.log('Planning Center already connected, skipping OAuth');
-          return res.json({
-            already_connected: true,
-            message: 'Planning Center is already connected',
-            skip_oauth: true
-          });
-        }
-      } catch (error) {
-        console.log('Error checking existing tokens, proceeding with OAuth');
-      }
-    } else {
-      console.log('FORCE RE-AUTHORIZATION: Skipping existing token check and proceeding with fresh OAuth flow');
-      console.log('Force reauth parameters:', { forceReauth, isRegistration, userId, churchId });
-      
-      // Clear any existing Planning Center session data when forcing reauth
-      if (isRegistration) {
-        console.log('Registration flow: Clearing existing Planning Center session data');
-        req.session.planningCenterState = undefined;
-        req.session.planningCenterUserId = undefined;
-        req.session.planningCenterChurchId = undefined;
-      }
-      
-      // Explicitly do NOT check for existing tokens when forceReauth is true
-    }
+    // SECURITY FIX: REMOVED all token reuse logic that was bypassing OAuth
+    // We ALWAYS require full OAuth authentication now
+    // This ensures each church must authenticate with their own Planning Center credentials
+    console.log('SECURITY: Removed token reuse - OAuth authentication WILL be required');
+    console.log('SECURITY: Each church must authenticate with their own Planning Center account');
+    
+    // Clear any existing Planning Center session data to ensure fresh auth
+    console.log('Clearing any existing Planning Center session data for fresh authentication');
+    req.session.planningCenterState = undefined;
+    req.session.planningCenterUserId = undefined;
+    req.session.planningCenterChurchId = undefined;
     
     if (!churchId) {
       console.log('No church ID found for Planning Center auth URL generation');
