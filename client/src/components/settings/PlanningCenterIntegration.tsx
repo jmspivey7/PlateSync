@@ -70,11 +70,30 @@ const PlanningCenterIntegration = () => {
 
   // Actual connection function
   const connectToPlanningCenter = async () => {
+    console.log('[Planning Center] Starting connection process...');
+    console.log('[Planning Center] Current user:', user);
+    console.log('[Planning Center] Church ID:', user?.churchId);
+    
+    if (!user?.churchId) {
+      console.error('[Planning Center] No church ID available');
+      toast({
+        title: "Connection Failed",
+        description: "Church information not available. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsConnecting(true);
       
+      const authUrl = `/api/planning-center/auth-url?churchId=${user.churchId}`;
+      console.log('[Planning Center] Fetching auth URL from:', authUrl);
+      
       // Get auth URL from our backend with churchId parameter
-      const response = await apiRequest(`/api/planning-center/auth-url?churchId=${user?.churchId}`, 'GET');
+      const response = await apiRequest(authUrl, 'GET');
+      
+      console.log('[Planning Center] Auth URL response:', response);
       
       if (response?.url) {
         console.log('Got Planning Center auth URL with churchId:', response.churchId);
@@ -166,10 +185,21 @@ const PlanningCenterIntegration = () => {
         throw new Error('Failed to get Planning Center authorization URL');
       }
     } catch (error) {
-      console.error('Error connecting to Planning Center:', error);
+      console.error('[Planning Center] Error during connection:', error);
+      console.error('[Planning Center] Error type:', typeof error);
+      console.error('[Planning Center] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : null,
+        raw: error
+      });
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (typeof error === 'string' ? error : "Failed to start Planning Center connection. Please check the console for more details.");
+      
       toast({
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Failed to start Planning Center connection.",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsConnecting(false);
