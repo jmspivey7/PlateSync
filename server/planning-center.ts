@@ -913,9 +913,9 @@ export function setupPlanningCenterRoutes(app: Express) {
     }
     
     // ONLY use churchId from authenticated session, NEVER from query parameters
-    const authUrlUser = req.user as any;
+    let authUrlUser = req.user as any;
     const churchId = authUrlUser.churchId || authUrlUser.id;
-    const userId = authUrlUser.id;
+    let userId = authUrlUser.id;
     
     console.log('Auth URL for authenticated user:', { userId, churchId });
     console.log('SECURITY: ChurchId derived ONLY from session, query parameters IGNORED');
