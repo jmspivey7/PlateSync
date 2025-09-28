@@ -114,6 +114,12 @@ PLANNING_CENTER_CLIENT_SECRET=...
 
 ## Changelog
 
+- September 28, 2025. **CRITICAL EMAIL NOTIFICATION BUG FIX**: Fixed critical bug where donation receipt emails were sent despite Email Notifications being set to OFF. Changes:
+  1. **Email Setting Check**: Added emailNotificationsEnabled check in sendDonationNotification() function before sending any emails
+  2. **Database Fix**: Fixed updateChurchEmailNotificationSetting() to update users table instead of non-existent churches.emailNotificationsEnabled field
+  3. **Fail-Safe Behavior**: System now fails closed - if unable to check email settings, no emails are sent to prevent unwanted notifications
+  4. **Proper Toggle Persistence**: Email notification toggle in settings now correctly updates the users table and persists the preference
+  This ensures donation receipts and other notifications fully respect the user's email preference settings.
 - September 25, 2025. **CRITICAL PLANNING CENTER OAUTH SECURITY FIX (PART 2)**: Completed comprehensive security fix for IDOR vulnerability across all Planning Center endpoints. Changes:
   1. **Complete IDOR Protection**: Fixed all Planning Center endpoints to ONLY use churchId from authenticated session, preventing cross-church data access
   2. **Frontend Security**: Removed all churchId query parameters from frontend API calls  
