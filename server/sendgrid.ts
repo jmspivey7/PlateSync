@@ -253,6 +253,22 @@ export async function sendDonationNotification(params: DonationNotificationParam
   // Generate unique ID for this donation notification for tracking
   const notificationId = Math.random().toString(36).substring(2, 8);
   
+  // CRITICAL FIX: Check if email notifications are enabled for this church before sending
+  try {
+    // Get the church account to check email notification settings
+    const churchAccount = await storage.getUser(params.churchId);
+    if (churchAccount && !churchAccount.emailNotificationsEnabled) {
+      console.log(`⛔ [Donation-${notificationId}] Email notifications are DISABLED for church ${params.churchId}`);
+      console.log(`⛔ [Donation-${notificationId}] NOT sending donation receipt to ${params.donorName} (${params.to})`);
+      return false; // Early return - do not send email
+    }
+    console.log(`✅ [Donation-${notificationId}] Email notifications are ENABLED for church ${params.churchId}`);
+  } catch (error) {
+    console.error(`❌ [Donation-${notificationId}] Error checking email notification settings:`, error);
+    // If we can't check the setting, default to NOT sending to be safe
+    return false;
+  }
+  
   // Log information about the donation notification
   console.log(`\n📧 [Donation-${notificationId}] Preparing donation receipt to ${params.donorName}`);
   console.log(`📧 [Donation-${notificationId}] Amount: $${params.amount}`);

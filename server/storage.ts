@@ -1032,14 +1032,15 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Updating church email notifications to ${enabled ? 'ENABLED' : 'DISABLED'} for church ${churchId}`);
       
-      // Update the church's email notification setting
+      // CRITICAL FIX: Update the church account's user record instead of non-existent churches.emailNotificationsEnabled
+      // The emailNotificationsEnabled field only exists in the users table
       await db
-        .update(churches)
+        .update(users)
         .set({ 
           emailNotificationsEnabled: enabled,
           updatedAt: new Date()
         })
-        .where(eq(churches.id, churchId));
+        .where(eq(users.id, churchId));
       
       console.log(`Successfully updated church email notification settings for church ${churchId}`);
       return true;
